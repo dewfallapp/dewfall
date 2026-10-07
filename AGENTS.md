@@ -28,6 +28,7 @@ The project is in Phase 0: decisions and documentation. There is no Android proj
 | openspec/changes/ | Proposed and in-progress changes, one folder per feature |
 | docs/design/ | Design brief, design system and exported screens |
 | docs/testing.md, docs/release.md, docs/breakage.md | How to test, how to release, and what to do when YouTube breaks something |
+| .claude/ | Claude Code setup: the reviewer subagent in agents/, plus the OpenSpec commands and skills |
 
 Some of these do not exist yet. Phase 0 creates them.
 
@@ -59,6 +60,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - Fix everything under "Must fix", then run the reviewer again. If the same problem is still there after two rounds, stop and tell the maintainer instead of trying again.
 - When you report back, include the reviewer's final verdict, what it found, what you changed, and its questions for the maintainer.
 - Put the final verdict in the pull request description.
+- If you're not using Claude Code, go through the checklist in .claude/agents/reviewer.md yourself before handing off.
 
 ## Architecture rules
 
