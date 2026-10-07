@@ -1,0 +1,65 @@
+schema: spec-driven
+
+# Project context
+# Constraints that guide OpenSpec artifacts. Sources: docs/vision.md and AGENTS.md.
+context: |
+  Dewfall is an Android app that works like a podcast app for YouTube. Users pick
+  channels, and new videos download overnight while the phone charges on Wi-Fi, so
+  they play instantly the next day, with or without internet.
+  The first version has four parts: overnight downloads with automatic cleanup, a
+  calm inbox of new videos from subscribed channels (no suggestions, no Shorts),
+  search inside the subtitles of watched videos, and normal search and streaming.
+
+  Product rules. Never propose anything that breaks them. If a change would bend
+  one, stop and ask the maintainer.
+  - No recommendation feed, accounts, ads, analytics or tracking.
+  - Network calls go only to YouTube through the YouTube layer, plus optional
+    services the user turns on.
+  - User data stays on the device. Export and import go to a file the user picks.
+  - Never put "YouTube" or YouTube logos in the app name, icon or package name.
+  - Product behavior, such as the download deletion rules, comes from the specs
+    and the ADRs in docs/adr/. If a change conflicts with them, stop and ask.
+
+  Architecture constraints:
+  - Kotlin, Jetpack Compose, Material 3, Hilt, Room, WorkManager and Media3.
+    Package name: io.github.dewfallapp.
+  - Feature modules depend on core modules, never on each other.
+  - Only the YouTube layer module may use NewPipeExtractor.
+  - Every screen uses MVI with a pure reducer. Playback state never goes into
+    screen state.
+  - Download, sync and cleanup logic must not depend on any screen being open.
+    Background jobs run only on unmetered networks while charging.
+  - Every dependency must be compatible with GPLv3. Ask before adding one.
+
+  Specs:
+  - One change per feature. Keep changes small enough for one small pull request.
+  - Group living specs by area: player, subscriptions, inbox, downloads,
+    background-sync, cleanup, transcript-search and data-export.
+  - Write every requirement with WHEN and THEN scenarios, so each one maps onto a
+    test.
+  - A decision that would be hard to reverse also needs an ADR in docs/adr/.
+
+  Writing style: plain English, short sentences, Markdown, Mermaid for diagrams,
+  no emoji.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
