@@ -53,6 +53,13 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - Do not invent facts, URLs, email addresses or names. If something is missing, ask, or leave a clearly marked TODO.
 - When a request is unclear, ask one question instead of guessing.
 
+## Review before handing off
+
+- Before you stop for the maintainer's review, and before you open a pull request, run the reviewer subagent on your changes. Tell it what the task asked for.
+- Fix everything under "Must fix", then run the reviewer again. If the same problem is still there after two rounds, stop and tell the maintainer instead of trying again.
+- When you report back, include the reviewer's final verdict, what it found, what you changed, and its questions for the maintainer.
+- Put the final verdict in the pull request description.
+
 ## Architecture rules
 
 These apply from Phase 2 on. If Phase 2 refines them, update this section in the same pull request.
