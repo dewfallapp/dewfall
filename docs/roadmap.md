@@ -54,11 +54,11 @@ Every phase follows the same routine:
 - [x] Search the WIPO Global Brand Database and the USPTO for Dewfall in software, Nice class 9.
 - [ ] Set the package name to io.github.dewfallapp. Android treats a different package name as a different app, so it cannot change after the first release.
 - [x] Create a public repository named dewfall in the dewfallapp organization, with the GPLv3 license.
-- [ ] Write docs/vision.md with what the app is, who it is for, the first version's features, and the non-goals.
-- [ ] Add the root files: README, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, PRIVACY and CHANGELOG.
-- [ ] Create the docs folders and empty files: architecture.md, testing.md, release.md, breakage.md, adr/ and design/.
-- [ ] Install OpenSpec with npm and run openspec init in the repository. It creates the openspec/ folder and sets up its commands for your AI coding tool.
-- [ ] Write the first ADRs: NewPipeExtractor, MVI, GPLv3, OpenSpec, and the deletion rules.
+- [x] Write docs/vision.md with what the app is, who it is for, the first version's features, and the non-goals.
+- [x] Add the root files: README, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, PRIVACY and CHANGELOG.
+- [x] Create the docs folders and empty files: architecture.md, testing.md, release.md, breakage.md, adr/ and design/.
+- [x] Install OpenSpec with npm and run openspec init in the repository. It creates the openspec/ folder and sets up its commands for your AI coding tool.
+- [x] Write the first ADRs: NewPipeExtractor, MVI, GPLv3, OpenSpec, and the deletion rules.
 - [ ] Create a GitHub Project board with one milestone per phase, and turn the tasks in this document into issues.
 - [x] Write AGENTS.md with rules for AI coding tools: module boundaries, naming, test requirements, and no hardcoded strings.
 
