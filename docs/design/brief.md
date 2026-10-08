@@ -18,12 +18,12 @@ Calm, quiet and uncluttered, like a podcast or reading app, not a video platform
 
 ## Two searches
 
-One search finds any YouTube video. The other searches saved subtitles of watched videos. Users must always know which they are in.
+One search finds YouTube videos and channels. The other searches saved subtitles of watched videos. Users must always know which they are in.
 
 ## Screens
 
 - **Onboarding.** How overnight downloads work, Google Takeout channel import, storage limit, battery setup.
-- **Inbox.** Home. New videos from subscribed channels, no suggestions or Shorts. Storage indicator on top. Download buttons, downloaded badges, and small marks for searchable subtitles. Manual refresh. Storage-limit banner when downloads pause, with buttons to manage downloads or raise the limit. Offer to download now, or stream, videos the overnight run missed.
+- **Inbox.** Home. New videos from subscribed channels, no suggestions or Shorts. Storage indicator on top. Download buttons, downloaded badges, small marks for searchable subtitles. Manual refresh. Storage-limit banner when downloads pause, with buttons to manage downloads or raise the limit. Offer to download now, or stream, videos the overnight run missed.
 - **Search.** Find videos to stream and channels to subscribe to, even without a Takeout file.
 - **Player.** Portrait with title, channel and description. Fullscreen and mini. Download, keep from cleanup, mark as watched.
 - **Channel page.** Latest uploads, subscribe and unsubscribe.
@@ -35,4 +35,4 @@ One search finds any YouTube video. The other searches saved subtitles of watche
 
 ## Not in this round
 
-Channel discovery, playback speed, silence skipping, audio-only default, sleep timer, blocking, time limits, notes, add-ons like SponsorBlock, and the app icon.
+Channel suggestions, playback speed, silence skipping, audio-only default, sleep timer, blocking, time limits, notes, add-ons like SponsorBlock, and the app icon.
