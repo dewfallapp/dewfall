@@ -39,9 +39,11 @@ When the storage limit is reached, the app stops downloading. It does not delete
 
 Subtitles stay saved after the video file is deleted, so search keeps working. Tapping an old result streams the video from that moment. Without internet, the app shows the matching text with a few lines around it.
 
-### Finding new channels
+## After the first version
 
-There is no feed. The app suggests channels only when you ask, through similar channels, "more like this" on a video, and a weekly list of channel suggestions that you turn on yourself.
+### Channel suggestions
+
+There is no feed. The app suggests channels only when you ask, through similar channels, "more like this" on a video, and a weekly list of channel suggestions that you turn on yourself. These suggestions come after the first release.
 
 ## Non-goals
 
