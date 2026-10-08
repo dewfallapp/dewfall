@@ -24,13 +24,13 @@ One search finds any YouTube video. The other searches saved subtitles of watche
 
 - **Onboarding.** How overnight downloads work, Google Takeout channel import, storage limit, battery setup.
 - **Inbox.** Home. New videos from subscribed channels, no suggestions or Shorts. Storage indicator on top. Download buttons, downloaded badges, and small marks for searchable subtitles. Manual refresh. Storage-limit banner when downloads pause, with buttons to manage downloads or raise the limit. Offer to download now, or stream, videos the overnight run missed.
-- **Search.** Find and stream any video.
+- **Search.** Find videos to stream and channels to subscribe to, even without a Takeout file.
 - **Player.** Portrait with title, channel and description. Fullscreen and mini. Download, keep from cleanup, mark as watched.
 - **Channel page.** Latest uploads, subscribe and unsubscribe.
 - **Downloads and storage.** Progress, pause, cancel, remove, space used.
 - **Search inside videos.** Results show video, matching line and time, opening at that moment. Offline, text with a few lines around it.
 - **Download notification.** Overnight progress and storage-limit message.
-- **Settings.** Storage limit. Delete watched videos next night by default, right away, after a week, or never. Clear unwatched videos after two weeks. How long to keep subtitles. Data export and import. Copy debug info. No mobile data setting, since downloads need Wi-Fi and charging.
+- **Settings.** Storage limit. Delete watched videos next night by default, right away, after a week, or never. Clear unwatched videos after two weeks. How long to keep subtitles. Data export and import. Copy debug info. Opt-in toggle to check GitHub for updates, GitHub build only. Overnight downloads always wait for Wi-Fi and charging, with no mobile data option.
 - **Empty, error and offline states.** No channels yet, all caught up, no internet, YouTube not loading, downloads paused at the limit, no search results.
 
 ## Not in this round
