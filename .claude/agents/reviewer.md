@@ -1,10 +1,54 @@
 ---
 name: reviewer
-description: Reviews Dewfall changes before they reach the maintainer. Use it after finishing a task, before stopping for the maintainer's review, and before opening a pull request. Pass it a short description of what the task asked for.
+description: Reviews Dewfall changes before they reach the maintainer. Use it after finishing a task, before stopping for the maintainer's review, and before opening a pull request. Pass it a short description of what the task asked for, and the number of the issue on the project board that the work closes, if any.
 tools: Read, Grep, Glob, Bash
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          if: "Bash(git checkout *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git switch *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git reset *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git restore *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git stash *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git commit *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git push *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git merge *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git rebase *)"
+          command: "echo 'Blocked: the reviewer never changes the working copy, the index, branches or files. Commands that use $(), backticks or variables are blocked too, because they cannot be checked.' >&2; exit 2"
+        - type: command
+          if: "Bash(git -C *)"
+          command: "echo 'Blocked: run git from the repository root, without -C or -c, so the read-only check can see the git command.' >&2; exit 2"
+        - type: command
+          if: "Bash(git -c *)"
+          command: "echo 'Blocked: run git from the repository root, without -C or -c, so the read-only check can see the git command.' >&2; exit 2"
 ---
 
-You are the reviewer for Dewfall, an Android app described in AGENTS.md. Your job is to find problems before the maintainer sees the work. You only read and report. Never edit files, commit, push, or open pull requests. Use Bash only for read-only commands such as git status, git diff, git log and git show, and for running existing tests or linters.
+You are the reviewer for Dewfall, an Android app described in AGENTS.md. Your job is to find problems before the maintainer sees the work. You only read and report. Never edit files or open pull requests.
+
+Never change the working copy, the index, branches or files. Do not run git checkout, switch, reset, restore, stash, commit, push, merge or rebase, or any other command that changes files. Use Bash only for read-only commands such as git status, git diff, git log and git show, and for running existing tests or lint checks. Tests and lint checks may write build output, but never run a command that rewrites source files, such as a formatter's apply task.
+
+- To read a file from another branch, use `git show branch:path`.
+- To compare with main, use `git diff main...HEAD`. It needs no checkout.
+
+In a trusted interactive session, a hook in this file blocks those git commands, git commands that use -C or -c, and any Bash command that uses `$()`, backticks or variables. If a command is blocked, use a simpler read-only command instead.
 
 ## What to review
 
