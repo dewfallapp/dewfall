@@ -2,7 +2,7 @@
 
 This is the working plan for Dewfall. Work through it from top to bottom, one phase at a time. Each phase has a goal, a task list, a guide for the parts the maintainer handles personally, and a line that says when the phase is finished.
 
-Once the GitHub project board exists, progress is tracked there. Until then, the checkboxes in this file track Phase 0. Otherwise, change this file only when the plan itself changes.
+Progress is tracked on the [Dewfall roadmap](https://github.com/orgs/dewfallapp/projects/1) project board, with one milestone per phase and one issue per task. Change this file only when the plan itself changes.
 
 ## The app in short
 
@@ -49,18 +49,17 @@ Every phase follows the same routine:
 
 ### Tasks
 
-- [x] Confirm that no app is named Dewfall on the Play Store, F-Droid or IzzyOnDroid.
-- [x] Create the GitHub organization dewfallapp. The username dewfall already belongs to someone else.
-- [x] Search the WIPO Global Brand Database and the USPTO for Dewfall in software, Nice class 9.
-- [ ] Set the package name to io.github.dewfallapp. Android treats a different package name as a different app, so it cannot change after the first release.
-- [x] Create a public repository named dewfall in the dewfallapp organization, with the GPLv3 license.
-- [x] Write docs/vision.md with what the app is, who it is for, the first version's features, and the non-goals.
-- [x] Add the root files: README, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, PRIVACY and CHANGELOG.
-- [x] Create the docs folders and empty files: architecture.md, testing.md, release.md, breakage.md, adr/ and design/.
-- [x] Install OpenSpec with npm and run openspec init in the repository. It creates the openspec/ folder and sets up its commands for your AI coding tool.
-- [x] Write the first ADRs: NewPipeExtractor, MVI, GPLv3, OpenSpec, and the deletion rules.
-- [ ] Create a GitHub Project board with one milestone per phase, and turn the tasks in this document into issues.
-- [x] Write AGENTS.md with rules for AI coding tools: module boundaries, naming, test requirements, and no hardcoded strings.
+- Confirm that no app is named Dewfall on the Play Store, F-Droid or IzzyOnDroid.
+- Create the GitHub organization dewfallapp. The username dewfall already belongs to someone else.
+- Search the WIPO Global Brand Database and the USPTO for Dewfall in software, Nice class 9.
+- Create a public repository named dewfall in the dewfallapp organization, with the GPLv3 license.
+- Write docs/vision.md with what the app is, who it is for, the first version's features, and the non-goals.
+- Add the root files: README, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, PRIVACY and CHANGELOG.
+- Create the docs folders and empty files: architecture.md, testing.md, release.md, breakage.md, adr/ and design/.
+- Install OpenSpec with npm and run openspec init in the repository. It creates the openspec/ folder and sets up its commands for your AI coding tool.
+- Write the first ADRs: NewPipeExtractor, MVI, GPLv3, OpenSpec, and the deletion rules.
+- Create a GitHub Project board with one milestone per phase, and turn the tasks in this document into issues.
+- Write AGENTS.md with rules for AI coding tools: module boundaries, naming, test requirements, and no hardcoded strings.
 
 ### Your guide
 
@@ -86,23 +85,23 @@ OpenSpec has two weak spots. Nothing forces you to update a spec when the code c
 
 ### Tasks
 
-- [ ] Write a half-page design brief in docs/design/brief.md.
-- [ ] Explore three or four visual directions in Stitch.
-- [ ] Pick one direction, then export its DESIGN.md and screenshots into docs/design/.
-- [ ] Design the full first-version screen set in Claude Design, in light and dark.
-- [ ] Build clickable prototypes of the three main flows: onboarding, inbox to player, and search inside videos.
-- [ ] Export the result as HTML or .zip into docs/design/.
-- [ ] Write a screen inventory in docs/design/screens.md, one line per screen with its file.
-- [ ] Screen: onboarding, including channel import, storage limit, and battery setup.
-- [ ] Screen: inbox home.
-- [ ] Screen: search and search results.
-- [ ] Screen: player in portrait, fullscreen and mini sizes.
-- [ ] Screen: channel page.
-- [ ] Screen: downloads and storage.
-- [ ] Screen: search inside videos, including the offline text view.
-- [ ] Screen: settings.
-- [ ] Screen: download notification.
-- [ ] Screen: empty, error and offline states.
+- Write a half-page design brief in docs/design/brief.md.
+- Explore three or four visual directions in Stitch.
+- Pick one direction, then export its DESIGN.md and screenshots into docs/design/.
+- Design the full first-version screen set in Claude Design, in light and dark.
+- Build clickable prototypes of the three main flows: onboarding, inbox to player, and search inside videos.
+- Export the result as HTML or .zip into docs/design/.
+- Write a screen inventory in docs/design/screens.md, one line per screen with its file.
+- Screen: onboarding, including channel import, storage limit, and battery setup.
+- Screen: inbox home.
+- Screen: search and search results.
+- Screen: player in portrait, fullscreen and mini sizes.
+- Screen: channel page.
+- Screen: downloads and storage.
+- Screen: search inside videos, including the offline text view.
+- Screen: settings.
+- Screen: download notification.
+- Screen: empty, error and offline states.
 
 ### Your guide
 
@@ -130,18 +129,19 @@ Claude Design exports as .zip, PDF, PPTX, standalone HTML, to Canva, or as a han
 
 ### Tasks
 
-- [ ] Create the Android project with these modules: app, core data, core database, the YouTube layer, the design system, and one module per feature as features arrive.
-- [ ] Set up Hilt, Jetpack Compose and Material 3.
-- [ ] Set up Room with schema export into the repository.
-- [ ] Write the MVI base classes: state, intent, one-time effect, and reducer.
-- [ ] Build the theme from the design tokens, and check it with dynamic color on and off.
-- [ ] Set up formatting and lint with Spotless and ktlint, detekt, and Android Lint.
-- [ ] Add the pull request workflow in GitHub Actions: formatting, lint, unit tests, and a debug build.
-- [ ] Turn on branch protection for main so failing checks block merging.
-- [ ] Add a pull request template with the line "OpenSpec change archived, or not needed".
-- [ ] Add Renovate or Dependabot for weekly dependency update pull requests.
-- [ ] Write the modules section of docs/architecture.md with a Mermaid diagram.
-- [ ] Optional: import the repository into Claude Design as a design system, so new designs use your real theme.
+- Create the Android project with these modules: app, core data, core database, the YouTube layer, the design system, and one module per feature as features arrive.
+- Set the package name to io.github.dewfallapp. Android treats a different package name as a different app, so it cannot change after the first release.
+- Set up Hilt, Jetpack Compose and Material 3.
+- Set up Room with schema export into the repository.
+- Write the MVI base classes: state, intent, one-time effect, and reducer.
+- Build the theme from the design tokens, and check it with dynamic color on and off.
+- Set up formatting and lint with Spotless and ktlint, detekt, and Android Lint.
+- Add the pull request workflow in GitHub Actions: formatting, lint, unit tests, and a debug build.
+- Turn on branch protection for main so failing checks block merging.
+- Add a pull request template with the line "OpenSpec change archived, or not needed".
+- Add Renovate or Dependabot for weekly dependency update pull requests.
+- Write the modules section of docs/architecture.md with a Mermaid diagram.
+- Optional: import the repository into Claude Design as a design system, so new designs use your real theme.
 
 ### Your guide
 
@@ -159,12 +159,12 @@ Once the theme exists in code, Claude Design can import a design system from a G
 
 ### Tasks
 
-- [ ] Wrap NewPipeExtractor behind your own interfaces for search, video details, a channel's latest uploads, stream links, and subtitles.
-- [ ] Map every NewPipeExtractor type to your own models inside the module.
-- [ ] Save real responses as test fixtures and write tests against them.
-- [ ] Add a small debug screen that calls each function.
-- [ ] Add the daily scheduled workflow that runs the layer against real YouTube and opens a GitHub issue when something fails.
-- [ ] Write docs/breakage.md.
+- Wrap NewPipeExtractor behind your own interfaces for search, video details, a channel's latest uploads, stream links, and subtitles.
+- Map every NewPipeExtractor type to your own models inside the module.
+- Save real responses as test fixtures and write tests against them.
+- Add a small debug screen that calls each function.
+- Add the daily scheduled workflow that runs the layer against real YouTube and opens a GitHub issue when something fails.
+- Write docs/breakage.md.
 
 ### Your guide
 
@@ -182,13 +182,13 @@ The breakage playbook in docs/breakage.md lists the steps for a failure: confirm
 
 ### Tasks
 
-- [ ] Search screen with results.
-- [ ] Video screen with title, channel and description.
-- [ ] Media3 player inside a media session service.
-- [ ] Background audio with a media notification.
-- [ ] Mini player and fullscreen player.
-- [ ] Screenshot tests for each screen in light, dark and large font.
-- [ ] First emulator test: search, then play.
+- Search screen with results.
+- Video screen with title, channel and description.
+- Media3 player inside a media session service.
+- Background audio with a media notification.
+- Mini player and fullscreen player.
+- Screenshot tests for each screen in light, dark and large font.
+- First emulator test: search, then play.
 
 ### Your guide
 
@@ -204,13 +204,13 @@ Start using the app on your own phone now. You will find more bugs that way than
 
 ### Tasks
 
-- [ ] Subscribe and unsubscribe from a channel page.
-- [ ] Room tables for channels, videos, watch status and resume position.
-- [ ] Inbox home screen with new videos from subscribed channels.
-- [ ] Mark as watched, with resume from the last position.
-- [ ] Import subscriptions from a Google Takeout export.
-- [ ] Manual refresh.
-- [ ] Start writing a migration test for every database schema change.
+- Subscribe and unsubscribe from a channel page.
+- Room tables for channels, videos, watch status and resume position.
+- Inbox home screen with new videos from subscribed channels.
+- Mark as watched, with resume from the last position.
+- Import subscriptions from a Google Takeout export.
+- Manual refresh.
+- Start writing a migration test for every database schema change.
 
 ### Your guide
 
@@ -224,11 +224,11 @@ Export your own YouTube data from takeout.google.com to get a real file for test
 
 ### Tasks
 
-- [ ] Download button on the video screen and in the inbox.
-- [ ] Downloads screen with progress, pause and cancel.
-- [ ] Play from the downloaded file when it exists.
-- [ ] Storage indicator showing how much space downloads use.
-- [ ] Emulator test: download, switch off the network, then play.
+- Download button on the video screen and in the inbox.
+- Downloads screen with progress, pause and cancel.
+- Play from the downloaded file when it exists.
+- Storage indicator showing how much space downloads use.
+- Emulator test: download, switch off the network, then play.
 
 ### Your guide
 
@@ -242,17 +242,17 @@ Keep the download logic separate from the screens. Phase 7 reuses the same code 
 
 ### Tasks
 
-- [ ] WorkManager job that checks subscribed channels for new uploads.
-- [ ] Downloads that run only on Wi-Fi while charging.
-- [ ] Automatic retries with a growing wait between attempts.
-- [ ] Notification with progress while downloads run.
-- [ ] Storage limit setting.
-- [ ] Deletion rules and settings, as described under Decisions already made.
-- [ ] "Keep" option on any video.
-- [ ] Battery optimization setup screen in onboarding.
-- [ ] Fallback when the app opens: offer to download missing videos now or to stream them.
-- [ ] Export and import of all user data to a single file.
-- [ ] Tests for the background jobs using the WorkManager test helpers.
+- WorkManager job that checks subscribed channels for new uploads.
+- Downloads that run only on Wi-Fi while charging.
+- Automatic retries with a growing wait between attempts.
+- Notification with progress while downloads run.
+- Storage limit setting.
+- Deletion rules and settings, as described under Decisions already made.
+- "Keep" option on any video.
+- Battery optimization setup screen in onboarding.
+- Fallback when the app opens: offer to download missing videos now or to stream them.
+- Export and import of all user data to a single file.
+- Tests for the background jobs using the WorkManager test helpers.
 
 ### Your guide
 
@@ -268,13 +268,13 @@ The data export matters because there is no account. Without it, a lost phone me
 
 ### Tasks
 
-- [ ] Save subtitles when a video is watched or downloaded.
-- [ ] Full-text search index with Room.
-- [ ] Search screen for subtitles, with the video, the matching line, and its time.
-- [ ] Tapping a result opens the video at that moment, from the file if it exists, otherwise by streaming.
-- [ ] Offline text view with a few lines before and after the match.
-- [ ] Setting to keep subtitles only for the last few months.
-- [ ] Tests for indexing and search.
+- Save subtitles when a video is watched or downloaded.
+- Full-text search index with Room.
+- Search screen for subtitles, with the video, the matching line, and its time.
+- Tapping a result opens the video at that moment, from the file if it exists, otherwise by streaming.
+- Offline text view with a few lines before and after the match.
+- Setting to keep subtitles only for the last few months.
+- Tests for indexing and search.
 
 ### Your guide
 
@@ -288,17 +288,17 @@ Not every video has subtitles. Show a small mark on videos that are searchable, 
 
 ### Tasks
 
-- [ ] Create the release signing key and back it up in two separate offline places.
-- [ ] Release workflow on a version tag: build, sign with the key stored in GitHub secrets, generate the changelog, add checksums, and publish a GitHub release.
-- [ ] Two build flavors: a GitHub build with an update checker the user agrees to, and an F-Droid build without one.
-- [ ] Final privacy policy in PRIVACY.md.
-- [ ] Issue templates asking for app version, Android version, phone model and steps to reproduce.
-- [ ] "Copy debug info" button in settings.
-- [ ] Final pass on onboarding and on empty, error and offline states.
-- [ ] Check that every string is in resources, and test with TalkBack and large fonts.
-- [ ] Startup benchmark on a real phone.
-- [ ] README with screenshots taken from the real app.
-- [ ] Submit to IzzyOnDroid or F-Droid after reading their inclusion requirements.
+- Create the release signing key and back it up in two separate offline places.
+- Release workflow on a version tag: build, sign with the key stored in GitHub secrets, generate the changelog, add checksums, and publish a GitHub release.
+- Two build flavors: a GitHub build with an update checker the user agrees to, and an F-Droid build without one.
+- Final privacy policy in PRIVACY.md.
+- Issue templates asking for app version, Android version, phone model and steps to reproduce.
+- "Copy debug info" button in settings.
+- Final pass on onboarding and on empty, error and offline states.
+- Check that every string is in resources, and test with TalkBack and large fonts.
+- Startup benchmark on a real phone.
+- README with screenshots taken from the real app.
+- Submit to IzzyOnDroid or F-Droid after reading their inclusion requirements.
 
 ### Your guide
 
@@ -312,11 +312,11 @@ Use conventional commit messages from Phase 2 onward, such as "feat: add storage
 
 Add these one at a time, in the order your first users ask for them. Their feedback after Phase 9 is worth more than this plan's guess.
 
-- [ ] Per-channel settings: speed, silence skipping, audio-only default, and a sleep timer.
-- [ ] Calm features: hide Shorts, block words and channels, and a daily time limit.
-- [ ] Notes at a moment in a video, exportable as Markdown.
-- [ ] Community add-ons: SponsorBlock, DeArrow and Return YouTube Dislike.
-- [ ] Discovery on request: similar channels, "more like this", and the opt-in weekly suggestions.
+- Per-channel settings: speed, silence skipping, audio-only default, and a sleep timer.
+- Calm features: hide Shorts, block words and channels, and a daily time limit.
+- Notes at a moment in a video, exportable as Markdown.
+- Community add-ons: SponsorBlock, DeArrow and Return YouTube Dislike.
+- Discovery on request: similar channels, "more like this", and the opt-in weekly suggestions.
 
 ## Reference: testing and CI/CD
 
