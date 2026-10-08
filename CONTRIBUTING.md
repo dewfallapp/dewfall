@@ -2,7 +2,7 @@
 
 Thanks for your interest in Dewfall. This page explains how changes get into the project.
 
-Dewfall is in early development, and there is no app code yet. See [docs/roadmap.md](docs/roadmap.md) for the current phase and its tasks.
+Dewfall is in early development, and there is no app code yet. [docs/roadmap.md](docs/roadmap.md) holds the plan, phase by phase. The [Dewfall roadmap](https://github.com/orgs/dewfallapp/projects/1) project board shows what is done and what is next.
 
 Everyone who takes part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
