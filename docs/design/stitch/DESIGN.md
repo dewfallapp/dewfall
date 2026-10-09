@@ -167,30 +167,7 @@ The aesthetic philosophy is grounded in Material Design 3 (Material You), shaped
 The palette adheres strictly to Material Design 3 role-based naming conventions. The default light and dark themes derive from a botanical sage-eucalyptus key color, supplemented by balanced slate-teal tertiary tones and neutral mineral surfaces.
 
 ### Light Theme Roles
-- `md-sys-color-primary`: `#3E6853` (deep eucalyptus green)
-- `md-sys-color-on-primary`: `#FFFFFF`
-- `md-sys-color-primary-container`: `#C0ECD3` (dewy mint)
-- `md-sys-color-on-primary-container`: `#002113`
-- `md-sys-color-secondary`: `#4F6354` (grounded slate olive)
-- `md-sys-color-on-secondary`: `#FFFFFF`
-- `md-sys-color-secondary-container`: `#D2E8D5`
-- `md-sys-color-on-secondary-container`: `#0D1F13`
-- `md-sys-color-tertiary`: `#3E6473` (calm stream slate)
-- `md-sys-color-on-tertiary`: `#FFFFFF`
-- `md-sys-color-tertiary-container`: `#C2E8FB`
-- `md-sys-color-on-tertiary-container`: `#001F29`
-- `md-sys-color-surface`: `#F6FAF4` (soft morning linen)
-- `md-sys-color-surface-dim`: `#D7DBD5`
-- `md-sys-color-surface-bright`: `#F6FAF4`
-- `md-sys-color-surface-container-lowest`: `#FFFFFF`
-- `md-sys-color-surface-container-low`: `#F0F5EE`
-- `md-sys-color-surface-container`: `#EBEFE9`
-- `md-sys-color-surface-container-high`: `#E5EAE3`
-- `md-sys-color-surface-container-highest`: `#DFE4DE`
-- `md-sys-color-on-surface`: `#181D19`
-- `md-sys-color-on-surface-variant`: `#414942`
-- `md-sys-color-outline`: `#717971`
-- `md-sys-color-outline-variant`: `#C1C9BF`
+The light theme uses the colors in the frontmatter above.
 
 ### Dark Theme Roles
 - `md-sys-color-primary`: `#A5D0B8`
@@ -225,22 +202,22 @@ Meaning must never rely on hue alone; active downloads, transcript flags, and of
 Typography uses `Manrope` across all tiers, leveraging its balanced geometric proportions and subtle humanist stroke terminals to impart a serene editorial atmosphere.
 
 - **Display & Headline:** Used sparingly on primary shelf views and large collection landing headers. They provide an unhurried, library-like introduction to saved libraries.
-- **Title Tiers:** Anchor channel groupings and episode titles. `title-medium` carries primary episode names in compact rows, supporting two-line truncations with zero hyphenation.
+- **Title Tiers:** Anchor channel groupings and video titles. `title-medium` carries primary video names in compact rows, wrapping onto as many lines as needed with zero hyphenation, never cut off.
 - **Body Tiers:** Apply to podcast notes, auto-generated video descriptions, and offline transcripts. Generous line-heights enhance sustained reading comfort in low-light environments.
 - **Label Tiers:** Reserved for numerical telemetry: storage bar indicators (`6.1 GB / 10 GB`), duration counters, badge indicators (`CC`, `OFFLINE`), and M3 interactive tab labels.
 
 ## Layout & Spacing
 
-The layout is built for Android mobile viewports using a flexible 4-column structure with an outer canvas margin of `16px` (`1rem`) and gutters of `16px`. On wider mobile and compact tablet screens, the layout shifts to an 8-column format with `24px` margins while keeping a maximum readable content width of 680px for list streams.
+The layout is built for Android mobile viewports using a flexible 4-column structure with an outer canvas margin of `16px` (`1rem`) and gutters of `16px`.
 
-Vertical pacing follows an 8px grid cadence (`4px` reserved exclusively for inner badge and chip padding via `space-xs`). Channel sections are grouped into discrete vertical blocks separated by `space-lg`. The top section houses an M3 Center-Aligned Top App Bar followed immediately by an inline storage progress module (`space-md` inner padding), grounding the user with remaining capacity before they browse offline episode rows.
+Vertical pacing follows an 8px grid cadence (`4px` reserved exclusively for inner badge and chip padding via `space-xs`). Channel sections are grouped into discrete vertical blocks separated by `space-lg`. The top section houses an M3 Top App Bar followed immediately by an inline storage progress module (`space-md` inner padding), grounding the user with remaining capacity before they browse offline video rows.
 
 ## Elevation & Depth
 
 Visual hierarchy does not use drop shadows. Elevation is achieved entirely through M3 tonal elevation surfaces, ensuring an understated, glare-free presentation in both night and daytime conditions.
 
 - **Base Layer (Level 0):** `md-sys-color-surface` acts as the root canvas.
-- **Card & Feed Rows (Level 1):** `md-sys-color-surface-container-low` provides subtle separation for episode rows and storage metrics.
+- **Card & Feed Rows (Level 1):** `md-sys-color-surface-container-low` provides subtle separation for video rows and storage metrics.
 - **Top App Bar & Floating Controls (Level 2):** When scrolled, the top app bar transitions smoothly to `md-sys-color-surface-container`. Floating Action Buttons or mini-players adopt `md-sys-color-surface-container-high` or `md-sys-color-primary-container`.
 - **Dialogs & Sheet Modals (Level 3):** Rendered with `md-sys-color-surface-container-highest` coupled with an accessible `outline-variant` boundary hairline for strict ambient separation without harsh contrast.
 
@@ -249,16 +226,16 @@ Visual hierarchy does not use drop shadows. Elevation is achieved entirely throu
 The design system adopts M3's rounded profile to evoke organic smoothness:
 
 - **Extra-Small (4px):** Duration tags and mini badges (`CC`, transcript indicators).
-- **Small (8px):** Linear storage track ends, segmented buttons, and episode thumbnails.
-- **Medium (12px):** Compact episode row containers and interactive filter chips.
+- **Small (8px):** Linear storage track ends, segmented buttons, and video thumbnails.
+- **Medium (12px):** Compact video row containers and interactive filter chips.
 - **Large (16px):** Grouped channel enclosures, card headers, and bottom sheets.
 - **Full / Pill:** Channel emblems (fully circular avatars), action buttons, sync status pills, and the Floating Action Button.
 
 ## Components
 
 ### Top App Bar
-- **Structure:** Center-aligned title ("Dewfall") rendered in `title-large`.
-- **Actions:** Leading menu/profile icon; trailing refresh/sync icon button (`on-surface-variant`). While syncing, the sync icon initiates a gentle continuous 360-degree rotation without jarring micro-bounces.
+- **Structure:** Left-aligned title ("Dewfall") rendered in `title-large`, with the screen name under it.
+- **Actions:** Trailing refresh/sync icon button (`on-surface-variant`) and overflow menu button. While syncing, the sync icon initiates a gentle continuous 360-degree rotation without jarring micro-bounces.
 
 ### Storage Progress Meter
 - **Container:** Framed in `surface-container-low` with 12px corner radius, padding `space-md`.
@@ -271,14 +248,14 @@ The design system adopts M3's rounded profile to evoke organic smoothness:
 - **Avatar:** Circular 36px channel emblem with a soft 1px `outline-variant` border.
 - **Metadata:** Channel name in `title-small` (`on-surface`), count of downloaded items in `body-small` (`on-surface-variant`).
 
-### Episode Rows
+### Video Rows
 - **Container:** Full-width compact row with 8px internal padding and 12px roundedness on hover/press states.
 - **Visuals:** 16:9 thumbnail (72px width) with 8px corner radius. Lower right corner contains a floating duration pill (`label-small`, `surface` background with 80% opacity).
 - **Body:**
-  - Title: 2-line max truncated `title-medium`.
+  - Title: `title-medium`, wrapping onto as many lines as needed, never cut off.
   - Badges: Horizontal cluster containing the `CC` transcription indicator (pill badge, `surface-container-high` fill, `on-surface-variant` text) and date published (`body-small`).
 - **Action:** Right-aligned download status. If downloaded: a calm circular badge with a checkmark in `primary-container` and icon in `on-primary-container`. If pending: a standard outlined download icon button.
 
 ### Bottom Navigation & Mini Player
-- **Navigation:** M3 Navigation Bar with 3 destinations ("Library", "Queue", "Transcripts") using standard pill indicators in `secondary-container`.
+- **Navigation:** M3 Navigation Bar with 4 destinations ("Inbox", "Channels", "Downloads", "Settings") and no count badges, using standard pill indicators in `secondary-container`.
 - **Mini-Player Bar:** Resting directly above navigation in `surface-container-high` with playback toggle (`primary`), current media title, and scrub progress hairline.
