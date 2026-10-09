@@ -203,7 +203,7 @@ Typography uses `Manrope` across all tiers, leveraging its balanced geometric pr
 
 - **Display & Headline:** Used sparingly on primary shelf views and large collection landing headers. They provide an unhurried, library-like introduction to saved libraries.
 - **Title Tiers:** Anchor channel groupings and video titles. `title-medium` carries primary video names in compact rows, wrapping onto as many lines as needed with zero hyphenation, never cut off.
-- **Body Tiers:** Apply to podcast notes, auto-generated video descriptions, and offline transcripts. Generous line-heights enhance sustained reading comfort in low-light environments.
+- **Body Tiers:** Apply to video descriptions and offline transcripts. Generous line-heights enhance sustained reading comfort in low-light environments.
 - **Label Tiers:** Reserved for numerical telemetry: storage bar indicators (`6.1 GB / 10 GB`), duration counters, badge indicators (`CC`, `OFFLINE`), and M3 interactive tab labels.
 
 ## Layout & Spacing
