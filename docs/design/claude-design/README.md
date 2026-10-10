@@ -41,6 +41,6 @@ Where anything here disagrees with [docs/design/brief.md](../brief.md), the brie
 
 ## Licenses
 
-- The icons drawn in the frames and previews are Material Symbols, under the Apache License 2.0. Its text is in [design-system/licenses/MaterialSymbols-Apache-2.0.txt](design-system/licenses/MaterialSymbols-Apache-2.0.txt), copied from the LICENSE file of [github.com/google/material-design-icons](https://github.com/google/material-design-icons).
+- The icons in the frames and previews are Material Symbols, under the Apache License 2.0. The frames draw them, and the previews name them for an icon font that isn't included. The license text is in [design-system/licenses/MaterialSymbols-Apache-2.0.txt](design-system/licenses/MaterialSymbols-Apache-2.0.txt), copied from the LICENSE file of [github.com/google/material-design-icons](https://github.com/google/material-design-icons).
 - The font files are not included, although the design system README mentions a fonts/ folder.
 - The Manrope license stays in [design-system/licenses/Manrope-OFL.txt](design-system/licenses/Manrope-OFL.txt) as a reference.
