@@ -1,0 +1,21 @@
+<!-- @dsCard group="Status" height=440 subtitle="Offline, YouTube not loading, storage limit" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Banner</title></head>
+<body>
+<div class="df-stage">
+  <div class="df-device">
+    <p class="df-note body-small">Offline</p>
+    <section class="df-banner" role="status"><div class="df-banner__row"><span class="df-icon df-icon--20" data-icon="wifi_off" aria-hidden="true"></span><p class="df-banner__text body-medium">You're offline. Downloaded videos still play.</p></div></section>
+  </div>
+  <div class="df-device">
+    <p class="df-note body-small">YouTube not loading</p>
+    <section class="df-banner df-banner--error" role="status"><div class="df-banner__row"><span class="df-icon df-icon--20" data-icon="error" aria-hidden="true"></span><p class="df-banner__text body-medium">Couldn't check for new videos because YouTube isn't loading. Your downloads still play.</p></div>
+      <div class="df-banner__actions"><button class="df-btn df-btn--text df-state label-large">Try again</button></div></section>
+  </div>
+  <div class="df-device">
+    <p class="df-note body-small">Downloads paused at the storage limit</p>
+    <section class="df-banner" role="status"><div class="df-banner__row"><span class="df-icon df-icon--20" data-icon="pause_circle" aria-hidden="true"></span><p class="df-banner__text body-medium">Downloads paused at your 10 GB limit. 3 new videos are waiting for space.</p></div>
+      <div class="df-banner__actions"><button class="df-btn df-btn--text df-state label-large">Raise limit</button><button class="df-btn df-btn--tonal df-state label-large">Manage downloads</button></div></section>
+  </div>
+</div>
+</body></html>
