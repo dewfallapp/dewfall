@@ -1,0 +1,33 @@
+<!-- @dsCard group="App structure" height=330 subtitle="Inbox with search, scrolled while syncing, detail screen" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Top app bar</title></head>
+<body>
+<div class="df-stage">
+  <div class="df-device">
+    <p class="df-note body-small">Resting</p>
+    <header class="df-topbar">
+      <div class="df-topbar__titles"><h1 class="title-large">Dewfall</h1><p class="df-topbar__sub body-medium">Inbox</p></div>
+      <button class="df-iconbtn" aria-label="Search"><span class="df-iconbtn__face"><span class="df-icon" data-icon="search" aria-hidden="true"></span></span></button>
+      <button class="df-iconbtn" aria-label="Check for new videos"><span class="df-iconbtn__face"><span class="df-icon" data-icon="sync" aria-hidden="true"></span></span></button>
+      <button class="df-iconbtn" aria-label="More options"><span class="df-iconbtn__face"><span class="df-icon" data-icon="more_vert" aria-hidden="true"></span></span></button>
+    </header>
+  </div>
+  <div class="df-device">
+    <p class="df-note body-small">Scrolled, checking for new videos</p>
+    <header class="df-topbar" data-scrolled>
+      <div class="df-topbar__titles"><h1 class="title-large">Dewfall</h1><p class="df-topbar__sub body-medium" aria-live="polite">Checking for new videos</p></div>
+      <button class="df-iconbtn" aria-label="Search"><span class="df-iconbtn__face"><span class="df-icon" data-icon="search" aria-hidden="true"></span></span></button>
+      <button class="df-iconbtn" data-syncing aria-label="Checking for new videos" aria-disabled="true"><span class="df-iconbtn__face"><span class="df-icon" data-icon="sync" aria-hidden="true"></span></span></button>
+      <button class="df-iconbtn" aria-label="More options"><span class="df-iconbtn__face"><span class="df-icon" data-icon="more_vert" aria-hidden="true"></span></span></button>
+    </header>
+  </div>
+  <div class="df-device">
+    <p class="df-note body-small">Detail screen</p>
+    <header class="df-topbar df-topbar--detail">
+      <button class="df-iconbtn" aria-label="Back"><span class="df-iconbtn__face"><span class="df-icon" data-icon="arrow_back" aria-hidden="true"></span></span></button>
+      <div class="df-topbar__titles"><h1 class="title-large">Search subtitles</h1><p class="df-topbar__sub body-medium">24 watched videos on this phone</p></div>
+      <button class="df-iconbtn" aria-label="More options"><span class="df-iconbtn__face"><span class="df-icon" data-icon="more_vert" aria-hidden="true"></span></span></button>
+    </header>
+  </div>
+</div>
+</body></html>

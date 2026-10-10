@@ -1,0 +1,35 @@
+<!-- @dsCard group="Status" height=440 subtitle="Downloads meter, Downloads at the limit, Inbox banner" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Storage meter</title></head>
+<body>
+<div class="df-stage">
+  <div class="df-device">
+    <p class="df-note body-small">Downloads screen</p>
+    <section class="df-meter" aria-label="Offline storage">
+      <div class="df-meter__head"><span class="df-meter__label label-medium">Offline storage</span><span class="df-meter__amount label-large">6.1 GB / 10 GB</span></div>
+      <div class="df-meter__track" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="6.1" aria-valuetext="6.1 of 10 GB used"><div class="df-meter__fill" style="width:61%"></div></div>
+    </section>
+  </div>
+  <div class="df-device">
+    <p class="df-note body-small">Downloads screen, paused at the limit</p>
+    <section class="df-meter" aria-label="Offline storage">
+      <div class="df-meter__head"><span class="df-meter__label label-medium">Offline storage</span><span class="df-meter__amount label-large">10 GB / 10 GB</span></div>
+      <div class="df-meter__track" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="10" aria-valuetext="10 of 10 GB used, limit reached"><div class="df-meter__fill" style="width:100%"></div></div>
+      <div class="df-meter__msg" role="status">
+        <span class="df-icon df-icon--20" data-icon="pause_circle" aria-hidden="true"></span>
+        <p class="body-medium">Downloads paused at your 10 GB limit. 3 new videos are waiting for space.</p>
+      </div>
+      <div class="df-meter__actions">
+        <button class="df-btn df-btn--text df-state label-large">Raise limit</button>
+      </div>
+    </section>
+  </div>
+  <div class="df-device">
+    <p class="df-note body-small">Inbox banner, paused at the limit</p>
+    <section class="df-banner" role="status" aria-label="Downloads paused">
+      <div class="df-banner__row"><span class="df-icon df-icon--20" data-icon="pause_circle" aria-hidden="true"></span><p class="df-banner__text body-medium">Downloads paused at your 10 GB limit. 3 new videos are waiting for space.</p></div>
+      <div class="df-banner__actions"><button class="df-btn df-btn--text df-state label-large">Raise limit</button><button class="df-btn df-btn--tonal df-state label-large">Manage downloads</button></div>
+    </section>
+  </div>
+</div>
+</body></html>
