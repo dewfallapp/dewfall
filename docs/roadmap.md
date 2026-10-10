@@ -113,11 +113,17 @@ OpenSpec has two weak spots. Nothing forces you to update a spec when the code c
 
 Generate several variations and compare them side by side. When you pick one, export its DESIGN.md, a Markdown file that records the design system's colors, fonts and component styles for other tools. Stitch is a Labs product and changes often, so check its export menu each time you use it.
 
-**Claude Design.** Claude Design is available on the Pro, Max, Team and Enterprise plans. Start a project and upload your DESIGN.md and the chosen Stitch screenshots before asking for anything. Anthropic warns that without a design system the output comes out generic. A starting prompt:
+Each screen's .zip export carries its own DESIGN.md. A project with more than one design system can export different copies, so check that the one you keep belongs to the direction you picked. The screenshot inside the .zip can come out broken, so check it too.
+
+**Claude Design.** Claude Design is now part of Claude, as an artifact template you can start from any chat, in Claude Code, or from the Artifacts tab. The standalone version at claude.ai/design closes on December 14, 2026. Claude Design is on the Free, Pro, Max, Team and Enterprise plans, but design systems need a Pro, Max, Team or Enterprise plan and are in beta. Usage comes from the same allowance as the rest of Claude, including Claude Code.
+
+Start a project and upload your DESIGN.md and the chosen Stitch screenshots before asking for anything. Anthropic warns that without a design system the output comes out generic. A starting prompt:
 
 *Use the attached DESIGN.md and screenshots as the design system. Design every screen in the attached brief for an Android app built with Material 3, in light and dark versions. Name colors by Material 3 roles such as primary, surface and on-surface. Then build clickable prototypes of three flows: first-launch onboarding, opening a video from the inbox, and searching inside videos and jumping to a moment.*
 
-Claude Design exports as .zip, PDF, PPTX, standalone HTML, to Canva, or as a handoff to Claude Code. It has no Figma or image export, so take README screenshots from the real app later.
+Claude Design exports as .zip, PDF, PPTX, Google Slides or standalone HTML. It can also send a design to partner tools such as Canva, or hand it off to Claude Code. It has no Figma or image export, so take README screenshots from the real app later.
+
+**What worked.** The design system and the canvas are separate artifacts, so they export separately. The canvas frames are .dc.html files that link to each other, so the prototypes click through in a browser. GitHub can't show the frames, so the screenshots were rendered with headless Chrome. The [Claude Design export README](design/claude-design/README.md) says where each file came from and how to open the frames.
 
 **Important.** Neither tool produces Jetpack Compose code. Treat the designs as the reference for how the app should look, and write the Compose code yourself or with Claude Code. If you use the Claude Code handoff, tell it the target is Jetpack Compose with Material 3.
 
