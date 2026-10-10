@@ -453,6 +453,54 @@
    "h": 915,
    "title": "Flow 1, skip path: battery setting done",
    "is_interactive": true
+  },
+  "OnboardingImported-dark.dc.html": {
+   "x": 0,
+   "y": 18349,
+   "w": 412,
+   "h": 915,
+   "title": "Flow 1: channels imported, dark",
+   "is_interactive": true
+  },
+  "Onboarding4Done-dark.dc.html": {
+   "x": 492,
+   "y": 18349,
+   "w": 412,
+   "h": 915,
+   "title": "Flow 1: battery setting done, dark",
+   "is_interactive": true
+  },
+  "InboxFirstRun-dark.dc.html": {
+   "x": 984,
+   "y": 18349,
+   "w": 412,
+   "h": 1568,
+   "title": "Flow 1 ends: inbox right after import, dark",
+   "is_interactive": true
+  },
+  "OnboardingSkip3-dark.dc.html": {
+   "x": 1476,
+   "y": 18349,
+   "w": 412,
+   "h": 915,
+   "title": "Flow 1, skip path: storage limit, dark",
+   "is_interactive": true
+  },
+  "OnboardingSkip4-dark.dc.html": {
+   "x": 1968,
+   "y": 18349,
+   "w": 412,
+   "h": 915,
+   "title": "Flow 1, skip path: battery setup, dark",
+   "is_interactive": true
+  },
+  "OnboardingSkip4Done-dark.dc.html": {
+   "x": 2460,
+   "y": 18349,
+   "w": 412,
+   "h": 915,
+   "title": "Flow 1, skip path: battery setting done, dark",
+   "is_interactive": true
   }
  },
  "createdOnFiles": {
@@ -552,6 +600,13 @@
    "text": "Flow frames, light",
    "kind": "title1",
    "maxW": 2872
+  },
+  "flowsdark": {
+   "x": 0,
+   "y": 18049,
+   "text": "Flow frames, dark",
+   "kind": "title1",
+   "maxW": 2872
   }
  },
  "order": [
@@ -612,7 +667,13 @@
   "InboxFirstRun-light.dc.html",
   "OnboardingSkip3-light.dc.html",
   "OnboardingSkip4-light.dc.html",
-  "OnboardingSkip4Done-light.dc.html"
+  "OnboardingSkip4Done-light.dc.html",
+  "OnboardingImported-dark.dc.html",
+  "Onboarding4Done-dark.dc.html",
+  "InboxFirstRun-dark.dc.html",
+  "OnboardingSkip3-dark.dc.html",
+  "OnboardingSkip4-dark.dc.html",
+  "OnboardingSkip4Done-dark.dc.html"
  ],
  "pages": [],
  "title": "Dewfall"
