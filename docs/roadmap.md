@@ -94,6 +94,7 @@ OpenSpec has two weak spots. Nothing forces you to update a spec when the code c
 - Write a screen inventory in docs/design/screens.md, one line per screen with its file.
 - Screen: onboarding, including channel import, storage limit, and battery setup.
 - Screen: inbox home.
+- Screen: channels.
 - Screen: search and search results.
 - Screen: player in portrait, fullscreen and mini sizes.
 - Screen: channel page.
@@ -213,6 +214,7 @@ Start using the app on your own phone now. You will find more bugs that way than
 - Subscribe and unsubscribe from a channel page.
 - Room tables for channels, videos, watch status and resume position.
 - Inbox home screen with new videos from subscribed channels.
+- Channels screen with the list of subscribed channels, each opening its channel page.
 - Mark as watched, with resume from the last position.
 - Import subscriptions from a Google Takeout export.
 - Manual refresh.
