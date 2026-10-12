@@ -4,7 +4,7 @@ This file lists every screen in the [Claude Design export](claude-design/README.
 
 The canvas has 64 frames in 32 light and dark pairs. 29 pairs are screens. The other 3 pairs only serve the onboarding prototype, so they have their own group at the end.
 
-The headings follow the screen list in the [design brief](brief.md), in its order. Each screen's name is its frame title from [canvas.json](claude-design/design/canvas.json), without "light" or "dark". Every screen the brief lists has at least one frame.
+The headings follow the screen list in the [design brief](brief.md), in its order. Each screen's name is its frame title from [canvas.json](claude-design/design/canvas.json), without "light" or "dark". Every screen the brief lists has at least one frame, except Channels, which has no frame yet.
 
 Three of the 29 screens have names that start with "Flow 1". The canvas keeps those frames in its Flow frames sections, next to the skip-path copies. No other section of the canvas has these screens, so they are listed under Onboarding and Inbox.
 

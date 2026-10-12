@@ -34,13 +34,14 @@ Settings has no search button.
 ## Screens
 
 - **Onboarding.** How overnight downloads work. Google Takeout channel import, which reads only the subscriptions, as the screen promises: "Dewfall only needs the list of channels." Storage limit of 5, 10, 20 or 50 GB, with 10 GB preselected. Battery setup.
-- **Inbox.** Home. New videos from subscribed channels, no suggestions or Shorts. Download buttons, downloaded badges, small marks for searchable subtitles. Manual refresh. No storage meter. Storage shows only as a banner when downloads pause at the limit, with "Raise limit" and "Manage downloads". Offer to download now, or stream, videos the overnight run missed.
+- **Inbox.** Home. New videos from subscribed channels, no suggestions or Shorts. Download buttons, downloaded badges, small marks for searchable subtitles. Manual refresh. No storage meter. Storage shows only as a banner when downloads pause at the limit, with "Raise limit" and "Manage downloads". The Phase 7 OpenSpec change will confirm the wording. Offer to download now, or stream, videos the overnight run missed.
+- **Channels.** Your subscribed channels. Each opens its channel page.
 - **Search.** Find videos to stream and channels to subscribe to, even without a Takeout file.
 - **Player.** Portrait with title, channel and description. Fullscreen and mini. Download, keep from cleanup, mark as watched. The fullscreen player uses the dark scheme in both themes.
 - **Channel page.** Latest uploads, subscribe and unsubscribe.
 - **Downloads and storage.** The storage meter at the top, then downloads with progress, pause, cancel and remove.
 - **Search inside videos.** Results show video, matching line and time, opening at that moment. Offline, text with a few lines around it.
-- **Download notification.** Overnight progress. When downloads pause at the limit, the notification says so, with "Raise limit" and "Manage downloads", like the inbox banner.
+- **Download notification.** Overnight progress. When downloads pause at the limit, the notification says so, with "Raise limit" and "Manage downloads", like the inbox banner. The Phase 7 OpenSpec change will confirm the wording.
 - **Settings.** Storage limit. Delete watched videos next night by default, right away, after a week, or never. Clear unwatched videos after two weeks, off by default. How long to keep subtitles, forever by default. Data export and import. Copy debug info. Opt-in toggle to check GitHub for updates, GitHub build only. Overnight downloads always wait for Wi-Fi and charging, with no mobile data option.
 - **Empty, error and offline states.** No channels yet, all caught up, no internet, YouTube not loading, downloads paused at the limit, no search results.
 
