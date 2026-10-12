@@ -117,7 +117,7 @@ Each screen's .zip export carries its own DESIGN.md. A project with more than on
 
 **Claude Design.** Claude Design is now part of Claude, as an artifact template you can start from any chat, in Claude Code, or from the Artifacts tab. The standalone version at claude.ai/design closes on December 14, 2026. Claude Design is on the Free, Pro, Max, Team and Enterprise plans, but design systems need a Pro, Max, Team or Enterprise plan and are in beta. Usage comes from the same allowance as the rest of Claude, including Claude Code.
 
-Start a project and upload your DESIGN.md and the chosen Stitch screenshots before asking for anything. Anthropic warns that without a design system the output comes out generic. A starting prompt:
+Start a project and upload your DESIGN.md and the chosen Stitch screenshots before asking for anything. The first tip in Anthropic's [Get started with Claude Design](https://support.claude.com/en/articles/14604416-get-started-with-claude-design) article is to import a complete design system that includes your styles, fonts and components. A starting prompt:
 
 *Use the attached DESIGN.md and screenshots as the design system. Design every screen in the attached brief for an Android app built with Material 3, in light and dark versions. Name colors by Material 3 roles such as primary, surface and on-surface. Then build clickable prototypes of three flows: first-launch onboarding, opening a video from the inbox, and searching inside videos and jumping to a moment.*
 
