@@ -2,11 +2,11 @@
 
 This file lists every screen in the [Claude Design export](claude-design/README.md). Each row names a screen and links its light and dark frame files and a screenshot of each. To open the frames and click through the prototypes, see [How to view them](claude-design/README.md#how-to-view-them) in the Claude Design README.
 
-The canvas has 64 frames in 32 light and dark pairs. 29 pairs are screens. The other 3 pairs only serve the onboarding prototype, so they have their own group at the end.
+The canvas has 68 frames in 34 light and dark pairs. 31 pairs are screens. The other 3 pairs only serve the onboarding prototype, so they have their own group at the end.
 
-The headings follow the screen list in the [design brief](brief.md), in its order. Each screen's name is its frame title from [canvas.json](claude-design/design/canvas.json), without "light" or "dark". Every screen the brief lists has at least one frame, except Channels, which has no frame yet.
+The headings follow the screen list in the [design brief](brief.md), in its order. Each screen's name is its frame title from [canvas.json](claude-design/design/canvas.json), without "light" or "dark". Every screen the brief lists has at least one frame.
 
-Three of the 29 screens have names that start with "Flow 1". The canvas keeps those frames in its Flow frames sections, next to the skip-path copies. No other section of the canvas has these screens, so they are listed under Onboarding and Inbox.
+Three of the 31 screens have names that start with "Flow 1". The canvas keeps those frames in its Flow frames sections, next to the skip-path copies. No other section of the canvas has these screens, so they are listed under Onboarding and Inbox.
 
 ## Screens
 
@@ -31,6 +31,13 @@ The light inbox is Main.dc.html, and its dark pair is Inbox-dark.dc.html. "Flow 
 |---|---|---|---|---|
 | Inbox | [Main.dc.html](claude-design/design/Main.dc.html) | [Inbox-dark.dc.html](claude-design/design/Inbox-dark.dc.html) | [Main.png](claude-design/screenshots/Main.png) | [Inbox-dark.png](claude-design/screenshots/Inbox-dark.png) |
 | Flow 1 ends: inbox right after import | [InboxFirstRun-light.dc.html](claude-design/design/InboxFirstRun-light.dc.html) | [InboxFirstRun-dark.dc.html](claude-design/design/InboxFirstRun-dark.dc.html) | [InboxFirstRun-light.png](claude-design/screenshots/InboxFirstRun-light.png) | [InboxFirstRun-dark.png](claude-design/screenshots/InboxFirstRun-dark.png) |
+
+### Channels
+
+| Screen | Light frame | Dark frame | Light screenshot | Dark screenshot |
+|---|---|---|---|---|
+| Channels | [ChannelsTab-light.dc.html](claude-design/design/ChannelsTab-light.dc.html) | [ChannelsTab-dark.dc.html](claude-design/design/ChannelsTab-dark.dc.html) | [ChannelsTab-light.png](claude-design/screenshots/ChannelsTab-light.png) | [ChannelsTab-dark.png](claude-design/screenshots/ChannelsTab-dark.png) |
+| Channels, no channels yet | [ChannelsTabEmpty-light.dc.html](claude-design/design/ChannelsTabEmpty-light.dc.html) | [ChannelsTabEmpty-dark.dc.html](claude-design/design/ChannelsTabEmpty-dark.dc.html) | [ChannelsTabEmpty-light.png](claude-design/screenshots/ChannelsTabEmpty-light.png) | [ChannelsTabEmpty-dark.png](claude-design/screenshots/ChannelsTabEmpty-dark.png) |
 
 ### Search
 
