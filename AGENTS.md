@@ -14,7 +14,7 @@ The first version has four parts: overnight downloads with automatic cleanup, a 
 
 ## Current status
 
-The current phase is Phase 1: design. There is still no Android project. Do not create Gradle files, Android modules or source code until Phase 2 starts and a task asks for it.
+The current phase is Phase 2: project setup and CI. Its goal is an almost empty app with a solid structure, and a pull request check that blocks bad changes. Add Gradle files, modules and source code only when a Phase 2 task asks for them, and only what that task asks for. Phase 2 adds no features.
 
 docs/roadmap.md holds the plan: every phase and its tasks. The [Dewfall roadmap](https://github.com/orgs/dewfallapp/projects/1) project board shows what is done and what is next, with one milestone per phase and one issue per task.
 
