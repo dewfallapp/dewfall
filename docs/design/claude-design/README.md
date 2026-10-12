@@ -7,7 +7,7 @@ This folder holds the Phase 1 export from Claude Design. It has every first-vers
 - [design/](design/) comes from the Claude Design canvas at https://claude.ai/artifact/CTvwr35JtbFRkm8csANfmo.
 - [design-system/](design-system/) comes from the Dewfall design system at https://claude.ai/artifact/7HvvbWCoA7kXyKRXWktgZ9.
 - Both are private to the maintainer, so the links only open for them. Both were exported on 2026-10-10. The four Channels frames and the current canvas.json were exported from the canvas on 2026-10-13.
-- [screenshots/](screenshots/) was rendered from the frame files with headless Chrome and the Manrope font. Ten screenshots come from later runs, and their text looks slightly heavier than in the others. They show the six dark onboarding frames added later, OnboardingImported-dark, Onboarding4Done-dark, InboxFirstRun-dark, OnboardingSkip3-dark, OnboardingSkip4-dark and OnboardingSkip4Done-dark, and the four Channels frames, ChannelsTab-light, ChannelsTab-dark, ChannelsTabEmpty-light and ChannelsTabEmpty-dark.
+- [screenshots/](screenshots/) was rendered from the frame files with headless Chrome and the Manrope font. Ten screenshots come from later runs, and their text looks slightly heavier than in the others. Six of them show the dark onboarding frames added later: OnboardingImported-dark, Onboarding4Done-dark, InboxFirstRun-dark, OnboardingSkip3-dark, OnboardingSkip4-dark and OnboardingSkip4Done-dark. The other four show the Channels frames: ChannelsTab-light, ChannelsTab-dark, ChannelsTabEmpty-light and ChannelsTabEmpty-dark.
 
 The exported files are unchanged. The only files added are this README and the Material Symbols license, described under [Licenses](#licenses).
 
