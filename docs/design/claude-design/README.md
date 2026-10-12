@@ -6,18 +6,18 @@ This folder holds the Phase 1 export from Claude Design. It has every first-vers
 
 - [design/](design/) comes from the Claude Design canvas at https://claude.ai/artifact/CTvwr35JtbFRkm8csANfmo.
 - [design-system/](design-system/) comes from the Dewfall design system at https://claude.ai/artifact/7HvvbWCoA7kXyKRXWktgZ9.
-- Both are private to the maintainer, so the links only open for them. Both were exported on 2026-10-10.
-- [screenshots/](screenshots/) was rendered from the frame files with headless Chrome and the Manrope font. The screenshots of the six dark onboarding frames added later, OnboardingImported-dark, Onboarding4Done-dark, InboxFirstRun-dark, OnboardingSkip3-dark, OnboardingSkip4-dark and OnboardingSkip4Done-dark, come from later runs, and their text looks slightly heavier than in the others.
+- Both are private to the maintainer, so the links only open for them. Both were exported on 2026-10-10. The four Channels frames and the current canvas.json were exported from the canvas on 2026-10-13.
+- [screenshots/](screenshots/) was rendered from the frame files with headless Chrome and the Manrope font. Ten screenshots come from later runs, and their text looks slightly heavier than in the others. They show the six dark onboarding frames added later, OnboardingImported-dark, Onboarding4Done-dark, InboxFirstRun-dark, OnboardingSkip3-dark, OnboardingSkip4-dark and OnboardingSkip4Done-dark, and the four Channels frames, ChannelsTab-light, ChannelsTab-dark, ChannelsTabEmpty-light and ChannelsTabEmpty-dark.
 
 The exported files are unchanged. The only files added are this README and the Material Symbols license, described under [Licenses](#licenses).
 
 ## What is in each folder
 
-- **design/** holds the canvas: 64 frames, one .dc.html file each. canvas.json lists each frame's title and its position on the canvas. ds/dewfall/tokens.json is the canvas's copy of the design system tokens.
+- **design/** holds the canvas: 68 frames, one .dc.html file each. canvas.json lists each frame's title and its position on the canvas. ds/dewfall/tokens.json is the canvas's copy of the design system tokens.
 - **design-system/** holds README.md, tokens.json, compose-theme.md, design-system.json and licenses/. Its components/ folder has 12 components, each with a README.md and a preview.html. components/ also holds Cover/preview.html, the design system's cover card, and bundle.css, the styles the previews share.
 - **screenshots/** holds a PNG of every frame at 2x, named after its frame.
 
-Every frame exists in light and dark, so the 64 frames are 32 pairs. Fullscreen-light uses the dark scheme on purpose. The design system README explains why.
+Every frame exists in light and dark, so the 68 frames are 34 pairs. Fullscreen-light uses the dark scheme on purpose. The design system README explains why.
 
 ## How to view them
 
