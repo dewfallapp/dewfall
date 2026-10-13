@@ -47,7 +47,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - No recommendation feed, accounts, ads, analytics or tracking.
 - No dependency that sends data anywhere the user did not choose. Network calls go to YouTube through the YouTube layer, plus optional services the user turns on, such as SponsorBlock after release.
 - User data stays on the device. Export and import go to a file the user picks.
-- Never put "YouTube" or YouTube logos in the app name, icon or the app's package name (applicationId).
+- Never put "YouTube" or YouTube logos in the app's name, icon or package name (applicationId).
 - Product behavior, such as the deletion rules, comes from the specs and ADRs. If a request conflicts with them, stop and ask.
 
 ## How to work

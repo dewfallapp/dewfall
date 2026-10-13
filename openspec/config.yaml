@@ -16,7 +16,7 @@ context: |
   - Network calls go only to YouTube through the YouTube layer, plus optional
     services the user turns on.
   - User data stays on the device. Export and import go to a file the user picks.
-  - Never put "YouTube" or YouTube logos in the app name, icon or the app's
+  - Never put "YouTube" or YouTube logos in the app's name, icon or
     package name (applicationId).
   - Product behavior, such as the download deletion rules, comes from the specs
     and the ADRs in docs/adr/. If a change conflicts with them, stop and ask.
