@@ -37,7 +37,7 @@ This section is updated whenever a phase's milestone closes.
 | build-logic/ | Convention plugins with the build settings that every module shares |
 | gradle/libs.versions.toml | The version of every plugin and library |
 | config/detekt/detekt.yml | detekt's settings: the changes to its default rules |
-| .editorconfig | Editor settings, with a Kotlin section that matches the formatter |
+| .editorconfig | Editor settings, with a Kotlin section that comes close to the formatter |
 | .claude/ | Claude Code setup: the reviewer subagent in agents/, plus the OpenSpec commands and skills |
 
 Some of these are still outlines or empty folders. Later phases fill them in.
@@ -104,7 +104,7 @@ Run these from the repository root. The build needs JDK 17 installed, because ev
 - Run the unit tests: `./gradlew test`. It runs the tests of the plain Kotlin/JVM modules and the debug unit tests of the Android modules.
 - Check formatting: `./gradlew spotlessCheck`. It checks every Kotlin file and Kotlin build script in the repository, build-logic included, against ktfmt in kotlinlang style.
 - Fix formatting: `./gradlew spotlessApply`. It rewrites the same files in place. Run it before you commit.
-- Run detekt: `./gradlew detekt`. It checks the Kotlin code of every module, main and test, and the code in build-logic. Any finding fails the build. Reports go to build/reports/detekt/ in each project.
+- Run detekt: `./gradlew detekt`. It checks the Kotlin code in src/main and src/test of every module, and the code in build-logic, without type resolution. Any finding fails the build. Reports go to build/reports/detekt/ in each project.
 - Run Android Lint: `./gradlew lint`. It checks every module and writes a report to build/reports/ in each of them. Any warning fails the build. In the plain Kotlin/JVM modules it also runs Animal Sniffer, which checks the code against the Android API at minSdk 29, because lint's own API check skips those modules.
 - Run every check that the pull request workflow (#28) needs: `./gradlew spotlessCheck detekt lint test assembleDebug`.
 
