@@ -2,6 +2,9 @@
 agp = "9.4.1"
 kotlin = "2.4.20"
 desugarJdkLibsNio = "2.1.5"
+spotless = "8.10.3"
+# The formatter that Spotless runs. Spotless downloads it, so it has no library entry.
+ktfmt = "0.64"
 
 [libraries]
 desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugarJdkLibsNio" }
@@ -14,3 +17,4 @@ kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ve
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
