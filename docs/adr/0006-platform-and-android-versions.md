@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -58,7 +58,7 @@ Its version catalog keeps Rhino, the JavaScript engine it uses, at 1.8.1. The co
 | Need | Android version it needs | Below that version | Source |
 |---|---|---|---|
 | Dynamic color | Android 12 (API 31) | Dewfall's own light and dark palette, which the design system already has | [Material 3 in Compose](https://developer.android.com/develop/ui/compose/designsystems/material3#dynamic_color_schemes) |
-| Dark theme that follows the system setting | Android 10 (API 29) | There is no system setting to follow. Dark theme would need a setting inside the app, and the brief has none. | [Dark theme](https://developer.android.com/develop/ui/views/theming/darktheme) |
+| Dark theme that follows the system setting | Android 10 (API 29) | There is no system setting to follow. The choice is between staying light on those versions and adding a theme setting in the app, which the brief doesn't have. | [Dark theme](https://developer.android.com/develop/ui/views/theming/darktheme) |
 | Notification permission | Android 13 (API 33) | The runtime permission doesn't exist, so the app has nothing to ask for | [Notification runtime permission](https://developer.android.com/develop/ui/views/notifications/notification-permission) |
 | Notification channels | Android 8.0 (API 26) | Each notification sets its own priority instead | [Notification channels](https://developer.android.com/develop/ui/views/notifications/channels) |
 | Manrope weights from one variable font file | Android 8.0 (API 26) | Static font files, one per weight | [Fonts in Compose](https://developer.android.com/develop/ui/compose/text/fonts#variable-fonts) |
@@ -69,21 +69,27 @@ Its version catalog keeps Rhino, the JavaScript engine it uses, at 1.8.1. The co
 | Opening the Takeout file and writing the export file | Android 4.4 (API 19), with no permission needed | Nothing | [Storage Access Framework](https://developer.android.com/training/data-storage/shared/documents-files) |
 | Optional: downloads the user starts by hand, as user-initiated data transfer jobs | Android 14 (API 34) | Google suggests WorkManager's foreground service as the fallback | [User-initiated data transfer](https://developer.android.com/develop/background-work/background-tasks/uidt#uidt-back-compat) |
 
-**The candidates.** The device share column is explained below the table.
+**The candidates.** The two share columns are explained below the table.
 
-| Candidate | Share of devices on this version or newer, from [distributions.json](https://dl.google.com/android/studio/metadata/distributions.json), last modified December 10, 2025 | Needs a fallback or extra setup |
-|---|---|---|
-| API 24, Android 7.0. The lowest the libraries allow. | 99.1% | Dynamic color, an in-app dark theme setting, a version check around the notification permission, notification priorities, static font files, and desugaring. Depends on NewPipeExtractor keeping Rhino at 1.8.1 ([libs.versions.toml](https://github.com/TeamNewPipe/NewPipeExtractor/blob/3313901108f0f52df68c28a04d88c2891f9c400b/gradle/libs.versions.toml#L15)). |
-| API 26, Android 8.0. Rhino 1.9.0's minimum ([libs.versions.toml](https://github.com/TeamNewPipe/NewPipeExtractor/blob/3313901108f0f52df68c28a04d88c2891f9c400b/gradle/libs.versions.toml#L15)). | 98.3% | Dynamic color, an in-app dark theme setting, a version check around the notification permission, and desugaring |
-| API 29, Android 10. System dark theme. | 90.7% | Dynamic color, a version check around the notification permission, and desugaring |
-| API 31, Android 12. Dynamic color. | 69.2% | A version check around the notification permission, and desugaring |
-| API 33, Android 13. No desugaring. | 57.8% | None, apart from the optional row noted below |
+| Candidate | Google's file: devices on this version or newer ([distributions.json](https://dl.google.com/android/studio/metadata/distributions.json), last modified December 10, 2025) | apilevels.com: web traffic from this version or newer ([apilevels.com](https://apilevels.com/), April 2026 data, updated May 28, 2026) | Needs a fallback or extra setup |
+|---|---|---|---|
+| API 24, Android 7.0. The lowest the libraries allow. | 99.1% | 96.6% | Dynamic color, dark theme (stay light or add a theme setting), a version check around the notification permission, notification priorities, static font files, and desugaring. Depends on NewPipeExtractor keeping Rhino at 1.8.1 ([libs.versions.toml](https://github.com/TeamNewPipe/NewPipeExtractor/blob/3313901108f0f52df68c28a04d88c2891f9c400b/gradle/libs.versions.toml#L15)). |
+| API 26, Android 8.0. Rhino 1.9.0's minimum ([libs.versions.toml](https://github.com/TeamNewPipe/NewPipeExtractor/blob/3313901108f0f52df68c28a04d88c2891f9c400b/gradle/libs.versions.toml#L15)). | 98.3% | 96.1% | Dynamic color, dark theme (stay light or add a theme setting), a version check around the notification permission, and desugaring |
+| API 29, Android 10. System dark theme. | 90.7% | 91.1% | Dynamic color, a version check around the notification permission, and desugaring |
+| API 31, Android 12. Dynamic color. | 69.2% | 78.8% | A version check around the notification permission, and desugaring |
+| API 33, Android 13. No desugaring. | 57.8% | 68.9% | None, apart from the optional row noted below |
 
 At every candidate, user-initiated data transfer jobs would still need the WorkManager fallback below API 34.
 
-**Where the device shares come from.** No current primary source gives the share of devices on each Android version. Google's [distribution dashboard](https://developer.android.com/about/dashboards) no longer shows Android versions. It points to Reach and devices in the Google Play Console instead, and Dewfall is not on Google Play. The shares above come from an API level distribution file that Google publishes with its Android Studio metadata ([distributions.json](https://dl.google.com/android/studio/metadata/distributions.json)). Google's server says the file was last modified on December 10, 2025. The file has no collection date, says nothing about how the data was gathered, and has no entry for API 32 or Android 17. Each share above is the sum of the file's entries for that API level and newer. Treat them as a rough guide that is ten months old.
+**Where the shares come from.** No current primary source gives the share of devices on each Android version. Google's [distribution dashboard](https://developer.android.com/about/dashboards) no longer shows Android versions. It points to Reach and devices in the Google Play Console instead, and Dewfall is not on Google Play.
 
-[vision.md](../vision.md#who-it-is-for) names people with slow or expensive mobile data as an audience. The file gives one figure for each version, with no breakdown by region or phone price, so it says nothing about the phones this group uses. If they tend to keep phones longer, or to buy phones that stop getting Android updates sooner, a higher minimum would leave out more of them than these shares suggest. There is no data here to say how many.
+The first column comes from an API level distribution file that Google publishes with its Android Studio metadata ([distributions.json](https://dl.google.com/android/studio/metadata/distributions.json)). Google's server says the file was last modified on December 10, 2025. The file has no collection date, says nothing about how the data was gathered, and has no entry for API 32 or Android 17. Each share is the sum of the file's entries for that API level and newer. Treat them as a rough guide that is ten months old.
+
+The second column comes from [apilevels.com](https://apilevels.com/), which publishes cumulative usage computed from StatCounter GlobalStats data with [a script](https://github.com/ebelinski/apilevels/blob/main/meta/android-usage-generator.swift). Its footnote says the figures were last updated on May 28, 2026, using April 2026 data from [StatCounter's worldwide mobile and tablet figures](https://gs.statcounter.com/android-version-market-share/mobile-tablet/worldwide), and may have changed since. StatCounter counts page views on websites that use its tracking code ([StatCounter FAQ](https://gs.statcounter.com/faq#methodology)). So this column measures web traffic from each Android version, not devices. apilevels.com is not a primary source either.
+
+For API 29, the chosen minimum, the two sources differ by 0.4 percentage points: 90.7% in Google's file and 91.1% on apilevels.com.
+
+[vision.md](../vision.md#who-it-is-for) names people with slow or expensive mobile data as an audience. Each source gives one figure for each version, with no breakdown by phone price, so neither says anything about the phones this group uses. If they tend to keep phones longer, or to buy phones that stop getting Android updates sooner, a higher minimum would leave out more of them than these shares suggest. There is no data here to say how many.
 
 ### The target and compile versions
 
@@ -125,12 +131,13 @@ Some changes apply to every app on newer Android versions, whatever its target:
 
 ## Decision
 
-TODO for the maintainer. The Decision must cover:
+Dewfall is an Android-only app. It doesn't use Kotlin Multiplatform or Compose Multiplatform.
 
-- Android only, with no Kotlin Multiplatform or Compose Multiplatform.
-- Plain Kotlin/JVM modules, with no Android imports, for code that needs nothing from Android.
-- The minimum Android version.
-- The target and compile versions.
+Code that needs nothing from Android lives in plain Kotlin/JVM modules with no Android imports: the YouTube layer, the domain models, the MVI base types and the reducers. The task that creates the Android project (#21) names these modules.
+
+The minimum Android version is API 29 (Android 10). Core library desugaring is on, as NewPipeExtractor requires below API 33.
+
+The target version is API 37 (Android 17). The compile version is API 37, or higher when a library requires it. Raising the target later is its own pull request, after a review of that version's behavior changes.
 
 ## Consequences
 
@@ -150,8 +157,15 @@ TODO for the maintainer. The Decision must cover:
 - These modules can't hold user-facing text, because string resources are part of Android. They return types that the screens turn into text.
 - They can't use Android's Context, so anything they need from the platform, such as file locations, is passed in.
 - They compile and run their tests against the full JDK. Android has only part of the JDK, and desugaring adds only some of the missing APIs ([Java 8+ API desugaring](https://developer.android.com/studio/write/java8-support#library-desugaring)). Code that uses a missing API passes its tests, then fails on a phone. Phase 2 needs a check, such as Android Lint, that covers these modules. This matters most for the YouTube layer, because of NewPipeExtractor's desugaring note.
-- AGENTS.md, the roadmap's Phase 2 module list and docs/architecture.md name no module for the MVI base or the domain models. They need updating once the Decision names these modules. If each feature's reducer moves to a plain Kotlin/JVM module too, "one module per feature" becomes two.
+- #21 names the modules, and #21 and #32 update the planned modules in AGENTS.md, the roadmap's Phase 2 task and docs/architecture.md.
 
 ### The versions
 
-TODO for the maintainer, once the Decision names the versions.
+- Phones below Android 10 can't install Dewfall. That leaves out about 9 percent by either source in the candidates table.
+- Every supported version has a system dark theme, so the app needs no theme setting.
+- The API 29 row of the candidates table lists the fallbacks and version checks that remain. The optional row below that table applies too.
+- NewPipeExtractor's Rhino pin doesn't affect Dewfall, because API 29 is above Rhino 1.9.0's minimum of 26 ([libs.versions.toml](https://github.com/TeamNewPipe/NewPipeExtractor/blob/3313901108f0f52df68c28a04d88c2891f9c400b/gradle/libs.versions.toml#L15)).
+- Raising the minimum later stops updates for phones below the new minimum.
+- Every change in the "What targeting the newest version changes" table applies from the start. On tablets and large foldables, every screen must work in landscape and in resized windows. The brief says portrait, except the fullscreen player.
+- Raising the target to a newer Android version takes a review of that version's behavior changes and its own pull request.
+- Library updates can raise the compile version. Compose 1.12 already needs 37 ([Compose UI 1.12.0-alpha01](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.0-alpha01)).

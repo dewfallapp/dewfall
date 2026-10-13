@@ -72,6 +72,7 @@ These apply from Phase 2 on. If Phase 2 refines them, update this section in the
 
 - Kotlin, Jetpack Compose, Material 3, Hilt, Room, WorkManager and Media3.
 - Planned modules: app, core data, core database, the YouTube layer, the design system, and one module per feature. Feature modules depend on core modules, never on each other.
+- Code that needs nothing from Android lives in plain Kotlin/JVM modules with no Android imports: the YouTube layer, the domain models, the MVI base types and the reducers. See ADR 0006.
 - Only the YouTube layer module may use NewPipeExtractor. It maps every NewPipeExtractor type to Dewfall's own models, so nothing else in the app knows which library sits underneath.
 - Every screen uses MVI: an immutable State, an Intent sealed interface, one-time Effects, and a reducer that is a pure function. The ViewModel runs side effects. Every reducer has unit tests.
 - Playback state never goes into screen state. The player lives in a MediaSessionService and exposes playback state as its own Flow. Position updates run only as often as the visible UI needs them.
