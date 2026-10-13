@@ -1,0 +1,79 @@
+# Checks every pull request to main: formatting, detekt, Android Lint with the Android API check,
+# unit tests, and a debug build. It runs the all-checks command from AGENTS.md.
+name: Pull request
+
+on:
+  pull_request:
+    branches: [main]
+  # Runs on main fill the Gradle cache. Pull request runs only read it.
+  push:
+    branches: [main]
+  # No path filters. Branch protection requires this check, and a check from a skipped workflow
+  # stays pending and blocks merging.
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its older run. On main, a new run lets a running one finish
+# but replaces one that is still waiting. That does no harm, because runs on main fill the cache.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  checks:
+    # Branch protection for main requires this check by its name (#29). Renaming the job blocks
+    # merging until the rule is updated.
+    name: Checks
+    # Pinned, so that a move of ubuntu-latest to a new Ubuntu version happens in its own pull
+    # request. The image itself still gets GitHub's weekly updates.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No later step needs git credentials.
+          persist-credentials: false
+
+      # The build compiles with a JDK 17 toolchain and never downloads one. Gradle runs on this
+      # JDK, so it finds the toolchain.
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # Basic caching keeps Gradle's proprietary caching component from loading, so this
+          # setting must stay. The default, enhanced caching, uses that component.
+          # https://github.com/gradle/actions/blob/v6.4.0/DISTRIBUTION.md
+          cache-provider: basic
+          # Checks the wrapper JAR against the checksums Gradle publishes.
+          validate-wrappers: true
+
+      # compileSdk 37 in build-logic needs platform 37.0, and AGP's default build tools are
+      # 36.0.0. When either changes, update this step and the Commands section of AGENTS.md.
+      - name: Install the Android SDK packages
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "platforms;android-37.0" \
+            "build-tools;36.0.0"
+
+      # --continue reports every failing check in one run. sdkDownload=false makes a missing SDK
+      # package fail the build instead of downloading silently.
+      - name: Check formatting, run detekt, lint and unit tests, and build the debug APK
+        run: >-
+          ./gradlew --continue -Pandroid.builder.sdkDownload=false
+          spotlessCheck detekt lint test assembleDebug
+
+      - name: Upload the reports
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reports
+          path: "**/build/reports/"
+          retention-days: 7
+          if-no-files-found: ignore

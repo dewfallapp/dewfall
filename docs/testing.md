@@ -36,6 +36,17 @@ The project uses five GitHub Actions workflows.
 4. **Version tag.** A signed release build, changelog, checksums, and a GitHub release.
 5. **Weekly.** Dependency update pull requests from Renovate or Dependabot, tested by workflow 1.
 
+### The pull request workflow
+
+Workflow 1 is .github/workflows/pull-request.yml. Today it runs one job, Checks, with the all-checks command from [AGENTS.md](../AGENTS.md#commands): formatting, detekt, Android Lint with the Android API check, unit tests, and a debug build. Screenshot tests and the database migration check join it when the tasks that add them are done.
+
+- Branch protection for main requires the check by its name, Checks, once #29 turns it on. Renaming the job blocks merging until the rule is updated.
+- It also runs on every push to main. Those runs fill the Gradle cache, which pull request runs only read. Workflow 2, with the emulator tests and the nightly APK, doesn't exist yet.
+- It adds `--continue` to the command, so one run reports every failing check.
+- It installs the Android SDK packages the build needs, and turns off AGP's automatic SDK downloads, so a missing package fails the build.
+- When the job fails, it uploads the build/reports/ folder of every project as an artifact called reports, kept for 7 days.
+- It caches Gradle with setup-gradle's basic caching, which is MIT licensed, because the default, enhanced caching, loads a proprietary component ([DISTRIBUTION.md](https://github.com/gradle/actions/blob/v6.4.0/DISTRIBUTION.md)).
+
 ## Running tests locally
 
 TODO
