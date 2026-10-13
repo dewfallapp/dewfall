@@ -77,6 +77,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 These apply from Phase 2 on. If Phase 2 refines them, update this section in the same pull request.
 
 - Kotlin, Jetpack Compose, Material 3, Hilt, Room, WorkManager and Media3.
+- Follow Android's current official guidance, such as the app architecture recommendations and the Compose docs on developer.android.com. If the android CLI is installed, `android docs search` and `android docs fetch` read the same guidance from the Android Knowledge Base. For any API, library or Gradle setting that may have changed, check the current docs instead of relying on memory. Don't use deprecated APIs in new code. If the guidance conflicts with a rule in this file, follow this file and point out the conflict.
 - Modules: `:app`, the plain Kotlin/JVM modules `:core:model`, `:core:mvi` and `:core:youtube` (the YouTube layer), and the Android libraries `:core:data`, `:core:database` and `:core:designsystem`. docs/architecture.md describes each one.
 - Each feature has two modules: `:feature:<name>-logic`, plain Kotlin/JVM, with the State, Intent, Effect and reducer, and `:feature:<name>-ui`, an Android library with the screens and the ViewModel. Feature modules depend on core modules, never on another feature's modules. A feature's `-ui` module also depends on its own `-logic` module.
 - Code that needs nothing from Android lives in plain Kotlin/JVM modules with no Android imports: the YouTube layer, the domain models, the MVI base types and the reducers. See ADR 0006.
