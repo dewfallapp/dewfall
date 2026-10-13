@@ -8,6 +8,13 @@ coroutines:
     active: true
 
 style:
+  # GlobalCoroutineUsage only sees GlobalScope.launch and GlobalScope.async. Forbidding the
+  # import blocks every other use too.
+  ForbiddenImport:
+    active: true
+    forbiddenImports:
+      - value: 'kotlinx.coroutines.GlobalScope'
+        reason: 'AGENTS.md says never to use GlobalScope. Use a scope the class receives.'
   # The same limit as the formatter, ktfmt in kotlinlang style.
   MaxLineLength:
     maxLineLength: 100
