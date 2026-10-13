@@ -142,7 +142,7 @@ Claude Design exports as .zip, PDF, PPTX, Google Slides or standalone HTML. It c
 - Set up Room with schema export into the repository.
 - Write the MVI base classes: state, intent, one-time effect, and reducer.
 - Build the theme from the design tokens, and check it with dynamic color on and off.
-- Set up formatting and lint with Spotless and ktlint, detekt, and Android Lint.
+- Set up formatting and lint with Spotless and ktfmt, detekt, and Android Lint, plus Animal Sniffer for the plain Kotlin/JVM modules.
 - Add the pull request workflow in GitHub Actions: formatting, lint, unit tests, and a debug build.
 - Turn on branch protection for main so failing checks block merging.
 - Add a pull request template with the line "OpenSpec change archived, or not needed".

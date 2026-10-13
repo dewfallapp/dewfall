@@ -16,6 +16,7 @@ Read [docs/vision.md](docs/vision.md). It says what the app is and what it will 
 - Name the branch after the type of change, such as `feat/inbox-screen` or `docs/phase-0`.
 - Keep each pull request small, with one concern.
 - A pull request is merged only when every CI check passes.
+- Run `./gradlew spotlessApply` before you commit, so the Kotlin code and build scripts pass the formatting check.
 
 ## Commit messages
 

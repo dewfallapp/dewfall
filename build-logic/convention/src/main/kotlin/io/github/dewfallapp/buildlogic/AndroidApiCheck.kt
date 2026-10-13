@@ -7,7 +7,7 @@ import org.gradle.kotlin.dsl.getByType
 /**
  * Checks a plain Kotlin/JVM module's classes against the Android API at the app's minSdk, with
  * Animal Sniffer and a Gummy Bears signature. Android Lint can't do this in these modules, because
- * its API check skips modules that aren't Android. See docs/architecture.md#build-settings.
+ * its API check skips modules that aren't Android. See docs/architecture.md#formatting-and-lint.
  */
 internal fun Project.configureAndroidApiCheck() {
     pluginManager.apply("ru.vyarus.animalsniffer")
