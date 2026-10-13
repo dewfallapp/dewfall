@@ -5,6 +5,11 @@ desugarJdkLibsNio = "2.1.5"
 spotless = "8.10.3"
 # The formatter that Spotless runs. Spotless downloads it, so it has no library entry.
 ktfmt = "0.64"
+detekt = "2.0.0-alpha.6"
+animalsniffer = "2.0.1"
+# Android API signatures for Animal Sniffer. build-logic adds the artifact, whose name holds
+# the API level, so it has no library entry.
+gummyBears = "0.15.0"
 
 [libraries]
 desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugarJdkLibsNio" }
@@ -12,9 +17,12 @@ desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", vers
 # Used only by build-logic, to compile the convention plugins.
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+detekt-gradlePlugin = { module = "dev.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
+animalsniffer = { id = "ru.vyarus.animalsniffer", version.ref = "animalsniffer" }

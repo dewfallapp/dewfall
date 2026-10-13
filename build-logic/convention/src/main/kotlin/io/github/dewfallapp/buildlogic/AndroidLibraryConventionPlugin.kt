@@ -10,6 +10,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             pluginManager.apply("com.android.library")
+            pluginManager.apply(DetektConventionPlugin::class.java)
 
             extensions.configure<LibraryExtension> {
                 compileSdk = DewfallBuild.COMPILE_SDK
@@ -19,6 +20,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 // Libraries have no target version of their own. Lint and tests use the app's.
                 lint {
                     targetSdk = DewfallBuild.TARGET_SDK
+                    configureDewfallLint()
                 }
                 testOptions {
                     targetSdk = DewfallBuild.TARGET_SDK

@@ -10,6 +10,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             pluginManager.apply("com.android.application")
+            pluginManager.apply(DetektConventionPlugin::class.java)
 
             extensions.configure<ApplicationExtension> {
                 compileSdk = DewfallBuild.COMPILE_SDK
@@ -17,6 +18,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     minSdk = DewfallBuild.MIN_SDK
                     targetSdk = DewfallBuild.TARGET_SDK
                 }
+                lint { configureDewfallLint() }
             }
 
             configureJavaToolchain()

@@ -1,12 +1,15 @@
-// Puts AGP and the Kotlin Gradle plugin on the build classpath once, at the versions in
-// gradle/libs.versions.toml. The convention plugins in build-logic apply them to modules.
-// Declaring the Kotlin plugin here also raises the Kotlin version that AGP's built-in
+// Puts AGP, the Kotlin Gradle plugin, detekt and Animal Sniffer on the build classpath once, at
+// the versions in gradle/libs.versions.toml. The convention plugins in build-logic apply them to
+// modules. Declaring the Kotlin plugin here also raises the Kotlin version that AGP's built-in
 // Kotlin support uses.
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.kotlin.jvm) apply false
+    alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.animalsniffer) apply false
     alias(libs.plugins.spotless)
+    id("dewfall.detekt")
 }
 
 // Formats every Kotlin file and Kotlin build script in the repository, build-logic included.
@@ -25,3 +28,7 @@ spotless {
         ktfmt(ktfmtVersion).kotlinlangStyle()
     }
 }
+
+// Modules get detekt from their convention plugins. build-logic is a separate build with no
+// project here, so the root project checks its sources.
+detekt { source.setFrom("build-logic/convention/src/main/kotlin") }
