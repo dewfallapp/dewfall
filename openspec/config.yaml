@@ -24,6 +24,9 @@ context: |
   - Kotlin, Jetpack Compose, Material 3, Hilt, Room, WorkManager and Media3.
     Package name: io.github.dewfallapp.
   - Feature modules depend on core modules, never on each other.
+  - Code that needs nothing from Android lives in plain Kotlin/JVM modules with
+    no Android imports: the YouTube layer, the domain models, the MVI base types
+    and the reducers. See ADR 0006.
   - Only the YouTube layer module may use NewPipeExtractor.
   - Every screen uses MVI with a pure reducer. Playback state never goes into
     screen state.
