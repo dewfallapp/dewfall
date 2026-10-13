@@ -38,7 +38,10 @@ context: |
     screen state.
   - Download, sync and cleanup logic must not depend on any screen being open.
     Background jobs run only on unmetered networks while charging.
-  - Every dependency must be compatible with GPLv3. Ask before adding one.
+  - Anything that ships in the app must be compatible with GPLv3. Build tools
+    that never ship, such as Gradle plugins and the tools they download, may use
+    any open source license or be in the public domain. Ask before adding a
+    dependency.
 
   Specs:
   - One change per feature. Keep changes small enough for one small pull request.
