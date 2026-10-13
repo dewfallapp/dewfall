@@ -305,6 +305,7 @@ Not every video has subtitles. Show a small mark on videos that are searchable, 
 - Final pass on onboarding and on empty, error and offline states.
 - Check that every string is in resources, and test with TalkBack and large fonts.
 - Startup benchmark on a real phone.
+- Design the app icon and add it as an adaptive launcher icon, with a monochrome layer for themed icons. Keep "YouTube" and the YouTube logo out of it.
 - README with screenshots taken from the real app.
 - Submit to IzzyOnDroid or F-Droid after reading their inclusion requirements.
 
