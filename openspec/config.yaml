@@ -16,14 +16,20 @@ context: |
   - Network calls go only to YouTube through the YouTube layer, plus optional
     services the user turns on.
   - User data stays on the device. Export and import go to a file the user picks.
-  - Never put "YouTube" or YouTube logos in the app name, icon or package name.
+  - Never put "YouTube" or YouTube logos in the app's name, icon or
+    package name (applicationId).
   - Product behavior, such as the download deletion rules, comes from the specs
     and the ADRs in docs/adr/. If a change conflicts with them, stop and ask.
 
   Architecture constraints:
   - Kotlin, Jetpack Compose, Material 3, Hilt, Room, WorkManager and Media3.
     Package name: io.github.dewfallapp.
-  - Feature modules depend on core modules, never on each other.
+  - Core modules: :core:model, :core:mvi and :core:youtube are plain Kotlin/JVM.
+    :core:data, :core:database and :core:designsystem are Android libraries.
+  - Each feature has two modules: :feature:<name>-logic, plain Kotlin/JVM, with
+    the State, Intent, Effect and reducer, and :feature:<name>-ui, an Android
+    library with the screens and the ViewModel. See docs/architecture.md.
+  - Feature modules depend on core modules, never on another feature's modules.
   - Code that needs nothing from Android lives in plain Kotlin/JVM modules with
     no Android imports: the YouTube layer, the domain models, the MVI base types
     and the reducers. See ADR 0006.

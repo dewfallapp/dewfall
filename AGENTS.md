@@ -32,6 +32,10 @@ This section is updated whenever a phase's milestone closes.
 | openspec/changes/ | Proposed and in-progress changes, one folder per feature |
 | docs/design/ | Design brief, design system and exported screens |
 | docs/testing.md, docs/release.md, docs/breakage.md | How to test, how to release, and what to do when YouTube breaks something |
+| app/ | The app module, which ties the other modules together |
+| core/ | Core modules that every feature can use. docs/architecture.md describes each one |
+| build-logic/ | Convention plugins with the build settings that every module shares |
+| gradle/libs.versions.toml | The version of every plugin and library |
 | .claude/ | Claude Code setup: the reviewer subagent in agents/, plus the OpenSpec commands and skills |
 
 Some of these are still outlines or empty folders. Later phases fill them in.
@@ -43,7 +47,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - No recommendation feed, accounts, ads, analytics or tracking.
 - No dependency that sends data anywhere the user did not choose. Network calls go to YouTube through the YouTube layer, plus optional services the user turns on, such as SponsorBlock after release.
 - User data stays on the device. Export and import go to a file the user picks.
-- Never put "YouTube" or YouTube logos in the app name, icon or package name.
+- Never put "YouTube" or YouTube logos in the app's name, icon or package name (applicationId).
 - Product behavior, such as the deletion rules, comes from the specs and ADRs. If a request conflicts with them, stop and ask.
 
 ## How to work
@@ -71,7 +75,8 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 These apply from Phase 2 on. If Phase 2 refines them, update this section in the same pull request.
 
 - Kotlin, Jetpack Compose, Material 3, Hilt, Room, WorkManager and Media3.
-- Planned modules: app, core data, core database, the YouTube layer, the design system, and one module per feature. Feature modules depend on core modules, never on each other.
+- Modules: `:app`, the plain Kotlin/JVM modules `:core:model`, `:core:mvi` and `:core:youtube` (the YouTube layer), and the Android libraries `:core:data`, `:core:database` and `:core:designsystem`. docs/architecture.md describes each one.
+- Each feature has two modules: `:feature:<name>-logic`, plain Kotlin/JVM, with the State, Intent, Effect and reducer, and `:feature:<name>-ui`, an Android library with the screens and the ViewModel. Feature modules depend on core modules, never on another feature's modules. A feature's `-ui` module also depends on its own `-logic` module.
 - Code that needs nothing from Android lives in plain Kotlin/JVM modules with no Android imports: the YouTube layer, the domain models, the MVI base types and the reducers. See ADR 0006.
 - Only the YouTube layer module may use NewPipeExtractor. It maps every NewPipeExtractor type to Dewfall's own models, so nothing else in the app knows which library sits underneath.
 - Every screen uses MVI: an immutable State, an Intent sealed interface, one-time Effects, and a reducer that is a pure function. The ViewModel runs side effects. Every reducer has unit tests.
@@ -91,7 +96,13 @@ These apply from Phase 2 on. If Phase 2 refines them, update this section in the
 
 ## Commands
 
-There is nothing to build yet. The Phase 2 pull request that creates the Android project must add the exact build, lint and test commands to this section.
+Run these from the repository root. The build needs JDK 17 installed, because every module compiles with a JDK 17 toolchain and Gradle never downloads one. It also needs the Android SDK with the Android 17 (API 37) platform and build tools 36.0.0. Gradle finds the SDK through the ANDROID_HOME environment variable, or through sdk.dir in local.properties.
+
+- Build the debug APK: `./gradlew assembleDebug`. The APK goes to app/build/outputs/apk/debug/app-debug.apk.
+- Run the unit tests: `./gradlew test`. It runs the tests of the plain Kotlin/JVM modules and the debug unit tests of the Android modules.
+- Run Android Lint: `./gradlew lint`. It checks the app and the Android library modules, and writes a report to build/reports/ in each of them. It doesn't check the plain Kotlin/JVM modules yet. #27 sets that up.
+
+The formatting commands come with #27.
 
 ## Writing style
 
