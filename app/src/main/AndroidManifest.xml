@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Backup is off because everything the app stores stays on the device. See PRIVACY.md. -->
+    <!--
+        Backup to Google Drive is off, because everything the app stores stays on the device.
+        See PRIVACY.md. On Android 12 and later, this may not stop a direct transfer to a new
+        phone. Data extraction rules that control that come later.
+    -->
     <application
         android:allowBackup="false"
         android:label="@string/app_name" />

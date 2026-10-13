@@ -4,7 +4,7 @@ This is the design document for Dewfall. It explains how the app is built: its m
 
 ## Modules
 
-Dewfall is one Gradle build with an app module, core modules, and from Phase 4 on, feature modules. Some modules are plain Kotlin/JVM and the rest are Android modules. [ADR 0006](adr/0006-platform-and-android-versions.md) explains why.
+Dewfall is one Gradle build with an app module, core modules, and feature modules as features arrive. Some modules are plain Kotlin/JVM and the rest are Android modules. [ADR 0006](adr/0006-platform-and-android-versions.md) explains why.
 
 - A plain Kotlin/JVM module can't see Android classes, so the build itself keeps Android code out of it. Its tests run on the computer's JVM with nothing from Android to fake. It can't hold user-facing text, because string resources are part of Android, so it returns types that the screens turn into text.
 - An Android module is the app or an Android library. It holds everything that needs Android, such as the database, screens, ViewModels, resources and background jobs.
@@ -49,7 +49,7 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
-| `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. From Phase 4 on, it also handles navigation between features. | `:core:data`, `:core:designsystem`, and each feature's `-ui` module |
+| `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. Once features arrive, it also handles navigation between them. | `:core:data`, `:core:designsystem`, and each feature's `-ui` module |
 | `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines | Nothing |
 | `:core:mvi` | core/mvi/ | Kotlin/JVM | io.github.dewfallapp.core.mvi | The MVI base types: State, Intent, Effect and the reducer | Nothing |
 | `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md). | `:core:model` |
@@ -74,7 +74,7 @@ Each feature has two modules, because its reducer has to be plain Kotlin/JVM and
 
 ### Module names
 
-Every module's last name segment must be unique in the build. Gradle can mix up two projects whose paths end the same way, such as `:inbox:logic` and `:search:logic` ([gradle/gradle#847](https://github.com/gradle/gradle/issues/847)). So feature modules are named `:feature:inbox-logic` and `:feature:inbox-ui`, not `:feature:inbox:logic` and `:feature:inbox:ui`.
+Every module's last name segment must be unique in the build. Gradle can mix up two projects that have both the same group and the same name, such as `:inbox:logic` and `:search:logic` when both are in group dewfall ([gradle/gradle#847](https://github.com/gradle/gradle/issues/847)). By default, Gradle bases each project's group on its parent's path, so `:core:data` is in group dewfall.core and the clash can't happen yet. It happens as soon as a build setting gives every project the same group. Unique names prevent it, whatever the groups are. So feature modules are named `:feature:inbox-logic` and `:feature:inbox-ui`, not `:feature:inbox:logic` and `:feature:inbox:ui`.
 
 ### Build settings
 
