@@ -4,6 +4,7 @@ import com.android.build.api.dsl.ApplicationExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 
 /** Settings for the app module. Kotlin comes from AGP's built-in Kotlin support. */
 class AndroidApplicationConventionPlugin : Plugin<Project> {
@@ -19,6 +20,11 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                     targetSdk = DewfallBuild.TARGET_SDK
                 }
                 lint { configureDewfallLint() }
+            }
+
+            // AGP's built-in Kotlin adds the kotlin extension.
+            extensions.configure<KotlinAndroidProjectExtension> {
+                compilerOptions { configureDewfallKotlin() }
             }
 
             configureJavaToolchain()
