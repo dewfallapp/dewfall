@@ -4,6 +4,7 @@ import com.android.build.api.dsl.Lint
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 
 /** Settings for plain Kotlin/JVM modules. They can't see Android classes. See ADR 0006. */
 class JvmLibraryConventionPlugin : Plugin<Project> {
@@ -13,6 +14,11 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
             pluginManager.apply("org.jetbrains.kotlin.jvm")
             pluginManager.apply("com.android.lint")
             pluginManager.apply(DetektConventionPlugin::class.java)
+
+            // The Kotlin JVM plugin adds the kotlin extension.
+            extensions.configure<KotlinJvmProjectExtension> {
+                compilerOptions { configureDewfallKotlin() }
+            }
 
             configureJavaToolchain()
 
