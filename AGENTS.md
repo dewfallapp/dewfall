@@ -38,6 +38,7 @@ This section is updated whenever a phase's milestone closes.
 | gradle/libs.versions.toml | The version of every plugin and library |
 | config/detekt/detekt.yml | detekt's settings: the changes to its default rules |
 | .editorconfig | Editor settings, with a Kotlin section that comes close to the formatter |
+| .github/workflows/ | GitHub Actions workflows. pull-request.yml runs the checks on every pull request to main and every push to main |
 | .claude/ | Claude Code setup: the reviewer subagent in agents/, plus the OpenSpec commands and skills |
 
 Some of these are still outlines or empty folders. Later phases fill them in.
@@ -60,6 +61,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - Keep each pull request small, with one concern.
 - Use conventional commit messages: feat, fix, docs, test, refactor, build, ci or chore. Example: "feat: add storage limit setting".
 - Ask before adding a dependency. Anything that ships in the app must be compatible with GPLv3. Apache 2.0, MIT, BSD and LGPL are fine. Build tools that never ship, such as Gradle plugins and the tools they download, may use any open source license or be in the public domain. Ask about anything else.
+- GitHub Actions are build tools too, so the same license rule applies. Pin each action to a full commit SHA with its version in a comment, such as `# v7.0.1`. Give workflows read-only permissions unless a job needs more.
 - Never commit secrets, keystores, signing passwords or local.properties.
 - Do not invent facts, URLs, email addresses or names. If something is missing, ask, or leave a clearly marked TODO.
 - When a request is unclear, ask one question instead of guessing.
@@ -99,7 +101,7 @@ These apply from Phase 2 on. If Phase 2 refines them, update this section in the
 
 ## Commands
 
-Run these from the repository root. The build needs JDK 17 installed, because every module compiles with a JDK 17 toolchain and Gradle never downloads one. It also needs the Android SDK with the Android 17 (API 37) platform and build tools 36.0.0. Gradle finds the SDK through the ANDROID_HOME environment variable, or through sdk.dir in local.properties.
+Run these from the repository root. The build needs JDK 17 installed, because every module compiles with a JDK 17 toolchain and Gradle never downloads one. It also needs the Android SDK with the Android 17 (API 37) platform and build tools 36.0.0. Gradle finds the SDK through the ANDROID_HOME environment variable, or through sdk.dir in local.properties. The pull request workflow installs the same platform and build tools, so update .github/workflows/pull-request.yml when either changes.
 
 - Build the debug APK: `./gradlew assembleDebug`. The APK goes to app/build/outputs/apk/debug/app-debug.apk.
 - Run the unit tests: `./gradlew test`. It runs the tests of the plain Kotlin/JVM modules and the debug unit tests of the Android modules.
@@ -107,7 +109,7 @@ Run these from the repository root. The build needs JDK 17 installed, because ev
 - Fix formatting: `./gradlew spotlessApply`. It rewrites the same files in place. Run it before you commit.
 - Run detekt: `./gradlew detekt`. It checks the Kotlin code in src/main and src/test of every module, and the code in build-logic, without type resolution. Any finding fails the build. Reports go to build/reports/detekt/ in each project.
 - Run Android Lint: `./gradlew lint`. It checks every module and writes a report to build/reports/ in each of them. Any warning fails the build. In the plain Kotlin/JVM modules it also runs Animal Sniffer, which checks the code against the Android API at minSdk 29, because lint's own API check skips those modules.
-- Run every check that the pull request workflow (#28) needs: `./gradlew spotlessCheck detekt lint test assembleDebug`.
+- Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. The workflow is .github/workflows/pull-request.yml. It adds `--continue`, so one run reports every failing check, and `-Pandroid.builder.sdkDownload=false`, so a missing SDK package fails the build instead of being downloaded.
 
 ## Writing style
 
