@@ -136,7 +136,7 @@ Claude Design exports as .zip, PDF, PPTX, Google Slides or standalone HTML. It c
 
 ### Tasks
 
-- Create the Android project with these modules: app, core data, core database, the YouTube layer, the design system, and one module per feature as features arrive.
+- Create the Android project with these modules: app, core data, core database, the YouTube layer, the design system, the domain models, the MVI base, and two modules per feature as features arrive, one plain Kotlin/JVM and one Android.
 - Set the package name to io.github.dewfallapp. Android treats a different package name as a different app, so it cannot change after the first release.
 - Set up Hilt, Jetpack Compose and Material 3.
 - Set up Room with schema export into the repository.

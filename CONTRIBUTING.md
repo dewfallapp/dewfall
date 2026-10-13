@@ -2,7 +2,7 @@
 
 Thanks for your interest in Dewfall. This page explains how changes get into the project.
 
-Dewfall is in early development, and there is no app code yet. [docs/roadmap.md](docs/roadmap.md) holds the plan, phase by phase. The [Dewfall roadmap](https://github.com/orgs/dewfallapp/projects/1) project board shows what is done and what is next.
+Dewfall is in early development. The Android project and its modules exist, but the app does nothing yet. The commands to build and test it are in [AGENTS.md](AGENTS.md#commands). [docs/roadmap.md](docs/roadmap.md) holds the plan, phase by phase. The [Dewfall roadmap](https://github.com/orgs/dewfallapp/projects/1) project board shows what is done and what is next.
 
 Everyone who takes part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
