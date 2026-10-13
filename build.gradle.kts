@@ -1,3 +1,5 @@
+import com.diffplug.spotless.LineEnding
+
 // Puts AGP, the Kotlin Gradle plugin, detekt and Animal Sniffer on the build classpath once, at
 // the versions in gradle/libs.versions.toml. The convention plugins in build-logic apply them to
 // modules. Declaring the Kotlin plugin here also raises the Kotlin version that AGP's built-in
@@ -15,6 +17,10 @@ plugins {
 // Formats every Kotlin file and Kotlin build script in the repository, build-logic included.
 // The settings live here because build-logic and the root scripts belong to no module.
 spotless {
+    // Kotlin files use LF, as .gitattributes sets. By default Spotless asks git for the line
+    // endings while Gradle configures the build, which stops Gradle from reusing the
+    // configuration cache (https://github.com/diffplug/spotless/issues/2416).
+    lineEndings = LineEnding.UNIX
     val ktfmtVersion = libs.versions.ktfmt.get()
     val buildOutput = arrayOf("**/build/**", "**/.gradle/**", "**/.kotlin/**")
     kotlin {

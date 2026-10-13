@@ -2,3 +2,7 @@
 /gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+
+# Kotlin code and build scripts use LF everywhere, as Spotless and .editorconfig expect.
+*.kt text eol=lf
+*.kts text eol=lf
