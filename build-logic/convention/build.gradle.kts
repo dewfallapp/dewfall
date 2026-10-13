@@ -20,7 +20,8 @@ gradlePlugin {
     plugins {
         register("androidApplication") {
             id = "dewfall.android.application"
-            implementationClass = "io.github.dewfallapp.buildlogic.AndroidApplicationConventionPlugin"
+            implementationClass =
+                "io.github.dewfallapp.buildlogic.AndroidApplicationConventionPlugin"
         }
         register("androidLibrary") {
             id = "dewfall.android.library"

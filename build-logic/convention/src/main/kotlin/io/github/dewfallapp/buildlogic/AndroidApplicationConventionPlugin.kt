@@ -5,9 +5,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 
-/**
- * Settings for the app module. Kotlin comes from AGP's built-in Kotlin support.
- */
+/** Settings for the app module. Kotlin comes from AGP's built-in Kotlin support. */
 class AndroidApplicationConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {

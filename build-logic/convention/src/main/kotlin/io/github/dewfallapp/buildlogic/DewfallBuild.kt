@@ -6,9 +6,7 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.assign
 import org.gradle.kotlin.dsl.configure
 
-/**
- * Android and Java versions shared by every module. ADR 0006 explains the Android versions.
- */
+/** Android and Java versions shared by every module. ADR 0006 explains the Android versions. */
 internal object DewfallBuild {
     const val COMPILE_SDK = 37
     const val MIN_SDK = 29

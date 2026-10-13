@@ -18,11 +18,18 @@ dependencyResolutionManagement {
 
 rootProject.name = "dewfall"
 
-// Every module's last name segment must be unique in the build. See docs/architecture.md#module-names.
+// Every module's last name segment must be unique in the build. See
+// docs/architecture.md#module-names.
 include(":app")
+
 include(":core:data")
+
 include(":core:database")
+
 include(":core:designsystem")
+
 include(":core:model")
+
 include(":core:mvi")
+
 include(":core:youtube")
