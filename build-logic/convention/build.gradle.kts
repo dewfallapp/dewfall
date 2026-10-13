@@ -14,13 +14,15 @@ dependencies {
     // The root build.gradle.kts puts these plugins on the build classpath.
     compileOnly(libs.android.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
+    compileOnly(libs.detekt.gradlePlugin)
 }
 
 gradlePlugin {
     plugins {
         register("androidApplication") {
             id = "dewfall.android.application"
-            implementationClass = "io.github.dewfallapp.buildlogic.AndroidApplicationConventionPlugin"
+            implementationClass =
+                "io.github.dewfallapp.buildlogic.AndroidApplicationConventionPlugin"
         }
         register("androidLibrary") {
             id = "dewfall.android.library"
@@ -29,6 +31,10 @@ gradlePlugin {
         register("jvmLibrary") {
             id = "dewfall.jvm.library"
             implementationClass = "io.github.dewfallapp.buildlogic.JvmLibraryConventionPlugin"
+        }
+        register("detekt") {
+            id = "dewfall.detekt"
+            implementationClass = "io.github.dewfallapp.buildlogic.DetektConventionPlugin"
         }
     }
 }

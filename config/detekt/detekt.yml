@@ -1,0 +1,20 @@
+# Changes to detekt's default rules. The build sets buildUponDefaultConfig, so every rule not
+# listed here keeps its default. The defaults are in detekt's default-detekt-config.yml:
+# https://github.com/detekt/detekt/blob/v2.0.0-alpha.6/detekt-core/src/main/resources/default-detekt-config.yml
+
+coroutines:
+  # AGENTS.md says never to use GlobalScope. This rule is off by default.
+  GlobalCoroutineUsage:
+    active: true
+
+style:
+  # GlobalCoroutineUsage only sees GlobalScope.launch and GlobalScope.async. Forbidding the
+  # import blocks every other use too.
+  ForbiddenImport:
+    active: true
+    forbiddenImports:
+      - value: 'kotlinx.coroutines.GlobalScope'
+        reason: 'AGENTS.md says never to use GlobalScope. Use a scope the class receives.'
+  # The same limit as the formatter, ktfmt in kotlinlang style.
+  MaxLineLength:
+    maxLineLength: 100
