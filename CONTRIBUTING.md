@@ -59,7 +59,7 @@ See [docs/testing.md](docs/testing.md) for the test layers and CI workflows.
 
 ## Dependencies
 
-Ask in an issue before adding a dependency. Every dependency must be compatible with GPLv3. Apache 2.0, MIT, BSD and LGPL are fine. No dependency may send data anywhere the user did not choose.
+Ask in an issue before adding a dependency. Anything that ships in the app must be compatible with GPLv3. Apache 2.0, MIT, BSD and LGPL are fine. Build tools that never ship, such as Gradle plugins and the tools they download, may use any open source license or be in the public domain. No dependency may send data anywhere the user did not choose.
 
 ## Things never to commit
 

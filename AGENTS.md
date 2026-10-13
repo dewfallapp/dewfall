@@ -59,7 +59,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - Work on a branch and open a pull request. Never push to main. Name branches by type, such as feat/inbox-screen or docs/phase-0.
 - Keep each pull request small, with one concern.
 - Use conventional commit messages: feat, fix, docs, test, refactor, build, ci or chore. Example: "feat: add storage limit setting".
-- Ask before adding a dependency. Every dependency must be compatible with GPLv3. Apache 2.0, MIT, BSD and LGPL are fine. Ask about anything else.
+- Ask before adding a dependency. Anything that ships in the app must be compatible with GPLv3. Apache 2.0, MIT, BSD and LGPL are fine. Build tools that never ship, such as Gradle plugins and the tools they download, may use any open source license or be in the public domain. Ask about anything else.
 - Never commit secrets, keystores, signing passwords or local.properties.
 - Do not invent facts, URLs, email addresses or names. If something is missing, ask, or leave a clearly marked TODO.
 - When a request is unclear, ask one question instead of guessing.
