@@ -1,5 +1,6 @@
-# Changes to detekt's default rules. The build sets buildUponDefaultConfig, so every rule not
-# listed here keeps its default. The defaults are in detekt's default-detekt-config.yml:
+# Changes to detekt's default rules, and below them the Compose rules. The build sets
+# buildUponDefaultConfig, so every rule not listed here keeps its default. The defaults are in
+# detekt's default-detekt-config.yml:
 # https://github.com/detekt/detekt/blob/v2.0.0-alpha.6/detekt-core/src/main/resources/default-detekt-config.yml
 
 coroutines:
@@ -25,3 +26,114 @@ style:
   # The same limit as the formatter, ktfmt in kotlinlang style.
   MaxLineLength:
     maxLineLength: 100
+
+# The rules of compose-rules, a detekt plugin that the build adds to every project. This is the
+# list that compose-rules' docs recommend, every rule on except the opt-in ones, with one change:
+# the opt-in Material2 rule is on.
+# https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/detekt.md#enabling-rules
+# detekt adds each plugin's own defaults to its defaults, and compose-rules' defaults are the same
+# list without Material2. It is written out anyway, as the docs recommend, so this file shows every
+# Compose rule.
+# What each rule checks: https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/rules.md
+# Rules marked "needs type resolution" don't run yet, because the build runs detekt without it.
+Compose:
+  ComposableAnnotationNaming:
+    active: true
+  ComposableNaming:
+    active: true
+  # Opt-in. It limits how deeply a composable nests layouts.
+  ComposableNestingDepth:
+    active: false
+  ComposableParamOrder:
+    active: true
+  CompositionLocalAllowlist:
+    active: true
+  CompositionLocalNaming:
+    active: true
+  # Needs type resolution.
+  ConditionHoist:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ContentTrailingLambda:
+    active: true
+  ContentSlotReused:
+    active: true
+  DefaultsVisibility:
+    active: true
+  # Needs type resolution.
+  InvalidReadOnlyComposable:
+    active: true
+  LambdaParameterEventTrailing:
+    active: true
+  LambdaParameterInRestartableEffect:
+    active: true
+  # Opt-in, and on because it enforces the Material 3 rule in AGENTS.md. It flags any use of
+  # Material 2, the androidx.compose.material package. It doesn't flag the icons in
+  # androidx.compose.material.icons, which the rule always allows.
+  Material2:
+    active: true
+  # Needs type resolution.
+  MissingNonRestartableComposable:
+    active: true
+  # Needs type resolution.
+  MissingReadOnlyComposable:
+    active: true
+  ModifierClickableOrder:
+    active: true
+  ModifierComposed:
+    active: true
+  ModifierMissing:
+    active: true
+  ModifierNaming:
+    active: true
+  ModifierNotUsedAtRoot:
+    active: true
+  ModifierReused:
+    active: true
+  ModifierWithoutDefault:
+    active: true
+  MultipleEmitters:
+    active: true
+  MutableParams:
+    active: true
+  MutableStateAutoboxing:
+    active: true
+  MutableStateParam:
+    active: true
+  ParameterNaming:
+    active: true
+  PreviewAnnotationNaming:
+    active: true
+  # Opt-in. It makes every preview's name follow one pattern.
+  PreviewNaming:
+    active: false
+  PreviewPublic:
+    active: true
+  RememberContentMissing:
+    active: true
+  RememberMissing:
+    active: true
+  # Needs type resolution.
+  StaleRememberUpdatedStateInRemember:
+    active: true
+  StateParam:
+    active: true
+  # Needs type resolution.
+  UnnecessaryComposable:
+    active: true
+  # Needs type resolution.
+  UnnecessaryLaunchedEffect:
+    active: true
+  # Opt-in, for builds that turn strong skipping off. It is on by default from Kotlin 2.0.20, and
+  # this build leaves it on:
+  # https://developer.android.com/develop/ui/compose/performance/stability/strongskipping
+  UnstableCollections:
+    active: false
+  # Needs type resolution.
+  VarsWithoutStateBacking:
+    active: true
+  ViewModelForwarding:
+    active: true
+  ViewModelInjection:
+    active: true
