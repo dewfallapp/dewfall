@@ -219,7 +219,6 @@ Start using the app on your own phone now. You will find more bugs that way than
 - Mark as watched, with resume from the last position.
 - Import subscriptions from a Google Takeout export.
 - Manual refresh.
-- Start writing a migration test for every database schema change.
 
 ### Your guide
 
@@ -299,6 +298,8 @@ Not every video has subtitles. Show a small mark on videos that are searchable, 
 
 - Create the release signing key and back it up in two separate offline places.
 - Release workflow on a version tag: build, sign with the key stored in GitHub secrets, generate the changelog, add checksums, and publish a GitHub release.
+- From the first public release on, fail the pull request check when a Room schema file that's on main changes or disappears.
+- Start writing a migration test for every database schema change.
 - Two build flavors: a GitHub build with an update checker the user agrees to, and an F-Droid build without one.
 - Final privacy policy in PRIVACY.md.
 - Issue templates asking for app version, Android version, phone model and steps to reproduce.
@@ -313,6 +314,8 @@ Not every video has subtitles. Show a small mark on videos that are searchable, 
 ### Your guide
 
 Android only installs an update if it is signed with the same key as the installed app. If you lose the key, every user has to uninstall and lose their data to get updates. Treat the key backup as the most important task in this phase.
+
+The first public release is the first release built from a version tag. Until then, the database stays at version 1 and its schema may change without a migration. That release freezes the schema. Phones that install it have databases in that shape, so from then on every schema change needs a new version, a migration and a migration test.
 
 Use conventional commit messages from Phase 2 onward, such as "feat: add storage limit" or "fix: crash on empty inbox". The release workflow can then build the changelog from them.
 
