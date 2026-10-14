@@ -26,6 +26,8 @@ context: |
     Package name: io.github.dewfallapp.
   - Core modules: :core:model, :core:mvi and :core:youtube are plain Kotlin/JVM.
     :core:data, :core:database and :core:designsystem are Android libraries.
+    Shared UI goes in :core:designsystem, or in :core:ui once it needs domain
+    models, as docs/architecture.md describes.
   - Each feature has two modules: :feature:<name>-logic, plain Kotlin/JVM, with
     the State, Intent, Effect and reducer, and :feature:<name>-ui, an Android
     library with the screens and the ViewModel. See docs/architecture.md.
