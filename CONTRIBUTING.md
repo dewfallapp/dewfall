@@ -37,8 +37,8 @@ Every new feature or change in behavior starts as an OpenSpec change, before any
 
 1. Run `/opsx:propose` in your AI coding tool to create the change. It goes in `openspec/changes/`.
 2. Open a pull request with the proposal and wait for approval.
-3. Build the feature.
-4. Once it is merged, archive the change so its requirements move into the living specs in `openspec/specs/`.
+3. Build the feature in the same pull request.
+4. Before the pull request is merged, run `/opsx:archive` to archive the change in that pull request, so its requirements move into the living specs in `openspec/specs/`.
 
 Write every requirement with WHEN and THEN scenarios, so each one maps onto a test.
 

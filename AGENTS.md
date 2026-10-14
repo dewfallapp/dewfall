@@ -55,7 +55,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 
 ## How to work
 
-- Spec first. For any new feature or change in behavior, create an OpenSpec change with /opsx:propose and wait for approval before writing code. Docs, small fixes and refactors that do not change behavior do not need one.
+- Spec first. For any new feature or change in behavior, create an OpenSpec change with /opsx:propose and wait for approval before writing code. Docs, small fixes and refactors that do not change behavior do not need one. Once the feature is built and reviewed, archive the OpenSpec change with /opsx:archive as the last commit of the feature's pull request, before merge.
 - Record decisions. A decision that would be hard to reverse gets an ADR in docs/adr/, numbered in order and based on docs/adr/0000-template.md. When the structure of the app changes, update docs/architecture.md in the same pull request.
 - Work on a branch and open a pull request. Never push to main. Name branches by type, such as feat/inbox-screen or docs/phase-0.
 - Keep each pull request small, with one concern.
