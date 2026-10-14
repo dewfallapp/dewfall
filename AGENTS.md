@@ -55,7 +55,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 
 ## How to work
 
-- Spec first. For any new feature or change in behavior, create an OpenSpec change with /opsx:propose and wait for approval before writing code. Docs, small fixes and refactors that do not change behavior do not need one.
+- Spec first. For any new feature or change in behavior, create an OpenSpec change with /opsx:propose and wait for approval before writing code. Docs, small fixes and refactors that do not change behavior do not need one. Once the feature is built and reviewed, archive the OpenSpec change with /opsx:archive as the last commit of the feature's pull request, before merge. Run the reviewer again on that commit, because it writes the living specs.
 - Record decisions. A decision that would be hard to reverse gets an ADR in docs/adr/, numbered in order and based on docs/adr/0000-template.md. When the structure of the app changes, update docs/architecture.md in the same pull request.
 - Work on a branch and open a pull request. Never push to main. Name branches by type, such as feat/inbox-screen or docs/phase-0.
 - Keep each pull request small, with one concern.
@@ -72,6 +72,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - Fix everything under "Must fix", then run the reviewer again. If the same problem is still there after two rounds, stop and tell the maintainer instead of trying again.
 - When you report back, include the reviewer's final verdict, what it found, what you changed, and its questions for the maintainer.
 - Put the final verdict in the pull request description.
+- Pull request descriptions follow the sections of .github/pull_request_template.md, because `gh pr create --body` doesn't apply the template.
 - If you're not using Claude Code, go through the checklist in .claude/agents/reviewer.md yourself before handing off.
 
 ## Architecture rules

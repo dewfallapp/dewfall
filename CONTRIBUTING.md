@@ -15,6 +15,7 @@ Read [docs/vision.md](docs/vision.md). It says what the app is and what it will 
 - Never push to main. Work on a branch and open a pull request.
 - Name the branch after the type of change, such as `feat/inbox-screen` or `docs/phase-0`.
 - Keep each pull request small, with one concern.
+- Fill in the sections of the [pull request template](.github/pull_request_template.md) in the pull request description.
 - A pull request is merged only when every CI check passes.
 - The pull request workflow runs the same checks as `./gradlew spotlessCheck detekt lint test assembleDebug`, the all-checks command in [AGENTS.md](AGENTS.md#commands). Run it before you push.
 - Run `./gradlew spotlessApply` before you commit, so the Kotlin code and build scripts pass the formatting check.
@@ -36,8 +37,8 @@ Every new feature or change in behavior starts as an OpenSpec change, before any
 
 1. Run `/opsx:propose` in your AI coding tool to create the change. It goes in `openspec/changes/`.
 2. Open a pull request with the proposal and wait for approval.
-3. Build the feature.
-4. Once it is merged, archive the change so its requirements move into the living specs in `openspec/specs/`.
+3. Build the feature in the same pull request.
+4. Before the pull request is merged, run `/opsx:archive` to archive the change in that pull request, so its requirements move into the living specs in `openspec/specs/`.
 
 Write every requirement with WHEN and THEN scenarios, so each one maps onto a test.
 
