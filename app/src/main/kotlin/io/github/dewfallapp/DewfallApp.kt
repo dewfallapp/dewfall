@@ -29,7 +29,10 @@ internal fun DewfallApp() {
     }
 }
 
-/** Stands in for the app's screens until the first feature arrives. */
+/**
+ * A temporary screen that stands in until the first feature arrives. Phase 4 replaces it with the
+ * first real screen, built with MVI as ADR 0002 requires.
+ */
 @Composable
 private fun PlaceholderScreen(modifier: Modifier = Modifier) {
     // The app draws edge to edge, so safeDrawingPadding keeps the text clear of the system bars,
