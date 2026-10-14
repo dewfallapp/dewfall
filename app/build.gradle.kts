@@ -1,5 +1,7 @@
 plugins {
     id("dewfall.android.application")
+    id("dewfall.android.compose")
+    id("dewfall.android.hilt")
 }
 
 android {
@@ -19,6 +21,9 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
+
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.material3)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
 }

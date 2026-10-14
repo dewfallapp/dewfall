@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name" translatable="false">Dewfall</string>
+    <!-- The only text on the placeholder screen, which shows until the first feature arrives. -->
+    <string name="placeholder_message">Nothing here yet.</string>
 </resources>
