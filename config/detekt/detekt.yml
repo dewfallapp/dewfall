@@ -28,10 +28,12 @@ style:
     maxLineLength: 100
 
 # The rules of compose-rules, a detekt plugin that the build adds to every project. This is the
-# list that compose-rules' docs recommend: every rule on except the opt-in ones.
+# list that compose-rules' docs recommend, every rule on except the opt-in ones, with one change:
+# the opt-in Material2 rule is on.
 # https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/detekt.md#enabling-rules
 # detekt adds each plugin's own defaults to its defaults, and compose-rules' defaults are the same
-# list. It is written out anyway, as the docs recommend, so this file shows every Compose rule.
+# list without Material2. It is written out anyway, as the docs recommend, so this file shows every
+# Compose rule.
 # What each rule checks: https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/rules.md
 # Rules marked "needs type resolution" don't run yet, because the build runs detekt without it.
 Compose:
@@ -66,9 +68,11 @@ Compose:
     active: true
   LambdaParameterInRestartableEffect:
     active: true
-  # Opt-in. It forbids Material 2.
+  # Opt-in, and on because it enforces the Material 3 rule in AGENTS.md. It flags any use of
+  # Material 2, the androidx.compose.material package. It doesn't flag the icons in
+  # androidx.compose.material.icons, which the rule always allows.
   Material2:
-    active: false
+    active: true
   # Needs type resolution.
   MissingNonRestartableComposable:
     active: true
