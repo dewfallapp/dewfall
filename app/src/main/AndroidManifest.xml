@@ -31,6 +31,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            Removes emoji2's startup initializer, which Compose brings in. It would ask the
+            system's downloadable font provider for a newer emoji font, and network calls go only
+            to YouTube and to services the user turns on. See
+            docs/architecture.md#network-access.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
     </application>
 
 </manifest>

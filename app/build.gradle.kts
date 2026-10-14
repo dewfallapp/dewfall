@@ -24,6 +24,9 @@ dependencies {
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
+    // The manifest names App Startup's InitializationProvider to remove emoji2's initializer.
+    // Compose already brings App Startup in. Declaring it lets lint find the class.
+    implementation(libs.androidx.startup.runtime)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
 }

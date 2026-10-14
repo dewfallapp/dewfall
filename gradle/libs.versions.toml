@@ -12,6 +12,7 @@ animalsniffer = "2.0.1"
 gummyBears = "0.15.0"
 composeBom = "2026.09.00"
 activityCompose = "1.13.0"
+startup = "1.2.0"
 hilt = "2.60.1"
 ksp = "2.3.12"
 
@@ -24,6 +25,7 @@ androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "startup" }
 
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
