@@ -12,8 +12,41 @@
         - MissingApplicationIcon: #120 adds the app icon and removes this suppression.
     -->
     <application
+        android:name=".DewfallApplication"
         android:allowBackup="false"
         android:label="@string/app_name"
-        tools:ignore="DataExtractionRules,MissingApplicationIcon" />
+        android:theme="@style/Theme.Dewfall"
+        tools:ignore="DataExtractionRules,MissingApplicationIcon">
+
+        <!--
+            adjustResize lets screens move their content out of the keyboard's way through
+            window insets, as edge-to-edge apps do.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            Removes emoji2's startup initializer, which Compose brings in. It would ask the
+            system's downloadable font provider for a newer emoji font, and network calls go only
+            to YouTube and to services the user turns on. See
+            docs/architecture.md#network-access.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
+    </application>
 
 </manifest>

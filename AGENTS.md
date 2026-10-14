@@ -90,6 +90,8 @@ These apply from Phase 2 on. If Phase 2 refines them, update this section in the
 - Download, sync and cleanup logic must not depend on any screen being open, because background WorkManager jobs reuse it. Background jobs run only on unmetered networks while charging.
 - No hardcoded user-facing text. Every string goes in resources, and every icon has a content description.
 - Colors come from MaterialTheme color roles. Never hardcode colors. Every screen must work in light, dark and dynamic color.
+- Every screen draws edge to edge and handles window insets. Backgrounds may sit under the system bars, but no text or controls sit under the system bars or the display cutout. Android 16 and later give apps that target them no way to opt out. See ADR 0006.
+- Annotation processors for Kotlin code, such as Hilt's compiler, run through KSP. The kotlin-kapt plugin doesn't work with AGP's built-in Kotlin, and Google recommends KSP over its com.android.legacy-kapt fallback. Ask first before adding kotlin-kapt or com.android.legacy-kapt.
 - Use coroutines and Flow. Never use GlobalScope. Inject dispatchers so tests can replace them.
 - Room schemas are exported into the repository. Every schema change needs a migration and a migration test. Never use destructive migrations.
 

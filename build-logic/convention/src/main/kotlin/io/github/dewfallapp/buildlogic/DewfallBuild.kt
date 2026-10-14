@@ -19,6 +19,20 @@ internal object DewfallBuild {
     const val JAVA_VERSION = 17
 }
 
+/**
+ * Fails with a clear message when a plugin that adds to an Android module, such as
+ * dewfall.android.compose, is applied without an Android plugin, or before it.
+ */
+internal fun Project.requireAndroidPlugin(pluginId: String) {
+    check(
+        pluginManager.hasPlugin("com.android.application") ||
+            pluginManager.hasPlugin("com.android.library")
+    ) {
+        "$pluginId needs an Android module. Apply dewfall.android.application or " +
+            "dewfall.android.library before it in $path."
+    }
+}
+
 internal fun Project.configureJavaToolchain() {
     extensions.configure<JavaPluginExtension> {
         toolchain {

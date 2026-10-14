@@ -15,6 +15,7 @@ dependencies {
     compileOnly(libs.android.gradlePlugin)
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.detekt.gradlePlugin)
+    compileOnly(libs.ksp.gradlePlugin)
 }
 
 gradlePlugin {
@@ -27,6 +28,14 @@ gradlePlugin {
         register("androidLibrary") {
             id = "dewfall.android.library"
             implementationClass = "io.github.dewfallapp.buildlogic.AndroidLibraryConventionPlugin"
+        }
+        register("androidCompose") {
+            id = "dewfall.android.compose"
+            implementationClass = "io.github.dewfallapp.buildlogic.AndroidComposeConventionPlugin"
+        }
+        register("androidHilt") {
+            id = "dewfall.android.hilt"
+            implementationClass = "io.github.dewfallapp.buildlogic.AndroidHiltConventionPlugin"
         }
         register("jvmLibrary") {
             id = "dewfall.jvm.library"

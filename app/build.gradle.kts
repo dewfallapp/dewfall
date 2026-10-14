@@ -1,5 +1,7 @@
 plugins {
     id("dewfall.android.application")
+    id("dewfall.android.compose")
+    id("dewfall.android.hilt")
 }
 
 android {
@@ -19,6 +21,12 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
+
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.material3)
+    // The manifest names App Startup's InitializationProvider to remove emoji2's initializer.
+    // Compose already brings App Startup in. Declaring it lets lint find the class.
+    implementation(libs.androidx.startup.runtime)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
 }

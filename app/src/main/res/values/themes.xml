@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The window theme. Its background shows before Compose draws the first frame. It has no
+        action bar, because the Compose UI draws the whole screen. values-night has the dark
+        version. The app's colors come from the Compose theme, not from here.
+    -->
+    <style name="Theme.Dewfall" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
