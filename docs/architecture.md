@@ -11,7 +11,7 @@ Dewfall is one Gradle build with an app module, core modules, and feature module
 
 ### The module graph
 
-Solid arrows are dependencies in the build today. Dashed arrows show where the inbox's two modules will go when Phase 5 adds them.
+Solid arrows are dependencies in the build today. Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds, and `:core:ui`, which comes when a second feature needs shared UI.
 
 ```mermaid
 graph TD
@@ -22,6 +22,7 @@ graph TD
     youtube[":core:youtube<br/>Kotlin/JVM"]
     model[":core:model<br/>Kotlin/JVM"]
     mvi[":core:mvi<br/>Kotlin/JVM"]
+    coreUi[":core:ui<br/>Android library, later"]
     inboxUi[":feature:inbox-ui<br/>Android library, later"]
     inboxLogic[":feature:inbox-logic<br/>Kotlin/JVM, later"]
 
@@ -41,6 +42,8 @@ graph TD
     inboxUi -.-> model
     inboxLogic -.-> mvi
     inboxLogic -.-> model
+    coreUi -.-> designsystem
+    coreUi -.-> model
 ```
 
 ### Core modules
@@ -58,6 +61,8 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 | `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, plus shared components and icons | Nothing |
 
 The core modules are still empty. Later tasks fill them: Room in #24, the MVI base types in #25, the theme in #26, and the YouTube layer in Phase 3. Compose and Hilt are set up in `:app` only, until a core module needs them.
+
+`:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the code that formats a duration, goes in a `:core:ui` Android library instead. `:core:ui` gets created when a second feature needs such a piece. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
 
 ### Feature modules
 
