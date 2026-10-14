@@ -6,6 +6,10 @@ spotless = "8.10.3"
 # The formatter that Spotless runs. Spotless downloads it, so it has no library entry.
 ktfmt = "0.64"
 detekt = "2.0.0-alpha.6"
+# compose-rules adds Compose rules to detekt. Each release is built for one detekt version, so a
+# detekt update waits for a compose-rules release built for the new version. Matching versions:
+# https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/detekt.md#supported-versions-matrix
+composeRules = "0.6.7"
 animalsniffer = "2.0.1"
 # Android API signatures for Animal Sniffer. build-logic adds the artifact, whose name holds
 # the API level, so it has no library entry.
@@ -29,6 +33,9 @@ androidx-startup-runtime = { module = "androidx.startup:startup-runtime", versio
 
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+
+# A detekt plugin. The detekt convention plugin in build-logic adds it to detekt in every project.
+compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "composeRules" }
 
 # Used only by build-logic, to compile the convention plugins.
 android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }

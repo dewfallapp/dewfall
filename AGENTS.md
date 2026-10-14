@@ -36,7 +36,7 @@ This section is updated whenever a phase's milestone closes.
 | core/ | Core modules that every feature can use. docs/architecture.md describes each one |
 | build-logic/ | Convention plugins with the build settings that every module shares |
 | gradle/libs.versions.toml | The version of every plugin and library |
-| config/detekt/detekt.yml | detekt's settings: the changes to its default rules |
+| config/detekt/detekt.yml | detekt's settings: the changes to its default rules, and the list of Compose rules |
 | .editorconfig | Editor settings, with a Kotlin section that comes close to the formatter |
 | .github/workflows/ | GitHub Actions workflows. pull-request.yml runs the checks on every pull request to main and every push to main |
 | .claude/ | Claude Code setup: the reviewer subagent in agents/, plus the OpenSpec commands and skills |
