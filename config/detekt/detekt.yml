@@ -7,6 +7,13 @@ coroutines:
   GlobalCoroutineUsage:
     active: true
 
+naming:
+  # Composable functions are named in PascalCase, as the Compose API guidelines say. detekt's
+  # Compose page recommends this setting:
+  # https://github.com/detekt/detekt/blob/v2.0.0-alpha.6/website/docs/introduction/compose.mdx
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+
 style:
   # GlobalCoroutineUsage only sees GlobalScope.launch and GlobalScope.async. Forbidding the
   # import blocks every other use too.
