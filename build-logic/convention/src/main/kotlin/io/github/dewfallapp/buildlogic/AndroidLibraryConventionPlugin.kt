@@ -34,6 +34,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             }
 
             configureJavaToolchain()
+            configureAndroidUnitTests()
         }
     }
 }

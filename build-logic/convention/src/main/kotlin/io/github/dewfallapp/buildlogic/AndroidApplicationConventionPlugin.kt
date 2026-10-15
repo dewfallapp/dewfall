@@ -28,6 +28,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             }
 
             configureJavaToolchain()
+            configureAndroidUnitTests()
         }
     }
 }

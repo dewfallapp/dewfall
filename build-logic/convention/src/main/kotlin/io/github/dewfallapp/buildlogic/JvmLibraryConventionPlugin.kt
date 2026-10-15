@@ -21,6 +21,7 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
             }
 
             configureJavaToolchain()
+            configureJvmUnitTests()
 
             // Lint's general checks. Its API check doesn't run here, so configureAndroidApiCheck
             // checks these modules against the minSdk instead.
