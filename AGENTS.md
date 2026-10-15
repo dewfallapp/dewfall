@@ -87,6 +87,7 @@ These apply from Phase 2 on. If Phase 2 refines them, update this section in the
 - Code that needs nothing from Android lives in plain Kotlin/JVM modules with no Android imports: the YouTube layer, the domain models, the MVI base types and the reducers. See ADR 0006.
 - Only the YouTube layer module may use NewPipeExtractor. It maps every NewPipeExtractor type to Dewfall's own models, so nothing else in the app knows which library sits underneath.
 - Every screen uses MVI: an immutable State, an Intent sealed interface, one-time Effects, and a reducer that is a pure function. The ViewModel runs side effects. Every reducer has unit tests.
+- Every screen's ViewModel extends MviViewModel from `:core:mvi`. Intents include the results of the ViewModel's work, and effects stay pending as state until the UI reports them handled. docs/architecture.md describes the MVI contract.
 - Playback state never goes into screen state. The player lives in a MediaSessionService and exposes playback state as its own Flow. Position updates run only as often as the visible UI needs them.
 - Download, sync and cleanup logic must not depend on any screen being open, because background WorkManager jobs reuse it. Background jobs run only on unmetered networks while charging.
 - No hardcoded user-facing text. Every string goes in resources, and every icon has a content description.
@@ -100,6 +101,8 @@ These apply from Phase 2 on. If Phase 2 refines them, update this section in the
 ## Testing rules
 
 - New logic ships with tests in the same pull request.
+- Write tests with kotlin.test's annotations and assertions. They run on JUnit 6 in plain Kotlin/JVM modules and on JUnit 4 in Android modules. docs/testing.md explains how to test reducers and ViewModels.
+- ViewModel tests replace the Main dispatcher with Dispatchers.setMain before each test and reset it after.
 - Unit tests never touch the network. The YouTube layer is tested against saved responses. Live YouTube checks run only in the scheduled CI workflow.
 - Screens get screenshot tests in light, dark and large font.
 - Never delete, skip or weaken a test to make it pass. If a test looks wrong, explain why and ask.
@@ -110,6 +113,7 @@ Run these from the repository root. The build needs JDK 17 installed, because ev
 
 - Build the debug APK: `./gradlew assembleDebug`. The APK goes to app/build/outputs/apk/debug/app-debug.apk.
 - Run the unit tests: `./gradlew test`. It runs the tests of the plain Kotlin/JVM modules and the debug unit tests of the Android modules.
+- Run one module's unit tests: `./gradlew :core:mvi:test` for a plain Kotlin/JVM module, or `./gradlew :core:data:testDebugUnitTest` for an Android module. Add `--tests` with a class name to run one test class. The HTML report goes to build/reports/tests/ in the module.
 - Check formatting: `./gradlew spotlessCheck`. It checks every Kotlin file and Kotlin build script in the repository, build-logic included, against ktfmt in kotlinlang style.
 - Fix formatting: `./gradlew spotlessApply`. It rewrites the same files in place. Run it before you commit.
 - Run detekt: `./gradlew detekt`. It checks the Kotlin code in src/main and src/test of every module, and the code in build-logic, without type resolution. Any finding fails the build. Reports go to build/reports/detekt/ in each project.
