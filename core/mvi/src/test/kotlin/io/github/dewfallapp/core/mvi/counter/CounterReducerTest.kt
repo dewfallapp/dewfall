@@ -13,6 +13,14 @@ class CounterReducerTest {
         assertEquals(Next(CounterState(count = 2)), next)
     }
 
+    // Deliberately wrong, to prove that a failing unit test blocks merging. Never merge this.
+    @Test
+    fun `deliberately failing test`() {
+        val next = CounterReducer.reduce(CounterState(count = 1), CounterIntent.Increment)
+
+        assertEquals(Next(CounterState(count = 3)), next)
+    }
+
     @Test
     fun `increment at the limit keeps the count and reports LimitReached`() {
         val atLimit = CounterState(count = CounterReducer.LIMIT)
