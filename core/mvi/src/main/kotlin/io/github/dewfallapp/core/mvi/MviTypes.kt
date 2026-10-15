@@ -2,8 +2,8 @@ package io.github.dewfallapp.core.mvi
 
 /**
  * A screen's state. Each screen declares one immutable class for it, usually a data class with val
- * properties and read-only collections. Only the screen's reducer makes new ones. See
- * docs/architecture.md#the-mvi-contract.
+ * properties and read-only collections. After the initial state, only the screen's reducer makes
+ * new ones. See docs/architecture.md#the-mvi-contract.
  */
 interface MviState
 

@@ -65,7 +65,7 @@ Each module writes an HTML report to build/reports/tests/test/index.html in a pl
 ### Writing tests
 
 - Use kotlin.test's annotations and assertions, such as kotlin.test.Test, BeforeTest, AfterTest and assertEquals. They run on JUnit 6 in plain Kotlin/JVM modules and on JUnit 4 in Android modules, so a test reads the same in both. [architecture.md](architecture.md#build-settings) explains why there are two.
-- Name each test with backticks, as a sentence about what it checks, such as `` `increment adds one` ``. detekt's naming rule skips test folders.
+- Name each local test in src/test/ with backticks, as a sentence about what it checks, such as `` `increment adds one` ``. detekt's naming rule skips test folders. Don't do this in src/androidTest/: Android runs method names with spaces only from API level 30, and the minimum is 29 ([Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html#names-for-test-methods)).
 - Put tests in the src/test/ folder of the module whose code they test.
 
 ### Reducers

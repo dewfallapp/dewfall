@@ -94,7 +94,7 @@ These apply from Phase 2 on. If Phase 2 refines them, update this section in the
 - Colors come from MaterialTheme color roles. Never hardcode colors. Every screen must work in light, dark and dynamic color.
 - Every screen draws edge to edge and handles window insets. Backgrounds may sit under the system bars, but no text or controls sit under the system bars or the display cutout. Android 16 and later give apps that target them no way to opt out. See ADR 0006.
 - Annotation processors for Kotlin code, such as Hilt's and Room's compilers, run through KSP. The kotlin-kapt plugin doesn't work with AGP's built-in Kotlin, and Google recommends KSP over its com.android.legacy-kapt fallback. Ask first before adding kotlin-kapt or com.android.legacy-kapt.
-- Use coroutines and Flow. Never use GlobalScope. Inject dispatchers so tests can replace them.
+- Use coroutines and Flow. Never use GlobalScope. Inject dispatchers so tests can replace them. The one exception is viewModelScope's Main dispatcher: ViewModels take no dispatcher, and their tests replace Main with Dispatchers.setMain.
 - The database uses Room 3, in the androidx.room3 package. Room 2 is deprecated.
 - Room schemas are exported into core/database/schemas/. Commit the schema files that the build writes, and never edit them by hand. The first public release is the first GitHub release, including a pre-release, published from a version tag. A tag made only to test the release workflow, with no published release, doesn't count, and nightly APKs don't count. Until then, the database stays at version 1, and a schema change needs no migration. From the first public release on, every schema change raises the version and needs a migration and a migration test. Never use destructive migrations.
 
