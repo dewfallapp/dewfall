@@ -1,5 +1,6 @@
 plugins {
     id("dewfall.android.library")
+    id("dewfall.android.room")
 }
 
 android {

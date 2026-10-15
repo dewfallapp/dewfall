@@ -1,10 +1,8 @@
 package io.github.dewfallapp.buildlogic
 
-import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
-import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.getByType
 
@@ -16,12 +14,8 @@ class AndroidHiltConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             requireAndroidPlugin("dewfall.android.hilt")
-            pluginManager.apply("com.google.devtools.ksp")
+            configureDewfallKsp()
             pluginManager.apply("com.google.dagger.hilt.android")
-
-            // KotlinCompiler.kt fails the build on Kotlin compiler warnings. Warnings that
-            // annotation processors report through KSP need KSP's own setting.
-            extensions.configure<KspExtension> { allWarningsAsErrors = true }
 
             val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
             dependencies {

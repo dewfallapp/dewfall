@@ -1,5 +1,6 @@
 # Checks every pull request to main: formatting, detekt, Android Lint with the Android API check,
-# unit tests, and a debug build. It runs the all-checks command from AGENTS.md.
+# unit tests, a debug build, and the Room schema check. It runs the all-checks command from
+# AGENTS.md.
 name: Pull request
 
 on:
@@ -68,6 +69,20 @@ jobs:
         run: >-
           ./gradlew --continue -Pandroid.builder.sdkDownload=false
           spotlessCheck detekt lint test assembleDebug
+
+      # Room rewrites the schema files in core/database/schemas/ when the database changes, and the
+      # build still passes, even when the version number stays the same. This fails when the build
+      # changed or added a schema file that the pull request doesn't include. It runs even when the
+      # step above failed, so one run reports every failing check.
+      - name: Check that the Room schemas are committed
+        if: ${{ !cancelled() }}
+        run: |
+          changes="$(git status --porcelain --untracked-files=all -- core/database/schemas)"
+          if [ -n "$changes" ]; then
+            echo "::error::The build changed these Room schema files. Commit them:"
+            echo "$changes"
+            exit 1
+          fi
 
       - name: Upload the reports
         if: failure()

@@ -34,6 +34,7 @@ This section is updated whenever a phase's milestone closes.
 | docs/testing.md, docs/release.md, docs/breakage.md | How to test, how to release, and what to do when YouTube breaks something |
 | app/ | The app module, which ties the other modules together |
 | core/ | Core modules that every feature can use. docs/architecture.md describes each one |
+| core/database/schemas/ | The Room database schemas that the build writes, one JSON file per database version |
 | build-logic/ | Convention plugins with the build settings that every module shares |
 | gradle/libs.versions.toml | The version of every plugin and library |
 | config/detekt/detekt.yml | detekt's settings: the changes to its default rules, and the list of Compose rules |
@@ -91,9 +92,10 @@ These apply from Phase 2 on. If Phase 2 refines them, update this section in the
 - No hardcoded user-facing text. Every string goes in resources, and every icon has a content description.
 - Colors come from MaterialTheme color roles. Never hardcode colors. Every screen must work in light, dark and dynamic color.
 - Every screen draws edge to edge and handles window insets. Backgrounds may sit under the system bars, but no text or controls sit under the system bars or the display cutout. Android 16 and later give apps that target them no way to opt out. See ADR 0006.
-- Annotation processors for Kotlin code, such as Hilt's compiler, run through KSP. The kotlin-kapt plugin doesn't work with AGP's built-in Kotlin, and Google recommends KSP over its com.android.legacy-kapt fallback. Ask first before adding kotlin-kapt or com.android.legacy-kapt.
+- Annotation processors for Kotlin code, such as Hilt's and Room's compilers, run through KSP. The kotlin-kapt plugin doesn't work with AGP's built-in Kotlin, and Google recommends KSP over its com.android.legacy-kapt fallback. Ask first before adding kotlin-kapt or com.android.legacy-kapt.
 - Use coroutines and Flow. Never use GlobalScope. Inject dispatchers so tests can replace them.
-- Room schemas are exported into the repository. Every schema change needs a migration and a migration test. Never use destructive migrations.
+- The database uses Room 3, in the androidx.room3 package. Room 2 is deprecated.
+- Room schemas are exported into core/database/schemas/. Commit the schema files that the build writes, and never edit them by hand. The first public release is the first GitHub release, including a pre-release, published from a version tag. A tag made only to test the release workflow, with no published release, doesn't count, and nightly APKs don't count. Until then, the database stays at version 1, and a schema change needs no migration. From the first public release on, every schema change raises the version and needs a migration and a migration test. Never use destructive migrations.
 
 ## Testing rules
 
@@ -112,7 +114,7 @@ Run these from the repository root. The build needs JDK 17 installed, because ev
 - Fix formatting: `./gradlew spotlessApply`. It rewrites the same files in place. Run it before you commit.
 - Run detekt: `./gradlew detekt`. It checks the Kotlin code in src/main and src/test of every module, and the code in build-logic, without type resolution. Any finding fails the build. Reports go to build/reports/detekt/ in each project.
 - Run Android Lint: `./gradlew lint`. It checks every module and writes a report to build/reports/ in each of them. Any warning fails the build. In the plain Kotlin/JVM modules it also runs Animal Sniffer, which checks the code against the Android API at minSdk 29, because lint's own API check skips those modules.
-- Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. The workflow is .github/workflows/pull-request.yml. It adds `--continue`, so one run reports every failing check, and `-Pandroid.builder.sdkDownload=false`, so a missing SDK package fails the build instead of being downloaded.
+- Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. The workflow is .github/workflows/pull-request.yml. It adds `--continue`, so one run reports every failing check, and `-Pandroid.builder.sdkDownload=false`, so a missing SDK package fails the build instead of being downloaded. After the build, the workflow fails if the build changed or added files in core/database/schemas/, so commit the schema files it writes.
 
 ## Writing style
 

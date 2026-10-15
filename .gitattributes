@@ -6,3 +6,7 @@
 # Kotlin code and build scripts use LF everywhere, as Spotless and .editorconfig expect.
 *.kt text eol=lf
 *.kts text eol=lf
+
+# The Room schemas that the build writes use LF everywhere, so the schema check in the pull request
+# workflow sees no line ending changes.
+/core/database/schemas/**/*.json text eol=lf

@@ -16,6 +16,7 @@ dependencies {
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.detekt.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
+    compileOnly(libs.room3.gradlePlugin)
 }
 
 gradlePlugin {
@@ -36,6 +37,10 @@ gradlePlugin {
         register("androidHilt") {
             id = "dewfall.android.hilt"
             implementationClass = "io.github.dewfallapp.buildlogic.AndroidHiltConventionPlugin"
+        }
+        register("androidRoom") {
+            id = "dewfall.android.room"
+            implementationClass = "io.github.dewfallapp.buildlogic.AndroidRoomConventionPlugin"
         }
         register("jvmLibrary") {
             id = "dewfall.jvm.library"
