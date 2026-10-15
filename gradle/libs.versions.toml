@@ -22,6 +22,7 @@ ksp = "2.3.12"
 # Room 3, in the androidx.room3 package, for the runtime, the compiler and the Gradle plugin.
 # Room 2 is deprecated. See docs/architecture.md#build-settings.
 room3 = "3.0.3"
+lifecycle = "2.11.0"
 kotlinxCoroutines = "1.11.0"
 # JUnit 6 runs the unit tests of the plain Kotlin/JVM modules. See docs/testing.md.
 junit = "6.1.3"
@@ -45,6 +46,11 @@ hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hil
 
 androidx-room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3" }
 androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }
+
+# :core:mvi's ViewModel base. A plain Kotlin/JVM module gets Lifecycle's JVM build, and an Android
+# module gets its Android build. See docs/architecture.md#the-mvi-contract.
+androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 
 # Unit test libraries. The convention plugins in build-logic add them to every module's tests.
 # Tests use kotlin.test's annotations and assertions, which run on JUnit 6 in plain Kotlin/JVM
