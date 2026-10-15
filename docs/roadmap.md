@@ -154,7 +154,7 @@ Claude Design exports as .zip, PDF, PPTX, Google Slides or standalone HTML. It c
 
 The tool names in this plan come from memory. Check that each one is still maintained before you adopt it.
 
-A reducer is a plain function that takes the old state and an intent and returns a new state. Most screen logic can then be tested in milliseconds without a phone. Write a test for the MVI base right away so the pattern is clear for later screens.
+A reducer is a plain function that takes the old state and an intent and returns a new state and any one-time effects. Most screen logic can then be tested in milliseconds without a phone. Write a test for the MVI base right away so the pattern is clear for later screens.
 
 Once the theme exists in code, Claude Design can import a design system from a GitHub repository. In Claude Code, the /design-sync command pulls the design system into Claude Design, and /design creates and syncs design projects from the terminal.
 
