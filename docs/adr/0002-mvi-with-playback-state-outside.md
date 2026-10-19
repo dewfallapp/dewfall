@@ -4,6 +4,8 @@
 
 Accepted
 
+Changed in #136: the reducer can return effects, intents include work results, and effects are delivered as state.
+
 ## Context
 
 Every screen needs a clear way to hold its state and handle what the user does. Screen logic should be easy to test without a phone.
@@ -24,9 +26,9 @@ Video playback is different from the rest of the screen. The playback position c
 Every screen uses MVI:
 
 - An immutable State.
-- An Intent sealed interface for what the user does.
-- One-time Effects.
-- A reducer, a pure function that takes the old state and an intent and returns a new state.
+- An Intent sealed interface for what the user does, and for the results of work the ViewModel runs, such as a load that finished.
+- One-time Effects, held as pending UI state until the UI reports that it handled them, as Android's [UI events guidance](https://developer.android.com/topic/architecture/ui-layer/events) recommends.
+- A reducer, a pure function that takes the old state and an intent and returns the new state and any one-time effects.
 
 MVI still uses Android's ViewModel. The ViewModel runs side effects. Every reducer has unit tests.
 
@@ -38,6 +40,7 @@ Playback state never goes into screen state. The player lives in a Media3 MediaS
 - The screen does not redraw every time the playback position changes.
 - A screen that shows playback reads from two sources: its own MVI state and the player's playback stream.
 - Every screen needs more code, with State, Intent and Effect types even for simple screens.
+- The UI must report each effect as handled. Pending effects are lost on process death.
 - A single state object can cause extra redraws if it changes too often. That is why playback position stays outside screen state.
 - Contributors who only know MVVM have more to learn.
 - There is no official Android MVI library, so Dewfall maintains its own small base classes.
