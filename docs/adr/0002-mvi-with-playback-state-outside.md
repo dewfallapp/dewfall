@@ -40,6 +40,7 @@ Playback state never goes into screen state. The player lives in a Media3 MediaS
 - The screen does not redraw every time the playback position changes.
 - A screen that shows playback reads from two sources: its own MVI state and the player's playback stream.
 - Every screen needs more code, with State, Intent and Effect types even for simple screens.
+- The UI must report each effect as handled. Pending effects are lost on process death.
 - A single state object can cause extra redraws if it changes too often. That is why playback position stays outside screen state.
 - Contributors who only know MVVM have more to learn.
 - There is no official Android MVI library, so Dewfall maintains its own small base classes.
