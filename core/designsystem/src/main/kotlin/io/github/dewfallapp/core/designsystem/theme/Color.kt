@@ -1,0 +1,118 @@
+package io.github.dewfallapp.core.designsystem.theme
+
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
+
+// The values come from the color tokens in docs/design/claude-design/design-system/tokens.json.
+// A token edit there is copied here by hand, and DesignTokensTest fails until both agree. Screens
+// never use these schemes directly. They read the roles from MaterialTheme.colorScheme, because
+// dynamic color may replace every value here.
+
+/** Dewfall's own light palette, for phones without dynamic color. */
+internal val DewfallLightColors =
+    lightColorScheme(
+        primary = Color(0xFF26503C),
+        onPrimary = Color(0xFFFFFFFF),
+        primaryContainer = Color(0xFF3E6853),
+        onPrimaryContainer = Color(0xFFB7E5CA),
+        inversePrimary = Color(0xFFA3D1B7),
+        secondary = Color(0xFF4F6354),
+        onSecondary = Color(0xFFFFFFFF),
+        secondaryContainer = Color(0xFFCFE5D2),
+        onSecondaryContainer = Color(0xFF536758),
+        tertiary = Color(0xFF264D5B),
+        onTertiary = Color(0xFFFFFFFF),
+        tertiaryContainer = Color(0xFF3F6574),
+        onTertiaryContainer = Color(0xFFB9E1F3),
+        error = Color(0xFFBA1A1A),
+        onError = Color(0xFFFFFFFF),
+        errorContainer = Color(0xFFFFDAD6),
+        onErrorContainer = Color(0xFF93000A),
+        surface = Color(0xFFF5FBF2),
+        onSurface = Color(0xFF171D18),
+        surfaceVariant = Color(0xFFDEE4DC),
+        onSurfaceVariant = Color(0xFF414943),
+        surfaceDim = Color(0xFFD5DCD3),
+        surfaceBright = Color(0xFFF5FBF2),
+        surfaceContainerLowest = Color(0xFFFFFFFF),
+        surfaceContainerLow = Color(0xFFEFF5ED),
+        surfaceContainer = Color(0xFFE9F0E7),
+        surfaceContainerHigh = Color(0xFFE3EAE1),
+        surfaceContainerHighest = Color(0xFFDEE4DC),
+        surfaceTint = Color(0xFF3D6752),
+        inverseSurface = Color(0xFF2B322C),
+        inverseOnSurface = Color(0xFFECF3EA),
+        outline = Color(0xFF717973),
+        outlineVariant = Color(0xFFC1C8C2),
+        scrim = Color(0xFF000000),
+        background = Color(0xFFF5FBF2),
+        onBackground = Color(0xFF171D18),
+        // The fixed roles have the same values in light and dark.
+        primaryFixed = Color(0xFFBFEDD2),
+        primaryFixedDim = Color(0xFFA3D1B7),
+        onPrimaryFixed = Color(0xFF002114),
+        onPrimaryFixedVariant = Color(0xFF254F3B),
+        secondaryFixed = Color(0xFFD2E8D5),
+        secondaryFixedDim = Color(0xFFB6CCBA),
+        onSecondaryFixed = Color(0xFF0D1F14),
+        onSecondaryFixedVariant = Color(0xFF384B3D),
+        tertiaryFixed = Color(0xFFC1E9FA),
+        tertiaryFixedDim = Color(0xFFA5CCDE),
+        onTertiaryFixed = Color(0xFF001F29),
+        onTertiaryFixedVariant = Color(0xFF244C5A),
+    )
+
+/** Dewfall's own dark palette, for phones without dynamic color. */
+internal val DewfallDarkColors =
+    darkColorScheme(
+        primary = Color(0xFFA5D0B8),
+        onPrimary = Color(0xFF0A3724),
+        primaryContainer = Color(0xFF264F3B),
+        onPrimaryContainer = Color(0xFFC0ECD3),
+        inversePrimary = Color(0xFF3D6752),
+        secondary = Color(0xFFB6CCBA),
+        onSecondary = Color(0xFF223528),
+        secondaryContainer = Color(0xFF384B3D),
+        onSecondaryContainer = Color(0xFFD2E8D5),
+        tertiary = Color(0xFFA6CCDE),
+        onTertiary = Color(0xFF073543),
+        tertiaryContainer = Color(0xFF244C5B),
+        onTertiaryContainer = Color(0xFFC2E8FB),
+        error = Color(0xFFFFB4AB),
+        onError = Color(0xFF690005),
+        errorContainer = Color(0xFF93000A),
+        onErrorContainer = Color(0xFFFFDAD6),
+        surface = Color(0xFF101411),
+        onSurface = Color(0xFFDFE4DE),
+        surfaceVariant = Color(0xFF313632),
+        onSurfaceVariant = Color(0xFFC1C9BF),
+        surfaceDim = Color(0xFF101411),
+        surfaceBright = Color(0xFF363A36),
+        surfaceContainerLowest = Color(0xFF0B0F0C),
+        surfaceContainerLow = Color(0xFF181D19),
+        surfaceContainer = Color(0xFF1C211D),
+        surfaceContainerHigh = Color(0xFF272B27),
+        surfaceContainerHighest = Color(0xFF313632),
+        surfaceTint = Color(0xFFA5D0B8),
+        inverseSurface = Color(0xFFDFE4DE),
+        inverseOnSurface = Color(0xFF2B322C),
+        outline = Color(0xFF8B938A),
+        outlineVariant = Color(0xFF414942),
+        scrim = Color(0xFF000000),
+        background = Color(0xFF101411),
+        onBackground = Color(0xFFDFE4DE),
+        // The fixed roles have the same values in light and dark.
+        primaryFixed = Color(0xFFBFEDD2),
+        primaryFixedDim = Color(0xFFA3D1B7),
+        onPrimaryFixed = Color(0xFF002114),
+        onPrimaryFixedVariant = Color(0xFF254F3B),
+        secondaryFixed = Color(0xFFD2E8D5),
+        secondaryFixedDim = Color(0xFFB6CCBA),
+        onSecondaryFixed = Color(0xFF0D1F14),
+        onSecondaryFixedVariant = Color(0xFF384B3D),
+        tertiaryFixed = Color(0xFFC1E9FA),
+        tertiaryFixedDim = Color(0xFFA5CCDE),
+        onTertiaryFixed = Color(0xFF001F29),
+        onTertiaryFixedVariant = Color(0xFF244C5A),
+    )

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Manrope at weight 500, from the variable font manrope.ttf. The weight is set here, as the font
+    loads, because Compose's own weight setting had no effect on this font in res/font on the
+    Android 10 and 16 emulators. See Type.kt.
+-->
+<font-family xmlns:android="http://schemas.android.com/apk/res/android">
+    <font
+        android:font="@font/manrope"
+        android:fontStyle="normal"
+        android:fontVariationSettings="'wght' 500"
+        android:fontWeight="500" />
+</font-family>
