@@ -20,6 +20,7 @@ graph TD
     database[":core:database<br/>Android library"]
     designsystem[":core:designsystem<br/>Android library"]
     youtube[":core:youtube<br/>Kotlin/JVM"]
+    logging[":core:logging<br/>Kotlin/JVM"]
     model[":core:model<br/>Kotlin/JVM"]
     mvi[":core:mvi<br/>Kotlin/JVM"]
     coreUi[":core:ui<br/>Android library, later"]
@@ -28,6 +29,7 @@ graph TD
 
     app --> data
     app --> designsystem
+    app --> logging
     data --> database
     data --> youtube
     data --> model
@@ -52,15 +54,16 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
-| `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class and the app's only activity, which shows a placeholder screen until the first feature arrives. Once features arrive, it also handles navigation between them. | `:core:data`, `:core:designsystem`, and each feature's `-ui` module |
+| `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class and the app's only activity, which shows a placeholder screen until the first feature arrives. Once features arrive, it also handles navigation between them. It also holds the logcat writer and the Hilt module that provides the logger. See [Logging](#logging). | `:core:data`, `:core:designsystem`, `:core:logging`, and each feature's `-ui` module |
 | `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines | Nothing |
+| `:core:logging` | core/logging/ | Kotlin/JVM | io.github.dewfallapp.core.logging | The Logger that every module logs through, its levels and fields, and the error summary that leaves out messages. See [Logging](#logging). | Nothing |
 | `:core:mvi` | core/mvi/ | Kotlin/JVM | io.github.dewfallapp.core.mvi | The MVI base: MviState, MviIntent, MviEffect, the Reducer, and MviViewModel, the base class of every screen's ViewModel. See [The MVI contract](#the-mvi-contract). | Nothing. It uses Lifecycle's ViewModel and kotlinx.coroutines. |
 | `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md). | `:core:model` |
 | `:core:database` | core/database/ | Android library | io.github.dewfallapp.core.database | The Room database: entities, DAOs, migrations and the exported schemas | `:core:model` |
 | `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer | `:core:model`, `:core:database`, `:core:youtube` |
 | `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). Later, shared components and icons too. | Nothing. It exposes Material 3 as an api dependency. |
 
-`:core:mvi` holds the MVI base, and `:core:designsystem` holds the theme. The other core modules hold no code yet. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). Phase 3 fills the YouTube layer. Compose is set up in `:app` and `:core:designsystem`. Hilt is set up in `:app` only, until a core module needs it.
+`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. The other core modules hold no code yet. A module that logs depends on `:core:logging`. Today only `:app` does, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). Phase 3 fills the YouTube layer. Compose is set up in `:app` and `:core:designsystem`. Hilt is set up in `:app` only, until a core module needs it.
 
 `:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the code that formats a duration, goes in a `:core:ui` Android library instead. `:core:ui` gets created when a second feature needs such a piece. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
 
@@ -94,6 +97,8 @@ Every module applies one of three convention plugins from build-logic/. They hol
 A fourth plugin, dewfall.detekt, holds the detekt settings and adds the compose-rules plugin to detekt. The three plugins above apply it, and so does the root project, to check the code in build-logic.
 
 Android modules that use Compose, Hilt or Room also apply the matching plugins below, after dewfall.android.application or dewfall.android.library. Today `:app` and `:core:designsystem` apply dewfall.android.compose, only `:app` applies dewfall.android.hilt, and only `:core:database` applies dewfall.android.room. Each feature's `-ui` module will apply both dewfall.android.compose and dewfall.android.hilt.
+
+`:app` also turns on BuildConfig, which AGP 8.0 and later generate only for modules that ask ([AGP 8.0.0](https://developer.android.com/build/releases/agp-8-0-0-release-notes)). The Hilt module that provides the logger reads BuildConfig.DEBUG to pick the lowest log level. See [Logging](#logging).
 
 | Plugin | What it sets |
 |---|---|
@@ -130,7 +135,7 @@ Four tools check the code. AGENTS.md lists the commands that run them.
 
 **Formatting.** Spotless runs ktfmt in kotlinlang style, with 4-space indents and lines of up to 100 characters. It covers every Kotlin file and Kotlin build script in the repository. Its settings are in the root build.gradle.kts, because build-logic and the root build scripts belong to no module. Kotlin files use LF line endings, set in .gitattributes and in the Spotless settings. ktfmt doesn't read .editorconfig. The Kotlin section there comes from ktfmt and helps the IDE's own formatter come close to it. The roadmap first named ktlint. Its last stable release, 1.8.0 from November 2025, parses Kotlin 2.2. The ktlint organization took the project over from Pinterest and supports newer Kotlin only in 2.0 alphas, which moved to new Maven coordinates ([ktlint changelog](https://github.com/ktlint/ktlint/blob/master/CHANGELOG.md)). Spotless can't load them yet, because it only knows the old coordinates ([KtLintStep.java](https://github.com/diffplug/spotless/blob/gradle/8.10.3/lib/src/main/java/com/diffplug/spotless/kotlin/KtLintStep.java)).
 
-**detekt.** detekt runs its default rules, with the changes in config/detekt/detekt.yml, on every module and on build-logic. Any finding fails the build. Each module runs the plain `detekt` task, which doesn't need compiled code. So the rules that need type resolution don't run, such as InjectDispatcher, which would back the "inject dispatchers" rule in AGENTS.md. The task reads only src/main and src/test, so Android test and variant folders aren't checked. Composable functions are named in PascalCase, as the Compose API guidelines say, so FunctionNaming ignores functions annotated with @Composable ([detekt and Compose](https://github.com/detekt/detekt/blob/v2.0.0-alpha.6/website/docs/introduction/compose.mdx)). UnusedPrivateFunction and LongParameterList need type resolution, so they don't run yet. When type resolution is turned on, they need the same page's settings for private previews and for composables with many parameters. The build uses detekt 2.0.0-alpha.6, which is an alpha. The newest stable release, 1.23.8 from February 2025, was built for Kotlin 2.0.21, Gradle 8.12.1 and AGP 8.8.1 ([compatibility table](https://detekt.dev/docs/introduction/compatibility/)). It uses a Gradle method that Gradle 10 removes, and its maintainers plan no more 1.23 releases ([detekt#8452](https://github.com/detekt/detekt/issues/8452)). Support for AGP 9's built-in Kotlin came only in the 2.0 alphas ([detekt#8320](https://github.com/detekt/detekt/issues/8320)). 2.0.0-alpha.6 is built against Kotlin 2.4.10, Gradle 9.6.1 and AGP 9.3.1, close to this build's versions ([release notes](https://github.com/detekt/detekt/releases/tag/v2.0.0-alpha.6)). Rule names and settings may still change before 2.0.0, so read the release notes before each detekt update.
+**detekt.** detekt runs its default rules, with the changes in config/detekt/detekt.yml, on every module and on build-logic. Any finding fails the build. Each module runs the plain `detekt` task, which doesn't need compiled code. So the rules that need type resolution don't run, such as InjectDispatcher, which would back the "inject dispatchers" rule in AGENTS.md. ForbiddenImport runs without it, and rejects imports of GlobalScope, android.util.Log, and NewPipeExtractor's ExtractorLogger and Logger, as [ADR 0007](adr/0007-how-the-app-logs.md) decides. It sees only imports, so a call that names a class in full passes. PrintStackTrace, on by default, catches only `printStackTrace()` on a catch block's own exception. ForbiddenMethodCall, which could reject println, needs type resolution. So println, System.out, System.err and other printStackTrace calls stay unchecked until the lint check in #144. The task reads only src/main and src/test, so Android test and variant folders aren't checked. Composable functions are named in PascalCase, as the Compose API guidelines say, so FunctionNaming ignores functions annotated with @Composable ([detekt and Compose](https://github.com/detekt/detekt/blob/v2.0.0-alpha.6/website/docs/introduction/compose.mdx)). UnusedPrivateFunction and LongParameterList need type resolution, so they don't run yet. When type resolution is turned on, they need the same page's settings for private previews and for composables with many parameters. The build uses detekt 2.0.0-alpha.6, which is an alpha. The newest stable release, 1.23.8 from February 2025, was built for Kotlin 2.0.21, Gradle 8.12.1 and AGP 8.8.1 ([compatibility table](https://detekt.dev/docs/introduction/compatibility/)). It uses a Gradle method that Gradle 10 removes, and its maintainers plan no more 1.23 releases ([detekt#8452](https://github.com/detekt/detekt/issues/8452)). Support for AGP 9's built-in Kotlin came only in the 2.0 alphas ([detekt#8320](https://github.com/detekt/detekt/issues/8320)). 2.0.0-alpha.6 is built against Kotlin 2.4.10, Gradle 9.6.1 and AGP 9.3.1, close to this build's versions ([release notes](https://github.com/detekt/detekt/releases/tag/v2.0.0-alpha.6)). Rule names and settings may still change before 2.0.0, so read the release notes before each detekt update.
 
 **detekt's Compose rules.** detekt also runs [compose-rules](https://github.com/mrmans0n/compose-rules) 0.6.7, a detekt plugin with rules for Compose code, such as "a public composable that emits UI takes a modifier parameter". dewfall.detekt adds it, so it checks every module and build-logic. The Compose section of config/detekt/detekt.yml lists every rule, as compose-rules' docs recommend ([detekt setup](https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/detekt.md#enabling-rules)). The docs leave the four opt-in rules off. Three of them stay off: ComposableNestingDepth, PreviewNaming and UnstableCollections. Material2 is on, because it enforces the Material 3 rule in AGENTS.md. It flags any use of Material 2, the androidx.compose.material package, but not the icons in androidx.compose.material.icons, which the rule always allows. Every other rule is on. [rules.md](https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/rules.md) explains each rule. Eight rules need type resolution, so they don't run yet: ConditionHoist, InvalidReadOnlyComposable, MissingNonRestartableComposable, MissingReadOnlyComposable, StaleRememberUpdatedStateInRemember, UnnecessaryComposable, UnnecessaryLaunchedEffect and VarsWithoutStateBacking. compose-rules' ComposableNaming checks the names of composable functions, which detekt's FunctionNaming skips. Each compose-rules release is built for one detekt version, and 0.6.7 is built for detekt 2.0.0-alpha.6 ([supported versions](https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/detekt.md#supported-versions-matrix)). So each detekt update has to wait for a compose-rules release built for the new detekt version, and both versions change in the same pull request. Renovate puts both in one pull request, which waits for the maintainer's approval ([testing.md](testing.md#dependency-updates)).
 
@@ -155,6 +160,83 @@ AGENTS.md says the app's network calls go only to YouTube, through the YouTube l
 **Emoji fonts.** Compose brings in androidx.emoji2. Its EmojiCompatInitializer runs at startup and asks the system's downloadable font provider for a newer emoji font. On most phones that provider is Google Play services, which may download the font from Google. `:app`'s manifest removes the initializer with `tools:node="remove"`, as the [emoji2](https://developer.android.com/develop/ui/views/text-and-emoji/emoji2#use-different-font-provider) and [App Startup](https://developer.android.com/topic/libraries/app-startup#disable-individual) docs describe. The cost is on older phones. Android 11 and lower can't update their emoji font ([Display emoji](https://developer.android.com/develop/ui/compose/text/emoji)), so very new emoji, such as those in video titles, may show as empty boxes on Android 10 and 11.
 
 **Fonts.** The theme bundles its font, Manrope, in the APK. Compose's downloadable fonts, from androidx.compose.ui:ui-text-google-fonts, would ask Google Play services' font provider for it instead, and that provider may download the font from Google. So the app doesn't use downloadable fonts. See [The theme](#the-theme).
+
+## Logging
+
+Every module logs through the Logger in `:core:logging`. [ADR 0007](adr/0007-how-the-app-logs.md) explains why the app has its own logger, and defines the user data that no log line may contain. The logger makes no network calls and has no startup initializer. Its lines go to logcat on the phone and nowhere else.
+
+### The parts
+
+| Type | Module | What it does |
+|---|---|---|
+| Logger | `:core:logging` | The class that code calls: `debug`, `info`, `warn` and `error`. It drops lines below its minimum level before it builds any text, and writes an error as its summary. It is final, so every line goes through the same formatting. |
+| LogLevel | `:core:logging` | DEBUG, INFO, WARN and ERROR. |
+| LogField | `:core:logging` | A value logged after the message as `name=value`: a count, a flag, a duration or an enum's name. It has no version that takes a String. |
+| LogWriter | `:core:logging` | Where finished lines go. It has one function, so a test can pass a lambda. |
+| LogcatWriter | `:app` | The LogWriter that writes to logcat. It is the only code that calls android.util.Log. |
+| LoggingModule | `:app` | The Hilt module that provides one Logger for the whole app, with LogcatWriter and the build's lowest level. |
+
+### Using the logger
+
+A class receives a Logger in its constructor and keeps it with an area tag. Messages, areas and field names are constant text. Values go in fields, and an error goes in the `error` parameter. For example:
+
+```kotlin
+class UploadsRefresher(logger: Logger) {
+    private val log = logger.withTag("YouTube")
+
+    fun onRefreshed(videoCount: Int) {
+        log.info("Refreshed uploads", LogField.count("videos", videoCount))
+    }
+
+    fun onRefreshFailed(attempt: Int, error: Exception) {
+        log.warn("Refresh failed", LogField.count("attempt", attempt), error = error)
+    }
+}
+```
+
+The warning above is written with the tag Dewfall.YouTube, as text like this:
+
+```
+Refresh failed attempt=2
+java.io.IOException
+  at io.github.dewfallapp.core.youtube.UploadsRefresher.refresh(UploadsRefresher.kt:41)
+Caused by: java.net.SocketTimeoutException
+  at ...
+```
+
+- Every tag is Dewfall, or Dewfall followed by a dot and an area, such as Dewfall.YouTube, so one prefix finds every line the app writes. Android limits tag length only up to Android 7 ([isLoggable](https://developer.android.com/reference/android/util/Log#isLoggable(java.lang.String,%20int))), but tags stay short anyway, because LogcatWriter leaves only 68 bytes of each entry for everything except the text. See [Long text](#long-text).
+- The error summary writes the class name of the error and of each cause, each with up to 30 stack frames, and at most 10 causes. It never writes a message or toString(). It stops at a cause it already wrote, so a chain that loops ends.
+- There is no global logger. Hilt provides the Logger, and code that Hilt doesn't build gets it from whoever builds that code.
+- Reducers never log, because logging is a side effect. ViewModels may.
+- Tests pass `Logger.Silent`, or a Logger with a writer that records lines. [testing.md](testing.md#logging) shows how.
+
+### Levels in each build
+
+Debug builds keep every level. Release builds keep WARN and ERROR. LoggingModule picks the level from BuildConfig.DEBUG, which `:app` turns on, as [Build settings](#build-settings) describes.
+
+Google's [Log Info Disclosure](https://developer.android.com/privacy-and-security/risks/log-info-disclosure) page recommends a logcat backend in developer builds only. For apps that can't avoid logs in production, it falls back to keeping only warnings and errors, with R8 removing the other levels, with no values that aren't constant in the log statements, and with flags that can shut logging down during an incident. Dewfall keeps one part of the fallback, warnings and errors in release builds, because it has no crash reporting: the WARN and ERROR lines in logcat are what a user can read with adb and share when reporting a problem. It departs from the fallback in three ways, as [ADR 0007](adr/0007-how-the-app-logs.md#why-release-builds-keep-warnings-and-errors) explains. Its lines keep LogField values and error class names and frames, which aren't constant, but whose types keep user data out. Until Phase 9 turns on R8, a level check drops the other levels, not R8. And it has no flag to shut logging down, because it has no server or remote settings, so only a new release can change logging.
+
+Nothing shrinks the code yet, so release builds still contain the debug and info calls and their constant text. Those calls return after one level check, before building any text. When Phase 9 turns on R8:
+
+- A `-assumenosideeffects` rule on Logger.debug and Logger.info removes those calls ([rule types](https://developer.android.com/topic/performance/app-optimization/additional-rule-types)). Phase 9 checks R8's output for what stays, such as the code that builds the LogField arguments.
+- The same page describes `-maximumremovedandroidloglevel` as removing Android logging calls, such as Log.w and Log.isLoggable, at or below a level. LogcatWriter passes the priority as a variable, so that rule can't remove its calls by level. The `-assumenosideeffects` rule above does that job instead.
+
+### Long text
+
+liblog cuts any log entry whose payload, the priority, the tag and the text, is over LOGGER_ENTRY_MAX_PAYLOAD, 4068 bytes ([log.h](https://android.googlesource.com/platform/system/logging/+/bcac7c30d88a3773a7c0bc9f5617a23a886331fd/liblog/include/log/log.h#71)). An error summary at its limits goes far past that. So LogcatWriter splits text longer than 4000 bytes into several entries, with the same priority and tag:
+
+- It splits at line breaks, so each entry holds whole lines where it can.
+- It splits a single line longer than 4000 bytes between characters, never inside one.
+- It counts a character outside the Basic Multilingual Plane, such as most emoji, as 6 bytes. Log.println hands the text to liblog through JNI's GetStringUTFChars ([android_util_Log.cpp](https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/jni/android_util_Log.cpp#92)). The [JNI spec](https://docs.oracle.com/en/java/javase/17/docs/specs/jni/functions.html#getstringutfchars) says that returns modified UTF-8, which writes such a character as 6 bytes. ART writes it as UTF-8's 4 bytes instead, against the spec ([jni_internal.cc](https://android.googlesource.com/platform/art/+/6484611fd45e69db9f33f98bfd6864014b030ecf/runtime/jni/jni_internal.cc#222)). Counting 6 keeps each entry within 4000 bytes either way.
+
+The splitting is a function that unit tests call directly, because android.util.Log has no working code in local unit tests.
+
+### What the logger can't cover
+
+- **NewPipeExtractor's logger.** NewPipeExtractor has its own hook, ExtractorLogger, which stays silent until an app sets a logger. Dewfall never sets it, because half of its calls log user data, such as URLs and titles. detekt rejects imports of it.
+- **Uncaught exceptions.** Android's RuntimeInit installs a pre-handler in every app process that writes an uncaught exception's full stack trace, messages included, to logcat's crash buffer. Apps can replace the default handler, but not the pre-handler ([RuntimeInit.java](https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/com/android/internal/os/RuntimeInit.java#240)). This gap is permanent. Catching exceptions at module edges narrows it. See [Error handling](#error-handling).
+- **Other libraries' own logs.** Media3 logs errors by default ([Debug logging](https://developer.android.com/media/media3/exoplayer/debug-logging)), and WorkManager has its own minimum logging level ([custom configuration](https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration)). The tasks that add them check them against ADR 0007.
+- **Calls that skip the logger.** detekt checks only imports, so println, System.out, System.err and most printStackTrace calls stay unchecked until the lint check in #144. See [Formatting and lint](#formatting-and-lint).
 
 ## Data flow
 
@@ -313,4 +395,6 @@ There are no tables yet. Phase 5 adds the first ones (#48), and Phase 8 adds the
 
 ## Error handling
 
-TODO
+When code logs an error, the logger writes only the class names and stack frames of the error and its causes, never their messages, because libraries put URLs and IDs in them. Code that catches a library's exceptions at its module's edge, such as the YouTube layer turning NewPipeExtractor's exceptions into Dewfall's own errors, also keeps them away from Android's crash handler, which logs every message. See [Logging](#logging).
+
+TODO: the rest of this section, such as how errors reach the user.
