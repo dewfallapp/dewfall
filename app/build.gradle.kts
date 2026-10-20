@@ -12,6 +12,12 @@ android {
         applicationId = "io.github.dewfallapp"
     }
 
+    buildFeatures {
+        // LoggingModule reads BuildConfig.DEBUG to pick the lowest log level that a build keeps.
+        // AGP 8.0 and later generate BuildConfig only when a module asks. See ADR 0007.
+        buildConfig = true
+    }
+
     compileOptions {
         // NewPipeExtractor needs core library desugaring below API 33. See ADR 0006.
         isCoreLibraryDesugaringEnabled = true
@@ -21,6 +27,7 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:logging"))
 
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
