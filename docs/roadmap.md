@@ -173,6 +173,7 @@ Once the theme exists in code, Claude Design can import a design system from a G
 - Add a small debug screen that calls each function.
 - Add the daily scheduled workflow that runs the layer against real YouTube and opens a GitHub issue when something fails.
 - Write docs/breakage.md.
+- Add a custom Android Lint check that enforces ADR 0007: log messages, tags and field names are constant text, and nothing calls println, System.out, System.err, printStackTrace, or android.util.Log outside the logcat writer.
 
 ### Your guide
 
