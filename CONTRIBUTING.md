@@ -63,6 +63,8 @@ See [docs/testing.md](docs/testing.md) for the test layers and CI workflows.
 
 Ask in an issue before adding a dependency. Anything that ships in the app must be compatible with GPLv3. Apache 2.0, MIT, BSD and LGPL are fine. Bundled fonts may use the SIL Open Font License 1.1 and must ship with their copyright notice and license text. Build tools that never ship, such as Gradle plugins and the tools they download, may use any open source license or be in the public domain. No dependency may send data anywhere the user did not choose.
 
+Wait 14 days after a release before adopting it, unless the release fixes a security issue. Renovate opens a pull request for each dependency update once the wait is over, so don't open pull requests that only change a version. If a Renovate pull request needs a fix before its checks pass, push the fix to its branch. Renovate then stops updating that branch, so keep it up to date with main yourself. Renovate's pull requests don't use the pull request template or the branch names above. [docs/testing.md](docs/testing.md#dependency-updates) explains how the updates work.
+
 ## Things never to commit
 
 Secrets, keystores, signing passwords and `local.properties`.

@@ -40,6 +40,7 @@ This section is updated whenever a phase's milestone closes.
 | config/detekt/detekt.yml | detekt's settings: the changes to its default rules, and the list of Compose rules |
 | .editorconfig | Editor settings, with a Kotlin section that comes close to the formatter |
 | .github/workflows/ | GitHub Actions workflows. pull-request.yml runs the checks on every pull request to main and every push to main |
+| renovate.json | Renovate's settings for the weekly dependency update pull requests. docs/testing.md explains them |
 | .claude/ | Claude Code setup: the reviewer subagent in agents/, plus the OpenSpec commands and skills |
 
 Some of these are still outlines or empty folders. Later phases fill them in.
@@ -61,7 +62,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - Work on a branch and open a pull request. Never push to main. Name branches by type, such as feat/inbox-screen or docs/phase-0.
 - Keep each pull request small, with one concern.
 - Use conventional commit messages: feat, fix, docs, test, refactor, build, ci or chore. Example: "feat: add storage limit setting".
-- Ask before adding a dependency. Anything that ships in the app must be compatible with GPLv3. Apache 2.0, MIT, BSD and LGPL are fine. Bundled fonts may use the SIL Open Font License 1.1 and must ship with their copyright notice and license text. Build tools that never ship, such as Gradle plugins and the tools they download, may use any open source license or be in the public domain. Ask about anything else.
+- Ask before adding a dependency. Anything that ships in the app must be compatible with GPLv3. Apache 2.0, MIT, BSD and LGPL are fine. Bundled fonts may use the SIL Open Font License 1.1 and must ship with their copyright notice and license text. Build tools that never ship, such as Gradle plugins and the tools they download, may use any open source license or be in the public domain. Ask about anything else. Wait 14 days after a release before adopting it, unless the release fixes a security issue. This applies to new dependencies and to updates. Renovate opens the update pull requests, as docs/testing.md describes.
 - GitHub Actions are build tools too, so the same license rule applies. Pin each action to a full commit SHA with its version in a comment, such as `# v7.0.1`. Give workflows read-only permissions unless a job needs more.
 - Never commit secrets, keystores, signing passwords or local.properties.
 - Do not invent facts, URLs, email addresses or names. If something is missing, ask, or leave a clearly marked TODO.
@@ -119,6 +120,7 @@ Run these from the repository root. The build needs JDK 17 installed, because ev
 - Run detekt: `./gradlew detekt`. It checks the Kotlin code in src/main and src/test of every module, and the code in build-logic, without type resolution. Any finding fails the build. Reports go to build/reports/detekt/ in each project.
 - Run Android Lint: `./gradlew lint`. It checks every module and writes a report to build/reports/ in each of them. Any warning fails the build. In the plain Kotlin/JVM modules it also runs Animal Sniffer, which checks the code against the Android API at minSdk 29, because lint's own API check skips those modules.
 - Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. The workflow is .github/workflows/pull-request.yml. It adds `--continue`, so one run reports every failing check, and `-Pandroid.builder.sdkDownload=false`, so a missing SDK package fails the build instead of being downloaded. After the build, the workflow fails if the build changed or added files in core/database/schemas/, so commit the schema files it writes.
+- Check renovate.json after you change it: `npx --yes --package renovate@44.140.0 -- renovate-config-validator --strict`. It needs Node.js 24. To use a newer renovate release, pick one that is at least 14 days old.
 
 ## Writing style
 
