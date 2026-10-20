@@ -18,11 +18,19 @@ naming:
 style:
   # GlobalCoroutineUsage only sees GlobalScope.launch and GlobalScope.async. Forbidding the
   # import blocks every other use too.
+  # The logging entries enforce ADR 0007. This rule runs without type resolution, so it sees only
+  # imports. A call that names the class in full passes. LogcatWriter in :app does that on purpose.
   ForbiddenImport:
     active: true
     forbiddenImports:
       - value: 'kotlinx.coroutines.GlobalScope'
         reason: 'AGENTS.md says never to use GlobalScope. Use a scope the class receives.'
+      - value: 'android.util.Log'
+        reason: 'Log through the Logger from :core:logging, which keeps out user data. ADR 0007.'
+      - value: 'org.schabi.newpipe.extractor.utils.ExtractorLogger'
+        reason: 'Dewfall never sets the NewPipeExtractor logger, whose lines hold URLs. ADR 0007.'
+      - value: 'org.schabi.newpipe.extractor.utils.Logger'
+        reason: 'Dewfall never sets the NewPipeExtractor logger, whose lines hold URLs. ADR 0007.'
   # The same limit as the formatter, ktfmt in kotlinlang style.
   MaxLineLength:
     maxLineLength: 100
