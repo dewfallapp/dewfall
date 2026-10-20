@@ -40,10 +40,11 @@ context: |
     screen state.
   - Download, sync and cleanup logic must not depend on any screen being open.
     Background jobs run only on unmetered networks while charging.
-  - Anything that ships in the app must be compatible with GPLv3. Build tools
-    that never ship, such as Gradle plugins and the tools they download, may use
-    any open source license or be in the public domain. Ask before adding a
-    dependency.
+  - Anything that ships in the app must be compatible with GPLv3. Bundled fonts
+    may use the SIL Open Font License 1.1 and must ship with their copyright
+    notice and license text. Build tools that never ship, such as Gradle plugins
+    and the tools they download, may use any open source license or be in the
+    public domain. Ask before adding a dependency.
 
   Specs:
   - One change per feature. Keep changes small enough for one small pull request.

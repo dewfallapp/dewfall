@@ -2,6 +2,8 @@
 /gradlew text eol=lf
 *.bat text eol=crlf
 *.jar binary
+# Bundled fonts stay byte for byte as their authors released them.
+*.ttf binary
 
 # Kotlin code and build scripts use LF everywhere, as Spotless and .editorconfig expect.
 *.kt text eol=lf

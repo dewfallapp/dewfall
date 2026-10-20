@@ -195,6 +195,7 @@ The breakage playbook in docs/breakage.md lists the steps for a failure: confirm
 - Media3 player inside a media session service.
 - Background audio with a media notification.
 - Mini player and fullscreen player.
+- Match the launch window to Dewfall's colors: the window background before the first frame and the Android 12+ splash screen, in light, dark and dynamic color.
 - Screenshot tests for each screen in light, dark and large font.
 - First emulator test: search, then play.
 
@@ -304,6 +305,7 @@ Not every video has subtitles. Show a small mark on videos that are searchable, 
 - Final privacy policy in PRIVACY.md.
 - Issue templates asking for app version, Android version, phone model and steps to reproduce.
 - "Copy debug info" button in settings.
+- Open-source licenses section in settings, with the licenses of the font, the icons and every library the app ships.
 - Final pass on onboarding and on empty, error and offline states.
 - Check that every string is in resources, and test with TalkBack and large fonts.
 - Startup benchmark on a real phone.

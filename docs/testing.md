@@ -13,6 +13,7 @@ Fast tests run on every change. They cover:
 - Repositories with fake data sources.
 - The YouTube layer against saved responses.
 - Room queries.
+- The theme against the design tokens. [architecture.md](architecture.md#the-theme) explains the check.
 - Background jobs.
 - Screenshot tests of each screen, in light, dark and large font.
 
