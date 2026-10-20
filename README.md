@@ -13,3 +13,5 @@ Dewfall is an Android app that works like a podcast app for YouTube. You pick ch
 ## License
 
 Dewfall is free software, licensed under the [GNU General Public License v3.0](LICENSE).
+
+The bundled Manrope font is under the SIL Open Font License 1.1, in [Manrope-OFL.txt](core/designsystem/src/main/assets/licenses/Manrope-OFL.txt).
