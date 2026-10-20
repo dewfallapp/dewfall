@@ -53,8 +53,9 @@
       "prBodyNotes": ["If the build fails on a missing build-tools package, update the SDK step in .github/workflows/pull-request.yml and the Commands section of AGENTS.md on this branch."]
     },
     {
-      "description": "A ktfmt update can change the formatting.",
-      "matchPackageNames": ["com.facebook:ktfmt"],
+      "description": "Spotless downloads ktfmt, and ktfmt 0.65 and later need Spotless 8.10.4 or later to load their org.jetbrains.kotlinx coordinates, so both change in one pull request. A ktfmt update can change the formatting.",
+      "matchPackageNames": ["/^com\\.diffplug\\.spotless:/", "org.jetbrains.kotlinx:ktfmt"],
+      "groupName": "Spotless and ktfmt",
       "prBodyNotes": ["If spotlessCheck fails, run ./gradlew spotlessApply on this branch and push the result."]
     },
     {
@@ -66,11 +67,11 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "ktfmt has no library entry in the catalog, because Spotless downloads it.",
+      "description": "ktfmt has no library entry in the catalog, because Spotless downloads it. From 0.65 on, ktfmt is published as org.jetbrains.kotlinx:ktfmt instead of com.facebook:ktfmt.",
       "managerFilePatterns": ["/^gradle/libs\\.versions\\.toml$/"],
       "matchStrings": ["\\nktfmt = \"(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "maven",
-      "depNameTemplate": "com.facebook:ktfmt",
+      "depNameTemplate": "org.jetbrains.kotlinx:ktfmt",
       "versioningTemplate": "maven"
     },
     {

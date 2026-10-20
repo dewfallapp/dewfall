@@ -3,8 +3,9 @@ agp = "9.4.1"
 kotlin = "2.4.20"
 desugarJdkLibsNio = "2.1.5"
 spotless = "8.10.3"
-# The formatter that Spotless runs. Spotless downloads it, so it has no library entry. A custom
-# manager in renovate.json updates it, so keep this line's format.
+# The formatter that Spotless runs. Spotless downloads it, so it has no library entry. From 0.65
+# on, ktfmt is published as org.jetbrains.kotlinx:ktfmt, which only Spotless 8.10.4 or later can
+# load. A custom manager in renovate.json updates it with Spotless, so keep this line's format.
 ktfmt = "0.64"
 detekt = "2.0.0-alpha.6"
 # compose-rules adds Compose rules to detekt. Each release is built for one detekt version, so a
