@@ -29,7 +29,7 @@ Benchmarks for startup and scrolling run on a real phone before each release.
 
 ## CI workflows
 
-The project uses four GitHub Actions workflows, plus weekly dependency updates that run outside GitHub Actions.
+The project uses four GitHub Actions workflows, plus Renovate's weekly update pull requests, which workflow 1 tests.
 
 1. **Every pull request.** Formatting, lint, unit tests, screenshot tests, a database migration check, and a debug build. Branch protection blocks merging when any of them fail.
 2. **Every merge to main.** Everything above, plus the emulator tests, and a nightly APK.
@@ -59,7 +59,7 @@ Workflow 1 is .github/workflows/pull-request.yml. Today it runs one job, Checks,
 - **How many.** At most five of Renovate's pull requests are open at once, with no hourly limit. Updates beyond that wait for the next Friday after a pull request closes. The Dependency Dashboard lists them.
 - **The 14-day wait.** AGENTS.md says to wait 14 days after a release before adopting it, unless the release fixes a security issue. Renovate creates no branch for a release that is less than 14 days old, or that has no release date. The Dependency Dashboard, an issue that Renovate keeps open, lists these updates under "Pending Status Checks".
 - **Security fixes.** A pull request that fixes a known vulnerability skips the wait and the schedule. Renovate finds these fixes in the repository's Dependabot alerts and in the [OSV](https://osv.dev/) vulnerability database, which it downloads and searches offline. When a release fixes a security issue that neither source lists, such as a Gradle release, tick its box under "Pending Status Checks" to create the pull request now.
-- **Groups.** Entries that share a version in the catalog change together, such as Hilt's three entries. Kotlin and KSP share one pull request. So do detekt and compose-rules, because each compose-rules release is built for one detekt version. That pull request waits until the maintainer ticks its box on the Dependency Dashboard, after checking compose-rules' supported versions table.
+- **Groups.** Entries that share a version in the catalog change together, such as Hilt's three entries. Kotlin and KSP share one pull request. So do Spotless and ktfmt, because ktfmt 0.65 and later are published as org.jetbrains.kotlinx:ktfmt, which only Spotless 8.10.4 or later can load. detekt and compose-rules share one too, because each compose-rules release is built for one detekt version. That pull request waits until the maintainer ticks its box on the Dependency Dashboard, after checking compose-rules' supported versions table.
 - **Pre-releases.** Renovate offers a pre-release only when the current version is a pre-release with the same major, minor and patch numbers. So detekt moves from one 2.0.0 alpha to the next or to 2.0.0, and every other dependency gets stable releases only ([ignoreUnstable](https://docs.renovatebot.com/configuration-options/#ignoreunstable)).
 - **Titles.** Gradle updates start with "build:" and Actions updates with "ci:", as the commit message rule in AGENTS.md asks.
 - **Up to date with main.** The ruleset requires a branch that's up to date with main, and Renovate rebases its open pull requests when main moves. To rebase one now, tick the rebase box in its description. Don't press "Update branch". Renovate would then treat the pull request as edited by someone else and stop updating it.
