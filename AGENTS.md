@@ -14,7 +14,7 @@ The first version has four parts: overnight downloads with automatic cleanup, a 
 
 ## Current status
 
-The current phase is Phase 2: project setup and CI. Its goal is an almost empty app with a solid structure, and a pull request check that blocks bad changes. Add Gradle files, modules and source code only when a Phase 2 task asks for them, and only what that task asks for. Phase 2 adds no features.
+The current phase is Phase 3: the YouTube layer. Its goal is that all access to YouTube lives in `:core:youtube`, behind Dewfall's own interfaces, so every future fix stays in one place. Add modules and code only when a Phase 3 task asks for them, and only what that task asks for. Phase 3 adds no features or screens beyond the debug screen its tasks ask for.
 
 docs/roadmap.md holds the plan: every phase and its tasks. The [Dewfall roadmap](https://github.com/orgs/dewfallapp/projects/1) project board shows what is done and what is next, with one milestone per phase and one issue per task.
 
@@ -79,7 +79,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 
 ## Architecture rules
 
-These apply from Phase 2 on. If Phase 2 refines them, update this section in the same pull request.
+These apply from Phase 2 on. A pull request that refines them updates this section too.
 
 - Kotlin, Jetpack Compose, Material 3, Hilt, Room, WorkManager and Media3.
 - Follow Android's current official guidance, such as the app architecture recommendations and the Compose docs on developer.android.com. If the android CLI is installed, `android docs search` and `android docs fetch` read the same guidance from the Android Knowledge Base. For any API, library or Gradle setting that may have changed, check the current docs instead of relying on memory. Don't use deprecated APIs in new code. If the guidance conflicts with a rule in this file, follow this file and point out the conflict.
