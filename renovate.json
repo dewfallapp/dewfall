@@ -1,0 +1,87 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Weekly dependency update pull requests. docs/testing.md#dependency-updates explains these settings.",
+  "extends": ["config:recommended", ":semanticCommits", ":semanticCommitScopeDisabled"],
+  "enabledManagers": ["gradle", "gradle-wrapper", "github-actions", "custom.regex"],
+  "timezone": "Asia/Dhaka",
+  "schedule": ["* * * * 5"],
+  "minimumReleaseAge": "14 days",
+  "minimumReleaseAgeBehaviour": "timestamp-required",
+  "internalChecksFilter": "strict",
+  "vulnerabilityAlerts": {
+    "description": "Security fixes skip the 14-day wait, as AGENTS.md allows.",
+    "minimumReleaseAge": null
+  },
+  "osvVulnerabilityAlerts": true,
+  "rebaseWhen": "behind-base-branch",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 0,
+  "automerge": false,
+  "packageRules": [
+    {
+      "description": "Gradle updates, the version catalog and the wrapper included, use the build type.",
+      "matchManagers": ["gradle", "gradle-wrapper", "custom.regex"],
+      "semanticCommitType": "build"
+    },
+    {
+      "description": "GitHub Actions and runner updates use the ci type.",
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "ci"
+    },
+    {
+      "description": "Kotlin's plugins and kotlin-test share one catalog version, and the Compose compiler ships with Kotlin. KSP runs on Kotlin's compiler, so it is tested with them.",
+      "matchPackageNames": ["/^org\\.jetbrains\\.kotlin[.:]/", "/^com\\.google\\.devtools\\.ksp:/"],
+      "groupName": "Kotlin and KSP",
+      "prBodyNotes": ["A new Kotlin minor version may also need a newer Hilt. See docs/architecture.md#build-settings."]
+    },
+    {
+      "description": "Each compose-rules release is built for one detekt version, so both change in one pull request, and only after the maintainer approves it on the Dependency Dashboard.",
+      "matchPackageNames": ["/^dev\\.detekt:/", "io.nlopez.compose.rules:detekt"],
+      "groupName": "detekt and compose-rules",
+      "dependencyDashboardApproval": true,
+      "prBodyNotes": ["Check compose-rules' supported versions table for this detekt version, and read detekt's release notes. See docs/architecture.md#formatting-and-lint."]
+    },
+    {
+      "description": "The build needs JDK 17, as AGENTS.md says, so the JDK version in the workflow's setup-java step changes only by hand.",
+      "matchManagers": ["github-actions"],
+      "matchDatasources": ["java-version"],
+      "enabled": false
+    },
+    {
+      "description": "AGP sets the default build tools version, which the pull request workflow installs.",
+      "matchPackageNames": ["/^com\\.android\\.(application|library):/", "com.android.tools.build:gradle"],
+      "prBodyNotes": ["If the build fails on a missing build-tools package, update the SDK step in .github/workflows/pull-request.yml and the Commands section of AGENTS.md on this branch."]
+    },
+    {
+      "description": "Spotless downloads ktfmt, and ktfmt 0.65 and later need Spotless 8.10.4 or later to load their org.jetbrains.kotlinx coordinates, so both change in one pull request. A ktfmt update can change the formatting.",
+      "matchPackageNames": ["/^com\\.diffplug\\.spotless:/", "org.jetbrains.kotlinx:ktfmt"],
+      "groupName": "Spotless and ktfmt",
+      "prBodyNotes": ["If spotlessCheck fails, run ./gradlew spotlessApply on this branch and push the result."]
+    },
+    {
+      "description": "Renovate writes the new checksum before it runs the wrapper task, so the checksum changes even when the task fails.",
+      "matchManagers": ["gradle-wrapper"],
+      "prBodyNotes": ["If gradle-wrapper.jar, gradlew and gradlew.bat didn't change, run ./gradlew wrapper on this branch and push any changes it makes."]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "ktfmt has no library entry in the catalog, because Spotless downloads it. From 0.65 on, ktfmt is published as org.jetbrains.kotlinx:ktfmt instead of com.facebook:ktfmt.",
+      "managerFilePatterns": ["/^gradle/libs\\.versions\\.toml$/"],
+      "matchStrings": ["\\nktfmt = \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "maven",
+      "depNameTemplate": "org.jetbrains.kotlinx:ktfmt",
+      "versioningTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "description": "Gummy Bears has no library entry, because build-logic builds the artifact name from minSdk. Change api-29 here when minSdk changes.",
+      "managerFilePatterns": ["/^gradle/libs\\.versions\\.toml$/"],
+      "matchStrings": ["\\ngummyBears = \"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "maven",
+      "depNameTemplate": "com.toasttab.android:gummy-bears-api-29",
+      "versioningTemplate": "maven"
+    }
+  ]
+}

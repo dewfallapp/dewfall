@@ -146,7 +146,7 @@ Claude Design exports as .zip, PDF, PPTX, Google Slides or standalone HTML. It c
 - Add the pull request workflow in GitHub Actions: formatting, lint, unit tests, and a debug build.
 - Turn on branch protection for main so failing checks block merging.
 - Add a pull request template with the line "OpenSpec change archived, or not needed".
-- Add Renovate or Dependabot for weekly dependency update pull requests.
+- Add Renovate for weekly dependency update pull requests.
 - Write the modules section of docs/architecture.md with a Mermaid diagram.
 - Optional: import the repository into Claude Design as a design system, so new designs use your real theme.
 
@@ -337,13 +337,13 @@ Add these one at a time, in the order your first users ask for them. Their feedb
 
 Fast tests run on every change. They cover reducers, use cases, repositories with fake data sources, the YouTube layer against saved responses, Room queries, background jobs, and screenshot tests of each screen. Slow tests are emulator tests of the main flows, such as search then play, and download then play offline. Benchmarks for startup and scrolling run on a real phone before each release.
 
-The project uses five GitHub Actions workflows:
+The project uses four GitHub Actions workflows, plus Renovate's weekly update pull requests, which workflow 1 tests:
 
 1. Every pull request: formatting, lint, unit tests, screenshot tests, a database migration check, and a debug build. Branch protection blocks merging when any of them fail.
 2. Every merge to main: everything above, plus the emulator tests, and a nightly APK.
 3. Daily schedule: the YouTube layer runs against real YouTube and opens an issue when something breaks. It never blocks pull requests.
 4. Version tag: a signed release build, changelog, checksums, and a GitHub release.
-5. Weekly: dependency update pull requests from Renovate or Dependabot, tested by workflow 1.
+5. Weekly: Renovate opens dependency update pull requests, and workflow 1 tests them.
 
 ## Reference: documentation map
 

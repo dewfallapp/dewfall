@@ -3,16 +3,20 @@ agp = "9.4.1"
 kotlin = "2.4.20"
 desugarJdkLibsNio = "2.1.5"
 spotless = "8.10.3"
-# The formatter that Spotless runs. Spotless downloads it, so it has no library entry.
+# The formatter that Spotless runs. Spotless downloads it, so it has no library entry. From 0.65
+# on, ktfmt is published as org.jetbrains.kotlinx:ktfmt, which only Spotless 8.10.4 or later can
+# load. A custom manager in renovate.json updates it with Spotless, so keep this line's format.
 ktfmt = "0.64"
 detekt = "2.0.0-alpha.6"
 # compose-rules adds Compose rules to detekt. Each release is built for one detekt version, so a
 # detekt update waits for a compose-rules release built for the new version. Matching versions:
 # https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/detekt.md#supported-versions-matrix
+# renovate.json updates both in one pull request, after the maintainer approves it.
 composeRules = "0.6.7"
 animalsniffer = "2.0.1"
 # Android API signatures for Animal Sniffer. build-logic adds the artifact, whose name holds
-# the API level, so it has no library entry.
+# the API level, so it has no library entry. A custom manager in renovate.json updates it, so keep
+# this line's format, and change the API level there when minSdk changes.
 gummyBears = "0.15.0"
 composeBom = "2026.09.00"
 activityCompose = "1.13.0"

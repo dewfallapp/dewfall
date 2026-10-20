@@ -4,7 +4,8 @@ import com.android.build.api.dsl.Lint
 
 /**
  * Lint checks that look up versions or library data on the network. They are off so that lint gives
- * the same result on every run. Dependency updates are a separate task, #31.
+ * the same result on every run. Renovate's pull requests bring new versions instead. See
+ * docs/testing.md#dependency-updates.
  */
 private val networkLintChecks =
     setOf(

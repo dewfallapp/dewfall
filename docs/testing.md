@@ -29,13 +29,13 @@ Benchmarks for startup and scrolling run on a real phone before each release.
 
 ## CI workflows
 
-The project uses five GitHub Actions workflows.
+The project uses four GitHub Actions workflows, plus Renovate's weekly update pull requests, which workflow 1 tests.
 
 1. **Every pull request.** Formatting, lint, unit tests, screenshot tests, a database migration check, and a debug build. Branch protection blocks merging when any of them fail.
 2. **Every merge to main.** Everything above, plus the emulator tests, and a nightly APK.
 3. **Daily schedule.** The YouTube layer runs against real YouTube and opens an issue when something breaks. It never blocks pull requests.
 4. **Version tag.** A signed release build, changelog, checksums, and a GitHub release.
-5. **Weekly.** Dependency update pull requests from Renovate or Dependabot, tested by workflow 1.
+5. **Weekly.** Renovate opens dependency update pull requests, and workflow 1 tests them. See [Dependency updates](#dependency-updates).
 
 ### The pull request workflow
 
@@ -49,6 +49,26 @@ Workflow 1 is .github/workflows/pull-request.yml. Today it runs one job, Checks,
 - It caches Gradle with setup-gradle's basic caching, which is MIT licensed, because the default, enhanced caching, loads a proprietary component ([DISTRIBUTION.md](https://github.com/gradle/actions/blob/v6.4.0/DISTRIBUTION.md)).
 - A repository ruleset named main protects the branch. It requires a pull request, allows only merge commits, and requires the check named Checks to pass on a branch that's up to date with main. It blocks force pushes and deletion, and nobody can bypass it, maintainers included. The ruleset requires the check by its name, so renaming the job blocks merging until the ruleset is updated.
 - The repository allows only GitHub's own actions and gradle/actions/setup-gradle, and requires every action to be pinned to a full commit SHA. A new action needs the allow list changed in the repository settings first.
+
+### Dependency updates
+
+[Renovate](https://docs.renovatebot.com/) opens a pull request for each dependency update, and workflow 1 tests it like any other pull request. Renovate runs as the Mend Renovate app on Mend's servers, which clone the repository for each run. It reads its settings from renovate.json. Renovate is licensed under AGPL-3.0 and never ships in the app.
+
+- **What it updates.** The plugins and libraries in gradle/libs.versions.toml, the Gradle wrapper, and the actions and the runner image in .github/workflows/. ktfmt and Gummy Bears have no library entry in the catalog, so two custom managers in renovate.json find their versions. The Gummy Bears manager names the artifact for API 29, so change it when minSdk changes. Renovate would also update the JDK version in the workflow's setup-java step, but the build needs JDK 17, so renovate.json turns that off. Nothing updates the Android SDK packages in the workflow or the Android versions in build-logic. Change these by hand.
+- **When.** Renovate creates new branches only on Fridays, in the Asia/Dhaka time zone. It still rebases open pull requests on other days.
+- **How many.** At most five of Renovate's pull requests are open at once, with no hourly limit. Updates beyond that wait for the next Friday after a pull request closes. The Dependency Dashboard lists them.
+- **The 14-day wait.** AGENTS.md says to wait 14 days after a release before adopting it, unless the release fixes a security issue. Renovate creates no branch for a release that is less than 14 days old, or that has no release date. The Dependency Dashboard, an issue that Renovate keeps open, lists these updates under "Pending Status Checks".
+- **Security fixes.** A pull request that fixes a known vulnerability skips the wait and the schedule. Renovate finds these fixes in the repository's Dependabot alerts and in the [OSV](https://osv.dev/) vulnerability database, which it downloads and searches offline. When a release fixes a security issue that neither source lists, such as a Gradle release, tick its box under "Pending Status Checks" to create the pull request now.
+- **Groups.** Entries that share a version in the catalog change together, such as Hilt's three entries. Kotlin and KSP share one pull request. So do Spotless and ktfmt, because ktfmt 0.65 and later are published as org.jetbrains.kotlinx:ktfmt, which only Spotless 8.10.4 or later can load. Renovate leaves out a group member that is still inside its 14 days, so a ktfmt release can arrive before the Spotless release that loads it. That pull request fails spotlessCheck until a later run adds Spotless. detekt and compose-rules share one too, because each compose-rules release is built for one detekt version. That pull request waits until the maintainer ticks its box on the Dependency Dashboard, after checking compose-rules' supported versions table.
+- **Pre-releases.** Renovate offers a pre-release only when the current version is a pre-release with the same major, minor and patch numbers. So detekt moves from one 2.0.0 alpha to the next or to 2.0.0, and every other dependency gets stable releases only ([ignoreUnstable](https://docs.renovatebot.com/configuration-options/#ignoreunstable)).
+- **Titles.** Gradle updates start with "build:" and Actions updates with "ci:", as the commit message rule in AGENTS.md asks.
+- **Up to date with main.** The ruleset requires a branch that's up to date with main, and Renovate rebases its open pull requests when main moves. To rebase one now, tick the rebase box in its description. Don't press "Update branch". Renovate would then treat the pull request as edited by someone else and stop updating it.
+- **Fixing a pull request.** Some updates need a change before Checks passes. A ktfmt update can change the formatting, a Kotlin or library update can deprecate an API the code uses, and an AGP update can need new build tools. Push the fix to Renovate's branch. Renovate then leaves the branch alone, so keep it up to date with main yourself. For ktfmt and AGP updates, the pull request's description names the usual fix.
+- **The Gradle wrapper.** Renovate writes the new distributionSha256Sum, then runs the wrapper task to update gradle-wrapper.jar, gradlew and gradlew.bat. If that task fails on Mend's servers, only gradle-wrapper.properties changes. Then run `./gradlew wrapper` on the branch and push any changes it makes.
+- **Review.** Nothing merges on its own. Before merging, check that Checks passed and read the release notes, especially detekt's. For a library that ships in the app, check that the update adds no artifact whose license breaks the rule in AGENTS.md.
+- **Exceptions.** Renovate's pull requests don't use the pull request template, and their branches start with renovate/.
+
+AGENTS.md has the command that checks renovate.json.
 
 ## Running tests locally
 
