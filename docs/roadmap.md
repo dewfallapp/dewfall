@@ -168,6 +168,7 @@ Once the theme exists in code, Claude Design can import a design system from a G
 
 - Wrap NewPipeExtractor behind your own interfaces for search, video details, a channel's latest uploads, stream links, and subtitles.
 - Map every NewPipeExtractor type to your own models inside the module.
+- Implement the YouTube layer's subtitles: list a video's subtitle tracks, then download a track and parse it into lines with their start and end times.
 - Decide how the app logs: one logger that the plain Kotlin/JVM modules can use too, no user data in any log, and less detail in release builds.
 - Save real responses as test fixtures and write tests against them.
 - Add a small debug screen that calls each function.
