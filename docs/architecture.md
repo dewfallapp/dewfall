@@ -272,7 +272,7 @@ Every function keeps these rules. Each interface's KDoc repeats the first two.
 | VideoKind | VIDEO, SHORT, LIVE or UPCOMING. VIDEO includes finished premieres and recordings of live streams. LIVE includes a premiere that is playing now. |
 | Channel | ID, name, avatars and description |
 | SearchResults | The first page of a search: channels and videos, in YouTube's order |
-| ChannelUploads | A channel, and its latest long-form videos and live streams, newest first, never Shorts. A premiere or live stream that hasn't started is UPCOMING. |
+| ChannelUploads | A channel, and its latest long-form videos and live streams, never Shorts, in the order that [A channel's latest uploads](#a-channels-latest-uploads) describes. A premiere or live stream that hasn't started is UPCOMING. |
 | VideoDetails | ID, title, channel ID, name and avatars, description as plain text, length, publish time, thumbnails, and whether it is live |
 | StreamLinks | Audio formats, video formats, an HLS manifest, and when the links stop working |
 | SubtitleTrack, SubtitleLine | A track's language, whether YouTube generated it, and its link. A line's start, end and text. |
@@ -290,18 +290,27 @@ A model's thumbnails hold every size YouTube offers. The screen picks the smalle
 
 ChannelUploads holds a channel's long-form videos and live streams, and never its Shorts. Whether the inbox shows videos that haven't started is a Phase 5 decision.
 
-On a channel's page, YouTube shows regular videos and premieres in the Videos tab, live streams in the Live tab, whether they are on air, upcoming or recorded, and Shorts in the Shorts tab. So #35 reads two tabs, two requests for each channel, and merges them, newest first:
+On a channel's page, YouTube shows regular videos and premieres in the Videos tab, live streams in the Live tab, whether they are on air, upcoming or recorded, and Shorts in the Shorts tab. So #35 reads two tabs, two requests for each channel, and merges them:
 
 - The Videos tab. NewPipeExtractor's channel request already holds it, with the channel's name, avatar and description.
 - The Live tab.
 
 Both tabs give the length of each video that can be watched from start to end. NewPipeExtractor's item code marks a stream that is on air by its badge, and a premiere or stream that hasn't started by its scheduled start. The other publish times are relative, such as "Streamed 2 years ago", so most of them are approximate.
 
+The merged list follows this order, which the KDoc of ChannelUploads and ChannelUploadsRemoteDataSource states too:
+
+- The videos are sorted by their publish time, newest first. Exact and approximate times are compared as they are.
+- An upcoming video's time is its scheduled start, which is in the future, so upcoming videos with a scheduled start come first.
+- Videos with no publish time come last.
+- Videos with the same time, and videos with no time, keep the order YouTube gave, with the Videos tab's videos before the Live tab's.
+
+#35 implements this order and tests it. If the inbox wants a different order later, Phase 5 sorts its own rows.
+
 The channel's RSS feed was rejected. It lists Shorts without marking them, so leaving them out would depend on an undocumented link pattern, and it gives no lengths.
 
 ### Stream links
 
-YouTube serves most of a video's sound and picture as separate formats. Each format in StreamLinks is a single file that HTTP GET requests with byte ranges can read. #35 leaves out the formats that need a manifest to play. A player plays one audio format and one video format together, such as with Media3's MergingMediaSource ([media sources](https://developer.android.com/media/media3/exoplayer/media-sources)), or plays the HLS manifest. A live stream has only the HLS manifest.
+YouTube serves most of a video's sound and picture as separate formats. Each format in StreamLinks is a single file that HTTP GET requests with byte ranges can read. #35 leaves out the formats that need a manifest to play. So a player usually plays one audio format and one video format together, such as with Media3's MergingMediaSource ([media sources](https://developer.android.com/media/media3/exoplayer/media-sources)). A video format whose `includesAudio` is true has the sound too, so it plays on its own. A player can also play the HLS manifest. A live stream has only the HLS manifest.
 
 The links stop working after some time. NewPipeExtractor doesn't say when, so #35 reads the `expire` parameter from the links and leaves `expiresAt` null when there is none. Callers fetch new links just before playing or downloading, and again when a link stops working. StreamLinks has no DASH manifest, because NewPipeExtractor's dev branch no longer gives one.
 
