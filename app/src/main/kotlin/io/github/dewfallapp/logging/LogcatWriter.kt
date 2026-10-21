@@ -12,7 +12,7 @@ import io.github.dewfallapp.core.logging.LogWriter
 /**
  * The most bytes of text in one logcat entry. liblog cuts any entry whose payload, the priority,
  * the tag and the text together, is longer than LOGGER_ENTRY_MAX_PAYLOAD in its log.h, 4068 bytes.
- * 4000 leaves room for the priority and a short tag. See docs/architecture.md#logging.
+ * 4000 leaves room for the priority and a short tag. See docs/architecture.md#long-text.
  */
 private const val MAX_ENTRY_BYTES = 4000
 

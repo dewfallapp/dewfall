@@ -16,7 +16,7 @@ package io.github.dewfallapp.core.logging
  */
 class Logger
 private constructor(
-    // Null only for Silent, which builds nothing.
+    // Null only for Silent, which builds and writes nothing, so its minLevel is never read.
     private val writer: LogWriter?,
     private val minLevel: LogLevel,
     private val tag: String,
@@ -45,7 +45,10 @@ private constructor(
         log(LogLevel.WARN, message, fields, error)
     }
 
-    /** Logs a problem that stopped the app from doing what it was asked to. */
+    /**
+     * Logs a problem that stopped the app from doing what it was asked to, with the [error] that
+     * caused it, if any.
+     */
     fun error(message: String, vararg fields: LogField, error: Throwable? = null) {
         log(LogLevel.ERROR, message, fields, error)
     }

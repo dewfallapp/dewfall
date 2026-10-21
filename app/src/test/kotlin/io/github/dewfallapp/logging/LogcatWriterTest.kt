@@ -38,7 +38,7 @@ class LogcatWriterTest {
     }
 
     @Test
-    fun `writes long text as several entries with the same priority and tag`() {
+    fun `writes long text as several entries with the same priority and tag, losing nothing`() {
         // 300 lines of 40 characters, about 12,300 bytes.
         val text = List(300) { "x".repeat(40) }.joinToString("\n")
 

@@ -14,14 +14,14 @@ class LoggerTest {
         Logger({ level, tag, text -> lines += Line(level, tag, text) }, minLevel)
 
     @Test
-    fun `release builds drop debug and info lines`() {
+    fun `a WARN minimum drops debug and info lines`() {
         logAtEveryLevel(logger(LogLevel.WARN))
 
         assertEquals(listOf(LogLevel.WARN, LogLevel.ERROR), lines.map { it.level })
     }
 
     @Test
-    fun `debug builds keep every level`() {
+    fun `a DEBUG minimum keeps every level`() {
         logAtEveryLevel(logger(LogLevel.DEBUG))
 
         assertEquals(LogLevel.entries, lines.map { it.level })
@@ -80,7 +80,7 @@ class LoggerTest {
     }
 
     @Test
-    fun `Silent writes nothing and builds nothing`() {
+    fun `Silent builds no text, not even an error summary`() {
         val error = CountingError()
 
         Logger.Silent.error("Not written", error = error)
@@ -94,15 +94,17 @@ class LoggerTest {
         logger.warn("Warn line")
         logger.error("Error line")
     }
-}
 
-/** An error that counts how often its stack trace is read, which shows when a summary is built. */
-private class CountingError : Exception() {
-    var stackTraceReads = 0
-        private set
+    /**
+     * An error that counts how often its stack trace is read, which shows when a summary is built.
+     */
+    private class CountingError : Exception() {
+        var stackTraceReads = 0
+            private set
 
-    override fun getStackTrace(): Array<StackTraceElement> {
-        stackTraceReads++
-        return super.getStackTrace()
+        override fun getStackTrace(): Array<StackTraceElement> {
+            stackTraceReads++
+            return super.getStackTrace()
+        }
     }
 }

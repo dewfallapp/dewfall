@@ -10,18 +10,24 @@ import kotlin.time.Duration
  * It keeps the name and the value, and [Logger] writes them only for a line it keeps, so a dropped
  * line builds no text.
  */
-class LogField private constructor(private val name: String, private val value: Any) {
+class LogField
+private constructor(
+    private val name: String,
+    // An Int, a Long, a Boolean, a Duration or an Enum, because only the factories below call
+    // this constructor.
+    private val value: Any,
+) {
     /** The field as it appears in a log line. */
     internal val text: String
         get() {
-            val written =
+            val valueText =
                 when (value) {
                     is Duration -> value.toIsoString()
                     is Enum<*> -> value.name
-                    // Int, Long or Boolean.
+                    // An Int, a Long or a Boolean.
                     else -> value.toString()
                 }
-            return "$name=$written"
+            return "$name=$valueText"
         }
 
     companion object {

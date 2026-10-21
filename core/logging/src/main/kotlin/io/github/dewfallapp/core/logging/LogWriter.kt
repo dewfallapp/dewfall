@@ -6,5 +6,6 @@ package io.github.dewfallapp.core.logging
  * fields and an error summary, so it adds nothing of its own.
  */
 fun interface LogWriter {
+    /** Writes [text] at [level] with [tag]. The text can run to several lines. */
     fun write(level: LogLevel, tag: String, text: String)
 }

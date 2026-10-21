@@ -10,7 +10,7 @@ private const val MAX_FRAMES = 30
 private const val MAX_CAUSES = 10
 
 /**
- * Writes [error] for a log line: the class name of the error and of each cause, each followed by
+ * Describes [error] for a log line: the class name of the error and of each cause, each followed by
  * its stack frames. It never writes a message, a localized message or toString(), because libraries
  * put URLs, IDs and search text in them. Suppressed errors are left out. See ADR 0007.
  *
@@ -60,6 +60,7 @@ private fun StackTraceElement.describe(): String {
         when {
             isNativeMethod -> "Native Method"
             fileName == null -> "Unknown Source"
+            // A negative line number means that the line is unknown.
             lineNumber >= 0 -> "$fileName:$lineNumber"
             else -> fileName
         }

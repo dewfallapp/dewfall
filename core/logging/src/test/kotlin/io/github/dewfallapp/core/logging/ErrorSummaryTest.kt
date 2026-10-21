@@ -63,7 +63,7 @@ class ErrorSummaryTest {
     }
 
     @Test
-    fun `writes at most 30 frames for each error`() {
+    fun `writes at most 30 frames for each error, then how many it left out`() {
         val error =
             IOException().apply {
                 stackTrace = Array(40) { StackTraceElement("a.B", "run$it", "B.kt", it + 1) }
@@ -77,7 +77,7 @@ class ErrorSummaryTest {
     }
 
     @Test
-    fun `writes at most 10 causes`() {
+    fun `writes at most 10 causes, then says that more were left out`() {
         // The error and 15 causes below it.
         val error =
             (1..15).fold<Int, Throwable>(IOException()) { cause, _ -> IllegalStateException(cause) }
