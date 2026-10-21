@@ -301,6 +301,7 @@ Not every video has subtitles. Show a small mark on videos that are searchable, 
 - Create the release signing key and back it up in two separate offline places.
 - From the first public release on, fail the pull request check when a Room schema file that's on main changes or disappears.
 - Set up migration tests: Room's MigrationTestHelper from [androidx.room3:room3-testing](https://developer.android.com/training/data-storage/room/migrating-db-versions#test), the androidTest setup and an emulator run in CI, so that every schema change from the first public release on gets a migration test.
+- Turn on R8 code shrinking for release builds.
 - Release workflow on a version tag: build, sign with the key stored in GitHub secrets, generate the changelog, add checksums, and publish a GitHub release.
 - Two build flavors: a GitHub build with an update checker the user agrees to, and an F-Droid build without one.
 - Final privacy policy in PRIVACY.md.
