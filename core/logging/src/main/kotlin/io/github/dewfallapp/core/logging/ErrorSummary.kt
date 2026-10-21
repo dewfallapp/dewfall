@@ -18,22 +18,23 @@ internal const val MAX_CAUSES = 10
  * that loops, the first repeated cause is named once more, and the summary ends there.
  */
 internal fun errorSummary(error: Throwable): String {
-    val chain = mutableListOf(error)
     // Compared by identity, so an error class with its own equals can't hide a loop.
     val written = Collections.newSetFromMap(IdentityHashMap<Throwable, Boolean>())
     written += error
+    val causes = mutableListOf<Throwable>()
     var next = error.cause
-    while (next != null && next !in written && chain.size <= MAX_CAUSES) {
-        chain += next
+    while (next != null && next !in written && causes.size < MAX_CAUSES) {
+        causes += next
         written += next
         next = next.cause
     }
     // Null at the end of the chain. Otherwise a repeated cause, or the first one past the limit.
     val stoppedAt = next
     return buildString {
-        chain.forEachIndexed { index, link ->
-            if (index > 0) append("\nCaused by: ")
-            appendError(link)
+        appendError(error)
+        causes.forEach {
+            append("\nCaused by: ")
+            appendError(it)
         }
         when {
             stoppedAt == null -> Unit
