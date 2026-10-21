@@ -16,7 +16,8 @@ package io.github.dewfallapp.core.logging
  */
 class Logger
 private constructor(
-    // Null only for Silent, which builds and writes nothing, so its minLevel is never read.
+    // Null only for Silent and the loggers that withTag makes from it. They build and write
+    // nothing, so their minLevel is never read.
     private val writer: LogWriter?,
     private val minLevel: LogLevel,
     private val tag: String,

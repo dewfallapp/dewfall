@@ -25,8 +25,8 @@ class SplitForLogcatTest {
 
     @Test
     fun `keeps every entry within 4000 bytes`() {
-        // As many lines as an error summary at its limits: 11 errors, each a class name and 30
-        // frames.
+        // The class name and frame lines of an error summary at its limits: 11 errors, each a
+        // class name and 30 frames.
         val text = List(341) { "  at io.github.dewfallapp.a.B.run(B.kt:$it)" }.joinToString("\n")
 
         val entries = splitForLogcat(text)

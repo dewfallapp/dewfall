@@ -1,6 +1,7 @@
 // This is the one file allowed to call android.util.Log, as ADR 0007 says, so it imports the
 // class that detekt's ForbiddenImport rejects everywhere else. detekt can suppress an import
-// finding only for a whole file, because an import can't carry an annotation.
+// finding only for a whole file, because an import can't carry an annotation. That also lifts the
+// rule's other entries, such as GlobalScope, in this file.
 @file:Suppress("ForbiddenImport")
 
 package io.github.dewfallapp.logging
@@ -16,7 +17,7 @@ import io.github.dewfallapp.core.logging.LogWriter
  */
 private const val MAX_ENTRY_BYTES = 4000
 
-/** The first char code that takes 2 bytes in modified UTF-8. */
+/** The first char code above U+0000 that takes 2 bytes in modified UTF-8. */
 private const val FIRST_TWO_BYTE_CODE = 0x80
 
 /** The first char code that takes 3 bytes in modified UTF-8. */
@@ -84,12 +85,13 @@ internal fun splitForLogcat(text: String, maxBytes: Int = MAX_ENTRY_BYTES): List
         if (pending.isNotEmpty() && pendingBytes + LINE_BREAK_BYTES + lineBytes > maxBytes) {
             entries += pending.joinToString("\n")
             pending.clear()
+            pendingBytes = 0
         }
         if (lineBytes > maxBytes) {
             entries += splitLine(line, maxBytes)
         } else {
-            pendingBytes =
-                if (pending.isEmpty()) lineBytes else pendingBytes + LINE_BREAK_BYTES + lineBytes
+            if (pending.isNotEmpty()) pendingBytes += LINE_BREAK_BYTES
+            pendingBytes += lineBytes
             pending += line
         }
     }

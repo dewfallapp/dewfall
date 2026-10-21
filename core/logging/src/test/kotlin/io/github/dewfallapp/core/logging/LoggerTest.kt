@@ -80,7 +80,7 @@ class LoggerTest {
     }
 
     @Test
-    fun `Silent builds no text, not even an error summary`() {
+    fun `Silent never builds an error summary`() {
         val error = CountingError()
 
         Logger.Silent.error("Not written", error = error)

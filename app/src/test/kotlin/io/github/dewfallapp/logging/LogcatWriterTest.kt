@@ -1,6 +1,7 @@
 // The test compares priorities with android.util.Log's constants, which detekt's ForbiddenImport
 // rejects outside LogcatWriter.kt and this test, as ADR 0007 says. detekt can suppress an import
-// finding only for a whole file, because an import can't carry an annotation.
+// finding only for a whole file, because an import can't carry an annotation. That also lifts the
+// rule's other entries, such as GlobalScope, in this file.
 @file:Suppress("ForbiddenImport")
 
 package io.github.dewfallapp.logging
