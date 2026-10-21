@@ -21,7 +21,7 @@ class ChannelIdTest {
 
     @Test
     fun `parseOrNull returns the ID for a channel ID`() {
-        assertEquals(ChannelId(VALID), ChannelId.parseOrNull(VALID))
+        assertEquals(VALID, ChannelId.parseOrNull(VALID)?.value)
     }
 
     @Test

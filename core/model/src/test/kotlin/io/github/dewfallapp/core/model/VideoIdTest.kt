@@ -21,7 +21,7 @@ class VideoIdTest {
 
     @Test
     fun `parseOrNull returns the ID for a video ID`() {
-        assertEquals(VideoId(VALID), VideoId.parseOrNull(VALID))
+        assertEquals(VALID, VideoId.parseOrNull(VALID)?.value)
     }
 
     @Test
