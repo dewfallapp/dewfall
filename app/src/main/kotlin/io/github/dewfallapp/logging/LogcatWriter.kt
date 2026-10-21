@@ -14,7 +14,7 @@ import io.github.dewfallapp.core.logging.LogWriter
  * the tag and the text together, is longer than LOGGER_ENTRY_MAX_PAYLOAD in its log.h, 4068 bytes.
  * 4000 leaves room for the priority and a short tag. See docs/architecture.md#logging.
  */
-internal const val MAX_ENTRY_BYTES = 4000
+private const val MAX_ENTRY_BYTES = 4000
 
 /** The first char code that takes 2 bytes in modified UTF-8. */
 private const val FIRST_TWO_BYTE_CODE = 0x80
@@ -42,21 +42,17 @@ private const val LINE_BREAK_BYTES = 1
  *
  * Text longer than one entry holds goes out as several entries, with the same priority and tag.
  */
-class LogcatWriter
-internal constructor(
-    // Log.println in the app. Tests pass their own, because android.util.Log has no working code
-    // in local unit tests.
-    private val printLine: (priority: Int, tag: String, text: String) -> Unit
+internal class LogcatWriter(
+    // Tests pass their own, because android.util.Log has no working code in local unit tests.
+    private val printLine: (priority: Int, tag: String, text: String) -> Unit = Log::println
 ) : LogWriter {
-    constructor() : this({ priority, tag, text -> Log.println(priority, tag, text) })
-
     override fun write(level: LogLevel, tag: String, text: String) {
         val priority = level.toLogcatPriority()
         splitForLogcat(text).forEach { printLine(priority, tag, it) }
     }
 }
 
-internal fun LogLevel.toLogcatPriority(): Int =
+private fun LogLevel.toLogcatPriority(): Int =
     when (this) {
         LogLevel.DEBUG -> Log.DEBUG
         LogLevel.INFO -> Log.INFO

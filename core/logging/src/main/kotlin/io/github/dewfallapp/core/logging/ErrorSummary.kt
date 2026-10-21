@@ -4,10 +4,10 @@ import java.util.Collections
 import java.util.IdentityHashMap
 
 /** The most stack frames written for each error in a summary. */
-internal const val MAX_FRAMES = 30
+private const val MAX_FRAMES = 30
 
 /** The most causes written after the error itself. */
-internal const val MAX_CAUSES = 10
+private const val MAX_CAUSES = 10
 
 /**
  * Writes [error] for a log line: the class name of the error and of each cause, each followed by
