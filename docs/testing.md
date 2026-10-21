@@ -105,6 +105,21 @@ ViewModel tests use kotlinx-coroutines-test, as Google's guides describe ([Testi
 - setMain, resetMain, UnconfinedTestDispatcher and advanceUntilIdle are marked experimental, and compiler warnings fail the build. So annotate the test class with `@OptIn(ExperimentalCoroutinesApi::class)`.
 - Test which work each intent starts, and that its result comes back through the reducer. The reducer's own tests cover the rest of the screen's logic.
 
+### Logging
+
+A class that logs receives a Logger in its constructor, as [architecture.md](architecture.md#logging) describes. So a test chooses what happens to the lines.
+
+- Pass `Logger.Silent` when the test doesn't check logging. It writes nothing and builds no text.
+- To check what a class logs, pass a Logger whose writer records each line. LogWriter has a single function, so a lambda is enough:
+
+  ```kotlin
+  val lines = mutableListOf<String>()
+  val logger = Logger({ level, tag, text -> lines += "$level $tag $text" }, LogLevel.DEBUG)
+  ```
+
+- Check log lines only where logging is the behavior under test, such as a warning that a class must write when a retry fails. Compare the message and the fields, not stack frames, which change whenever the code moves.
+- Tests never read logcat. LogcatWriter's own tests pass a function in place of Log.println, because android.util.Log has no working code in local unit tests.
+
 ## Saved YouTube responses
 
 TODO

@@ -28,6 +28,8 @@ include(":core:database")
 
 include(":core:designsystem")
 
+include(":core:logging")
+
 include(":core:model")
 
 include(":core:mvi")
