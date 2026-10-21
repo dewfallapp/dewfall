@@ -128,9 +128,9 @@ private fun splitLine(line: String, maxBytes: Int): List<String> {
  */
 private fun Char.modifiedUtf8Bytes(): Int =
     when (code) {
-        // U+0000 is left out here, because modified UTF-8 writes it as 2 bytes, so that the text
-        // holds no zero byte. The next branch takes it.
+        // Modified UTF-8 writes U+0000 as 2 bytes, so that the text holds no zero byte.
+        0 -> 2
         in 1..<FIRST_TWO_BYTE_CODE -> 1
-        in 0..<FIRST_THREE_BYTE_CODE -> 2
+        in FIRST_TWO_BYTE_CODE..<FIRST_THREE_BYTE_CODE -> 2
         else -> MAX_UTF16_CHAR_BYTES
     }
