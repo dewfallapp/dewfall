@@ -1,5 +1,11 @@
+// This is the one file allowed to call android.util.Log, as ADR 0007 says, so it imports the
+// class that detekt's ForbiddenImport rejects everywhere else. detekt can suppress an import
+// finding only for a whole file, because an import can't carry an annotation.
+@file:Suppress("ForbiddenImport")
+
 package io.github.dewfallapp.logging
 
+import android.util.Log
 import io.github.dewfallapp.core.logging.LogLevel
 import io.github.dewfallapp.core.logging.LogWriter
 
@@ -25,8 +31,7 @@ private const val MAX_CHAR_BYTES = 3
 private const val MAX_CHARACTER_BYTES = 2 * MAX_CHAR_BYTES
 
 /**
- * Writes log lines to logcat. It is the only code that calls android.util.Log. detekt forbids
- * importing that class, so this file names it in full. See ADR 0007.
+ * Writes log lines to logcat. It is the only code that calls android.util.Log. See ADR 0007.
  *
  * Text longer than one entry holds goes out as several entries, with the same priority and tag.
  */
@@ -36,7 +41,7 @@ internal constructor(
     // in local unit tests.
     private val printLine: (priority: Int, tag: String, text: String) -> Unit
 ) : LogWriter {
-    constructor() : this({ priority, tag, text -> android.util.Log.println(priority, tag, text) })
+    constructor() : this({ priority, tag, text -> Log.println(priority, tag, text) })
 
     override fun write(level: LogLevel, tag: String, text: String) {
         val priority = level.toLogcatPriority()
@@ -46,10 +51,10 @@ internal constructor(
 
 internal fun LogLevel.toLogcatPriority(): Int =
     when (this) {
-        LogLevel.DEBUG -> android.util.Log.DEBUG
-        LogLevel.INFO -> android.util.Log.INFO
-        LogLevel.WARN -> android.util.Log.WARN
-        LogLevel.ERROR -> android.util.Log.ERROR
+        LogLevel.DEBUG -> Log.DEBUG
+        LogLevel.INFO -> Log.INFO
+        LogLevel.WARN -> Log.WARN
+        LogLevel.ERROR -> Log.ERROR
     }
 
 /**

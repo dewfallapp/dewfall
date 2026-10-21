@@ -1,5 +1,11 @@
+// The test compares priorities with android.util.Log's constants, which detekt's ForbiddenImport
+// rejects outside LogcatWriter.kt and this test, as ADR 0007 says. detekt can suppress an import
+// finding only for a whole file, because an import can't carry an annotation.
+@file:Suppress("ForbiddenImport")
+
 package io.github.dewfallapp.logging
 
+import android.util.Log
 import io.github.dewfallapp.core.logging.LogLevel
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,16 +24,7 @@ class LogcatWriterTest {
     fun `writes each level with its logcat priority`() {
         LogLevel.entries.forEach { writer.write(it, "Dewfall", "Started") }
 
-        // android.util.Log is named in full, because detekt forbids importing it.
-        assertEquals(
-            listOf(
-                android.util.Log.DEBUG,
-                android.util.Log.INFO,
-                android.util.Log.WARN,
-                android.util.Log.ERROR,
-            ),
-            entries.map { it.priority },
-        )
+        assertEquals(listOf(Log.DEBUG, Log.INFO, Log.WARN, Log.ERROR), entries.map { it.priority })
     }
 
     @Test
@@ -35,7 +32,7 @@ class LogcatWriterTest {
         writer.write(LogLevel.WARN, "Dewfall.YouTube", "Search failed")
 
         assertEquals(
-            listOf(Entry(android.util.Log.WARN, "Dewfall.YouTube", "Search failed")),
+            listOf(Entry(Log.WARN, "Dewfall.YouTube", "Search failed")),
             entries,
         )
     }
@@ -48,7 +45,7 @@ class LogcatWriterTest {
         writer.write(LogLevel.ERROR, "Dewfall.YouTube", text)
 
         assertTrue(entries.size > 1)
-        assertTrue(entries.all { it.priority == android.util.Log.ERROR })
+        assertTrue(entries.all { it.priority == Log.ERROR })
         assertTrue(entries.all { it.tag == "Dewfall.YouTube" })
         assertEquals(text, entries.joinToString("\n") { it.text })
     }
