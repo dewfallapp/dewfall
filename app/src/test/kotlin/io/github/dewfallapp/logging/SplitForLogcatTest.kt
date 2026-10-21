@@ -72,6 +72,16 @@ class SplitForLogcatTest {
     }
 
     @Test
+    fun `counts U+0000 as 2 bytes`() {
+        // Modified UTF-8 writes U+0000 as 2 bytes, so 3 of them fill 6. Counted as 1 byte each,
+        // the pieces would hold 6 and 1.
+        assertEquals(
+            listOf("\u0000".repeat(3), "\u0000".repeat(3), "\u0000"),
+            splitForLogcat("\u0000".repeat(7), maxBytes = 6),
+        )
+    }
+
+    @Test
     fun `starts a new entry after a split line`() {
         val text = "a".repeat(12) + "\nbb\ncc"
 
