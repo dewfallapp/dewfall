@@ -16,19 +16,26 @@ import io.github.dewfallapp.core.logging.LogWriter
  */
 internal const val MAX_ENTRY_BYTES = 4000
 
-/** Chars below this code take 1 byte in modified UTF-8, apart from U+0000, which takes 2. */
-private const val ONE_BYTE_BELOW = 0x80
+/** The first char code that takes 2 bytes in modified UTF-8. */
+private const val FIRST_TWO_BYTE_CODE = 0x80
+
+/** The first char code that takes 3 bytes in modified UTF-8. */
+private const val FIRST_THREE_BYTE_CODE = 0x800
 
 /**
- * Chars from [ONE_BYTE_BELOW] up to this code, not including it, take 2 bytes in modified UTF-8.
+ * The most bytes that one UTF-16 char takes in modified UTF-8: any char from
+ * [FIRST_THREE_BYTE_CODE] up, including each half of a surrogate pair.
  */
-private const val TWO_BYTES_BELOW = 0x800
+private const val MAX_UTF16_CHAR_BYTES = 3
 
-/** Every other char takes 3 bytes in modified UTF-8, including each half of a surrogate pair. */
-private const val MAX_CHAR_BYTES = 3
+/**
+ * The most bytes that one code point takes in modified UTF-8: a surrogate pair, two chars of
+ * [MAX_UTF16_CHAR_BYTES] each.
+ */
+private const val MAX_CODE_POINT_BYTES = 2 * MAX_UTF16_CHAR_BYTES
 
-/** A surrogate pair, the longest character in modified UTF-8. */
-private const val MAX_CHARACTER_BYTES = 2 * MAX_CHAR_BYTES
+/** The bytes of the line break between two lines in one entry. */
+private const val LINE_BREAK_BYTES = 1
 
 /**
  * Writes log lines to logcat. It is the only code that calls android.util.Log. See ADR 0007.
@@ -69,37 +76,28 @@ internal fun LogLevel.toLogcatPriority(): Int =
  * docs/architecture.md#long-text.
  */
 internal fun splitForLogcat(text: String, maxBytes: Int = MAX_ENTRY_BYTES): List<String> {
-    require(maxBytes >= MAX_CHARACTER_BYTES) { "An entry must fit the longest character" }
+    require(maxBytes >= MAX_CODE_POINT_BYTES) { "An entry must fit the longest character" }
     val entries = mutableListOf<String>()
-    val pending = StringBuilder()
-    // -1 while pending holds no line yet, so that an empty line still counts as one.
-    var pendingBytes = -1
-
-    fun flush() {
-        if (pendingBytes >= 0) entries += pending.toString()
-        pending.clear()
-        pendingBytes = -1
-    }
+    // Whole lines waiting to go out together as the next entry, and their bytes with the line
+    // breaks between them. An empty line counts as a line too.
+    val pending = mutableListOf<String>()
+    var pendingBytes = 0
 
     for (line in text.split('\n')) {
         val lineBytes = line.sumOf { it.modifiedUtf8Bytes() }
-        when {
-            lineBytes > maxBytes -> {
-                flush()
-                entries += splitLine(line, maxBytes)
-            }
-            pendingBytes >= 0 && pendingBytes + 1 + lineBytes <= maxBytes -> {
-                pending.append('\n').append(line)
-                pendingBytes += 1 + lineBytes
-            }
-            else -> {
-                flush()
-                pending.append(line)
-                pendingBytes = lineBytes
-            }
+        if (pending.isNotEmpty() && pendingBytes + LINE_BREAK_BYTES + lineBytes > maxBytes) {
+            entries += pending.joinToString("\n")
+            pending.clear()
+        }
+        if (lineBytes > maxBytes) {
+            entries += splitLine(line, maxBytes)
+        } else {
+            pendingBytes =
+                if (pending.isEmpty()) lineBytes else pendingBytes + LINE_BREAK_BYTES + lineBytes
+            pending += line
         }
     }
-    flush()
+    if (pending.isNotEmpty()) entries += pending.joinToString("\n")
     return entries
 }
 
@@ -111,13 +109,13 @@ private fun splitLine(line: String, maxBytes: Int): List<String> {
     var index = 0
     while (index < line.length) {
         val end = index + Character.charCount(line.codePointAt(index))
-        val characterBytes = (index until end).sumOf { line[it].modifiedUtf8Bytes() }
-        if (pieceBytes + characterBytes > maxBytes) {
+        val codePointBytes = (index..<end).sumOf { line[it].modifiedUtf8Bytes() }
+        if (pieceBytes + codePointBytes > maxBytes) {
             pieces += line.substring(start, index)
             start = index
             pieceBytes = 0
         }
-        pieceBytes += characterBytes
+        pieceBytes += codePointBytes
         index = end
     }
     pieces += line.substring(start)
@@ -129,9 +127,10 @@ private fun splitLine(line: String, maxBytes: Int): List<String> {
  * takes 2, so the result is never less than the char's share of standard UTF-8.
  */
 private fun Char.modifiedUtf8Bytes(): Int =
-    when {
-        code == 0 -> 2
-        code < ONE_BYTE_BELOW -> 1
-        code < TWO_BYTES_BELOW -> 2
-        else -> MAX_CHAR_BYTES
+    when (code) {
+        // U+0000 is left out here, because modified UTF-8 writes it as 2 bytes, so that the text
+        // holds no zero byte. The next branch takes it.
+        in 1..<FIRST_TWO_BYTE_CODE -> 1
+        in 0..<FIRST_THREE_BYTE_CODE -> 2
+        else -> MAX_UTF16_CHAR_BYTES
     }
