@@ -32,12 +32,15 @@ internal fun errorSummary(error: Throwable): String {
     val stoppedAt = next
     val lines = buildList {
         addError(error)
-        for (cause in causes) addError(cause, prefix = "Caused by: ")
+        for (cause in causes) {
+            addError(cause, prefix = "Caused by: ")
+        }
         if (stoppedAt != null) {
-            add(
-                if (stoppedAt in written) "Caused by: ${stoppedAt.javaClass.name}, shown above"
-                else "More causes not shown"
-            )
+            if (stoppedAt in written) {
+                add("Caused by: ${stoppedAt.javaClass.name}, shown above")
+            } else {
+                add("More causes not shown")
+            }
         }
     }
     return lines.joinToString("\n")
@@ -47,7 +50,9 @@ internal fun errorSummary(error: Throwable): String {
 private fun MutableList<String>.addError(error: Throwable, prefix: String = "") {
     add("$prefix${error.javaClass.name}")
     val frames = error.stackTrace
-    for (frame in frames.take(MAX_FRAMES)) add("  at ${frame.describe()}")
+    for (frame in frames.take(MAX_FRAMES)) {
+        add("  at ${frame.describe()}")
+    }
     if (frames.size > MAX_FRAMES) add("  ... ${frames.size - MAX_FRAMES} more frames")
 }
 

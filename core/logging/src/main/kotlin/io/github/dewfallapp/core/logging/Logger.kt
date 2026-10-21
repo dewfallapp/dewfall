@@ -63,7 +63,9 @@ private constructor(
         if (writer == null || level < minLevel) return
         val text = buildString {
             append(message)
-            for (field in fields) append(' ').append(field.text)
+            for (field in fields) {
+                append(' ').append(field.text)
+            }
             if (error != null) append('\n').append(errorSummary(error))
         }
         writer.write(level, tag, text)

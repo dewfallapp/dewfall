@@ -23,7 +23,9 @@ class LogcatWriterTest {
 
     @Test
     fun `writes each level with its logcat priority`() {
-        for (level in LogLevel.entries) writer.write(level, "Dewfall", "Started")
+        for (level in LogLevel.entries) {
+            writer.write(level, "Dewfall", "Started")
+        }
 
         assertEquals(listOf(Log.DEBUG, Log.INFO, Log.WARN, Log.ERROR), entries.map { it.priority })
     }

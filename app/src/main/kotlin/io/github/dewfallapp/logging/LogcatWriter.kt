@@ -49,7 +49,9 @@ internal class LogcatWriter(
 ) : LogWriter {
     override fun write(level: LogLevel, tag: String, text: String) {
         val priority = level.toLogcatPriority()
-        for (entry in splitForLogcat(text)) printLine(priority, tag, entry)
+        for (entry in splitForLogcat(text)) {
+            printLine(priority, tag, entry)
+        }
     }
 }
 
