@@ -11,7 +11,10 @@ enum class VideoKind {
     /** A YouTube Short. */
     SHORT,
 
-    /** A live stream that is on air now. */
+    /**
+     * A live stream that is on air now, or a premiere that is playing now. Both can only be watched
+     * as they play.
+     */
     LIVE,
 
     /**

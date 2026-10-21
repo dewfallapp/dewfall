@@ -6,8 +6,9 @@ import kotlin.time.Duration
  * What the video screen shows about one video. The titles, names, description and IDs are user
  * data, so never log them. See ADR 0007.
  *
- * It has no [VideoKind]. YouTube gives no details for a video that hasn't started, and doesn't say
- * here whether a video is a Short, so those come from the list the video was found in.
+ * It has no [VideoKind]. The YouTube layer can't read the details of a premiere or live stream that
+ * hasn't started, and can't tell from a video's own page whether it is a Short. So those come from
+ * the list the video was found in.
  */
 data class VideoDetails(
     val id: VideoId,

@@ -10,7 +10,7 @@ import io.github.dewfallapp.core.model.YouTubeResult
  * picks.
  *
  * Main-safe: call these from any thread, including the main thread. The implementation moves
- * blocking work to its own dispatcher. Any problem with YouTube or the network comes back as a
+ * blocking work to an injected dispatcher. Any problem with YouTube or the network comes back as a
  * [YouTubeResult.Failure], never as an exception. Cancelling the calling coroutine cancels the
  * request, and the function then throws CancellationException, the only exception it throws.
  */

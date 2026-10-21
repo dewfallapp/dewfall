@@ -7,7 +7,7 @@ import io.github.dewfallapp.core.model.YouTubeResult
  * Searches YouTube for videos to stream and channels to follow.
  *
  * Main-safe: call it from any thread, including the main thread. The implementation moves blocking
- * work to its own dispatcher. Any problem with YouTube or the network comes back as a
+ * work to an injected dispatcher. Any problem with YouTube or the network comes back as a
  * [YouTubeResult.Failure], never as an exception. Cancelling the calling coroutine cancels the
  * request, and the function then throws CancellationException, the only exception it throws.
  */

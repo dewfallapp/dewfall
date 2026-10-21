@@ -65,7 +65,10 @@ data class VideoFormat(
     val includesAudio: Boolean,
 )
 
-/** One of a video's sound tracks, for a video with more than one, such as dubbed languages. */
+/**
+ * One of a video's sound tracks, for a video with more than one, such as dubbed languages. Its ID
+ * is a YouTube ID, which is user data, so never log it. See ADR 0007.
+ */
 data class AudioTrack(
     /** YouTube's ID for the track. Formats of the same track share it. */
     val id: String,
