@@ -258,7 +258,7 @@ The first four are `fun interface`s, so a test can pass a lambda instead of writ
 
 Every function keeps these rules. Each interface's KDoc repeats the first two.
 
-- It is a suspend function, and main-safe: it can be called from any thread, including the main thread, and the implementation moves blocking work to its own dispatcher, as the [data layer guide](https://developer.android.com/topic/architecture/data-layer) asks.
+- It is a suspend function, and main-safe: it can be called from any thread, including the main thread, and the implementation moves blocking work to a dispatcher it receives, so tests can replace it, as the [data layer guide](https://developer.android.com/topic/architecture/data-layer) asks.
 - It returns `YouTubeResult`: `Success` with the value, or `Failure` with a `YouTubeError`. It reports every problem with YouTube or the network as a Failure. The only exception it throws is CancellationException, when the calling coroutine is cancelled.
 - It catches every NewPipeExtractor exception at the module's edge, logs it with the Logger, and returns its category. No NewPipeExtractor exception leaves the module. See [Mapping NewPipeExtractor's exceptions](#mapping-newpipeextractors-exceptions).
 - It never logs the search text, IDs, URLs or anything else that ADR 0007 calls user data.
@@ -269,7 +269,7 @@ Every function keeps these rules. Each interface's KDoc repeats the first two.
 |---|---|
 | VideoId, ChannelId | A video's or a channel's ID. The constructor checks the format and throws IllegalArgumentException with a fixed message. `parseOrNull` returns null instead, for text from outside the app, such as the Takeout import. toString leaves out the ID. |
 | VideoSummary | A video in a list: ID, title, channel ID and name, length, publish time, thumbnails and VideoKind |
-| VideoKind | VIDEO, SHORT, LIVE or UPCOMING. VIDEO includes finished premieres and recordings of live streams. |
+| VideoKind | VIDEO, SHORT, LIVE or UPCOMING. VIDEO includes finished premieres and recordings of live streams. LIVE includes a premiere that is playing now. |
 | Channel | ID, name, avatars and description |
 | SearchResults | The first page of a search: channels and videos, in YouTube's order |
 | ChannelUploads | A channel, and its latest long-form videos and live streams, newest first, never Shorts. A premiere or live stream that hasn't started is UPCOMING. |
@@ -295,7 +295,7 @@ On a channel's page, YouTube shows regular videos and premieres in the Videos ta
 - The Videos tab. NewPipeExtractor's channel request already holds it, with the channel's name, avatar and description.
 - The Live tab.
 
-Both tabs give each video's length. NewPipeExtractor's item code marks a stream that is on air by its badge, and a premiere or stream that hasn't started by its scheduled start. The other publish times are relative, such as "Streamed 2 years ago", so most of them are approximate.
+Both tabs give the length of each video that can be watched from start to end. NewPipeExtractor's item code marks a stream that is on air by its badge, and a premiere or stream that hasn't started by its scheduled start. The other publish times are relative, such as "Streamed 2 years ago", so most of them are approximate.
 
 The channel's RSS feed was rejected. It lists Shorts without marking them, so leaving them out would depend on an undocumented link pattern, and it gives no lengths.
 
@@ -331,7 +331,7 @@ Errors, such as OutOfMemoryError, aren't caught.
 
 ### NewPipeExtractor's dev branch
 
-On October 21, 2026, NewPipeExtractor's dev branch was 60 commits past v0.26.5, at commit 405f549. These changes touch what #35 and #148 read, so the contract doesn't depend on them:
+On October 21, 2026, NewPipeExtractor's dev branch was 60 commits past v0.26.5, at commit 405f549. These changes touch what #35 and #148 read, so the contract avoids depending on them:
 
 - Formats, the HLS manifest, subtitle tracks and the live flag come only from the visionOS client. The Android and iOS clients are gone, so which formats YouTube sends may change.
 - The DASH manifest is gone, and setPoTokenProvider does nothing until NewPipeExtractor supports SABR, YouTube's newer way of streaming. SABR could replace single-file format links, which would change StreamLinks.
@@ -520,9 +520,9 @@ When code logs an error, the logger writes only the class names and stack frames
 
 ### Errors from YouTube
 
-The YouTube layer reports every problem as a `YouTubeResult.Failure` that holds a `YouTubeError`, and never throws one. [ADR 0008](adr/0008-youtube-layer-contract.md) explains why. The categories are the ones a screen or a background job can act on.
+The YouTube layer reports every problem as a `YouTubeResult.Failure` that holds a `YouTubeError`, and never throws one. [ADR 0008](adr/0008-youtube-layer-contract.md) explains why. The categories are the ones a screen or a background job can act on. The last column is a plan. The OpenSpec changes for the screens in Phases 4 and 5 and the background jobs in Phase 7 decide what the app does.
 
-| Category | What it means | What the app does |
+| Category | What it means | What the app plans to do |
 |---|---|---|
 | NETWORK | YouTube couldn't be reached | A screen shows "offline" when the phone has no connection, and "YouTube not loading" otherwise. A job tries again later. |
 | BLOCKED | YouTube refused to answer, such as with a captcha | "YouTube not loading". A job waits longer before it tries again. |
