@@ -55,15 +55,15 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
 | `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class and the app's only activity, which shows a placeholder screen until the first feature arrives. Once features arrive, it also handles navigation between them. It also holds the logcat writer and the Hilt module that provides the logger. See [Logging](#logging). | `:core:data`, `:core:designsystem`, `:core:logging`, and each feature's `-ui` module |
-| `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines | Nothing |
+| `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError. See [The YouTube layer](#the-youtube-layer). | Nothing |
 | `:core:logging` | core/logging/ | Kotlin/JVM | io.github.dewfallapp.core.logging | The Logger that every module logs through, its levels and fields, and the error summary that leaves out messages. See [Logging](#logging). | Nothing |
 | `:core:mvi` | core/mvi/ | Kotlin/JVM | io.github.dewfallapp.core.mvi | The MVI base: MviState, MviIntent, MviEffect, the Reducer, and MviViewModel, the base class of every screen's ViewModel. See [The MVI contract](#the-mvi-contract). | Nothing. It uses Lifecycle's ViewModel and kotlinx.coroutines. |
-| `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md). | `:core:model` |
+| `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation, which #35 and #148 add. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md) and [The YouTube layer](#the-youtube-layer). | `:core:model` |
 | `:core:database` | core/database/ | Android library | io.github.dewfallapp.core.database | The Room database: entities, DAOs, migrations and the exported schemas | `:core:model` |
 | `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer | `:core:model`, `:core:database`, `:core:youtube` |
 | `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). Later, shared components and icons too. | Nothing. It exposes Material 3 as an api dependency. |
 
-`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. The other core modules hold no code yet. A module that logs depends on `:core:logging`. Today only `:app` does, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). Phase 3 fills the YouTube layer. Compose is set up in `:app` and `:core:designsystem`. Hilt is set up in `:app` only, until a core module needs it.
+`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces, and `:core:model` the models they return. `:core:data` and `:core:database` hold no code yet. A module that logs depends on `:core:logging`. Today only `:app` does, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). #35 and #148 implement the YouTube layer's interfaces. Compose is set up in `:app` and `:core:designsystem`. Hilt is set up in `:app` only, until a core module needs it.
 
 `:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the code that formats a duration, goes in a `:core:ui` Android library instead. `:core:ui` gets created when a second feature needs such a piece. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
 
@@ -238,9 +238,130 @@ The splitting is a function that unit tests call directly, because android.util.
 - **Other libraries' own logs.** Media3 logs errors by default ([Debug logging](https://developer.android.com/media/media3/exoplayer/debug-logging)), and WorkManager has its own minimum logging level ([custom configuration](https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration)). The tasks that add them check them against ADR 0007.
 - **Calls that skip the logger.** detekt checks only imports, so println, System.out, System.err and most printStackTrace calls stay unchecked until the lint check in #144. See [Formatting and lint](#formatting-and-lint).
 
+## The YouTube layer
+
+`:core:youtube` is the only module that reaches YouTube, and the only one that may use NewPipeExtractor ([ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md)). It returns Dewfall's own models from `:core:model`, so nothing outside it knows which library sits underneath. [ADR 0008](adr/0008-youtube-layer-contract.md) explains its results, errors, IDs and time types.
+
+### The interfaces
+
+There is one interface for each thing the app needs from YouTube, so each caller depends only on what it uses. Their names follow Google's convention for data sources, the type of data followed by RemoteDataSource ([data layer](https://developer.android.com/topic/architecture/data-layer)).
+
+| Interface | Function | Returns | Implemented in |
+|---|---|---|---|
+| SearchRemoteDataSource | `search(query)` | The first page of channels and videos | #35 |
+| VideoDetailsRemoteDataSource | `videoDetails(videoId)` | What the video screen shows | #35 |
+| ChannelUploadsRemoteDataSource | `latestUploads(channelId)` | The channel, with its latest long-form videos and live streams | #35 |
+| StreamLinksRemoteDataSource | `streamLinks(videoId)` | The links that play or download the video | #35 |
+| SubtitlesRemoteDataSource | `subtitleTracks(videoId)`, then `subtitleLines(track)` | The video's subtitle tracks, then one track's lines | #148 |
+
+The first four are `fun interface`s, so a test can pass a lambda instead of writing a fake. One class can implement several of them. #35 decides how Hilt provides them.
+
+Every function keeps these rules. Each interface's KDoc repeats the first two.
+
+- It is a suspend function, and main-safe: it can be called from any thread, including the main thread, and the implementation moves blocking work to its own dispatcher, as the [data layer guide](https://developer.android.com/topic/architecture/data-layer) asks.
+- It returns `YouTubeResult`: `Success` with the value, or `Failure` with a `YouTubeError`. It reports every problem with YouTube or the network as a Failure. The only exception it throws is CancellationException, when the calling coroutine is cancelled.
+- It catches every NewPipeExtractor exception at the module's edge, logs it with the Logger, and returns its category. No NewPipeExtractor exception leaves the module. See [Mapping NewPipeExtractor's exceptions](#mapping-newpipeextractors-exceptions).
+- It never logs the search text, IDs, URLs or anything else that ADR 0007 calls user data.
+
+### The models
+
+| Model | What it holds |
+|---|---|
+| VideoId, ChannelId | A video's or a channel's ID. The constructor checks the format and throws IllegalArgumentException with a fixed message. `parseOrNull` returns null instead, for text from outside the app, such as the Takeout import. toString leaves out the ID. |
+| VideoSummary | A video in a list: ID, title, channel ID and name, length, publish time, thumbnails and VideoKind |
+| VideoKind | VIDEO, SHORT, LIVE or UPCOMING. VIDEO includes finished premieres and recordings of live streams. |
+| Channel | ID, name, avatars and description |
+| SearchResults | The first page of a search: channels and videos, in YouTube's order |
+| ChannelUploads | A channel, and its latest long-form videos and live streams, newest first, never Shorts. A premiere or live stream that hasn't started is UPCOMING. |
+| VideoDetails | ID, title, channel ID, name and avatars, description as plain text, length, publish time, thumbnails, and whether it is live |
+| StreamLinks | Audio formats, video formats, an HLS manifest, and when the links stop working |
+| SubtitleTrack, SubtitleLine | A track's language, whether YouTube generated it, and its link. A line's start, end and text. |
+| Thumbnail | One size of an image, with its width and height when YouTube gives them |
+| PublishedTime | When a video was published or is scheduled to start, and whether that time is only an estimate |
+| YouTubeResult, YouTubeError | What a function returns, and why it failed. See [Error handling](#error-handling). |
+
+The ID, title, channel ID and channel name of a video are required. When #35 can't read one of them, it leaves the item out of a list, or fails a call about one video with BROKEN. The other fields are optional: #35 fills them with null or an empty list or text, and logs a warning.
+
+Times are kotlin.time's Instant, and lengths are its Duration. YouTube often gives only a date with no time, or a relative time in days or longer, such as "3 weeks ago". Then PublishedTime's `isApproximate` is true, and its Instant is an estimate: the time of day means nothing, and the date can be as far off as the unit YouTube gave. A relative time in hours, such as "7 hours ago", isn't marked approximate, but is only as exact as the hour.
+
+A model's thumbnails hold every size YouTube offers. The screen picks the smallest one that is at least as wide as the space it fills in pixels, or the largest one if none is that wide. That helper comes with the first screen that shows a thumbnail, in Phase 4.
+
+### A channel's latest uploads
+
+ChannelUploads holds a channel's long-form videos and live streams, and never its Shorts. Whether the inbox shows videos that haven't started is a Phase 5 decision.
+
+On a channel's page, YouTube shows regular videos and premieres in the Videos tab, live streams in the Live tab, whether they are on air, upcoming or recorded, and Shorts in the Shorts tab. So #35 reads two tabs, two requests for each channel, and merges them, newest first:
+
+- The Videos tab. NewPipeExtractor's channel request already holds it, with the channel's name, avatar and description.
+- The Live tab.
+
+Both tabs give each video's length. NewPipeExtractor's item code marks a stream that is on air by its badge, and a premiere or stream that hasn't started by its scheduled start. The other publish times are relative, such as "Streamed 2 years ago", so most of them are approximate.
+
+The channel's RSS feed was rejected. It lists Shorts without marking them, so leaving them out would depend on an undocumented link pattern, and it gives no lengths.
+
+### Stream links
+
+YouTube serves most of a video's sound and picture as separate formats. Each format in StreamLinks is a single file that HTTP GET requests with byte ranges can read. #35 leaves out the formats that need a manifest to play. A player plays one audio format and one video format together, such as with Media3's MergingMediaSource ([media sources](https://developer.android.com/media/media3/exoplayer/media-sources)), or plays the HLS manifest. A live stream has only the HLS manifest.
+
+The links stop working after some time. NewPipeExtractor doesn't say when, so #35 reads the `expire` parameter from the links and leaves `expiresAt` null when there is none. Callers fetch new links just before playing or downloading, and again when a link stops working. StreamLinks has no DASH manifest, because NewPipeExtractor's dev branch no longer gives one.
+
+### Subtitles
+
+SubtitlesRemoteDataSource lists a video's tracks first, then reads the lines of the track the caller picks. A track carries its link, so reading its lines is one request. #148 picks the subtitle format that YouTube sends, downloads the track through the layer's own HTTP code, and parses it into lines with their start and end times.
+
+### Mapping NewPipeExtractor's exceptions
+
+#35 and #148 turn every exception into one of the categories in [Error handling](#error-handling). They check a subclass before its parent. The table names the exceptions of NewPipeExtractor v0.26.5.
+
+| Thrown | Category |
+|---|---|
+| CancellationException | Thrown again, never mapped |
+| IOException and its subclasses, from the layer's own HTTP code | NETWORK |
+| ReCaptchaException, which the layer's HTTP code throws for HTTP 429 or a captcha page, and SignInConfirmNotBotException | BLOCKED |
+| PrivateContentException | PRIVATE |
+| AgeRestrictedContentException | AGE_RESTRICTED |
+| GeographicRestrictionException, UnsupportedContentInCountryException | COUNTRY_BLOCKED |
+| PaidContentException, YoutubeMusicPremiumContentException | MEMBERS_OR_PAID |
+| AccountTerminatedException | CHANNEL_CLOSED |
+| Any other ContentNotAvailableException, and ContentNotSupportedException | UNAVAILABLE |
+| SearchExtractor.NothingFoundException | Not an error: a Success with empty lists |
+| ParsingException, ExtractionException and their other subclasses, and any other RuntimeException | BROKEN, unless an IOException is among its causes, which is NETWORK |
+
+Errors, such as OutOfMemoryError, aren't caught.
+
+### NewPipeExtractor's dev branch
+
+On October 21, 2026, NewPipeExtractor's dev branch was 60 commits past v0.26.5, at commit 405f549. These changes touch what #35 and #148 read, so the contract doesn't depend on them:
+
+- Formats, the HLS manifest, subtitle tracks and the live flag come only from the visionOS client. The Android and iOS clients are gone, so which formats YouTube sends may change.
+- The DASH manifest is gone, and setPoTokenProvider does nothing until NewPipeExtractor supports SABR, YouTube's newer way of streaming. SABR could replace single-file format links, which would change StreamLinks.
+- Description is now a record with a Type enum, which changes #35's code but not the models. Subtitle tracks gain a name, and audio formats can be marked as dubbed automatically. Neither of those is in the models yet.
+
 ## Data flow
 
-TODO
+### Reading from YouTube
+
+This is how a screen reads from YouTube, once Phase 4 adds the first repository in `:core:data`. Feature modules can't see `:core:youtube`, because `:core:data` depends on it as an implementation dependency. They see the models, `YouTubeResult` and `YouTubeError`, because those live in `:core:model`.
+
+```mermaid
+sequenceDiagram
+    participant VM as ViewModel
+    participant Repo as Repository in :core:data
+    participant YT as YouTube layer
+    participant R as Reducer
+    VM->>Repo: search(query)
+    Repo->>YT: SearchRemoteDataSource.search(query)
+    YT-->>Repo: YouTubeResult
+    Repo-->>VM: YouTubeResult
+    VM->>R: reduce(state, SearchFinished(result))
+    R-->>VM: Next(state with results or the error)
+```
+
+1. The ViewModel's runSideEffects calls the repository from viewModelScope. The call is main-safe, so the ViewModel doesn't switch threads.
+2. The repository calls the YouTube layer, and returns its result, or a result of its own built from it.
+3. The ViewModel dispatches the result as an intent, such as SearchFinished. The reducer turns a Success into content and a Failure into an error state.
+
+The rest of this section, such as how data moves through the database and background jobs, comes with Phase 5.
 
 ## The MVI contract
 
@@ -397,4 +518,26 @@ There are no tables yet. Phase 5 adds the first ones (#48), and Phase 8 adds the
 
 When code logs an error, the logger writes only the class names and stack frames of the error and its causes, never their messages, because libraries put URLs and IDs in them. Code that catches a library's exceptions at its module's edge, such as the YouTube layer turning NewPipeExtractor's exceptions into Dewfall's own errors, also keeps them away from Android's crash handler, which logs every message. See [Logging](#logging).
 
-TODO: the rest of this section, such as how errors reach the user.
+### Errors from YouTube
+
+The YouTube layer reports every problem as a `YouTubeResult.Failure` that holds a `YouTubeError`, and never throws one. [ADR 0008](adr/0008-youtube-layer-contract.md) explains why. The categories are the ones a screen or a background job can act on.
+
+| Category | What it means | What the app does |
+|---|---|---|
+| NETWORK | YouTube couldn't be reached | A screen shows "offline" when the phone has no connection, and "YouTube not loading" otherwise. A job tries again later. |
+| BLOCKED | YouTube refused to answer, such as with a captcha | "YouTube not loading". A job waits longer before it tries again. |
+| BROKEN | The layer couldn't read YouTube's answer | "YouTube not loading". An update fixes it, as [breakage.md](breakage.md) describes. |
+| PRIVATE, AGE_RESTRICTED, COUNTRY_BLOCKED, MEMBERS_OR_PAID, CHANNEL_CLOSED, UNAVAILABLE | One video or channel can't be shown | A message on that video or channel. The rest of the screen works. |
+
+The design's two error states for the inbox are "Inbox, offline" and "Inbox, YouTube not loading" ([screens.md](design/screens.md#empty-error-and-offline-states)). Only Android code can tell whether the phone has a connection, so the code that shows an error checks the connection when it gets NETWORK. A later phase decides where that check lives.
+
+An error reaches a screen this way, as [Reading from YouTube](#reading-from-youtube) shows:
+
+1. The YouTube layer catches the library's exception at its edge, logs it with the Logger, and returns a Failure with the category.
+2. The repository in `:core:data` passes the result on. `YouTubeResult` and `YouTubeError` live in `:core:model`, which `:core:data` exposes, so feature modules can see them without seeing `:core:youtube`.
+3. The ViewModel dispatches the result as an intent, and the reducer turns the category into state.
+4. The screen picks the text for the category from string resources, because plain Kotlin/JVM modules can't hold text.
+
+`YouTubeError` is an enum, and Failure holds nothing but the enum, so neither one's toString contains user data. Neither is a Throwable, so neither can reach Android's crash handler. VideoId's and ChannelId's toString and error messages leave out the ID.
+
+TODO: errors from the database, downloads and background jobs, which come with the phases that add them.
