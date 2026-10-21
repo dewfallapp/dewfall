@@ -30,28 +30,25 @@ internal fun errorSummary(error: Throwable): String {
     }
     // Null at the end of the chain. Otherwise a repeated cause, or the first one past the limit.
     val stoppedAt = next
-    return buildString {
-        appendError(error)
-        causes.forEach {
-            append("\nCaused by: ")
-            appendError(it)
-        }
-        when {
-            stoppedAt == null -> Unit
-            stoppedAt in written ->
-                append("\nCaused by: ").append(stoppedAt.javaClass.name).append(", shown above")
-            else -> append("\nMore causes not shown")
+    val lines = buildList {
+        addError(error)
+        for (cause in causes) addError(cause, prefix = "Caused by: ")
+        if (stoppedAt != null) {
+            add(
+                if (stoppedAt in written) "Caused by: ${stoppedAt.javaClass.name}, shown above"
+                else "More causes not shown"
+            )
         }
     }
+    return lines.joinToString("\n")
 }
 
-private fun StringBuilder.appendError(error: Throwable) {
-    append(error.javaClass.name)
+/** Adds the class name of [error] after [prefix], then its stack frames, one line each. */
+private fun MutableList<String>.addError(error: Throwable, prefix: String = "") {
+    add("$prefix${error.javaClass.name}")
     val frames = error.stackTrace
-    frames.take(MAX_FRAMES).forEach { append("\n  at ").append(it.describe()) }
-    if (frames.size > MAX_FRAMES) {
-        append("\n  ... ").append(frames.size - MAX_FRAMES).append(" more frames")
-    }
+    for (frame in frames.take(MAX_FRAMES)) add("  at ${frame.describe()}")
+    if (frames.size > MAX_FRAMES) add("  ... ${frames.size - MAX_FRAMES} more frames")
 }
 
 /**
