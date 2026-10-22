@@ -22,8 +22,9 @@ enum class YouTubeError {
     BLOCKED,
 
     /**
-     * YouTube answered, but the YouTube layer couldn't read the answer. YouTube has probably
-     * changed something, and an app update is needed. See docs/breakage.md.
+     * YouTube answered, but the YouTube layer couldn't read the answer, because YouTube has
+     * probably changed something. Or the layer refused to send a request, because it was for a host
+     * that the layer doesn't allow. Either way, only an app update fixes it. See docs/breakage.md.
      */
     BROKEN,
 
