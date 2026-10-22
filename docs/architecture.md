@@ -571,7 +571,7 @@ The YouTube layer reports every problem as a `YouTubeResult.Failure` that holds 
 |---|---|---|
 | NETWORK | YouTube couldn't be reached | A screen shows "offline" when the phone has no connection, and "YouTube not loading" otherwise. A job tries again later. |
 | BLOCKED | YouTube refused to answer, such as with a captcha | "YouTube not loading". A job waits longer before it tries again. |
-| BROKEN | The layer couldn't read YouTube's answer | "YouTube not loading". An update fixes it, as [breakage.md](breakage.md) describes. |
+| BROKEN | The layer couldn't read YouTube's answer, or it refused to send a request for a host that it doesn't allow. Either way, only an update fixes it. | "YouTube not loading". An update fixes it, as [breakage.md](breakage.md) describes. |
 | PRIVATE, AGE_RESTRICTED, COUNTRY_BLOCKED, MEMBERS_OR_PAID, CHANNEL_CLOSED, UNAVAILABLE | One video or channel can't be shown | A message on that video or channel. The rest of the screen works. |
 
 The design's two error states for the inbox are "Inbox, offline" and "Inbox, YouTube not loading" ([screens.md](design/screens.md#empty-error-and-offline-states)). Only Android code can tell whether the phone has a connection, so the code that shows an error checks the connection when it gets NETWORK. A later phase decides where that check lives.

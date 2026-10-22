@@ -90,4 +90,5 @@ The first three mean that nothing from YouTube can load right now. The others co
 - "Offline" and "YouTube not loading" need Android's connectivity state next to NETWORK. A later phase decides where that check lives.
 - If YouTube ever changes its ID formats, the checks reject the new IDs everywhere at once, and the fix is one file.
 - Phase 5 adds a Room converter for Instant, and checks that Room 3 stores the ID value classes.
+- [ADR 0009](0009-how-the-youtube-layer-reaches-youtube.md) widens BROKEN to cover a request that the layer refuses to send, because only an update can fix that too.
 - Changing any of these decisions needs a new ADR.

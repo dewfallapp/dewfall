@@ -84,7 +84,7 @@ internal class NewPipeCalls(
         val category = youTubeErrorOf(error)
         val callField = LogField.state("call", call)
         val categoryField = LogField.state("error", category)
-        // BROKEN means that the layer can't read YouTube's answer until an update fixes it.
+        // Only an app update fixes BROKEN, so it is logged as an error.
         if (category == YouTubeError.BROKEN) {
             log.error(CALL_FAILED, callField, categoryField, error = error)
         } else {
