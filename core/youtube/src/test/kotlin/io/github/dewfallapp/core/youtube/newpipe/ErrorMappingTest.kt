@@ -42,6 +42,7 @@ class ErrorMappingTest {
                 ContentNotSupportedException("Not supported") to YouTubeError.UNAVAILABLE,
                 ParsingException("Changed") to YouTubeError.BROKEN,
                 MissingFieldException() to YouTubeError.BROKEN,
+                NoStreamLinksException() to YouTubeError.BROKEN,
                 ExtractionException("Changed") to YouTubeError.BROKEN,
                 IllegalStateException("Bug") to YouTubeError.BROKEN,
             )
