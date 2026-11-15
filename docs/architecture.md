@@ -330,7 +330,7 @@ The channel's RSS feed was rejected. It lists Shorts without marking them, so le
 
 YouTube serves most of a video's sound and picture as separate formats. Each format in StreamLinks is a single file that HTTP GET requests with byte ranges can read. The layer keeps the formats that NewPipeExtractor marks as PROGRESSIVE_HTTP with a direct link, and leaves out the formats that need a manifest to play. So a player usually plays one audio format and one video format together, such as with Media3's MergingMediaSource ([media sources](https://developer.android.com/media/media3/exoplayer/media-sources)). A video format whose `includesAudio` is true has the sound too, so it plays on its own. A player can also play the HLS manifest. A live stream has only the HLS manifest.
 
-A format's length in bytes or its codec is null when NewPipeExtractor doesn't know it.
+A format's codec, length in bytes, bitrate, width, height or frame rate is null when NewPipeExtractor doesn't know it.
 
 The links stop working after some time. NewPipeExtractor doesn't say when, so the layer reads it from the links themselves: the `expire` query parameter of each format's link, and the `/expire/` path segment of the HLS manifest's link. `expiresAt` is the earliest of them, or null when no link has one. Callers fetch new links just before playing or downloading, and again when a link stops working. StreamLinks has no DASH manifest, because NewPipeExtractor's dev branch no longer gives one.
 

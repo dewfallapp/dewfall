@@ -136,6 +136,35 @@ class NewPipeStreamLinksTest {
     }
 
     @Test
+    fun `an unknown bitrate, width, height and frame rate are null`() {
+        val page =
+            FakeStreamPage(
+                audioStreams = { listOf(audioStream(link("a"), bitrate = 0)) },
+                videoOnlyStreams = {
+                    listOf(
+                        videoStream(
+                            link("vo"),
+                            videoOnly = true,
+                            bitrate = 0,
+                            width = 0,
+                            height = 0,
+                            frameRate = ItagItem.FPS_NOT_APPLICABLE_OR_UNKNOWN,
+                        )
+                    )
+                },
+            )
+
+        val links = streamLinksOf(VideoId(VIDEO_A), page, skipped)
+
+        assertNull(links.audioFormats.single().bitrate)
+        val video = links.videoFormats.single()
+        assertNull(video.bitrate)
+        assertNull(video.width)
+        assertNull(video.height)
+        assertNull(video.frameRate)
+    }
+
+    @Test
     fun `a format without an itag or a media type is dropped and counted`() {
         val page =
             FakeStreamPage(
@@ -280,6 +309,7 @@ class NewPipeStreamLinksTest {
         isUrl: Boolean = true,
         contentLength: Long = 4_000_000,
         codec: String = "mp4a.40.2",
+        bitrate: Int = 130_000,
         withItag: Boolean = true,
         withMediaType: Boolean = true,
         trackId: String? = null,
@@ -287,7 +317,7 @@ class NewPipeStreamLinksTest {
         trackLocale: Locale? = null,
         trackType: AudioTrackType? = null,
     ): AudioStream {
-        val itag = itagItem(AUDIO_ITAG, contentLength, codec, bitrate = 130_000)
+        val itag = itagItem(AUDIO_ITAG, contentLength, codec, bitrate)
         return AudioStream.Builder()
             .setId(AUDIO_ITAG.toString())
             .setContent(link, isUrl)
@@ -301,16 +331,22 @@ class NewPipeStreamLinksTest {
             .build()
     }
 
-    private fun videoStream(link: String, videoOnly: Boolean): VideoStream {
+    private fun videoStream(
+        link: String,
+        videoOnly: Boolean,
+        bitrate: Int = 500_000,
+        width: Int = 640,
+        height: Int = 360,
+        frameRate: Int = 30,
+    ): VideoStream {
         val itagId = if (videoOnly) VIDEO_ONLY_ITAG else VIDEO_WITH_AUDIO_ITAG
         val itag =
-            itagItem(itagId, contentLength = 4_000_000, codec = "avc1.42001E", bitrate = 500_000)
-                .apply {
-                    width = 640
-                    height = 360
-                    // The setter, not the public field of the same name, which is deprecated.
-                    setFps(30)
-                }
+            itagItem(itagId, contentLength = 4_000_000, codec = "avc1.42001E", bitrate).apply {
+                this.width = width
+                this.height = height
+                // The setter, not the public field of the same name, which is deprecated.
+                setFps(frameRate)
+            }
         return VideoStream.Builder()
             .setId(itagId.toString())
             .setContent(link, true)

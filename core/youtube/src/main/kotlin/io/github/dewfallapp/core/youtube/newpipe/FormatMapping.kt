@@ -36,7 +36,7 @@ internal fun AudioStream.toAudioFormatOrNull(): AudioFormat? {
         itag = itag.id,
         mimeType = mimeType,
         codec = codec?.ifEmpty { null },
-        bitrate = itag.bitrate,
+        bitrate = itag.bitrate.knownOrNull(),
         contentLength = itag.knownContentLength(),
         track = audioTrack(),
     )
@@ -52,11 +52,11 @@ internal fun VideoStream.toVideoFormatOrNull(): VideoFormat? {
         itag = itag.id,
         mimeType = mimeType,
         codec = codec?.ifEmpty { null },
-        bitrate = itag.bitrate,
+        bitrate = itag.bitrate.knownOrNull(),
         contentLength = itag.knownContentLength(),
-        width = width,
-        height = height,
-        frameRate = fps,
+        width = width.knownOrNull(),
+        height = height.knownOrNull(),
+        frameRate = fps.knownOrNull(),
         // The method, not the public field of the same name, which NewPipeExtractor deprecates.
         includesAudio = !isVideoOnly(),
     )
@@ -77,6 +77,12 @@ internal fun expiryOf(link: String): Instant? {
 private fun ItagItem.knownContentLength(): Long? = contentLength.takeIf {
     it != ItagItem.CONTENT_LENGTH_UNKNOWN
 }
+
+/**
+ * This bitrate, width, height or frame rate, or null if it is 0 or less. NewPipeExtractor gives 0
+ * for a bitrate, width or height that YouTube leaves out, and -1 for a frame rate.
+ */
+private fun Int.knownOrNull(): Int? = takeIf { it > 0 }
 
 /** The sound track that this stream holds, or null if the video has only one. */
 private fun AudioStream.audioTrack(): AudioTrack? = audioTrackId?.let { id ->
