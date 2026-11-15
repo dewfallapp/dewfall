@@ -49,7 +49,9 @@ internal class NewPipeChannelUploads(private val calls: NewPipeCalls, logger: Lo
                     it.fetchPage()
                     it.initialPage
                 }
-            pages.forEach { skipped.addParseErrors(it.errors.size) }
+            for (page in pages) {
+                skipped.addParseErrors(page.errors.size)
+            }
             val videos = latestUploadsOf(channel, pages.map { it.items }, skipped)
             skipped.warnIfAny(log)
             ChannelUploads(channel, videos)

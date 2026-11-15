@@ -69,8 +69,11 @@ internal fun videoDetailsOf(
         description = skipped.orDefault("") { extractor.description.toPlainText() },
         // NewPipeExtractor gives 0 for a length that it doesn't know.
         duration =
-            if (isLive) null
-            else skipped.orDefault(null) { extractor.length.takeIf { it > 0 }?.seconds },
+            if (isLive) {
+                null
+            } else {
+                skipped.orDefault(null) { extractor.length.takeIf { it > 0 }?.seconds }
+            },
         published = skipped.orDefault(null) { extractor.uploadDate?.toPublishedTime() },
         thumbnails = skipped.orDefault(emptyList()) { extractor.thumbnails.toThumbnails() },
         isLive = isLive,
