@@ -11,7 +11,7 @@ Dewfall is one Gradle build with an app module, core modules, and feature module
 
 ### The module graph
 
-Solid arrows are dependencies in the build today. Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds, and `:core:ui`, which comes when a second feature needs shared UI.
+Solid arrows are dependencies in the build today. An arrow labeled api is an api dependency, so a module that depends on the module where the arrow starts sees the module where it ends too. For example, `:core:data` sees `:core:logging` through `:core:youtube`. Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds, and `:core:ui`, which comes when a second feature needs shared UI.
 
 ```mermaid
 graph TD
@@ -32,10 +32,10 @@ graph TD
     app --> logging
     data --> database
     data --> youtube
-    data --> model
+    data -->|api| model
     database --> model
-    youtube --> model
-    youtube --> logging
+    youtube -->|api| model
+    youtube -->|api| logging
 
     app -.-> inboxUi
     inboxUi -.-> inboxLogic
@@ -59,12 +59,12 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 | `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError. See [The YouTube layer](#the-youtube-layer). | Nothing |
 | `:core:logging` | core/logging/ | Kotlin/JVM | io.github.dewfallapp.core.logging | The Logger that every module logs through, its levels and fields, and the error summary that leaves out messages. See [Logging](#logging). | Nothing |
 | `:core:mvi` | core/mvi/ | Kotlin/JVM | io.github.dewfallapp.core.mvi | The MVI base: MviState, MviIntent, MviEffect, the Reducer, and MviViewModel, the base class of every screen's ViewModel. See [The MVI contract](#the-mvi-contract). | Nothing. It uses Lifecycle's ViewModel and kotlinx.coroutines. |
-| `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation, which #35 and #148 add. So far it holds the HTTP code that NewPipeExtractor sends its requests through, and the code that runs each call. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md) and [The YouTube layer](#the-youtube-layer). | `:core:model`, `:core:logging` |
+| `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation. NewPipeYouTube, its one public class, implements the first four, and #148 adds subtitles. It also holds the HTTP code that NewPipeExtractor sends its requests through, and the code that runs each call. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md) and [The YouTube layer](#the-youtube-layer). | `:core:model`, `:core:logging` and kotlinx.coroutines, all three as api dependencies, because the interfaces return the models, and NewPipeYouTube's constructor takes a Logger and a CoroutineDispatcher |
 | `:core:database` | core/database/ | Android library | io.github.dewfallapp.core.database | The Room database: entities, DAOs, migrations and the exported schemas | `:core:model` |
-| `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer | `:core:model`, `:core:database`, `:core:youtube` |
+| `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer. Today it holds only YouTubeModule, the Hilt module that provides the YouTube layer. See [How Hilt provides the layer](#how-hilt-provides-the-layer). | `:core:model`, `:core:database`, `:core:youtube` |
 | `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). Later, shared components and icons too. | Nothing. It exposes Material 3 as an api dependency. |
 
-`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:data` and `:core:database` hold no code yet. A module that logs depends on `:core:logging`. Today `:app` and `:core:youtube` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). #35 and #148 implement the YouTube layer's interfaces. Compose is set up in `:app` and `:core:designsystem`. Hilt is set up in `:app` only, until a core module needs it.
+`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds only the Hilt module that provides the YouTube layer. A module that logs depends on `:core:logging`. Today `:app` and `:core:youtube` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements four of the YouTube layer's interfaces, and #148 implements the fifth, for subtitles. Compose is set up in `:app` and `:core:designsystem`. Hilt is set up in `:app` and `:core:data`.
 
 `:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the code that formats a duration, goes in a `:core:ui` Android library instead. `:core:ui` gets created when a second feature needs such a piece. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
 
@@ -97,7 +97,7 @@ Every module applies one of three convention plugins from build-logic/. They hol
 
 A fourth plugin, dewfall.detekt, holds the detekt settings and adds the compose-rules plugin to detekt. The three plugins above apply it, and so does the root project, to check the code in build-logic.
 
-Android modules that use Compose, Hilt or Room also apply the matching plugins below, after dewfall.android.application or dewfall.android.library. Today `:app` and `:core:designsystem` apply dewfall.android.compose, only `:app` applies dewfall.android.hilt, and only `:core:database` applies dewfall.android.room. Each feature's `-ui` module will apply both dewfall.android.compose and dewfall.android.hilt.
+Android modules that use Compose, Hilt or Room also apply the matching plugins below, after dewfall.android.application or dewfall.android.library. Today `:app` and `:core:designsystem` apply dewfall.android.compose, `:app` and `:core:data` apply dewfall.android.hilt, and only `:core:database` applies dewfall.android.room. Each feature's `-ui` module will apply both dewfall.android.compose and dewfall.android.hilt.
 
 `:app` also turns on BuildConfig, which AGP 8.0 and later generate only for modules that ask ([AGP 8.0.0](https://developer.android.com/build/releases/agp-8-0-0-release-notes)). The Hilt module that provides the logger reads BuildConfig.DEBUG to pick the lowest log level. See [Logging](#logging).
 
@@ -160,13 +160,13 @@ That last point matters for Kotlin's string templates, such as the toString of a
 
 AGENTS.md says the app's network calls go only to YouTube, through the YouTube layer, and to services the user turns on. PRIVACY.md tells users that the app connects to YouTube. Some libraries make requests of their own, so the app turns those off.
 
-**YouTube.** NewPipeExtractor sends every request through NewPipeDownloader in `:core:youtube`, which sends it with OkHttp ([ADR 0009](adr/0009-how-the-youtube-layer-reaches-youtube.md)). It sends only HTTPS requests to youtube.com, its subdomains and youtubei.googleapis.com, the host of YouTube's API for its mobile clients. It refuses any other link without sending it, and the layer reports that as BROKEN. Its client follows no redirects, so no request reaches a host that it didn't check, and it stores no cookies. The only cookie in the requests is a fixed one that NewPipeExtractor adds to the web client's requests, `SOCS=CAE=`, which tells YouTube that the user rejected all non-essential cookies, so YouTube doesn't answer with its consent page ([generateConsentCookie](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L1211-L1221)). In a check of NewPipeExtractor v0.26.5 against YouTube on October 22, 2026, the four functions that #35 implements sent these requests:
+**YouTube.** NewPipeExtractor sends every request through NewPipeDownloader in `:core:youtube`, which sends it with OkHttp ([ADR 0009](adr/0009-how-the-youtube-layer-reaches-youtube.md)). It sends only HTTPS requests to youtube.com, its subdomains and youtubei.googleapis.com, the host of YouTube's API for its mobile clients. It refuses any other link without sending it, and the layer reports that as BROKEN. Its client follows no redirects, so no request reaches a host that it didn't check, and it stores no cookies. The only cookie in the requests is a fixed one that NewPipeExtractor adds to the web client's requests, `SOCS=CAE=`, which tells YouTube that the user rejected all non-essential cookies, so YouTube doesn't answer with its consent page ([generateConsentCookie](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L1211-L1221)). In a check of NewPipeExtractor v0.26.5 against YouTube on October 22, 2026, and a check of the layer against YouTube on November 15, 2026, the four functions that NewPipeYouTube implements sent these requests. [What each function sends](#what-each-function-sends) gives the cases that the checks didn't reach.
 
 | Function | Hosts | Requests |
 |---|---|---|
 | Search | www.youtube.com | One |
 | Video details, and stream links | youtubei.googleapis.com, for the player requests of YouTube's Android and visionOS clients, and www.youtube.com, for the web client's player request and the video page's other data | Seven each: a visitor ID for each of the three clients, their three player requests, and the page's other data |
-| A channel's latest uploads | www.youtube.com | One for each tab that the layer reads, so two for most channels |
+| A channel's latest uploads | www.youtube.com | Two for most channels: the channel's page, which holds its Videos tab, then its Live tab. One for a channel with no Live tab. |
 
 NewPipeExtractor asks for a new visitor ID for each player request and keeps none. The first call in each process also fetches www.youtube.com/sw.js, to read the version of YouTube's web client. A stream link that needs decoding makes NewPipeExtractor fetch YouTube's player code from www.youtube.com, once per process. No link needed it in the check. The stream links and HLS manifests that the layer returns point to googlevideo.com, which the player and downloads contact. The tasks that add the player, downloads and image loading list the hosts they contact.
 
@@ -270,7 +270,7 @@ There is one interface for each thing the app needs from YouTube, so each caller
 | StreamLinksRemoteDataSource | `streamLinks(videoId)` | The links that play or download the video | #35 |
 | SubtitlesRemoteDataSource | `subtitleTracks(videoId)`, then `subtitleLines(track)` | The video's subtitle tracks, then one track's lines | #148 |
 
-The first four are `fun interface`s, so a test can pass a lambda instead of writing a fake. One class can implement several of them. #35 decides how Hilt provides them.
+The first four are `fun interface`s, so a test can pass a lambda instead of writing a fake. One class can implement several of them. NewPipeYouTube implements all four, and Hilt provides it, as [How Hilt provides the layer](#how-hilt-provides-the-layer) describes.
 
 Every function keeps these rules. Each interface's KDoc repeats the first two.
 
@@ -296,7 +296,7 @@ Every function keeps these rules. Each interface's KDoc repeats the first two.
 | PublishedTime | When a video was published or is scheduled to start, and whether that time is only an estimate |
 | YouTubeResult, YouTubeError | What a function returns, and why it failed. See [Error handling](#error-handling). |
 
-The ID, title, channel ID and channel name of a video are required. When #35 can't read one of them, it leaves the item out of a list, or fails a call about one video with BROKEN. The other fields are optional: #35 fills them with null or an empty list or text, and logs a warning.
+The ID, title, channel ID and channel name of a video are required, and so are the ID and name of a channel. When the layer can't read one of them, it leaves the item out of a list, or fails a call about one video or channel with BROKEN. The other fields are optional, and the layer fills a missing one with null or an empty list or text. YouTube often leaves them out, such as a channel's description or a live stream's length, so a missing one logs nothing. The layer warns only about items it left out, and about parts that NewPipeExtractor reports it couldn't parse, in one line for each call, as [How a call runs](#how-a-call-runs) describes.
 
 Times are kotlin.time's Instant, and lengths are its Duration. YouTube often gives only a date with no time, or a relative time in days or longer, such as "3 weeks ago". Then PublishedTime's `isApproximate` is true, and its Instant is an estimate: the time of day means nothing, and the date can be as far off as the unit YouTube gave. A relative time in hours, such as "7 hours ago", isn't marked approximate, but is only as exact as the hour.
 
@@ -306,10 +306,12 @@ A model's thumbnails hold every size YouTube offers. The screen picks the smalle
 
 ChannelUploads holds a channel's long-form videos and live streams, and never its Shorts. Whether the inbox shows videos that haven't started is a Phase 5 decision.
 
-On a channel's page, YouTube shows regular videos and premieres in the Videos tab, live streams in the Live tab, whether they are on air, upcoming or recorded, and Shorts in the Shorts tab. So #35 reads two tabs, two requests for each channel, and merges them:
+On a channel's page, YouTube shows regular videos and premieres in the Videos tab, live streams in the Live tab, whether they are on air, upcoming or recorded, and Shorts in the Shorts tab. So the layer reads two tabs and merges them, which takes two requests for most channels:
 
 - The Videos tab. NewPipeExtractor's channel request already holds it, with the channel's name, avatar and description.
-- The Live tab.
+- The Live tab. A channel with no live streams has no Live tab, and then the layer sends only the first request.
+
+NewPipeExtractor can't read an age-restricted channel's tabs. It reads the channel's system playlists of videos and of live streams instead, with two requests each, or one when a playlist doesn't exist ([YoutubePlaylistExtractor](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubePlaylistExtractor.java#L83-L114)). So such a channel takes three to five requests. When YouTube sends a channel's ID on to another channel, each step adds a request. Every item takes the channel's ID and name from the channel's page, and an item that is in both tabs is kept once, in its first place.
 
 Both tabs give the length of each video that can be watched from start to end. NewPipeExtractor's item code marks a stream that is on air by its badge, and a premiere or stream that hasn't started by its scheduled start. The other publish times are relative, such as "Streamed 2 years ago", so most of them are approximate.
 
@@ -320,15 +322,25 @@ The merged list follows this order, which the KDoc of ChannelUploads and Channel
 - Videos with no publish time come last.
 - Videos with the same time, and videos with no time, keep the order YouTube gave, with the Videos tab's videos before the Live tab's.
 
-#35 implements this order and tests it. If the inbox wants a different order later, Phase 5 sorts its own rows.
+UploadOrder.kt implements this order, and its tests cover each rule. If the inbox wants a different order later, Phase 5 sorts its own rows.
 
 The channel's RSS feed was rejected. It lists Shorts without marking them, so leaving them out would depend on an undocumented link pattern, and it gives no lengths.
 
 ### Stream links
 
-YouTube serves most of a video's sound and picture as separate formats. Each format in StreamLinks is a single file that HTTP GET requests with byte ranges can read. #35 leaves out the formats that need a manifest to play. So a player usually plays one audio format and one video format together, such as with Media3's MergingMediaSource ([media sources](https://developer.android.com/media/media3/exoplayer/media-sources)). A video format whose `includesAudio` is true has the sound too, so it plays on its own. A player can also play the HLS manifest. A live stream has only the HLS manifest.
+YouTube serves most of a video's sound and picture as separate formats. Each format in StreamLinks is a single file that HTTP GET requests with byte ranges can read. The layer keeps the formats that NewPipeExtractor marks as PROGRESSIVE_HTTP with a direct link, and leaves out the formats that need a manifest to play. So a player usually plays one audio format and one video format together, such as with Media3's MergingMediaSource ([media sources](https://developer.android.com/media/media3/exoplayer/media-sources)). A video format whose `includesAudio` is true has the sound too, so it plays on its own. A player can also play the HLS manifest. A live stream has only the HLS manifest.
 
-The links stop working after some time. NewPipeExtractor doesn't say when, so #35 reads the `expire` parameter from the links and leaves `expiresAt` null when there is none. Callers fetch new links just before playing or downloading, and again when a link stops working. StreamLinks has no DASH manifest, because NewPipeExtractor's dev branch no longer gives one.
+A format's codec, length in bytes, bitrate, width, height or frame rate is null when NewPipeExtractor doesn't know it.
+
+The links stop working after some time. NewPipeExtractor doesn't say when, so the layer reads it from the links themselves: the `expire` query parameter of each format's link, and the `/expire/` path segment of the HLS manifest's link. `expiresAt` is the earliest of them, or null when no link has one. Callers fetch new links just before playing or downloading, and again when a link stops working. StreamLinks has no DASH manifest, because NewPipeExtractor's dev branch no longer gives one.
+
+A video with no format that plays as a single file and no HLS manifest fails with BROKEN. NewPipeExtractor leaves out a format whose link it can't decode, without an error, so an empty answer is the only sign that it couldn't read the links.
+
+### Descriptions
+
+NewPipeExtractor gives a video's description as HTML, with `<br>` for line breaks and `<a>` for links. VideoDetails holds it as plain text, so the layer turns it into text with jsoup's [wholeText](https://jsoup.org/apidocs/org/jsoup/nodes/Element.html#wholeText()). Each `<br>` becomes a newline, and a link keeps only the text it shows. NewPipeExtractor writes a run of spaces as a space followed by no-break spaces, and the layer turns those back into spaces.
+
+For some of YouTube's answers, NewPipeExtractor puts the description's text into the HTML without escaping it, so a `<` in the text would read as the start of a tag. Before jsoup reads the HTML, the layer escapes each `<` that doesn't start one of the tags that NewPipeExtractor writes: links, `<b>`, `<i>`, `<s>`, their closing tags, and `<br>`. Text that looks exactly like one of those tags, such as `<b>`, still reads as a tag, and an entity such as `&amp;` that wasn't escaped is decoded. A channel's description already comes as plain text.
 
 ### Subtitles
 
@@ -339,17 +351,41 @@ SubtitlesRemoteDataSource lists a video's tracks first, then reads the lines of 
 Every call into NewPipeExtractor goes through NewPipeCalls in `:core:youtube`, which keeps the rules above for each one. [ADR 0009](adr/0009-how-the-youtube-layer-reaches-youtube.md) explains the choices.
 
 - **Setup.** NewPipeExtractor's setup, NewPipe.init, is global. It writes static fields that every request reads, and they aren't volatile. NewPipeCalls runs it once, on the first call, inside a lazy. Every call reads the lazy on the thread that then calls NewPipeExtractor, so that thread sees the setup. Nothing runs at app startup.
-- **Language and country.** Every request asks for British English, because NewPipeExtractor reads some of YouTube's answers by their English text. Its country is the device's region, read at each call, or GB when YouTube's country list doesn't have the region. Each extractor gets both from RequestSettings.
+- **Language and country.** Every request asks for British English, because NewPipeExtractor reads some of YouTube's answers by their English text. Its country is the device's region, read at each call, or GB when YouTube's country list doesn't have the region. Each extractor that the layer builds gets both from RequestSettings. NewPipeExtractor builds some extractors itself, inside another one, such as the system playlists that an age-restricted channel's tabs read. Those ask for NewPipe's preferred country, so NewPipeCalls sets it to the call's country before each call.
 - **Threads and cancellation.** A call runs its blocking work with runInterruptible, on the dispatcher that NewPipeCalls receives. Cancelling the caller interrupts that thread. NewPipeDownloader then cancels the request in progress and throws InterruptedIOException, and the thread stays interrupted, so NewPipeExtractor's next request stops too. NewPipeExtractor passes that exception on, and it would read as NETWORK, so NewPipeCalls checks for cancellation first and throws CancellationException.
 - **One call at a time.** NewPipeExtractor keeps caches in static fields that it reads and writes without locks. Every call touches at least one of them, so every call holds one Mutex while NewPipeExtractor runs, and calls wait for each other. The fields belong to the process, so the Mutex does too, and every NewPipeCalls shares it. The table below lists the static state of v0.26.5 that the layer's calls reach, apart from ExtractorLogger's logger, which is volatile and which Dewfall never sets ([Logging](#what-the-logger-cant-cover)). It leaves out youtubeMusicClientVersion, which only YouTube Music requests read and write.
-- **Logging.** A failure is logged once, with the message "YouTube call failed" and two fields: the call, such as SEARCH, and the category. BROKEN is logged at ERROR, because only an update fixes it, and the other categories at WARN. The error is written as class names and stack frames, as [Logging](#logging) describes.
+- **Logging.** A failure is logged once, with the message "YouTube call failed" and two fields: the call, such as SEARCH, and the category. BROKEN is logged at ERROR, because only an update fixes it, and the other categories at WARN. The error is written as class names and stack frames, as [Logging](#logging) describes. A call that succeeds after leaving out items that lack a required field, or after NewPipeExtractor reported parts it couldn't parse, logs one WARN line, "YouTube answer read in part", with three fields: the call, `dropped`, the number of items left out, and `parseErrors`, the number of parse errors.
 
 | Static state in NewPipeExtractor v0.26.5 | Written by | Read or written by | How the layer keeps it safe |
 |---|---|---|---|
-| The downloader, localization and country ([NewPipe](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/NewPipe.java#L39-L41)) | NewPipe.init | Every request | The lazy setup |
+| The downloader, localization and country ([NewPipe](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/NewPipe.java#L39-L41)) | NewPipe.init, and NewPipeCalls, which sets the country at the start of each call | Every request. The country counts only for an extractor that NewPipeExtractor builds inside another one, because the others get theirs from RequestSettings. | The lazy setup for the downloader and localization. The country is set on the thread that runs the call, inside the Mutex. |
 | The version of YouTube's web client: clientVersion, clientVersionExtracted and hardcodedClientVersionValid ([YoutubeParsingHelper](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L160-L166)) | [getClientVersion](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L570-L595), the first time it runs. A thread can see clientVersionExtracted set while clientVersion is still null, and then send no version. | Every request of the web client, whose body [prepareDesktopJsonBuilder](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L1053-L1080) builds and whose headers [getClientInfoHeaders](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L1171-L1176) builds: search, a channel's page and tabs, the video page's other data, and the [web player request](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeStreamHelper.java#L51-L81). So all four functions. | The Mutex |
 | YouTube's player code and what it decodes: the player code, the signature timestamp, the decoding functions, a HashMap of decoded parameters, and the errors it keeps ([YoutubeJavaScriptPlayerManager](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeJavaScriptPlayerManager.java#L33-L51)) | getSignatureTimestamp, deobfuscateSignature and getUrlWithThrottlingParameterDeobfuscated | Stream links only. [buildAndAddItagInfoToList](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L1305-L1337) calls the last two for each format, from getAudioStreams, getVideoStreams and getVideoOnlyStreams. getSignatureTimestamp has no caller in v0.26.5. The one request that would send the timestamp, [getWebEmbeddedPlayerResponse](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeStreamHelper.java#L84-L124), is never made, so fetching a video never fetches the player code. | The Mutex |
 | The PoToken provider and the iOS client flag ([YoutubeStreamExtractor](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L124-L125)), the cookie consent flag and the random generator for playback nonces ([YoutubeParsingHelper](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L179-L203)) | Setters that Dewfall never calls | Every video fetch reads the provider, the flag and the generator, and every web request reads the consent flag | Nothing to do: Dewfall never writes them, and the generator is a java.util.Random, which is thread-safe |
+
+The table leaves out static fields that NewPipeExtractor fills when a class loads and only reads afterwards, such as the patterns that read relative times like "3 weeks ago" ([PatternMap](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/timeago-parser/src/main/java/org/schabi/newpipe/extractor/timeago/PatternMap.java#L12-L95)). They need nothing, because the JVM makes what a class's initializer wrote visible to every thread that uses the class ([JLS 12.4.2](https://docs.oracle.com/javase/specs/jls/se17/html/jls-12.html#jls-12.4.2)).
+
+### What each function sends
+
+Each function calls NewPipeExtractor's extractors directly, never StreamInfo.getInfo or the other Info.getInfo helpers. Those read every part of the answer, and StreamInfo.getInfo fails a video whose formats it can't read, even when only its details are needed.
+
+| Function | What it calls in NewPipeExtractor | Requests |
+|---|---|---|
+| Search | A blank query returns empty lists and sends nothing. Otherwise the search extractor for the query, with no filter, then its first page. Playlists in the results are left out. SearchExtractor.NothingFoundException means a Success with empty lists. | One |
+| Video details | The stream extractor for the video, then only its details: the title, the channel's link, name and avatars, the description, the length, the publish time, the thumbnails and the stream type | Seven |
+| A channel's latest uploads | The channel extractor for the channel's ID, then the tab extractors of its Videos and Live tabs | Two for most channels, one for a channel with no Live tab, three to five for an age-restricted channel, and one more for each step when YouTube sends the channel on to another. See [A channel's latest uploads](#a-channels-latest-uploads). |
+| Stream links | The same stream extractor as video details, then only its audio formats, video formats, video-only formats and HLS manifest | Seven, as for video details. If a link needs decoding, NewPipeExtractor also fetches YouTube's player code, once per process. |
+
+The first call in each process also fetches www.youtube.com/sw.js, as [Network access](#network-access) describes.
+
+### How Hilt provides the layer
+
+NewPipeYouTube in `:core:youtube` is the layer's one public class. It builds the HTTP client, NewPipeDownloader and NewPipeCalls, and implements the four interfaces by delegating to one internal class for each. YouTubeModule in `:core:data` is the Hilt module that provides it:
+
+- One NewPipeYouTube for the whole app, in SingletonComponent with @Singleton, built with the app's Logger and Dispatchers.IO. Hilt's bindings are unscoped unless they name a scope ([Component scopes](https://developer.android.com/training/dependency-injection/hilt-android#component-scopes)). NewPipeExtractor's setup is global, so one instance keeps one downloader and one HTTP client for the whole app.
+- Each of the four interfaces, bound to that instance with @Binds ([Inject interface instances with @Binds](https://developer.android.com/training/dependency-injection/hilt-android#inject-interfaces)).
+
+Hilt builds NewPipeYouTube the first time something asks for one of the interfaces, not when the app starts. Repositories in `:core:data` take the interfaces they need in their constructors. Feature modules can't see `:core:youtube`, so they reach YouTube only through those repositories.
 
 ### Mapping NewPipeExtractor's exceptions
 

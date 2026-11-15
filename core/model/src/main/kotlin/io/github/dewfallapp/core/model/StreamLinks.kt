@@ -34,8 +34,8 @@ data class AudioFormat(
     val mimeType: String,
     /** The codec, such as opus or mp4a.40.2, or null if YouTube didn't say. */
     val codec: String?,
-    /** The bitrate in bits per second. */
-    val bitrate: Int,
+    /** The bitrate in bits per second, or null when YouTube doesn't give it. */
+    val bitrate: Int?,
     /** The file's size in bytes, or null if YouTube didn't say. */
     val contentLength: Long?,
     /** Which of the video's sound tracks this is, or null if the video has only one. */
@@ -51,16 +51,16 @@ data class VideoFormat(
     val mimeType: String,
     /** The codec, such as avc1.640028 or vp9, or null if YouTube didn't say. */
     val codec: String?,
-    /** The bitrate in bits per second. */
-    val bitrate: Int,
+    /** The bitrate in bits per second, or null when YouTube doesn't give it. */
+    val bitrate: Int?,
     /** The file's size in bytes, or null if YouTube didn't say. */
     val contentLength: Long?,
-    /** The width in pixels. */
-    val width: Int,
-    /** The height in pixels. */
-    val height: Int,
-    /** The frames per second. */
-    val frameRate: Int,
+    /** The width in pixels, or null when YouTube doesn't give it. */
+    val width: Int?,
+    /** The height in pixels, or null when YouTube doesn't give it. */
+    val height: Int?,
+    /** The frames per second, or null when YouTube doesn't give it. */
+    val frameRate: Int?,
     /** True if the file has the sound too, so it plays on its own. */
     val includesAudio: Boolean,
 )
