@@ -17,8 +17,11 @@ import org.schabi.newpipe.extractor.stream.ContentAvailability
 import org.schabi.newpipe.extractor.stream.StreamInfoItem
 import org.schabi.newpipe.extractor.stream.StreamType
 
-/** The first path segment of a channel's link, such as https://www.youtube.com/channel/UC... */
-private const val CHANNEL_PATH = "channel"
+/**
+ * The first path segment of a channel's link, such as https://www.youtube.com/channel/UC..., and
+ * the prefix of the ID that NewPipeExtractor's channel link factory takes, such as channel/UC....
+ */
+internal const val CHANNEL_PATH = "channel"
 
 /** The query parameter that holds a video's ID in a watch link. */
 private const val VIDEO_ID_PARAMETER = "v"
@@ -28,6 +31,13 @@ private val KINDS_WITH_LENGTH = setOf(VideoKind.VIDEO, VideoKind.SHORT)
 
 /** The stream types of a stream that is on air. */
 internal val LIVE_STREAM_TYPES = setOf(StreamType.LIVE_STREAM, StreamType.AUDIO_LIVE_STREAM)
+
+/**
+ * Thrown when YouTube's answer about one video or channel lacks a field that its model needs. It
+ * maps to BROKEN, because only an app update can make the layer read that answer. A list drops such
+ * an item instead.
+ */
+internal class MissingFieldException : Exception("YouTube's answer lacks a required field")
 
 /**
  * The ID in a video's watch link, such as https://www.youtube.com/watch?v=..., the form of every

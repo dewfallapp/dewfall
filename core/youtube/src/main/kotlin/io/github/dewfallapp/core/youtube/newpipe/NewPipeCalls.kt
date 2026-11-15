@@ -54,9 +54,8 @@ internal class NewPipeCalls(
 
     // NewPipe.init writes static fields that aren't volatile. Each call reads this on the thread
     // that then calls NewPipeExtractor, and lazy's synchronized initialization makes that thread
-    // see what init wrote. init takes GB as the country from the localization. That country only
-    // counts for requests that no extractor makes, because each extractor gets the call's country
-    // from RequestSettings.
+    // see what init wrote. init takes GB as the country from the localization, and run replaces it
+    // with the call's country.
     private val setUp = lazy { NewPipe.init(downloader, REQUEST_LOCALIZATION) }
 
     /**
@@ -69,7 +68,14 @@ internal class NewPipeCalls(
             newPipeExtractorLock.withLock {
                 runInterruptible(dispatcher) {
                     setUp.value
-                    YouTubeResult.Success(block(RequestSettings(contentCountryFor(deviceLocale()))))
+                    val settings = RequestSettings(contentCountryFor(deviceLocale()))
+                    // NewPipeExtractor builds some extractors inside another one, such as the
+                    // system playlist that an age-restricted channel's tab reads. The block can't
+                    // apply the settings to those, so they ask for NewPipe's preferred country.
+                    // Setting it here, on the thread that runs the block and under the lock, makes
+                    // their requests name the call's country too.
+                    NewPipe.setPreferredContentCountry(settings.contentCountry)
+                    YouTubeResult.Success(block(settings))
                 }
             }
         } catch (e: CancellationException) {

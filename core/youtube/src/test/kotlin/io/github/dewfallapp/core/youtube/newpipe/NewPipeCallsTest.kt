@@ -31,6 +31,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.schabi.newpipe.extractor.NewPipe
+import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.exceptions.ParsingException
 import org.schabi.newpipe.extractor.localization.Localization
 
@@ -42,6 +43,10 @@ private const val WAIT_SECONDS = 5L
  * back starts within a few milliseconds.
  */
 private const val QUIET_MILLIS = 300L
+
+/** A channel's system playlist of videos, the kind that an age-restricted channel's tab reads. */
+private const val SYSTEM_PLAYLIST_LINK =
+    "https://www.youtube.com/playlist?list=UULFaaaaaaaaaaaaaaaaaaaaaa"
 
 class NewPipeCallsTest {
     /** The first line of each log line: level, tag, message and fields, without the error. */
@@ -86,6 +91,28 @@ class NewPipeCallsTest {
         assertEquals(YouTubeResult.Success("BD"), first)
         assertEquals(YouTubeResult.Success("DE"), second)
     }
+
+    @Test
+    fun `an extractor that NewPipeExtractor builds itself asks for the call's country too`() =
+        runTest {
+            var locale = Locale.forLanguageTag("bn-BD")
+            val calls =
+                NewPipeCalls(NoRequests, logger, StandardTestDispatcher(testScheduler)) { locale }
+            // Like the system playlist that an age-restricted channel's tab builds, this extractor
+            // never gets the call's RequestSettings.
+            val countryOfUnsetExtractor = {
+                ServiceList.YouTube.getPlaylistExtractor(SYSTEM_PLAYLIST_LINK)
+                    .extractorContentCountry
+                    .countryCode
+            }
+
+            val first = calls.run(YouTubeCall.LATEST_UPLOADS) { countryOfUnsetExtractor() }
+            locale = Locale.forLanguageTag("de-DE")
+            val second = calls.run(YouTubeCall.LATEST_UPLOADS) { countryOfUnsetExtractor() }
+
+            assertEquals(YouTubeResult.Success("BD"), first)
+            assertEquals(YouTubeResult.Success("DE"), second)
+        }
 
     @Test
     fun `a failure comes back as its category and is logged once with the call`() = runTest {
