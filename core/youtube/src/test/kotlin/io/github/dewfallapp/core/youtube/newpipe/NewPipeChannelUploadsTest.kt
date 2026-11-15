@@ -5,6 +5,7 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoId
 import java.time.Instant
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -25,6 +26,11 @@ import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeChannelT
 
 class NewPipeChannelUploadsTest {
     private val channel = Channel(ChannelId(CHANNEL_A), "Channel", emptyList(), "About")
+
+    @BeforeTest
+    fun setUp() {
+        setUpNewPipeWithoutRequests()
+    }
 
     @Test
     fun `every video takes the channel's ID and name`() {

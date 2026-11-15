@@ -5,6 +5,7 @@ import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
 import java.time.Instant
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -20,6 +21,11 @@ import org.schabi.newpipe.extractor.stream.StreamType
 class NewPipeVideoDetailsTest {
     private val lines = mutableListOf<String>()
     private val skipped = SkippedParts(YouTubeCall.VIDEO_DETAILS)
+
+    @BeforeTest
+    fun setUp() {
+        setUpNewPipeWithoutRequests()
+    }
 
     @Test
     fun `a video's details map every field`() {

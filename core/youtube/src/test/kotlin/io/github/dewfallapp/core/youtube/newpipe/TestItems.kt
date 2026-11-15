@@ -3,6 +3,7 @@ package io.github.dewfallapp.core.youtube.newpipe
 import io.github.dewfallapp.core.logging.LogLevel
 import io.github.dewfallapp.core.logging.Logger
 import org.schabi.newpipe.extractor.Image
+import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.channel.ChannelInfoItem
 import org.schabi.newpipe.extractor.downloader.Downloader
@@ -28,6 +29,15 @@ internal fun channelLink(channelId: String) = "https://www.youtube.com/channel/$
 /** A downloader for tests that must never send a request. */
 internal object NoRequests : Downloader() {
     override fun execute(request: Request): Response = throw AssertionError("A test sent a request")
+}
+
+/**
+ * Sets NewPipeExtractor up with [NoRequests], as NewPipeCalls does on its first call. An extractor
+ * takes NewPipe's downloader when it is built, so a test that builds one calls this first. Then the
+ * test passes alone and in any order.
+ */
+internal fun setUpNewPipeWithoutRequests() {
+    NewPipe.init(NoRequests, REQUEST_LOCALIZATION)
 }
 
 /** A logger that adds the first line of each log line to [lines], without the error. */

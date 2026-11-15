@@ -5,6 +5,7 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.SearchResults
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeResult
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -22,6 +23,11 @@ import org.schabi.newpipe.extractor.search.SearchExtractor
 class NewPipeSearchTest {
     private val lines = mutableListOf<String>()
     private val log = recordingLogger(lines).withTag(LOG_AREA)
+
+    @BeforeTest
+    fun setUp() {
+        setUpNewPipeWithoutRequests()
+    }
 
     @Test
     fun `results keep YouTube's order and leave out playlists`() {

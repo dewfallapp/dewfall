@@ -1,6 +1,7 @@
 package io.github.dewfallapp.core.youtube.newpipe
 
 import java.util.Locale
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.schabi.newpipe.extractor.ServiceList
@@ -8,6 +9,11 @@ import org.schabi.newpipe.extractor.localization.ContentCountry
 import org.schabi.newpipe.extractor.localization.Localization
 
 class RequestSettingsTest {
+    @BeforeTest
+    fun setUp() {
+        setUpNewPipeWithoutRequests()
+    }
+
     @Test
     fun `every request asks for British English`() {
         assertEquals(Localization("en", "GB"), RequestSettings(ContentCountry("BD")).localization)

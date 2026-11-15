@@ -32,6 +32,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.ServiceList
+import org.schabi.newpipe.extractor.downloader.Downloader
+import org.schabi.newpipe.extractor.downloader.Request
+import org.schabi.newpipe.extractor.downloader.Response
 import org.schabi.newpipe.extractor.exceptions.ParsingException
 import org.schabi.newpipe.extractor.localization.Localization
 
@@ -47,6 +50,11 @@ private const val QUIET_MILLIS = 300L
 /** A channel's system playlist of videos, the kind that an age-restricted channel's tab reads. */
 private const val SYSTEM_PLAYLIST_LINK =
     "https://www.youtube.com/playlist?list=UULFaaaaaaaaaaaaaaaaaaaaaa"
+
+/** A downloader that only marks a setup that NewPipeCalls must replace. */
+private object OtherSetUp : Downloader() {
+    override fun execute(request: Request): Response = throw AssertionError("A test sent a request")
+}
 
 class NewPipeCallsTest {
     /** The first line of each log line: level, tag, message and fields, without the error. */
@@ -70,6 +78,9 @@ class NewPipeCallsTest {
     @Test
     fun `the block runs with NewPipeExtractor set up with the downloader and British English`() =
         runTest {
+            // Other test classes set NewPipeExtractor up too, so this one starts from another
+            // setup, to show that NewPipeCalls replaces it.
+            NewPipe.init(OtherSetUp, Localization("de", "DE"))
             val calls = NewPipeCalls(NoRequests, logger, StandardTestDispatcher(testScheduler))
 
             calls.run(YouTubeCall.SEARCH) {

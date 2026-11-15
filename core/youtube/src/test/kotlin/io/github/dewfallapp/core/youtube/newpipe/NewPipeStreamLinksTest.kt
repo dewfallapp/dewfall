@@ -6,6 +6,7 @@ import io.github.dewfallapp.core.model.AudioTrackKind
 import io.github.dewfallapp.core.model.VideoFormat
 import io.github.dewfallapp.core.model.VideoId
 import java.util.Locale
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -27,6 +28,11 @@ private const val VIDEO_ONLY_ITAG = 137
 class NewPipeStreamLinksTest {
     private val lines = mutableListOf<String>()
     private val skipped = SkippedParts(YouTubeCall.STREAM_LINKS)
+
+    @BeforeTest
+    fun setUp() {
+        setUpNewPipeWithoutRequests()
+    }
 
     @Test
     fun `formats that play as a single file map every field`() {
