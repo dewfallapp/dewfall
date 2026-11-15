@@ -38,6 +38,11 @@ kotlinxSerialization = "1.11.0"
 # TeamNewPipe's group alone. See docs/architecture.md#build-settings.
 newpipeExtractor = "v0.26.5"
 okhttp = "5.5.0"
+# The YouTube layer turns video descriptions, which NewPipeExtractor gives as HTML, into plain
+# text with jsoup. NewPipeExtractor already ships it, so this started at the version that
+# NewPipeExtractor v0.26.5 uses. Renovate updates it like any other dependency, and Gradle picks
+# the higher version when this one and NewPipeExtractor's differ.
+jsoup = "1.22.2"
 
 [libraries]
 desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugarJdkLibsNio" }
@@ -46,6 +51,7 @@ desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", vers
 # ADR 0001 and ADR 0009.
 newpipe-extractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", version.ref = "newpipeExtractor" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 
 # The Compose BOM sets the versions of the Compose libraries below it.
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }

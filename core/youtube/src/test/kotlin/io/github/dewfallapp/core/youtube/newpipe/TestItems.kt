@@ -35,7 +35,6 @@ internal fun recordingLogger(lines: MutableList<String>) =
     Logger({ level, tag, text -> lines += "$level $tag ${text.lines().first()}" }, LogLevel.DEBUG)
 
 /** A video item as NewPipeExtractor's item extractors build one. */
-@Suppress("LongParameterList") // Each test sets only the fields that it checks.
 internal fun streamItem(
     videoId: String = VIDEO_A,
     title: String? = "Title",

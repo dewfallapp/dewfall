@@ -9,4 +9,5 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.newpipe.extractor)
     implementation(libs.okhttp)
+    implementation(libs.jsoup)
 }
