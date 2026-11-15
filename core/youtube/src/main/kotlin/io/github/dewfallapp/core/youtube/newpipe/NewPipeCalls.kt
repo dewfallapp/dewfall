@@ -15,6 +15,9 @@ import kotlinx.coroutines.sync.withLock
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.downloader.Downloader
 
+/** The area of the YouTube layer's log tag, Dewfall.YouTube. */
+internal const val LOG_AREA = "YouTube"
+
 /** The message of the line that a failed call logs. Its fields say which call and why. */
 private const val CALL_FAILED = "YouTube call failed"
 
@@ -47,7 +50,7 @@ internal class NewPipeCalls(
     private val dispatcher: CoroutineDispatcher,
     private val deviceLocale: () -> Locale = Locale::getDefault,
 ) {
-    private val log = logger.withTag("YouTube")
+    private val log = logger.withTag(LOG_AREA)
 
     // NewPipe.init writes static fields that aren't volatile. Each call reads this on the thread
     // that then calls NewPipeExtractor, and lazy's synchronized initialization makes that thread

@@ -31,9 +31,6 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.schabi.newpipe.extractor.NewPipe
-import org.schabi.newpipe.extractor.downloader.Downloader
-import org.schabi.newpipe.extractor.downloader.Request
-import org.schabi.newpipe.extractor.downloader.Response
 import org.schabi.newpipe.extractor.exceptions.ParsingException
 import org.schabi.newpipe.extractor.localization.Localization
 
@@ -280,10 +277,4 @@ class NewPipeCallsTest {
         } catch (e: InterruptedException) {
             false
         }
-
-    /** A downloader for tests whose calls never send a request. */
-    private object NoRequests : Downloader() {
-        override fun execute(request: Request): Response =
-            throw AssertionError("A NewPipeCalls test sent a request")
-    }
 }
