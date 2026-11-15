@@ -5,8 +5,10 @@ plugins {
 dependencies {
     // The YouTube layer returns Dewfall's own models, so its users see them too.
     api(project(":core:model"))
-    implementation(project(":core:logging"))
-    implementation(libs.kotlinx.coroutines.core)
+    // NewPipeYouTube's constructor takes a Logger and a CoroutineDispatcher, so whoever builds it
+    // sees both types.
+    api(project(":core:logging"))
+    api(libs.kotlinx.coroutines.core)
     implementation(libs.newpipe.extractor)
     implementation(libs.okhttp)
     implementation(libs.jsoup)
