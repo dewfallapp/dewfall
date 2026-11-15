@@ -13,6 +13,14 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // NewPipeExtractor publishes its releases only on JitPack, which builds them from
+        // TeamNewPipe's Git tags. Gradle looks for TeamNewPipe's group only there, and for nothing
+        // else there. The group's case must match the POMs, which name nanojson, a dependency of
+        // NewPipeExtractor, as com.github.TeamNewPipe. See docs/architecture.md#build-settings.
+        exclusiveContent {
+            forRepository { maven("https://jitpack.io") { name = "JitPack" } }
+            filter { includeGroup("com.github.TeamNewPipe") }
+        }
     }
 }
 

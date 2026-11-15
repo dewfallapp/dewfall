@@ -3,6 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
+        The YouTube layer reaches YouTube over the network. OkHttp's manifest adds this permission
+        too, but the app declares what it uses itself. See docs/architecture.md#network-access.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
         Backup to Google Drive is off, because everything the app stores stays on the device.
         See PRIVACY.md. On Android 12 and later, this may not stop a direct transfer to a new
         phone. Data extraction rules that control that come later.
