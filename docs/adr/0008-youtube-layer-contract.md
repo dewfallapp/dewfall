@@ -20,6 +20,8 @@ The exception types limit which reasons the app can tell apart:
 
 - Members-only videos and paid videos both throw PaidContentException. Only the message differs ([checkPlayabilityStatus](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L873-L926)).
 - A removed video, a video that never existed, and a premiere or live stream that hasn't started all reach the same generic ContentNotAvailableException at the end of that function.
+
+  Correction, November 16, 2026: a recording of YouTube's answers for #36 showed that a video that never existed doesn't reach that function. YouTube answers its player request with an empty object, which NewPipeExtractor v0.26.5 reports as a ParsingException ("JSON response is too short"), so the layer returns BROKEN, not UNAVAILABLE. #155 maps it to UNAVAILABLE.
 - NewPipeExtractor can't tell from a video's own page whether it is a Short. YoutubeStreamExtractor doesn't override [isShortFormContent](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/stream/StreamExtractor.java#L581-L583), which returns false. Lists, such as search results, do mark Shorts.
 
 ### What Android's guidance says
