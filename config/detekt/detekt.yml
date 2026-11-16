@@ -16,6 +16,23 @@ naming:
     ignoreAnnotated: ['Composable']
 
 style:
+  # AGENTS.md's Kotlin style rule says an if skips braces only when all of it fits on one line and
+  # it has at most one else:
+  # https://github.com/dewfallapp/dewfall/blob/main/AGENTS.md#commands
+  # This rule flags an if or if/else that spans lines without braces. The policies are its
+  # defaults. singleLine 'never' flags braces on a one-line if, which never happens here, because
+  # ktfmt puts every braced branch on lines of its own. This rule doesn't catch a one-line if with
+  # more than one else, so AGENTS.md's rule and the reviewer subagent cover that.
+  BracesOnIfStatements:
+    active: true
+    singleLine: 'never'
+    multiLine: 'always'
+  # Stays off, as by default. Once one branch of a when spans lines, none of its policies allows
+  # braces only on the branches that span lines. Android's Kotlin style guide allows a when to mix
+  # one-line branches without braces and longer branches with them:
+  # https://developer.android.com/kotlin/style-guide#braces
+  BracesOnWhenStatements:
+    active: false
   # GlobalCoroutineUsage only sees GlobalScope.launch and GlobalScope.async. Forbidding the
   # import blocks every other use too.
   # The logging entries enforce ADR 0007. This rule runs without type resolution, so it sees only
@@ -32,6 +49,13 @@ style:
         reason: 'Dewfall never sets the NewPipeExtractor logger, whose lines hold URLs. ADR 0007.'
       - value: 'org.schabi.newpipe.extractor.utils.Logger'
         reason: 'Dewfall never sets the NewPipeExtractor logger, whose lines hold URLs. ADR 0007.'
+  # AGENTS.md's Kotlin style rule says every for, while and do has braces:
+  # https://github.com/dewfallapp/dewfall/blob/main/AGENTS.md#commands
+  # This rule flags a for, while or do loop without braces whose body starts on a new line. It
+  # doesn't flag a loop that fits on one line, so AGENTS.md's rule and the reviewer subagent cover
+  # that.
+  MandatoryBracesLoops:
+    active: true
   # The same limit as the formatter, ktfmt in kotlinlang style.
   MaxLineLength:
     maxLineLength: 100
