@@ -12,14 +12,16 @@ object CounterReducer : Reducer<CounterState, CounterIntent, CounterEffect> {
         intent: CounterIntent,
     ): Next<CounterState, CounterEffect> =
         when (intent) {
-            CounterIntent.Increment ->
+            CounterIntent.Increment -> {
                 if (state.count < LIMIT) {
                     Next(state.copy(count = state.count + 1))
                 } else {
                     Next(state, listOf(CounterEffect.LimitReached))
                 }
-            CounterIntent.Reset ->
+            }
+            CounterIntent.Reset -> {
                 Next(state.copy(count = 0), listOf(CounterEffect.WasReset(state.count)))
+            }
             CounterIntent.Load -> Next(state.copy(isLoading = true))
             is CounterIntent.Loaded -> Next(state.copy(count = intent.count, isLoading = false))
         }

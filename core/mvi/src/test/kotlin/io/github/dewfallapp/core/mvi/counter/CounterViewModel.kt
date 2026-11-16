@@ -10,8 +10,9 @@ class CounterViewModel(private val savedCount: SavedCount) :
     override fun runSideEffects(intent: CounterIntent) {
         when (intent) {
             // The reducer has already shown loading. The result goes back through the reducer.
-            CounterIntent.Load ->
+            CounterIntent.Load -> {
                 viewModelScope.launch { dispatch(CounterIntent.Loaded(savedCount.load())) }
+            }
             CounterIntent.Increment,
             CounterIntent.Reset,
             is CounterIntent.Loaded -> Unit
