@@ -42,7 +42,7 @@ okhttp = "5.5.0"
 # text with jsoup. NewPipeExtractor already ships it, so this started at the version that
 # NewPipeExtractor v0.26.5 uses. Renovate updates it like any other dependency, and Gradle picks
 # the higher version when this one and NewPipeExtractor's differ.
-jsoup = "1.22.2"
+jsoup = "1.23.2"
 
 [libraries]
 desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugarJdkLibsNio" }
