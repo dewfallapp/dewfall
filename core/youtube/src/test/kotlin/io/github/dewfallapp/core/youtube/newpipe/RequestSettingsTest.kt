@@ -16,12 +16,12 @@ class RequestSettingsTest {
 
     @Test
     fun `every request asks for British English`() {
-        assertEquals(Localization("en", "GB"), RequestSettings(ContentCountry("BD")).localization)
+        assertEquals(Localization("en", "GB"), RequestSettings(ContentCountry("FR")).localization)
     }
 
     @Test
     fun `the country is the device's region when YouTube supports it`() {
-        assertEquals("BD", contentCountryFor(Locale.forLanguageTag("bn-BD")).countryCode)
+        assertEquals("FR", contentCountryFor(Locale.forLanguageTag("fr-FR")).countryCode)
         assertEquals("US", contentCountryFor(Locale.forLanguageTag("en-US")).countryCode)
     }
 
@@ -42,9 +42,9 @@ class RequestSettingsTest {
         // Creating an extractor sends nothing. Only fetchPage would.
         val extractor = ServiceList.YouTube.getSearchExtractor("query")
 
-        RequestSettings(ContentCountry("BD")).applyTo(extractor)
+        RequestSettings(ContentCountry("FR")).applyTo(extractor)
 
         assertEquals(Localization("en", "GB"), extractor.extractorLocalization)
-        assertEquals(ContentCountry("BD"), extractor.extractorContentCountry)
+        assertEquals(ContentCountry("FR"), extractor.extractorContentCountry)
     }
 }
