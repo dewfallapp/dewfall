@@ -143,7 +143,9 @@ private fun SwatchGrid(swatches: List<Swatch>) {
     PreviewColumn {
         swatches.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm)) {
-                row.forEach { swatch -> SwatchTile(swatch, Modifier.weight(1f)) }
+                for (swatch in row) {
+                    SwatchTile(swatch, Modifier.weight(1f))
+                }
                 if (row.size == 1) Box(Modifier.weight(1f))
             }
         }
@@ -164,7 +166,7 @@ private fun SwatchTile(swatch: Swatch, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.labelLarge,
             color = swatch.text.first()(colors),
         )
-        swatch.text.forEach { role ->
+        for (role in swatch.text) {
             Text(
                 text = role.name,
                 style = MaterialTheme.typography.labelSmall,
@@ -232,7 +234,7 @@ private fun TypeScalePreview() {
                 "labelSmall" to typography.labelSmall,
             )
         PreviewColumn {
-            styles.forEach { (name, style) ->
+            for ((name, style) in styles) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = name,
@@ -268,7 +270,7 @@ private fun ShapeScalePreview() {
         PreviewColumn {
             scale.chunked(SHAPES_PER_ROW).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.md)) {
-                    row.forEach { (name, shape) ->
+                    for ((name, shape) in row) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
                                 Modifier.size(ShapeSize)
