@@ -1,6 +1,13 @@
 package io.github.dewfallapp.buildlogic
 
 import com.android.build.api.dsl.Lint
+import org.gradle.api.Project
+import org.gradle.kotlin.dsl.project
+
+/**
+ * The module that holds Dewfall's own lint checks. See docs/architecture.md#dewfalls-lint-checks.
+ */
+private const val LINT_RULES_MODULE = ":lint-rules"
 
 /**
  * Lint checks that look up versions or library data on the network. They are off so that lint gives
@@ -27,4 +34,12 @@ internal fun Lint.configureDewfallLint() {
     // Each module checks its own code, so no issue is reported twice.
     checkDependencies = false
     disable += networkLintChecks
+}
+
+/**
+ * Runs Dewfall's own lint checks from :lint-rules when lint checks this module, its tests included.
+ * The lintChecks configuration only feeds lint, so nothing from :lint-rules reaches the app.
+ */
+internal fun Project.addDewfallLintChecks() {
+    dependencies.add("lintChecks", dependencies.project(LINT_RULES_MODULE))
 }

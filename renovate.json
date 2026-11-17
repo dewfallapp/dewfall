@@ -48,9 +48,12 @@
       "enabled": false
     },
     {
-      "description": "AGP sets the default build tools version, which the pull request workflow installs.",
+      "description": "AGP sets the default build tools version, which the pull request workflow installs. build-logic derives the version of lint's libraries, which :lint-rules compiles against, from AGP's.",
       "matchPackageNames": ["/^com\\.android\\.(application|library):/", "com.android.tools.build:gradle"],
-      "prBodyNotes": ["If the build fails on a missing build-tools package, update the SDK step in .github/workflows/pull-request.yml and the Commands section of AGENTS.md on this branch."]
+      "prBodyNotes": [
+        "If the build fails on a missing build-tools package, update the SDK step in .github/workflows/pull-request.yml and the Commands section of AGENTS.md on this branch.",
+        "lint-api and lint-tests follow AGP, at AGP's version plus 23. Check that :lint-rules' Kotlin apiVersion in build-logic is still no newer than the kotlin-stdlib that the new lint-api POM names. See docs/testing.md#dependency-updates."
+      ]
     },
     {
       "description": "Spotless downloads ktfmt, and ktfmt 0.65 and later need Spotless 8.10.4 or later to load their org.jetbrains.kotlinx coordinates, so both change in one pull request. A ktfmt update can change the formatting.",

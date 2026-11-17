@@ -27,6 +27,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                     targetSdk = DewfallBuild.TARGET_SDK
                 }
             }
+            addDewfallLintChecks()
 
             // AGP's built-in Kotlin adds the kotlin extension.
             extensions.configure<KotlinAndroidProjectExtension> {

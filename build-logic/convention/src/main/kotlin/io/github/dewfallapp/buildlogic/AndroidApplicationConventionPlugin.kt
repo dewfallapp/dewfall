@@ -21,6 +21,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 }
                 lint { configureDewfallLint() }
             }
+            addDewfallLintChecks()
 
             // AGP's built-in Kotlin adds the kotlin extension.
             extensions.configure<KotlinAndroidProjectExtension> {
