@@ -70,6 +70,8 @@ androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.re
 # :core:mvi's ViewModel base. A plain Kotlin/JVM module gets Lifecycle's JVM build, and an Android
 # module gets its Android build. See docs/architecture.md#the-mvi-contract.
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle" }
+# collectAsStateWithLifecycle, which screens use to read their ViewModel's state.
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 
 # Unit test libraries. The convention plugins in build-logic add them to every module's tests.

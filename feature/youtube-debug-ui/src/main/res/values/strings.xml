@@ -1,0 +1,78 @@
+<resources>
+    <!--
+        The launcher label of the debug screen, which only debug builds have. It leaves out
+        "YouTube", because that word never goes in anything that looks like the app's name.
+    -->
+    <string name="youtube_debug_launcher_label" translatable="false">Dewfall debug</string>
+
+    <string name="youtube_debug_title">YouTube layer</string>
+    <string name="youtube_debug_intro">Calls each function of the YouTube layer and shows what came back. Only debug builds have this screen.</string>
+
+    <!-- The titles of the sections, one for each function of the YouTube layer. -->
+    <string name="youtube_debug_search">Search</string>
+    <string name="youtube_debug_video_details">Video details</string>
+    <string name="youtube_debug_latest_uploads">Latest uploads</string>
+    <string name="youtube_debug_stream_links">Stream links</string>
+
+    <!-- The labels of the input fields, and the messages under them when the input is wrong. -->
+    <string name="youtube_debug_search_text">Search text</string>
+    <string name="youtube_debug_video_id">Video ID</string>
+    <string name="youtube_debug_channel_id">Channel ID</string>
+    <string name="youtube_debug_not_a_video_id">Not a video ID</string>
+    <string name="youtube_debug_not_a_channel_id">Not a channel ID</string>
+
+    <string name="youtube_debug_run">Run</string>
+    <string name="youtube_debug_cancel">Cancel</string>
+    <string name="youtube_debug_running">Running</string>
+    <string name="youtube_debug_cancelled">Cancelled</string>
+    <!-- %1$s is the name of the error category, such as NETWORK or BLOCKED. -->
+    <string name="youtube_debug_failed">Failed: %1$s</string>
+
+    <!-- Shown in place of a value that YouTube didn't give. -->
+    <string name="youtube_debug_unknown">unknown</string>
+    <string name="youtube_debug_yes">yes</string>
+    <string name="youtube_debug_no">no</string>
+    <!-- One entry in a list of counts. %1$s is what is counted, such as VIDEO or audio/mp4. -->
+    <string name="youtube_debug_count">%1$s: %2$d</string>
+    <!-- %1$s is a time in ISO 8601, in UTC. -->
+    <string name="youtube_debug_time_approximate">%1$s, approximate</string>
+
+    <!-- The answer to a search. -->
+    <string name="youtube_debug_search_counts">Channels: %1$d. Videos: %2$d.</string>
+    <!-- %1$s is a list of counts, one for each kind of video, such as VIDEO and SHORT. -->
+    <string name="youtube_debug_video_kinds">Kinds: %1$s</string>
+    <string name="youtube_debug_channel_line">Channel: %1$s. Avatars: %2$d.</string>
+
+    <!-- A video in a list. %2$s is its kind, such as VIDEO or LIVE. -->
+    <string name="youtube_debug_video_meta">Channel: %1$s · %2$s · Length: %3$s · Published: %4$s · Thumbnails: %5$d</string>
+
+    <!-- The answer to video details. -->
+    <string name="youtube_debug_title_line">Title: %1$s</string>
+    <!-- %1$s is the channel's name and %2$s its ID. -->
+    <string name="youtube_debug_channel_with_id">Channel: %1$s, %2$s</string>
+    <string name="youtube_debug_length">Length: %1$s</string>
+    <string name="youtube_debug_published">Published: %1$s</string>
+    <string name="youtube_debug_live">Live: %1$s</string>
+    <string name="youtube_debug_description">Description length: %1$d. Lines: %2$d.</string>
+    <string name="youtube_debug_images">Thumbnails: %1$d. Channel avatars: %2$d.</string>
+
+    <!-- The answer to latest uploads. -->
+    <string name="youtube_debug_channel_asked_for">Same channel as asked for: %1$s</string>
+    <string name="youtube_debug_video_count">Videos: %1$d</string>
+
+    <!-- The answer to stream links. -->
+    <string name="youtube_debug_audio_formats">Audio formats: %1$d</string>
+    <string name="youtube_debug_video_formats">Video formats: %1$d. With sound: %2$d.</string>
+    <!-- %1$s is a list of counts, one for each MIME type, such as audio/mp4. -->
+    <string name="youtube_debug_formats_per_type">Per type: %1$s</string>
+    <string name="youtube_debug_hls_manifest">HLS manifest: %1$s</string>
+    <!-- %1$s is a time in ISO 8601, in UTC. -->
+    <string name="youtube_debug_expires">Links expire: %1$s</string>
+    <!-- One audio format. %6$s is its sound track. -->
+    <string name="youtube_debug_audio_format">itag %1$d · %2$s · Codec: %3$s · Bitrate: %4$s · Bytes: %5$s · Track: %6$s</string>
+    <!-- %1$s is the kind of sound track, such as ORIGINAL or DUBBED, and %2$s its language. -->
+    <string name="youtube_debug_track">%1$s, %2$s</string>
+    <string name="youtube_debug_only_track">the only one</string>
+    <!-- One video format. %4$s and %5$s are its width and height in pixels. -->
+    <string name="youtube_debug_video_format">itag %1$d · %2$s · Codec: %3$s · Size: %4$s × %5$s · Frame rate: %6$s · Bitrate: %7$s · Bytes: %8$s · With sound: %9$s</string>
+</resources>
