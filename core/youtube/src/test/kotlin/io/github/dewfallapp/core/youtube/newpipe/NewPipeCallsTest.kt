@@ -91,7 +91,7 @@ class NewPipeCallsTest {
 
     @Test
     fun `each call gets the device's country at the time of the call`() = runTest {
-        var locale = Locale.forLanguageTag("bn-BD")
+        var locale = Locale.forLanguageTag("fr-FR")
         val calls =
             NewPipeCalls(NoRequests, logger, StandardTestDispatcher(testScheduler)) { locale }
 
@@ -99,14 +99,14 @@ class NewPipeCallsTest {
         locale = Locale.forLanguageTag("de-DE")
         val second = calls.run(YouTubeCall.SEARCH) { it.contentCountry.countryCode }
 
-        assertEquals(YouTubeResult.Success("BD"), first)
+        assertEquals(YouTubeResult.Success("FR"), first)
         assertEquals(YouTubeResult.Success("DE"), second)
     }
 
     @Test
     fun `an extractor that NewPipeExtractor builds itself asks for the call's country too`() =
         runTest {
-            var locale = Locale.forLanguageTag("bn-BD")
+            var locale = Locale.forLanguageTag("fr-FR")
             val calls =
                 NewPipeCalls(NoRequests, logger, StandardTestDispatcher(testScheduler)) { locale }
             // Like the system playlist that an age-restricted channel's tab builds, this extractor
@@ -121,7 +121,7 @@ class NewPipeCallsTest {
             locale = Locale.forLanguageTag("de-DE")
             val second = calls.run(YouTubeCall.LATEST_UPLOADS) { countryOfUnsetExtractor() }
 
-            assertEquals(YouTubeResult.Success("BD"), first)
+            assertEquals(YouTubeResult.Success("FR"), first)
             assertEquals(YouTubeResult.Success("DE"), second)
         }
 

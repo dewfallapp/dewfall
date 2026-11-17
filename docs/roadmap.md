@@ -171,6 +171,7 @@ Once the theme exists in code, Claude Design can import a design system from a G
 - Implement the YouTube layer's subtitles: list a video's subtitle tracks, then download a track and parse it into lines with their start and end times.
 - Decide how the app logs: one logger that the plain Kotlin/JVM modules can use too, no user data in any log, and less detail in release builds.
 - Save real responses as test fixtures and write tests against them.
+- Return UNAVAILABLE for a video that never existed.
 - Add a small debug screen that calls each function.
 - Add the daily scheduled workflow that runs the layer against real YouTube and opens a GitHub issue when something fails.
 - Write docs/breakage.md.

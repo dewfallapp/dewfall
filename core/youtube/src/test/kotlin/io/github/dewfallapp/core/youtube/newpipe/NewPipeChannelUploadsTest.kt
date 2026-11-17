@@ -108,7 +108,7 @@ class NewPipeChannelUploadsTest {
                     .fromQuery(CHANNEL_A, listOf(tab), "")
             }
 
-        val extractors = uploadTabExtractors(tabs, RequestSettings(ContentCountry("BD")))
+        val extractors = uploadTabExtractors(tabs, RequestSettings(ContentCountry("FR")))
 
         assertEquals(
             listOf(ChannelTabs.VIDEOS, ChannelTabs.LIVESTREAMS),
@@ -125,7 +125,7 @@ class NewPipeChannelUploadsTest {
                     .fromQuery(CHANNEL_A, listOf(ChannelTabs.VIDEOS), "")
             )
 
-        val extractors = uploadTabExtractors(tabs, RequestSettings(ContentCountry("BD")))
+        val extractors = uploadTabExtractors(tabs, RequestSettings(ContentCountry("FR")))
 
         assertEquals(listOf(ChannelTabs.VIDEOS), extractors.map { it.name })
     }
@@ -143,7 +143,7 @@ class NewPipeChannelUploadsTest {
                 )
             }
 
-        val extractors = uploadTabExtractors(tabs, RequestSettings(ContentCountry("BD")))
+        val extractors = uploadTabExtractors(tabs, RequestSettings(ContentCountry("FR")))
 
         assertEquals(2, extractors.size)
         extractors.forEach { assertIs<YoutubeChannelTabPlaylistExtractor>(it) }
@@ -157,10 +157,10 @@ class NewPipeChannelUploadsTest {
                     .fromQuery(CHANNEL_A, listOf(ChannelTabs.VIDEOS), "")
             )
 
-        val extractor = uploadTabExtractors(tabs, RequestSettings(ContentCountry("BD"))).single()
+        val extractor = uploadTabExtractors(tabs, RequestSettings(ContentCountry("FR"))).single()
 
         assertEquals(REQUEST_LOCALIZATION, extractor.extractorLocalization)
-        assertEquals(ContentCountry("BD"), extractor.extractorContentCountry)
+        assertEquals(ContentCountry("FR"), extractor.extractorContentCountry)
     }
 
     @Test

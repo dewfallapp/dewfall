@@ -1,0 +1,29 @@
+# Saved YouTube responses for the set VIDEO_PRIVATE.
+# Written by ./gradlew :core:youtube:recordYouTubeResponses. Don't edit it by hand.
+# Signed out, asking for the country GB and the language en-GB.
+# recorded: 2026-11-16
+# newpipe-extractor: v0.26.5
+
+> POST https://youtubei.googleapis.com/youtubei/v1/visitor_id?prettyPrint=false
+> Accept-Language: en-GB, en;q=0.9
+> Content-Type: application/json
+> User-Agent: com.google.android.youtube/21.03.36 (Linux; U; Android 15; GB) gzip
+> X-Goog-Api-Format-Version: 2
+>
+> {"context":{"client":{"clientName":"ANDROID","clientVersion":"21.03.36","clientScreen":"WATCH","platform":"MOBILE","osName":"Android","osVersion":"16","androidSdkVersion":36,"hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}}}
+< 200
+< content-type: application/json; charset=UTF-8
+<
+< @01-visitor_id.json
+
+> POST https://youtubei.googleapis.com/youtubei/v1/reel/reel_item_watch?prettyPrint=false&t=867fZ6WKSXg3&id=8VajtrESJzA&$fields=playerResponse
+> Accept-Language: en-GB, en;q=0.9
+> Content-Type: application/json
+> User-Agent: com.google.android.youtube/21.03.36 (Linux; U; Android 15; GB) gzip
+> X-Goog-Api-Format-Version: 2
+>
+> {"context":{"client":{"clientName":"ANDROID","clientVersion":"21.03.36","clientScreen":"WATCH","platform":"MOBILE","visitorData":"VISITOR_DATA_1","osName":"Android","osVersion":"16","androidSdkVersion":36,"hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}},"playerRequest":{"videoId":"8VajtrESJzA","cpn":"uGaaNCVq9tAJ9K8j","contentCheckOk":true,"racyCheckOk":true},"disablePlayerResponse":false}
+< 200
+< content-type: application/json; charset=UTF-8
+<
+< @02-reel_item_watch.json
