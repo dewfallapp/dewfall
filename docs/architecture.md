@@ -4,14 +4,14 @@ This is the design document for Dewfall. It explains how the app is built: its m
 
 ## Modules
 
-Dewfall is one Gradle build with an app module, core modules, and feature modules as features arrive. Some modules are plain Kotlin/JVM and the rest are Android modules. [ADR 0006](adr/0006-platform-and-android-versions.md) explains why.
+Dewfall is one Gradle build with an app module, core modules, and feature modules as features arrive. Today the only feature modules hold the YouTube layer's debug screen, which only debug builds contain. Some modules are plain Kotlin/JVM and the rest are Android modules. [ADR 0006](adr/0006-platform-and-android-versions.md) explains why.
 
 - A plain Kotlin/JVM module can't see Android classes, so the build itself keeps Android code out of it. Its tests run on the computer's JVM with nothing from Android to fake. It can't hold user-facing text, because string resources are part of Android, so it returns types that the screens turn into text.
 - An Android module is the app or an Android library. It holds everything that needs Android, such as the database, screens, ViewModels, resources and background jobs.
 
 ### The module graph
 
-Solid arrows are dependencies in the build today. An arrow labeled api is an api dependency, so a module that depends on the module where the arrow starts sees the module where it ends too. For example, `:core:data` sees `:core:logging` through `:core:youtube`. Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds, and `:core:ui`, which comes when a second feature needs shared UI.
+Solid arrows are dependencies in the build today. An arrow labeled api is an api dependency, so a module that depends on the module where the arrow starts sees the module where it ends too. For example, `:core:data` sees `:core:logging` through `:core:youtube`. The arrow labeled debug only is a debugImplementation dependency, so release builds leave out the debug screen's modules, and `:core:mvi`, which only they use so far. See [The YouTube layer's debug screen](#the-youtube-layers-debug-screen). Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds, and `:core:ui`, which comes when a second feature needs shared UI.
 
 ```mermaid
 graph TD
@@ -23,6 +23,8 @@ graph TD
     logging[":core:logging<br/>Kotlin/JVM"]
     model[":core:model<br/>Kotlin/JVM"]
     mvi[":core:mvi<br/>Kotlin/JVM"]
+    debugUi[":feature:youtube-debug-ui<br/>Android library, debug builds only"]
+    debugLogic[":feature:youtube-debug-logic<br/>Kotlin/JVM, debug builds only"]
     coreUi[":core:ui<br/>Android library, later"]
     inboxUi[":feature:inbox-ui<br/>Android library, later"]
     inboxLogic[":feature:inbox-logic<br/>Kotlin/JVM, later"]
@@ -36,6 +38,14 @@ graph TD
     database --> model
     youtube -->|api| model
     youtube -->|api| logging
+    app -->|debug only| debugUi
+    debugUi --> debugLogic
+    debugUi --> designsystem
+    debugUi --> youtube
+    debugUi --> model
+    debugUi --> mvi
+    debugLogic -->|api| mvi
+    debugLogic -->|api| model
 
     app -.-> inboxUi
     inboxUi -.-> inboxLogic
@@ -55,7 +65,7 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
-| `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class and the app's only activity, which shows a placeholder screen until the first feature arrives. Once features arrive, it also handles navigation between them. It also holds the logcat writer and the Hilt module that provides the logger. See [Logging](#logging). | `:core:data`, `:core:designsystem`, `:core:logging`, and each feature's `-ui` module |
+| `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class and the app's only activity, which shows a placeholder screen until the first feature arrives. Once features arrive, it also handles navigation between them. It also holds the logcat writer and the Hilt module that provides the logger. See [Logging](#logging). | `:core:data`, `:core:designsystem`, `:core:logging`, and each feature's `-ui` module. In debug builds only, `:feature:youtube-debug-ui`. |
 | `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError. See [The YouTube layer](#the-youtube-layer). | Nothing |
 | `:core:logging` | core/logging/ | Kotlin/JVM | io.github.dewfallapp.core.logging | The Logger that every module logs through, its levels and fields, and the error summary that leaves out messages. See [Logging](#logging). | Nothing |
 | `:core:mvi` | core/mvi/ | Kotlin/JVM | io.github.dewfallapp.core.mvi | The MVI base: MviState, MviIntent, MviEffect, the Reducer, and MviViewModel, the base class of every screen's ViewModel. See [The MVI contract](#the-mvi-contract). | Nothing. It uses Lifecycle's ViewModel and kotlinx.coroutines. |
@@ -64,7 +74,7 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 | `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer. Today it holds only YouTubeModule, the Hilt module that provides the YouTube layer. See [How Hilt provides the layer](#how-hilt-provides-the-layer). | `:core:model`, `:core:database`, `:core:youtube` |
 | `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). Later, shared components and icons too. | Nothing. It exposes Material 3 as an api dependency. |
 
-`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds only the Hilt module that provides the YouTube layer. A module that logs depends on `:core:logging`. Today `:app` and `:core:youtube` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements four of the YouTube layer's interfaces, and #148 implements the fifth, for subtitles. Compose is set up in `:app` and `:core:designsystem`. Hilt is set up in `:app` and `:core:data`.
+`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds only the Hilt module that provides the YouTube layer. A module that logs depends on `:core:logging`. Today `:app` and `:core:youtube` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements four of the YouTube layer's interfaces, and #148 implements the fifth, for subtitles. Compose is set up in `:app`, `:core:designsystem` and `:feature:youtube-debug-ui`. Hilt is set up in `:app`, `:core:data` and `:feature:youtube-debug-ui`.
 
 `:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the code that formats a duration, goes in a `:core:ui` Android library instead. `:core:ui` gets created when a second feature needs such a piece. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
 
@@ -80,6 +90,15 @@ Each feature has two modules, because its reducer has to be plain Kotlin/JVM and
 - Feature modules depend on core modules, never on another feature's modules. A feature's `-ui` module also depends on its own `-logic` module.
 - The ViewModel goes in the `-ui` module and extends MviViewModel from `:core:mvi`. It runs side effects through `:core:data` and uses Hilt, and both are Android. A plain Kotlin/JVM module can't depend on an Android module.
 - `:app` depends on every feature's `-ui` module and handles navigation between features.
+
+The YouTube layer's debug screen has a pair of its own, which `:app` adds to debug builds only. [The YouTube layer's debug screen](#the-youtube-layers-debug-screen) explains it.
+
+| Module | Folder | Type | Namespace or package | What it holds | Depends on |
+|---|---|---|---|---|---|
+| `:feature:youtube-debug-logic` | feature/youtube-debug-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.youtubedebug.logic | YouTubeDebugState, YouTubeDebugIntent, the reducer, the summaries of each answer, and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
+| `:feature:youtube-debug-ui` | feature/youtube-debug-ui/ | Android library | io.github.dewfallapp.feature.youtubedebug.ui | YouTubeDebugActivity, the Compose screen and its previews, YouTubeDebugViewModel and its tests, and string resources | `:feature:youtube-debug-logic`, `:core:designsystem`, `:core:model`, `:core:mvi`, `:core:youtube` |
+
+`:feature:youtube-debug-ui` is the only feature module that depends on `:core:youtube`, because its job is to call the layer's functions themselves. Every real feature reaches YouTube only through repositories in `:core:data`.
 
 ### Module names
 
@@ -97,7 +116,7 @@ Every module applies one of three convention plugins from build-logic/. They hol
 
 A fourth plugin, dewfall.detekt, holds the detekt settings and adds the compose-rules plugin to detekt. The three plugins above apply it, and so does the root project, to check the code in build-logic.
 
-Android modules that use Compose, Hilt or Room also apply the matching plugins below, after dewfall.android.application or dewfall.android.library. Today `:app` and `:core:designsystem` apply dewfall.android.compose, `:app` and `:core:data` apply dewfall.android.hilt, and only `:core:database` applies dewfall.android.room. Each feature's `-ui` module will apply both dewfall.android.compose and dewfall.android.hilt.
+Android modules that use Compose, Hilt or Room also apply the matching plugins below, after dewfall.android.application or dewfall.android.library. Today `:app`, `:core:designsystem` and `:feature:youtube-debug-ui` apply dewfall.android.compose, `:app`, `:core:data` and `:feature:youtube-debug-ui` apply dewfall.android.hilt, and only `:core:database` applies dewfall.android.room. Each feature's `-ui` module will apply both dewfall.android.compose and dewfall.android.hilt.
 
 `:app` also turns on BuildConfig, which AGP 8.0 and later generate only for modules that ask ([AGP 8.0.0](https://developer.android.com/build/releases/agp-8-0-0-release-notes)). The Hilt module that provides the logger reads BuildConfig.DEBUG to pick the lowest log level. See [Logging](#logging).
 
@@ -116,6 +135,8 @@ Room's compiler runs through KSP too. The build uses Room 3, whose classes are i
 The Room Gradle plugin tells Room's compiler where the schemas go. Room writes the schema of each database version to core/database/schemas/, as `<database class>/<version>.json`, and the files are committed. Debug and release builds share the folder, and the plugin checks that both write the same schema. The plugin also adds the folder to the androidTest assets, where migration tests read it ([Room Gradle plugin](https://developer.android.com/training/data-storage/room/migrating-db-versions#export-schemas)). Room writes a file only when the schema changed. If the schema changes but the version number stays the same, Room rewrites that version's file and the build still passes. The pull request workflow catches this, as [testing.md](testing.md#database-migration-tests) describes.
 
 Room 3 adds a service, MultiInstanceInvalidationService, to the app's manifest. It isn't exported, and it runs only for a database built with enableMultiInstanceInvalidation(), which keeps database instances in several processes in sync. The app runs in a single process, so it doesn't need that.
+
+**The same versions in debug and release.** Checks on an emulator run a debug build, so debug and release builds must resolve the same version of every library they share. A debugImplementation dependency can break that, because Gradle resolves each build type's dependencies on its own. The debug screen brings `:core:mvi`, whose Lifecycle 2.11.0 is newer than 2.9.4, the highest version that the app's other AndroidX libraries ask for. Lifecycle publishes rules that keep all its artifacts on one version, and Lifecycle 2.11.0 needs SavedState 1.4.0. So without help, debug builds would run 18 Lifecycle artifacts at 2.11.0 and 5 SavedState artifacts at 1.4.0, while release builds kept 2.9.4 and 1.3.2. A constraint in `:app` on lifecycle-viewmodel gives release builds the same versions ([dependency constraints](https://docs.gradle.org/9.8.1/userguide/dependency_constraints.html)). A constraint adds no library of its own. It only raises the version of one that is already there. To compare the two builds, run `./gradlew -q :app:dependencies --configuration debugRuntimeClasspath` and the same for releaseRuntimeClasspath. Today the debug build has only these extra parts: Compose's preview tooling, the debug screen's two modules, and `:core:mvi`.
 
 Every module compiles with JDK 17, and the Java and Kotlin bytecode targets follow the toolchain. So every module produces Java 17 bytecode, and the version is written in one place. Android modules get Kotlin from AGP's built-in Kotlin support.
 
@@ -168,7 +189,7 @@ AGENTS.md says the app's network calls go only to YouTube, through the YouTube l
 | Video details, and stream links | youtubei.googleapis.com, for the player requests of YouTube's Android and visionOS clients, and www.youtube.com, for the web client's player request and the video page's other data | Seven each: a visitor ID for each of the three clients, their three player requests, and the page's other data. Two for a video that YouTube says can't be played, such as a private one: NewPipeExtractor stops at the Android client's answer. |
 | A channel's latest uploads | www.youtube.com | Two for most channels: the channel's page, which holds its Videos tab, then its Live tab. One for a channel with no Live tab. |
 
-NewPipeExtractor asks for a new visitor ID for each player request and keeps none. The first call in each process also fetches www.youtube.com/sw.js, to read the version of YouTube's web client. A stream link that needs decoding makes NewPipeExtractor fetch YouTube's player code from www.youtube.com, once per process. No link needed it in the check. The stream links and HLS manifests that the layer returns point to googlevideo.com, which the player and downloads contact. The tasks that add the player, downloads and image loading list the hosts they contact.
+NewPipeExtractor asks for a new visitor ID for each player request and keeps none. The first call in each process also fetches www.youtube.com/sw.js, to read the version of YouTube's web client. A stream link that needs decoding makes NewPipeExtractor fetch YouTube's player code from www.youtube.com, once per process. No link needed it in the check. The stream links and HLS manifests that the layer returns point to googlevideo.com, which the player and downloads contact. The tasks that add the player, downloads and image loading list the hosts they contact. The YouTube layer's debug screen, in debug builds only, calls the same four functions, so it sends the same requests and nothing else.
 
 **The daily check.** The live check of the YouTube layer runs in the daily workflow and by hand, never in the app ([testing.md](testing.md#the-daily-youtube-check)). It sends the layer's requests through NewPipeDownloader, so the allow list above applies to them. It also asks two of Big Buck Bunny's stream links, an audio-only and a video-only one, for their first KiB, with GET requests and a Range header. So it is the only code today that fetches bytes from googlevideo.com: two small requests a run, plus any retry or redirect, and never from a phone. They go through an OkHttp client of the check's own, which sends only HTTPS requests to googlevideo.com and its subdomains. The client follows no redirects itself. The check follows at most three, and checks each one's host before it sends anything. The layer's allow list doesn't change.
 
@@ -401,7 +422,7 @@ NewPipeYouTube in `:core:youtube` is the layer's one public class. It builds the
 - One NewPipeYouTube for the whole app, in SingletonComponent with @Singleton, built with the app's Logger and Dispatchers.IO. Hilt's bindings are unscoped unless they name a scope ([Component scopes](https://developer.android.com/training/dependency-injection/hilt-android#component-scopes)). NewPipeExtractor's setup is global, so one instance keeps one downloader and one HTTP client for the whole app.
 - Each of the four interfaces, bound to that instance with @Binds ([Inject interface instances with @Binds](https://developer.android.com/training/dependency-injection/hilt-android#inject-interfaces)).
 
-Hilt builds NewPipeYouTube the first time something asks for one of the interfaces, not when the app starts. Repositories in `:core:data` take the interfaces they need in their constructors. Feature modules can't see `:core:youtube`, so they reach YouTube only through those repositories.
+Hilt builds NewPipeYouTube the first time something asks for one of the interfaces, not when the app starts. Repositories in `:core:data` take the interfaces they need in their constructors. Feature modules don't depend on `:core:youtube`, so they reach YouTube only through those repositories. The one exception is the debug screen, which calls the layer's functions themselves. See [The YouTube layer's debug screen](#the-youtube-layers-debug-screen).
 
 ### Mapping NewPipeExtractor's exceptions
 
@@ -434,11 +455,48 @@ On October 21, 2026, NewPipeExtractor's dev branch was 60 commits past v0.26.5, 
 - The DASH manifest is gone, and setPoTokenProvider does nothing until NewPipeExtractor supports SABR, YouTube's newer way of streaming. SABR could replace single-file format links, which would change StreamLinks.
 - Description is now a record with a Type enum, which changes #35's code but not the models. Subtitle tracks gain a name, and audio formats can be marked as dubbed automatically. Neither of those is in the models yet.
 
+### The YouTube layer's debug screen
+
+The debug screen calls each function of the YouTube layer on a phone and shows what came back. It is for checking the layer by hand: after a NewPipeExtractor update, when the daily check or a user reports a breakage, and on Android versions that tests on the computer don't cover. [testing.md](testing.md#checking-the-youtube-layer-on-a-phone) says how to use it. Only debug builds contain it.
+
+**What it shows.** It has one section for each of the four functions, with an input field, a Run button that turns into Cancel while the call runs, and the call's outcome. TODO: a section for subtitles, once the layer reads them (#148).
+
+| Section | Input it starts with | What it shows when the call works |
+|---|---|---|
+| Search | nasa, the saved set SEARCH_NASA | How many channels and videos, how many videos of each kind, each channel's name and avatar count, and each video's title, channel, kind, length, publish time and thumbnail count |
+| Video details | aqz-KE-bpKQ, Big Buck Bunny, the saved set VIDEO_BIG_BUCK_BUNNY | The title, the channel's name and ID, the length, the publish time, whether it is live, the description's length and line count, and how many thumbnails and channel avatars |
+| Latest uploads | UCLA_DiR1FfKNvjuUpBHmylQ, NASA's channel, the saved set UPLOADS_NASA | The channel's name and ID, whether YouTube sent the channel on to another one, how many videos of each kind, and every video in the order the layer returned |
+| Stream links | aqz-KE-bpKQ | How many audio and video formats, how many have sound, how many of each MIME type, whether there is an HLS manifest, when the links expire, and each format's itag, type, codec, size, frame rate, bitrate and length in bytes |
+
+- Publish times are ISO 8601 in UTC, marked when they are approximate. Lengths are Kotlin's Duration text, such as 10m 35s. A value that YouTube didn't give shows as unknown.
+- A failed call shows its YouTubeError category, such as NETWORK. The layer throws only CancellationException, so there is no exception message to show.
+- The screen shows text only, and no URL. The summaries that the reducer builds from each answer have no field for one. Stream links carry the phone's IP address and other details of its network, as [testing.md](testing.md#privacy) lists, and ADR 0007 counts every URL as user data. For the same reason, the screen has no way to copy a link. Whether a link plays is the live check's job, and later the player's.
+- A video or channel ID is trimmed, then has to parse as a VideoId or ChannelId. If it doesn't, the field says so and nothing is sent. Search text is sent as typed.
+
+**How it opens.** YouTubeDebugActivity in `:feature:youtube-debug-ui` hosts the screen, so the app needs no navigation for it. The module's manifest gives the activity a launcher entry of its own, labeled "Dewfall debug". Library manifests are merged only into the builds that include the library ([Merge multiple manifest files](https://developer.android.com/build/manage-manifests#merge-manifests)), so only debug builds show the entry. The activity is exported, because the launcher and adb's shell can only start an exported activity, and it reads nothing from the intent that starts it. It has a task affinity of its own, so its entry never just brings the app's main task to the front. It takes its theme from the application, calls enableEdgeToEdge, and draws inside DewfallTheme. The screen's background fills the window behind the system bars, and its content scrolls inside the safe drawing area, so no text or control sits under the system bars, the display cutout or the keyboard.
+
+```bash
+adb shell am start -n io.github.dewfallapp/io.github.dewfallapp.feature.youtubedebug.ui.YouTubeDebugActivity
+```
+
+**How the calls run.** YouTubeDebugViewModel extends MviViewModel. Hilt builds it with the four interfaces of the layer, which YouTubeModule provides. The activity gets it through `by viewModels()`, which builds a @HiltViewModel in an @AndroidEntryPoint activity ([Hilt and Jetpack](https://developer.android.com/training/dependency-injection/hilt-jetpack#viewmodels)).
+
+- Each section runs at most one call. Run stops the section's call, if one is running, then starts a new one with the input as it is now. Cancel stops it.
+- An answer counts only while its section is running the same request. The reducer drops any other answer, such as one that arrives after a cancel.
+- Calls in different sections run at the same time, and the layer's Mutex makes them wait for each other ([How a call runs](#how-a-call-runs)).
+- Leaving the screen clears the ViewModel, which cancels every call. A rotation keeps the ViewModel, so calls keep running. After process death, each input field gets its text back, because it saves its own text, and every section goes back to idle.
+- The screen has no effects, so its effect type is Nothing. Everything it shows has to survive a rotation, so it is all state.
+- The input fields are state-based text fields. Each one holds its own text and reports every change as an intent, as Google's [migration guide](https://developer.android.com/develop/ui/compose/text/migrate-state-based#conforming-approach) describes.
+
+**How release builds leave it out.** `:app` adds `:feature:youtube-debug-ui` with debugImplementation. So the release build has none of its classes, resources or manifest entries, and none of `:feature:youtube-debug-logic` or `:core:mvi`, which only it uses so far. The screen lives in feature modules, not in `:app`'s src/debug folder, because detekt reads only src/main and src/test, and because ADR 0006 puts reducers in plain Kotlin/JVM modules. [testing.md](testing.md#checking-that-release-builds-leave-it-out) has the commands that check the release APK. [Build settings](#build-settings) explains the constraint that keeps the shared libraries at the same versions in both builds.
+
+**Why it sees the YouTube layer.** `:feature:youtube-debug-ui` depends on `:core:youtube` directly, to call the layer's own functions. It is the only feature module that may. Every real feature reaches YouTube through repositories in `:core:data`. NewPipeExtractor stays hidden from it too, because `:core:youtube` depends on NewPipeExtractor as an implementation dependency.
+
 ## Data flow
 
 ### Reading from YouTube
 
-This is how a screen reads from YouTube, once Phase 4 adds the first repository in `:core:data`. Feature modules can't see `:core:youtube`, because `:core:data` depends on it as an implementation dependency. They see the models, `YouTubeResult` and `YouTubeError`, because those live in `:core:model`.
+This is how a screen reads from YouTube, once Phase 4 adds the first repository in `:core:data`. Feature modules can't see `:core:youtube`, because `:core:data` depends on it as an implementation dependency. Feature modules see the models, `YouTubeResult` and `YouTubeError`, because those live in `:core:model`. The debug screen is the one feature module that sees `:core:youtube` too.
 
 ```mermaid
 sequenceDiagram
@@ -545,7 +603,7 @@ fun <E : MviEffect> HandleEffects(
 }
 ```
 
-A screen calls it with `viewModel.pendingEffects.collectAsStateWithLifecycle().value` and `viewModel::effectHandled`.
+A screen calls it with `viewModel.pendingEffects.collectAsStateWithLifecycle().value` and `viewModel::effectHandled`. The YouTube layer's debug screen has no effects, so it doesn't call it.
 
 ### Side effects and dispatchers
 

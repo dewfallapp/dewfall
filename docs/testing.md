@@ -491,6 +491,57 @@ Record the sets again:
 - **After any other NewPipeExtractor update,** so that the version the app ships reads the saved answers.
 - **When the live check shows that YouTube changed its answers,** such as with REQUESTS_CHANGED or READ_IN_PART. See [The daily YouTube check](#the-daily-youtube-check).
 
+## Checking the YouTube layer on a phone
+
+The saved responses and the daily check run the YouTube layer on the computer's JVM. The YouTube layer's debug screen runs it inside the app, on a phone or an emulator, with the app's own build: its desugaring, its Hilt setup and its logger. [architecture.md](architecture.md#the-youtube-layers-debug-screen) describes the screen. Only debug builds contain it.
+
+Use it:
+
+- After a NewPipeExtractor update, on Android 10 (API 29), the oldest version the app supports, and on the newest.
+- When the daily check or a user reports a breakage, to see whether it happens on a phone.
+- After a change to the YouTube layer, to desugaring, or to the app's minSdk or targetSdk.
+
+An emulator reaches YouTube through the computer's network, so YouTube doesn't block its video calls the way it blocks GitHub's runners ([YouTube blocks the runners' video calls](#youtube-blocks-the-runners-video-calls)).
+
+### Opening the debug screen
+
+Install a debug build with `./gradlew :app:installDebug`. Then open "Dewfall debug" in the launcher, or run:
+
+```bash
+adb shell am start -n io.github.dewfallapp/io.github.dewfallapp.feature.youtubedebug.ui.YouTubeDebugActivity
+```
+
+### What to check
+
+- Run each section with the input it starts with. All four should work, with the answers that the saved sets describe: NASA's channels for the search, Big Buck Bunny's details with a length of 10m 35s, NASA's uploads with no Shorts, and Big Buck Bunny's formats with an expiry a few hours ahead.
+- A wrong ID, such as @NASA, shows "Not a video ID" or "Not a channel ID", and sends nothing.
+- The failure categories show as text. The IDs of the saved sets VIDEO_PRIVATE and CHANNEL_TERMINATED, in SavedSet.kt, give PRIVATE and CHANNEL_CLOSED. With the network off, every call gives NETWORK.
+- Cancel while a call runs shows Cancelled. Leaving the screen stops its calls. Neither writes a "YouTube call failed" line, because a cancelled call isn't a failure.
+- `adb logcat -d | grep ' Dewfall'` shows only constant messages with call names, categories and counts, never a search text, ID, title or URL. ADR 0007 lists what counts as user data.
+- On Android 10, NewPipeExtractor runs with core library desugaring, and Animal Sniffer doesn't check NewPipeExtractor's own calls ([architecture.md](architecture.md#formatting-and-lint)). An API that Android 10 lacks shows up as NoSuchMethodError, NoClassDefFoundError, VerifyError or AbstractMethodError in `adb logcat -b crash -d`. These are errors, which the layer doesn't catch, so the app stops. A missing API that throws an exception instead shows as BROKEN, with an ERROR line in logcat.
+- The calls run from the main thread, so a request that the layer didn't move off the main thread would fail with NetworkOnMainThreadException, which shows as BROKEN. Four working calls also show that the layer is main-safe.
+- The screen in light and dark theme, with dynamic color on Android 12 and later, and at a large font size, such as `adb shell settings put system font_scale 2.0`. Text wraps, and nothing sits under the system bars or the display cutout.
+
+### Checking that release builds leave it out
+
+`:app` adds the debug screen to debug builds only. Build both APKs:
+
+```bash
+./gradlew :app:assembleDebug :app:assembleRelease
+```
+
+Then count the debug screen's classes and its activity in the release APK, which is unsigned until the release signing key exists (#77). apkanalyzer comes with the Android SDK command-line tools, in $ANDROID_HOME/cmdline-tools/latest/bin.
+
+```bash
+apkanalyzer dex packages --defined-only app/build/outputs/apk/release/app-release-unsigned.apk | grep -c youtubedebug
+```
+
+```bash
+apkanalyzer manifest print app/build/outputs/apk/release/app-release-unsigned.apk | grep -c YouTubeDebugActivity
+```
+
+Both print 0. For app/build/outputs/apk/debug/app-debug.apk, the first prints several hundred and the second prints 1, which shows that the commands find the screen where it is. The release workflow on version tags should run the same two commands, and fail if either finds the screen. A comment on #78, the task that adds the workflow, asks for this.
+
 ## Screenshot tests
 
 TODO
