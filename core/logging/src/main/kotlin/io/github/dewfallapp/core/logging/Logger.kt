@@ -5,11 +5,11 @@ package io.github.dewfallapp.core.logging
  * `logger.withTag("Area")`, and calls [debug], [info], [warn] or [error]. There is no global
  * logger. See ADR 0007.
  *
- * Messages, areas and field names must be constant text. Never log user data, such as search
- * queries, video or channel IDs, URLs, titles or subtitle text. ADR 0007 lists everything that
- * counts. Values go in [LogField]s, which hold only numbers, flags, durations and enum names. An
- * error is written as its class names and stack frames, never its messages, because libraries put
- * URLs and IDs in them.
+ * Messages, areas and field names must be constant text, which [ConstantText] marks. Never log user
+ * data, such as search queries, video or channel IDs, URLs, titles or subtitle text. ADR 0007 lists
+ * everything that counts. Values go in [LogField]s, which hold only numbers, flags, durations and
+ * enum names. An error is written as its class names and stack frames, never its messages, because
+ * libraries put URLs and IDs in them.
  *
  * A line below the minimum level returns before any text is built. The class is final, so every
  * line, in the app and in tests, goes through the same formatting.
@@ -29,20 +29,20 @@ private constructor(
      * This logger with the tag Dewfall.<area>, such as Dewfall.YouTube. The area is constant text.
      * It replaces any area that this logger already has.
      */
-    fun withTag(area: String): Logger = Logger(writer, minLevel, "$ROOT_TAG.$area")
+    fun withTag(@ConstantText area: String): Logger = Logger(writer, minLevel, "$ROOT_TAG.$area")
 
     /** Logs detail that helps a developer follow what the code does. */
-    fun debug(message: String, vararg fields: LogField) {
+    fun debug(@ConstantText message: String, vararg fields: LogField) {
         log(LogLevel.DEBUG, message, fields, error = null)
     }
 
     /** Logs a normal event worth noting. */
-    fun info(message: String, vararg fields: LogField) {
+    fun info(@ConstantText message: String, vararg fields: LogField) {
         log(LogLevel.INFO, message, fields, error = null)
     }
 
     /** Logs a problem that the app carried on from, with the [error] that caused it, if any. */
-    fun warn(message: String, vararg fields: LogField, error: Throwable? = null) {
+    fun warn(@ConstantText message: String, vararg fields: LogField, error: Throwable? = null) {
         log(LogLevel.WARN, message, fields, error)
     }
 
@@ -50,7 +50,7 @@ private constructor(
      * Logs a problem that stopped the app from doing what it was asked to, with the [error] that
      * caused it, if any.
      */
-    fun error(message: String, vararg fields: LogField, error: Throwable? = null) {
+    fun error(@ConstantText message: String, vararg fields: LogField, error: Throwable? = null) {
         log(LogLevel.ERROR, message, fields, error)
     }
 

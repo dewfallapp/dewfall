@@ -35,6 +35,9 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 /** The area of the live check's log tag, Dewfall.LiveCheck. */
 internal const val LIVE_CHECK_LOG_AREA = "LiveCheck"
 
+/** The message of each kind's result line, at INFO, WARN or ERROR by its verdict. */
+private const val LIVE_CHECK_RESULT = "Live check result"
+
 /** How long the check waits before it makes a call again that failed with NETWORK. */
 private val RETRY_DELAY = 30.seconds
 
@@ -383,11 +386,10 @@ internal class LiveCheck(
                 add(field.logField)
             }
         }
-        val message = "Live check result"
         when (result.verdict) {
-            Verdict.PASSED -> log.info(message, *fields.toTypedArray())
-            Verdict.SKIPPED -> log.warn(message, *fields.toTypedArray())
-            Verdict.FAILED -> log.error(message, *fields.toTypedArray())
+            Verdict.PASSED -> log.info(LIVE_CHECK_RESULT, *fields.toTypedArray())
+            Verdict.SKIPPED -> log.warn(LIVE_CHECK_RESULT, *fields.toTypedArray())
+            Verdict.FAILED -> log.error(LIVE_CHECK_RESULT, *fields.toTypedArray())
         }
     }
 }
