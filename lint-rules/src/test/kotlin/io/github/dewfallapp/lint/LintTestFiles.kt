@@ -1,5 +1,6 @@
 package io.github.dewfallapp.lint
 
+import com.android.tools.lint.checks.infrastructure.ProjectDescription
 import com.android.tools.lint.checks.infrastructure.TestFile
 import com.android.tools.lint.checks.infrastructure.TestFiles.gradle
 import com.android.tools.lint.checks.infrastructure.TestFiles.kotlin
@@ -26,6 +27,17 @@ internal fun lintWith(
     vararg files: TestFile,
 ): TestLintTask =
     lint().files(gradleModule, *files).issues(issue).skipTestModes(TestMode.SUPPRESSIBLE)
+
+/**
+ * lint-tests' runner for [issue] in a plain Kotlin/JVM module, like the YouTube layer, which sees
+ * all of Java's API, such as System.Logger, which Android lacks. It skips the same test mode as
+ * [lintWith].
+ */
+internal fun lintJvmWith(issue: Issue, vararg files: TestFile): TestLintTask =
+    lint()
+        .projects(ProjectDescription(*files).type(ProjectDescription.Type.JAVA))
+        .issues(issue)
+        .skipTestModes(TestMode.SUPPRESSIBLE)
 
 /** A Kotlin file at [path] under src/main/kotlin. */
 internal fun mainKotlin(path: String, source: String): TestFile =
