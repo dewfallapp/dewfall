@@ -31,6 +31,10 @@ internal fun lintWith(
 internal fun mainKotlin(path: String, source: String): TestFile =
     kotlin("src/main/kotlin/$path", source).indented()
 
-/** A Kotlin file at [path] under src/test/kotlin. */
+/**
+ * A Kotlin file at [path] under src/test/kotlin. lint-tests gives test sources no Kotlin standard
+ * library, so a call into it, such as println, can't be resolved there. Tests of test sources use
+ * Java's classes instead, such as System.out.
+ */
 internal fun testKotlin(path: String, source: String): TestFile =
     kotlin("src/test/kotlin/$path", source).indented()

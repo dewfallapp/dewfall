@@ -27,3 +27,14 @@ internal class LogWriterClass(
 /** LogcatWriter in :app's main code, the one class that may call android.util.Log.println. */
 internal val LOGCAT_WRITER =
     LogWriterClass("io.github.dewfallapp.logging.LogcatWriter", inTestSources = false)
+
+/**
+ * ConsoleLogWriter in :core:youtube's tests, the one class that may write to standard output, with
+ * Kotlin's print and println or System.out. The recorder of saved YouTube responses and the live
+ * YouTube check log through it.
+ */
+internal val CONSOLE_LOG_WRITER =
+    LogWriterClass(
+        "io.github.dewfallapp.core.youtube.newpipe.saved.ConsoleLogWriter",
+        inTestSources = true,
+    )
