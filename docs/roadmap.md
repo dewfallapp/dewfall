@@ -185,7 +185,7 @@ Use a handful of stable test targets for the daily check: a few long-lived video
 
 The breakage playbook in docs/breakage.md lists the steps for a failure: confirm it on a real phone, check whether NewPipeExtractor already has a fix, update the dependency, run the tests, ship a hotfix release, and pin a GitHub issue so users know a fix is coming.
 
-**Done when.** Tests can fetch a channel's latest videos and a playable stream link, and the daily check runs green.
+**Done when.** Tests can fetch a channel's latest videos and a playable stream link. The daily check runs green on everything YouTube lets GitHub's runners reach, and the same check passes when run by hand from a home network.
 
 ## Phase 4. Search and play
 

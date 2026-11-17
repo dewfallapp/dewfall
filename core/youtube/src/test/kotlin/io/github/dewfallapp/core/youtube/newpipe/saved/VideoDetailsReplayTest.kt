@@ -1,22 +1,15 @@
 package io.github.dewfallapp.core.youtube.newpipe.saved
 
 import io.github.dewfallapp.core.model.ChannelId
-import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.youtube.newpipe.recordingLogger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-
-/** The Blender Foundation's channel, which published Big Buck Bunny. */
-private const val BLENDER_CHANNEL_ID = "UCSMOQeBJ2RAnuFungnQOxLg"
 
 class VideoDetailsReplayTest {
     private val lines = mutableListOf<String>()
@@ -26,19 +19,13 @@ class VideoDetailsReplayTest {
         val details = savedYouTube().call { videoDetails(VideoId(BIG_BUCK_BUNNY_ID)) }.valueOrFail()
 
         assertEquals(VideoId(BIG_BUCK_BUNNY_ID), details.id)
-        assertEquals(
-            "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film",
-            details.title,
-        )
+        assertEquals(BIG_BUCK_BUNNY_TITLE, details.title)
         assertEquals(ChannelId(BLENDER_CHANNEL_ID), details.channelId)
         assertEquals("Blender", details.channelName)
         assertTrue(details.channelAvatars.isNotEmpty())
-        assertEquals(10.minutes + 35.seconds, details.duration)
+        assertEquals(BIG_BUCK_BUNNY_DURATION, details.duration)
         // The page gives the exact time, so it isn't an estimate.
-        assertEquals(
-            PublishedTime(Instant.parse("2014-11-10T14:05:55Z"), isApproximate = false),
-            details.published,
-        )
+        assertEquals(BIG_BUCK_BUNNY_PUBLISHED, details.published)
         assertTrue(details.thumbnails.all { it.width != null && it.height != null })
         assertTrue(details.thumbnails.isNotEmpty())
         assertFalse(details.isLive)

@@ -10,13 +10,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-
-/** "Me at the zoo", the first video on YouTube and the only one on jawed's channel. */
-private const val ME_AT_THE_ZOO_ID = "jNQXAC9IVRw"
 
 /** How YouTube writes the age of a video in years, as jawed's channel page shows it. */
 private val YEARS_AGO = Regex(""""(\d+) years ago"""")
@@ -57,8 +53,8 @@ class ChannelUploadsReplayTest {
         assertEquals("jawed", uploads.channel.name)
         val video = uploads.videos.single()
         assertEquals(VideoId(ME_AT_THE_ZOO_ID), video.id)
-        assertEquals("Me at the zoo", video.title)
-        assertEquals(19.seconds, video.duration)
+        assertEquals(ME_AT_THE_ZOO_TITLE, video.title)
+        assertEquals(ME_AT_THE_ZOO_DURATION, video.duration)
         assertEquals(VideoKind.VIDEO, video.kind)
         assertEquals(SavedSet.UPLOADS_JAWED.requests, youTube.sentRequests)
         assertEquals(1, youTube.countedRequests)
