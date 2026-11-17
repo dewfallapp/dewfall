@@ -1,0 +1,191 @@
+# Runs the live check of the YouTube layer against real YouTube every day, and opens or updates one
+# issue for each kind of failure. It never runs on pull requests and never blocks merging. A call
+# that YouTube blocks is skipped and files no issue. docs/testing.md#the-daily-youtube-check
+# explains the check.
+name: Daily YouTube check
+
+on:
+  schedule:
+    # 01:43 UTC, 07:43 in Dhaka. GitHub delays or drops scheduled runs when it is busy, most of all
+    # at the start of each hour, so this runs well away from it.
+    - cron: "43 1 * * *"
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: >-
+          The name of a kind to report as failed, such as SEARCH_NASA, to test the issues. Leave it
+          empty for a normal run.
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# One run at a time, so two runs never open the same issue twice. A run waits for the one before.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    # Not "Checks": the main ruleset requires the pull request workflow's check by that name.
+    name: YouTube check
+    # Pinned, as in the pull request workflow.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      results: ${{ steps.results.outputs.results }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No later step needs git credentials.
+          persist-credentials: false
+
+      # The build compiles with a JDK 17 toolchain and never downloads one.
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # Basic caching keeps Gradle's proprietary caching component from loading.
+          # https://github.com/gradle/actions/blob/v6.4.0/DISTRIBUTION.md
+          cache-provider: basic
+          # The cache key is the same as the pull request workflow's on main, and this job builds
+          # only part of the project, so it never writes the cache.
+          cache-read-only: true
+          validate-wrappers: true
+
+      # No Android SDK step: the task builds only plain Kotlin/JVM modules, and sdkDownload=false
+      # makes a missing SDK package fail the build instead of downloading it.
+      # liveCheckSkipUnreachable=true skips a call that YouTube blocks or the network fails, instead
+      # of failing it. YouTube blocks video details and stream links from GitHub's data-center
+      # addresses, so without it every run would fail on those calls. The run by hand, from a home
+      # network, skips nothing and checks them.
+      - name: Check the YouTube layer against YouTube
+        env:
+          SIMULATE_FAILURE: ${{ inputs.simulate_failure }}
+        run: |
+          args=(-PliveCheckSkipUnreachable=true)
+          if [ -n "$SIMULATE_FAILURE" ]; then
+            if ! [[ "$SIMULATE_FAILURE" =~ ^[A-Z0-9_]+$ ]]; then
+              echo "::error::simulate_failure must be the name of a kind, such as SEARCH_NASA."
+              exit 1
+            fi
+            args+=("-PsimulateFailure=$SIMULATE_FAILURE")
+          fi
+          ./gradlew -Pandroid.builder.sdkDownload=false "${args[@]}" :core:youtube:liveYouTubeCheck
+
+      # Runs even when the check failed, which is when the results matter most. Every line must
+      # match the pattern of RESULT_LINE in LiveResults.kt, so only names and numbers go on.
+      - name: Pass on the results
+        id: results
+        if: ${{ !cancelled() }}
+        run: |
+          file=core/youtube/build/live-youtube-check/results.txt
+          if [ ! -f "$file" ]; then
+            echo "The check wrote no results."
+            exit 0
+          fi
+          pattern='^[A-Z0-9_]+ (PASSED|(SKIPPED|FAILED) [A-Z0-9_]+( [a-z][A-Za-z]*=[A-Z0-9_]+)*)$'
+          if grep -Evq "$pattern" "$file"; then
+            echo "::error::The results file has a line that isn't a result."
+            exit 1
+          fi
+          {
+            echo "results<<END_OF_RESULTS"
+            cat "$file"
+            echo "END_OF_RESULTS"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "| Kind | Verdict | Reason | Details |"
+            echo "|---|---|---|---|"
+            while read -r kind verdict reason fields; do
+              echo "| $kind | $verdict | $reason | $fields |"
+            done < "$file"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  report:
+    name: Report
+    needs: check
+    # Runs when the check failed too, and reports a check that wrote no results.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    # Only this job can write issues. It checks out no code and runs only gh and jq.
+    permissions:
+      issues: write
+    steps:
+      - name: Open, update or close the issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULTS: ${{ needs.check.outputs.results }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BREAKAGE_URL: ${{ github.server_url }}/${{ github.repository }}/blob/main/docs/breakage.md
+        run: |
+          set -euo pipefail
+          label=daily-youtube-check
+          pattern='^[A-Z0-9_]+ (PASSED|(SKIPPED|FAILED) [A-Z0-9_]+( [a-z][A-Za-z]*=[A-Z0-9_]+)*)$'
+          today=$(date -u +%F)
+          # An issue closed within the last 14 days is reopened instead of opening another one.
+          reopen_since=$(date -u -d '14 days ago' +%FT%TZ)
+          if [ -n "$RESULTS" ]; then
+            lines="$RESULTS"$'\n'"DID_NOT_FINISH PASSED"
+          else
+            lines="DID_NOT_FINISH FAILED NO_RESULTS"
+          fi
+          # Every line is checked before any issue changes, so a bad line changes nothing.
+          while IFS= read -r line; do
+            if ! [[ "$line" =~ $pattern ]]; then
+              echo "::error::A result line isn't a result."
+              exit 1
+            fi
+          done <<< "$lines"
+          gh label create "$label" --color B60205 --force \
+            --description "Opened by the daily YouTube check"
+          issues=$(gh issue list --label "$label" --state all --limit 1000 \
+            --json number,state,closedAt,body)
+          while IFS= read -r line; do
+            read -r kind verdict _ <<< "$line"
+            marker="<!-- daily-youtube-check: $kind -->"
+            issue=$(jq -c --arg marker "$marker" \
+              '[.[] | select(.body | contains($marker))] | max_by(.number) // empty' <<< "$issues")
+            number=""
+            state=""
+            closed_at=""
+            if [ -n "$issue" ]; then
+              number=$(jq -r '.number' <<< "$issue")
+              state=$(jq -r '.state' <<< "$issue")
+              closed_at=$(jq -r '.closedAt // ""' <<< "$issue")
+            fi
+            case "$verdict" in
+              FAILED)
+                comment="Failed again on $today: \`$line\`. Run: $RUN_URL"
+                if [ "$state" = OPEN ]; then
+                  gh issue comment "$number" --body "$comment"
+                elif [ -n "$number" ] && [[ "$closed_at" > "$reopen_since" ]]; then
+                  gh issue reopen "$number" --comment "$comment"
+                else
+                  body="$marker"$'\n\n'"The daily YouTube check failed for $kind on $today:"
+                  body+=$'\n\n'"\`$line\`"$'\n\n'"Run: $RUN_URL"
+                  body+=$'\n\n'"[docs/breakage.md]($BREAKAGE_URL) says what to do. Each later"
+                  body+=" failure adds a comment, and the issue closes when the check passes again."
+                  gh issue create --title "Daily YouTube check fails: $kind" --label "$label" \
+                    --body "$body"
+                fi
+                ;;
+              PASSED)
+                if [ "$state" = OPEN ]; then
+                  gh issue close "$number" --comment "Passed again on $today. Run: $RUN_URL"
+                fi
+                ;;
+              # A skipped kind says nothing about the layer, so it leaves its issue alone.
+              SKIPPED) ;;
+            esac
+          done <<< "$lines"

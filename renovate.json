@@ -42,7 +42,7 @@
       "prBodyNotes": ["Check compose-rules' supported versions table for this detekt version, and read detekt's release notes. See docs/architecture.md#formatting-and-lint."]
     },
     {
-      "description": "The build needs JDK 17, as AGENTS.md says, so the JDK version in the workflow's setup-java step changes only by hand.",
+      "description": "The build needs JDK 17, as AGENTS.md says, so the JDK version in the workflows' setup-java steps changes only by hand.",
       "matchManagers": ["github-actions"],
       "matchDatasources": ["java-version"],
       "enabled": false
