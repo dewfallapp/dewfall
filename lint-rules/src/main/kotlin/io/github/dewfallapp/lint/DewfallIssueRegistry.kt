@@ -15,6 +15,7 @@ internal class DewfallIssueRegistry : IssueRegistry() {
         listOf(
             AndroidLogDetector.ISSUE,
             ConsoleOutputDetector.ISSUE,
+            ConstantLogTextDetector.ISSUE,
         )
 
     // The build compiles this module against the lint that AGP runs, so both API levels are the
