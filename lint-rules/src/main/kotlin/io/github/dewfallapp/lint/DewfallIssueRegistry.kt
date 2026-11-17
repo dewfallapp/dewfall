@@ -11,7 +11,7 @@ import com.android.tools.lint.detector.api.Issue
  * module of the app, tests included. See docs/architecture.md#dewfalls-lint-checks.
  */
 internal class DewfallIssueRegistry : IssueRegistry() {
-    override val issues: List<Issue> = emptyList()
+    override val issues: List<Issue> = listOf(AndroidLogDetector.ISSUE)
 
     // The build compiles this module against the lint that AGP runs, so both API levels are the
     // lint API level of that version, and lint never reports the checks as out of date.
