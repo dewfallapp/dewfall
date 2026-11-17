@@ -36,4 +36,12 @@ dependencies {
     implementation(libs.androidx.startup.runtime)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
+
+    constraints {
+        // Debug and release must resolve the same versions, so that checks of a debug build on an
+        // emulator test what release ships. The debug screen brings :core:mvi, whose Lifecycle is
+        // newer than the one release gets otherwise, and Lifecycle moves its other artifacts and
+        // SavedState with it. This constraint gives release the same versions.
+        implementation(libs.androidx.lifecycle.viewmodel)
+    }
 }
