@@ -42,7 +42,7 @@ Every new feature or change in behavior starts as an OpenSpec change, before any
 
 Write every requirement with WHEN and THEN scenarios, so each one maps onto a test.
 
-Docs, small fixes, and refactors that do not change behavior do not need an OpenSpec change.
+Docs, small fixes, and refactors that do not change behavior do not need an OpenSpec change. Neither do developer tools that only debug builds or CI contain, such as the YouTube layer's debug screen, the saved YouTube responses and the daily YouTube check, because release behavior doesn't change.
 
 ## Decisions go in ADRs
 

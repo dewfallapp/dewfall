@@ -43,3 +43,7 @@ include(":core:model")
 include(":core:mvi")
 
 include(":core:youtube")
+
+include(":feature:youtube-debug-logic")
+
+include(":feature:youtube-debug-ui")

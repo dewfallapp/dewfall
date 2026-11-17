@@ -20,7 +20,7 @@ The alternatives:
 
 Dewfall uses OpenSpec for specs.
 
-- Each feature is one OpenSpec change, started with /opsx:propose. Its proposal, requirement changes and task list are reviewed before any code is written.
+- Each feature is one OpenSpec change, started with /opsx:propose. Its proposal, requirement changes and task list are reviewed before any code is written. Changed in #159: developer tools that only debug builds or CI contain, such as the YouTube layer's debug screen, the saved YouTube responses and the daily YouTube check, need no OpenSpec change, because release behavior doesn't change.
 - The change is archived with /opsx:archive as the last commit of the feature's own pull request, before merge, so its requirements move into the living specs. Changed in #128, so the template's checkbox can be ticked. Before that, the change was archived after merge.
 - Living specs are grouped by area of the app: player, subscriptions, inbox, downloads, background-sync, cleanup, transcript-search and data-export.
 - Every requirement is written with WHEN and THEN scenarios, so each one maps onto a test.

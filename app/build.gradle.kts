@@ -36,4 +36,16 @@ dependencies {
     implementation(libs.androidx.startup.runtime)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
+
+    // The YouTube layer's debug screen. Only debug builds contain it. See
+    // docs/architecture.md#the-youtube-layers-debug-screen.
+    debugImplementation(project(":feature:youtube-debug-ui"))
+
+    constraints {
+        // Debug and release must resolve the same versions, so that checks of a debug build on an
+        // emulator test what release ships. The debug screen brings :core:mvi, whose Lifecycle is
+        // newer than the one release gets otherwise, and Lifecycle moves its other artifacts and
+        // SavedState with it. This constraint gives release the same versions.
+        implementation(libs.androidx.lifecycle.viewmodel)
+    }
 }

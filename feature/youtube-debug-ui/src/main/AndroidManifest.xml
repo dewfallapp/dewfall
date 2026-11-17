@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <!--
+            The YouTube layer's debug screen. Only debug builds contain this module, so only their
+            merged manifest has this activity, and only they show its launcher entry.
+
+            - It is exported because the launcher and adb's shell can only start an exported
+              activity. It reads nothing from the intent that starts it.
+            - It has a task of its own, so its launcher entry never just brings the app's main task
+              to the front, and Recents shows it on its own.
+            - It takes its theme from the application.
+
+            See docs/architecture.md#the-youtube-layers-debug-screen.
+        -->
+        <activity
+            android:name=".YouTubeDebugActivity"
+            android:exported="true"
+            android:label="@string/youtube_debug_launcher_label"
+            android:taskAffinity="io.github.dewfallapp.youtubedebug"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

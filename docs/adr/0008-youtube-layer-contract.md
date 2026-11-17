@@ -82,6 +82,8 @@ The first three mean that nothing from YouTube can load right now. The others co
 
 **Where they live.** `YouTubeResult`, `YouTubeError`, the IDs and the models live in `:core:model`. `:core:data` exposes that module as an api dependency, so screens and reducers can see them, while `:core:youtube` stays hidden behind `:core:data`.
 
+Note, November 18, 2026: #37 adds the one exception that the maintainer allowed. `:feature:youtube-debug-ui`, the YouTube layer's debug screen, which only debug builds contain, depends on `:core:youtube` directly, because its job is to call the layer's functions themselves. It is the only feature module that may. Every real feature still reaches YouTube only through repositories in `:core:data`, so this decision stands. See [The YouTube layer's debug screen](../architecture.md#the-youtube-layers-debug-screen).
+
 ## Consequences
 
 - A caller handles success and failure in one `when`. Where it switches on `YouTubeError` with an exhaustive `when`, a new category stops the build until that place decides what the category means.
