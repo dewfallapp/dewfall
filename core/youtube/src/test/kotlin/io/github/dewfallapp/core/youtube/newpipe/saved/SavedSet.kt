@@ -1,10 +1,16 @@
 package io.github.dewfallapp.core.youtube.newpipe.saved
 
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.YouTubeResult
 import java.util.Locale
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
 /** The search that [SavedSet.SEARCH_NASA] saves. */
@@ -15,11 +21,34 @@ internal const val NASA_QUERY = "nasa"
  */
 internal const val BIG_BUCK_BUNNY_ID = "aqz-KE-bpKQ"
 
+/** Big Buck Bunny's title. */
+internal const val BIG_BUCK_BUNNY_TITLE =
+    "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film"
+
+/** Big Buck Bunny's length. */
+internal val BIG_BUCK_BUNNY_DURATION: Duration = 10.minutes + 35.seconds
+
+/** When Big Buck Bunny was published. Its page gives the exact time, so it isn't an estimate. */
+internal val BIG_BUCK_BUNNY_PUBLISHED =
+    PublishedTime(Instant.parse("2014-11-10T14:05:55Z"), isApproximate = false)
+
+/** The Blender Foundation's channel, which published Big Buck Bunny. */
+internal const val BLENDER_CHANNEL_ID = "UCSMOQeBJ2RAnuFungnQOxLg"
+
 /** NASA's channel, whose Live tab has streams on air. */
 internal const val NASA_CHANNEL_ID = "UCLA_DiR1FfKNvjuUpBHmylQ"
 
 /** jawed's channel, whose one video is "Me at the zoo", and which has no Live tab. */
 internal const val JAWED_CHANNEL_ID = "UC4QobU6STFB0P71PMvOGN5A"
+
+/** "Me at the zoo", the first video on YouTube and the only one on jawed's channel. */
+internal const val ME_AT_THE_ZOO_ID = "jNQXAC9IVRw"
+
+/** The title of "Me at the zoo". */
+internal const val ME_AT_THE_ZOO_TITLE = "Me at the zoo"
+
+/** The length of "Me at the zoo". */
+internal val ME_AT_THE_ZOO_DURATION: Duration = 19.seconds
 
 /** An age-restricted channel, which NewPipeExtractor's own tests use too. */
 internal const val AGE_RESTRICTED_CHANNEL_ID = "UCbfnHqxXs_K3kvaH-WlNlig"
@@ -69,12 +98,13 @@ internal enum class Endpoint(val method: String, val host: String, val path: Str
 
     companion object {
         /** The endpoint of [request], or [OTHER]. */
-        fun of(request: SavedRequest): Endpoint {
-            val url = request.url.toHttpUrl()
-            return entries.firstOrNull {
-                it.method == request.method && it.host == url.host && it.path == url.encodedPath
+        fun of(request: SavedRequest): Endpoint = of(request.method, request.url.toHttpUrl())
+
+        /** The endpoint of a request with [method] to [url], or [OTHER]. */
+        fun of(method: String, url: HttpUrl): Endpoint =
+            entries.firstOrNull {
+                it.method == method && it.host == url.host && it.path == url.encodedPath
             } ?: OTHER
-        }
     }
 }
 
@@ -109,7 +139,8 @@ private val UNPLAYABLE_VIDEO = listOf(Endpoint.VISITOR_ID_ON_API_HOST, Endpoint.
 /**
  * The saved sets: each one is a call through the YouTube layer, with YouTube's answers saved in
  * src/test/resources/youtube, in a folder named after the set. The recorder records them, and the
- * tests replay them. docs/testing.md#saved-youtube-responses explains both.
+ * tests replay them. docs/testing.md#saved-youtube-responses explains both. The live check makes
+ * every set's call against YouTube, as docs/testing.md#the-daily-youtube-check describes.
  *
  * Each set says how its call ends, [expectedError], and which [requests] it sends. Apart from
  * sw.js, the requests are the ones that docs/architecture.md#what-each-function-sends counts. The

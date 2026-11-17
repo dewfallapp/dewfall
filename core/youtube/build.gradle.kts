@@ -33,3 +33,19 @@ tasks.register<JavaExec>("recordYouTubeResponses") {
     )
     args(providers.gradleProperty("youtubeSets").map { it.split(',') }.getOrElse(emptyList()))
 }
+
+// The live check of the YouTube layer, which the daily workflow runs, and a developer by hand. It
+// sends requests to YouTube and googlevideo.com, so it runs only when asked for, never as part of
+// test or check. It writes its results to build/live-youtube-check/results.txt. By default it skips
+// nothing, so a call that YouTube blocks or the network fails fails the check.
+// -PliveCheckSkipUnreachable=true skips those calls instead, as the daily workflow does.
+// -PsimulateFailure=SEARCH_NASA reports that kind as failed, to test the workflow's issues. See
+// docs/testing.md#the-daily-youtube-check.
+tasks.register<JavaExec>("liveYouTubeCheck") {
+    description = "Checks the YouTube layer against real YouTube. See docs/testing.md."
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass = "io.github.dewfallapp.core.youtube.newpipe.live.RunLiveCheckKt"
+    args(layout.buildDirectory.file("live-youtube-check/results.txt").get().asFile.path)
+    args(providers.gradleProperty("liveCheckSkipUnreachable").getOrElse("false"))
+    args(providers.gradleProperty("simulateFailure").map { listOf(it) }.getOrElse(emptyList()))
+}

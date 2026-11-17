@@ -4,9 +4,10 @@ import io.github.dewfallapp.core.logging.LogLevel
 import io.github.dewfallapp.core.logging.LogWriter
 
 /**
- * Writes the recorder's log lines to standard output, where Gradle shows them. Every line comes
- * through the Logger from constant text and typed fields, so no real value from a recording reaches
- * it (ADR 0007).
+ * Writes the log lines of the recorder and of the live check to standard output, where Gradle shows
+ * them. Every line comes through the Logger from constant text and typed fields, so no real value
+ * from a recording or from YouTube's answers reaches it (ADR 0007). The daily workflow's log is
+ * public, so that matters there most.
  *
  * It is the only code in src/test that writes to standard output, as LogcatWriter is the only code
  * in the app that calls android.util.Log. AGENTS.md forbids println everywhere else, and the lint
