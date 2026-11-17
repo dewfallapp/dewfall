@@ -10,8 +10,9 @@ import io.github.dewfallapp.core.logging.LogWriter
  * public, so that matters there most.
  *
  * It is the only code in src/test that writes to standard output, as LogcatWriter is the only code
- * in the app that calls android.util.Log. AGENTS.md forbids println everywhere else, and the lint
- * check that #144 adds must allow it here.
+ * in the app that calls android.util.Log. Dewfall's lint check DewfallConsoleOutput allows standard
+ * output here, in this class in :core:youtube's tests, flags console output anywhere else, and
+ * flags standard error everywhere.
  */
 internal object ConsoleLogWriter : LogWriter {
     override fun write(level: LogLevel, tag: String, text: String) {
