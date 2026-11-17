@@ -33,7 +33,7 @@ The project uses four GitHub Actions workflows, plus Renovate's weekly update pu
 
 1. **Every pull request.** Formatting, lint, unit tests, screenshot tests, a database migration check, and a debug build. Branch protection blocks merging when any of them fail.
 2. **Every merge to main.** Everything above, plus the emulator tests, and a nightly APK.
-3. **Daily schedule.** The YouTube layer runs against real YouTube and opens an issue when something breaks. It never blocks pull requests.
+3. **Daily schedule.** The YouTube layer runs against real YouTube and opens an issue when something breaks. It never blocks pull requests. See [The daily YouTube check](#the-daily-youtube-check).
 4. **Version tag.** A signed release build, changelog, checksums, and a GitHub release.
 5. **Weekly.** Renovate opens dependency update pull requests, and workflow 1 tests them. See [Dependency updates](#dependency-updates).
 
@@ -50,11 +50,128 @@ Workflow 1 is .github/workflows/pull-request.yml. Today it runs one job, Checks,
 - A repository ruleset named main protects the branch. It requires a pull request, allows only merge commits, and requires the check named Checks to pass on a branch that's up to date with main. It blocks force pushes and deletion, and nobody can bypass it, maintainers included. The ruleset requires the check by its name, so renaming the job blocks merging until the ruleset is updated.
 - The repository allows only GitHub's own actions and gradle/actions/setup-gradle, and requires every action to be pinned to a full commit SHA. A new action needs the allow list changed in the repository settings first.
 
+### The daily YouTube check
+
+Workflow 3 is .github/workflows/daily-youtube-check.yml. Every day at 01:43 UTC, 07:43 in Dhaka, it runs the live check of the YouTube layer against real YouTube, and keeps one GitHub issue for each kind of failure. GitHub delays or drops scheduled runs when it is busy, most of all at the start of each hour ([schedule](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)), so it runs well away from it. It never runs on pull requests and never blocks merging. To start a run now:
+
+```
+gh workflow run daily-youtube-check.yml
+```
+
+#### What it checks
+
+The Gradle task `:core:youtube:liveYouTubeCheck` runs the check. Its code is in the `newpipe.live` package of `:core:youtube`'s tests, next to the recorder, and never runs in `./gradlew test`. It makes every saved set's call, one at a time, through one layer for the whole run, as the app does. Then it gets Big Buck Bunny's stream links. A new saved set, such as the subtitles that #148 adds, joins the check on its own. Each call is a kind, and each kind passes or fails. In the workflow, a kind can also be skipped.
+
+| Kind | Passes when |
+|---|---|
+| Every saved set | The call ends as SavedSet expects, and sends the requests that the set lists, leaving out sw.js. A success logs no warning. VIDEO_BIG_BUCK_BUNNY must succeed, so any failure fails it, UNAVAILABLE included, apart from BLOCKED and NETWORK, which work as [Calls that can't be checked](#calls-that-cant-be-checked) says. |
+| SEARCH_NASA | A channel with NASA in its name, and at least one ordinary video |
+| VIDEO_BIG_BUCK_BUNNY | Its title, the Blender Foundation's channel, the length 10:35, the exact publish time, and not live |
+| UPLOADS_NASA and UPLOADS_AGE_RESTRICTED | The channel's own videos, at least one, with ChannelUploads' promises kept: no Short, no video twice, and newest first |
+| UPLOADS_JAWED | One video, "Me at the zoo", 19 seconds long |
+| The other saved sets | Only how the call ends, and its requests |
+| STREAM_LINKS_BIG_BUCK_BUNNY | The requests of video details. An audio-only and a video-only MP4 format with known lengths, a format with both, an HLS manifest, and every link HTTPS to googlevideo.com. The links work for at least another hour. An audio-only and a video-only link each answer a GET for their first KiB, with a Range header, with 206, the format's length as the total in Content-Range, and the bytes asked for. |
+| NOTHING_CHECKED | At least one other kind wasn't skipped |
+
+- Requests are compared by their Endpoint names, not in full. The web client's version, which the check reads from sw.js on every run, changes with YouTube's releases, and visitor data and nonces change on every request, so a full comparison would fail every day. The replay tests already pin the exact requests of each NewPipeExtractor version.
+- A success that logs "YouTube answer read in part" fails with READ_IN_PART. A part that NewPipeExtractor can't read is often the first sign that YouTube changed its answers.
+- The ranged GETs send the User-Agent of the client that made each link, as [Network access](architecture.md#network-access) describes.
+- Each call's duration is logged, but never fails the check.
+
+#### Calls that can't be checked
+
+A call that fails with NETWORK is made again once, 30 seconds later. A ranged GET that fails with an IOException is retried the same way.
+
+By default the check skips nothing. A call that YouTube blocks fails its kind with the reason RUNNER_BLOCKED, and a call that still fails with NETWORK after its retry fails its kind with the reason NETWORK. The task then exits with an error. A run by hand works this way, because it exists to check what the runners can't reach, and a run that skipped those calls would prove nothing.
+
+YouTube blocks some calls from GitHub's runners, as [the probe](#youtube-blocks-the-runners-video-calls) below found, so the workflow passes `-PliveCheckSkipUnreachable=true`. Then those kinds are skipped instead, with the same reasons. A skipped kind opens no issue and comments on none, so a lasting block doesn't add a comment every day. A blocked call that YouTube answers on a later run is checked in full, as usual. With skipping on, skipped calls fail the check only when nothing could be checked: when every call is skipped, the kind NOTHING_CHECKED fails with EVERY_CALL_SKIPPED.
+
+#### Results
+
+The check writes core/youtube/build/live-youtube-check/results.txt, with one line for each kind: its name, then PASSED, SKIPPED or FAILED, and for the last two a reason and any fields. Every word is an enum name, a field name or a number. For example:
+
+```
+VIDEO_BIG_BUCK_BUNNY SKIPPED RUNNER_BLOCKED
+STREAM_LINKS_BIG_BUCK_BUNNY FAILED LINK_NOT_PLAYABLE format=AUDIO_ONLY answer=WRONG_STATUS status=403
+```
+
+It logs the same results, and exits with an error when a kind failed. The workflow shows them as a table in the run's summary.
+
+| Reason for a failure | Meaning |
+|---|---|
+| RUNNER_BLOCKED | YouTube blocked the call. With skipping on, the kind is skipped instead. |
+| NETWORK | The call, or a ranged GET, failed with NETWORK, and again after its retry. With skipping on, the kind is skipped instead. |
+| UNEXPECTED_RESULT | The call succeeded or failed when its set expects the other, or failed another way. `expected` and `got` name both. |
+| REQUESTS_CHANGED | The call sent other requests than its set lists. The log names each one, in order, as the recorder does. Change SavedSet and record the sets again, as [Recording the sets](#recording-the-sets) describes. |
+| READ_IN_PART | The call succeeded, but the layer logged warnings, counted in `warnings`. |
+| WRONG_CONTENT | The call succeeded with content the check doesn't expect. `what` names it. |
+| LINKS_EXPIRE_SOON | The stream links stop working within the hour. |
+| LINK_NOT_PLAYABLE | A link's first bytes didn't come back as a player needs them. `format`, `answer` and `status` say how. `status` is 0 when no answer came. |
+| LENGTH_MISMATCH | A link's answer gives another total length than the format's. |
+| EVERY_CALL_SKIPPED | NOTHING_CHECKED only: every call was skipped. `blocked` and `network` count them. |
+| SIMULATED | The run was asked to report the kind as failed. See [Testing the issues](#testing-the-issues). |
+| NO_RESULTS | DID_NOT_FINISH only: the workflow got no results. The build failed, the check stopped, or the job ran out of time. It also happens when simulate_failure isn't the name of a kind, and when the results file has a line that isn't a result. |
+
+#### Issues
+
+The workflow's second job, Report, reads the results and keeps one issue for each kind that fails.
+
+- A kind that fails gets an issue titled "Daily YouTube check fails: KIND", with the label daily-youtube-check, which the job creates if it is missing. A hidden marker in the issue's body names the kind.
+- A later failure adds a comment to the kind's open issue. If its issue closed within the last 14 days, the comment reopens it, because YouTube's changes can come and go. Otherwise a new issue opens.
+- A kind that passes again closes its open issue with a comment.
+- A skipped kind leaves its issue as it is.
+- When the check wrote no results, the kind DID_NOT_FINISH fails.
+- An issue holds only the result's line, the date, a link to the run and a link to [breakage.md](breakage.md).
+
+#### Testing the issues
+
+The workflow_dispatch input simulate_failure names a kind to report as failed with the reason SIMULATED. The check still runs as usual. The next normal run closes the issue again, if the runners reach that kind. A kind that they can't reach is skipped, and a skipped kind never closes its issue, so simulate a kind they reach, such as UPLOADS_JAWED, or close its issue by hand.
+
+```
+gh workflow run daily-youtube-check.yml -f simulate_failure=UPLOADS_JAWED
+```
+
+#### Permissions, cache and public logs
+
+- The workflow's token can only read the code. Only the Report job can write issues. It checks out no code and runs only gh and jq, which the runner image has.
+- The input and the results reach a shell only through environment variables. Each result line must match the pattern of RESULT_LINE in LiveResults.kt, so only names and numbers get through. The Report job checks every line before it changes any issue.
+- The check job reads setup-gradle's cache but never writes it. On main, its cache key is the same as the Checks job's, and it builds only part of the project. It installs no Android SDK packages, because the task builds only plain Kotlin/JVM modules.
+- Anyone signed in to GitHub can read a run's log. So the check logs only through the Logger, with ConsoleLogWriter, in constant text with enum, count and duration fields, as [ADR 0007](adr/0007-how-the-app-logs.md) requires. It never logs a link, an ID, a title or an answer. An exception is logged as class names and stack frames, never its message, which can name a link. That includes an exception that nothing catches, which would otherwise print its message. Every answer is closed, so OkHttp never warns about a leaked one, a warning that names the host. Gradle runs without `--info`, `--stacktrace` or `--scan`. LiveCheckOutputTest feeds the check made-up content and exception messages full of a marker, and checks that no line holds it.
+
+#### Running it by hand
+
+The same check runs on a developer's machine:
+
+```
+./gradlew :core:youtube:liveYouTubeCheck
+```
+
+It logs the same results, writes the same file, and files no issue, because only the workflow's Report job does. Run it from a home network:
+
+- before merging a NewPipeExtractor update,
+- before each release,
+- and when the daily check reports a change.
+
+While YouTube blocks the runners, the run by hand is the only place where video details, stream links and the ranged GETs are checked. A run by hand skips nothing, so it ends without an error only when every kind was checked and passed.
+
+#### YouTube blocks the runners' video calls
+
+On November 17, 2026, a probe ran the layer's calls once on a GitHub runner, ubuntu-24.04 image version 20261111.127, with NewPipeExtractor v0.26.5.
+
+- Search, NASA's latest uploads and the age-restricted channel's latest uploads succeeded, with the usual requests.
+- Video details and stream links failed with BLOCKED after two requests. YouTube answered the Android client's player request with its "confirm you're not a bot" status, which NewPipeExtractor throws as SignInConfirmNotBotException.
+
+YouTube filters requests from data-center addresses such as GitHub's. Phones on home or mobile networks don't use those addresses, so the block affects CI only. That is why the workflow skips blocked calls, and why the run by hand, which skips nothing, checks what the runners can't reach. NewPipeExtractor v0.27.1 [asks the visionOS client first](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L834), so its update may change what the runners can reach, and the daily check will show it.
+
+#### When the schedule stops
+
+In a public repository, GitHub turns off scheduled workflows when the repository has had no activity for 60 days ([Disabling and enabling a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows)). A turned-off workflow opens no issues, so a quiet issue list doesn't mean the check passes. Look at the date of its last run, especially before a release. To turn it back on, run `gh workflow enable daily-youtube-check.yml`, then start a run. #39 adds this to the playbook in [breakage.md](breakage.md).
+
 ### Dependency updates
 
 [Renovate](https://docs.renovatebot.com/) opens a pull request for each dependency update, and workflow 1 tests it like any other pull request. Renovate runs as the Mend Renovate app on Mend's servers, which clone the repository for each run. It reads its settings from renovate.json. Renovate is licensed under AGPL-3.0 and never ships in the app.
 
-- **What it updates.** The plugins and libraries in gradle/libs.versions.toml, the Gradle wrapper, and the actions and the runner image in .github/workflows/. ktfmt and Gummy Bears have no library entry in the catalog, so two custom managers in renovate.json find their versions. The Gummy Bears manager names the artifact for API 29, so change it when minSdk changes. Renovate would also update the JDK version in the workflow's setup-java step, but the build needs JDK 17, so renovate.json turns that off. Nothing updates the Android SDK packages in the workflow or the Android versions in build-logic. Change these by hand.
+- **What it updates.** The plugins and libraries in gradle/libs.versions.toml, the Gradle wrapper, and the actions and the runner image in .github/workflows/. ktfmt and Gummy Bears have no library entry in the catalog, so two custom managers in renovate.json find their versions. The Gummy Bears manager names the artifact for API 29, so change it when minSdk changes. Renovate would also update the JDK version in the workflows' setup-java steps, but the build needs JDK 17, so renovate.json turns that off. Nothing updates the Android SDK packages in the workflow or the Android versions in build-logic. Change these by hand.
 - **When.** Renovate creates new branches only on Fridays, in the Asia/Dhaka time zone. It still rebases open pull requests on other days.
 - **How many.** At most five of Renovate's pull requests are open at once, with no hourly limit. Updates beyond that wait for the next Friday after a pull request closes. The Dependency Dashboard lists them.
 - **The 14-day wait.** AGENTS.md says to wait 14 days after a release before adopting it, unless the release fixes a security issue. Renovate creates no branch for a release that is less than 14 days old, or that has no release date. The Dependency Dashboard, an issue that Renovate keeps open, lists these updates under "Pending Status Checks".
@@ -123,7 +240,7 @@ A class that logs receives a Logger in its constructor, as [architecture.md](arc
 
 ## Saved YouTube responses
 
-The YouTube layer's tests replay YouTube's real answers, which are saved in core/youtube/src/test/resources/youtube/. A test never reaches YouTube. Recording the answers does, so a developer runs it by hand, and it never runs in `./gradlew test` or in CI. The code is in the `newpipe.saved` package of `:core:youtube`'s tests.
+The YouTube layer's tests replay YouTube's real answers, which are saved in core/youtube/src/test/resources/youtube/. A test never reaches YouTube. Recording the answers does, so a developer runs it by hand, and it never runs in `./gradlew test` or in CI. The live check reaches YouTube too, as [The daily YouTube check](#the-daily-youtube-check) describes. The code is in the `newpipe.saved` package of `:core:youtube`'s tests.
 
 ### The saved sets
 
@@ -152,7 +269,7 @@ A saved set is one call through the layer, with every request it sent and YouTub
 
 - Each function's result, read from a real answer, as the table says. Each test makes one call, through a SavedYouTube of its own.
 - The requests that each call sends, in order. They match the counts in [What each function sends](architecture.md#what-each-function-sends). The first call in a process that uses the web client also fetches www.youtube.com/sw.js, and every replayed call is a first call, so each one that reaches the web client fetches it too.
-- A playable stream link. A test can't play anything, so it checks what a player needs: a sound format and a picture format that play together, and a format that has both, each with a known length, and the HLS manifest, all HTTPS links to googlevideo.com. The layer keeps a format only when it is a single file with a direct link, and no link needed YouTube's player code to decode, which would have added a request. Fetching real bytes from a link is left to the daily check (#38).
+- A playable stream link. A test can't play anything, so it checks what a player needs: a sound format and a picture format that play together, and a format that has both, each with a known length, and the HLS manifest, all HTTPS links to googlevideo.com. The layer keeps a format only when it is a single file with a direct link, and no link needed YouTube's player code to decode, which would have added a request. Fetching real bytes from a link is left to the live check, which [The daily YouTube check](#the-daily-youtube-check) describes.
 - Relative publish times. See [Relative dates](#relative-dates).
 
 ### How a set is stored
@@ -372,7 +489,7 @@ Record the sets again:
 
 - **When a NewPipeExtractor update changes its requests.** Renovate's pull request then fails Checks with a report like the one above. Check out Renovate's branch and record every set. If the requests changed, the recorder writes nothing and logs the requests that each call sent. Change them in SavedSet, add any new endpoint to the Endpoint enum, change the counts in the tests and in architecture.md, and record again. Then run `./gradlew :core:youtube:test`, review `git diff --stat`, and commit with a message such as "test: record saved YouTube responses again for NewPipeExtractor vX.Y.Z". Push it to Renovate's branch. Renovate then leaves the branch alone, as [Dependency updates](#dependency-updates) explains. NewPipeExtractor v0.27.0 and v0.27.1 no longer send the Android client's requests for a video's page, so their update will need this: compare onFetchPage in [v0.26.5](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L836-L871) and in [v0.27.0](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.0/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L827-L850).
 - **After any other NewPipeExtractor update,** so that the version the app ships reads the saved answers.
-- **When the daily check (#38), once it exists, shows that YouTube changed its answers.**
+- **When the live check shows that YouTube changed its answers,** such as with REQUESTS_CHANGED or READ_IN_PART. See [The daily YouTube check](#the-daily-youtube-check).
 
 ## Screenshot tests
 
