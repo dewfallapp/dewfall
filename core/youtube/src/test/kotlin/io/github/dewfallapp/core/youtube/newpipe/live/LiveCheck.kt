@@ -86,7 +86,6 @@ internal enum class WrongContent {
     WRONG_KIND,
     NO_AUDIO_ONLY_MP4,
     NO_VIDEO_ONLY_MP4,
-    NO_FORMAT_WITH_AUDIO,
     NO_HLS_MANIFEST,
     NOT_GOOGLEVIDEO,
     NO_EXPIRY,
@@ -147,8 +146,8 @@ internal fun interface LayerCaller {
 /**
  * The live check of the YouTube layer. It makes every one of [LIVE_CALLS] through [caller], one at
  * a time, and checks each against what its saved set expects: how the call ends, the requests it
- * sends, apart from sw.js, that a success logged no warning, and content unlikely to change. For
- * Big Buck Bunny's stream links, it also checks that they last at least an hour and asks an
+ * sends, apart from sw.js_data, that a success logged no warning, and content unlikely to change.
+ * For Big Buck Bunny's stream links, it also checks that they last at least an hour and asks an
  * audio-only and a video-only link for their first bytes through [firstBytes].
  *
  * A call that fails with NETWORK, and a request for first bytes that does, is made again once after
@@ -212,7 +211,7 @@ internal class LiveCheck(
                     ResultField.state("got", error ?: CallSucceeded.SUCCESS),
                 )
             }
-            withoutSwJs(outcome.requests) != withoutSwJs(liveCall.set.requests) -> {
+            withoutSwJsData(outcome.requests) != withoutSwJsData(liveCall.set.requests) -> {
                 requestsChanged(liveCall, outcome.requests)
             }
             error == null && outcome.warnings > 0 -> {
@@ -253,8 +252,8 @@ internal class LiveCheck(
         return KindResult.failed(
             liveCall.kind,
             FailedBecause.REQUESTS_CHANGED,
-            ResultField.count("expected", withoutSwJs(liveCall.set.requests).size),
-            ResultField.count("sent", withoutSwJs(sent).size),
+            ResultField.count("expected", withoutSwJsData(liveCall.set.requests).size),
+            ResultField.count("sent", withoutSwJsData(sent).size),
         )
     }
 
@@ -291,9 +290,6 @@ internal class LiveCheck(
             links.videoId != VideoId(BIG_BUCK_BUNNY_ID) -> wrongContent(kind, WrongContent.WRONG_ID)
             audio == null -> wrongContent(kind, WrongContent.NO_AUDIO_ONLY_MP4)
             video == null -> wrongContent(kind, WrongContent.NO_VIDEO_ONLY_MP4)
-            links.videoFormats.none { it.includesAudio } -> {
-                wrongContent(kind, WrongContent.NO_FORMAT_WITH_AUDIO)
-            }
             links.hlsManifestUrl == null -> wrongContent(kind, WrongContent.NO_HLS_MANIFEST)
             !allGoogleVideoLinks(links) -> wrongContent(kind, WrongContent.NOT_GOOGLEVIDEO)
             expiresAt == null -> wrongContent(kind, WrongContent.NO_EXPIRY)
@@ -430,9 +426,9 @@ private fun nothingChecked(results: List<KindResult>): KindResult {
     }
 }
 
-/** [requests] without sw.js, which only the first call in a process fetches. */
-private fun withoutSwJs(requests: List<Endpoint>): List<Endpoint> = requests.filter {
-    it != Endpoint.SW_JS
+/** [requests] without sw.js_data, which only the first call in a process fetches. */
+private fun withoutSwJsData(requests: List<Endpoint>): List<Endpoint> = requests.filter {
+    it != Endpoint.SW_JS_DATA
 }
 
 /**

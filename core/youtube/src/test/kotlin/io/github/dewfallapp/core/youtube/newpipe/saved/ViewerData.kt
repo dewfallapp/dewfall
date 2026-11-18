@@ -23,7 +23,8 @@ private val VIEWER_MEMBER = Regex("""^(?:comment|teaser|liveChat)""", RegexOptio
 /**
  * The start of the objects whose values are the experiments that YouTube put the visitor in:
  * sw.js's EXPERIMENT_FLAGS, and the experiments and experimentFlags of the Android client's player
- * answer.
+ * answer, which NewPipeExtractor fetched before v0.27.0. No answer of v0.27.1 holds them, and the
+ * masking stays in case one does again.
  */
 private val EXPERIMENT_FLAGS =
     Regex(

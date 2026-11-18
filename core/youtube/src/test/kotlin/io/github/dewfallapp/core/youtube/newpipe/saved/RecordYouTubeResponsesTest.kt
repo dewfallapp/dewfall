@@ -13,12 +13,12 @@ import kotlin.test.assertTrue
 /** A public IPv6 address that no test machine has, written where no masking rule looks. */
 private const val UNMASKED_ADDRESS_BODY = """{"note":"2a02:1234:5678:9abc:1:2:3:4"}"""
 
-/**
- * An answer that names the machine's address, a documentation address, in a stream link, and the
- * network's country, a code that no country has, as sw.js does.
- */
+/** An answer that names the machine's address, a documentation address, in a stream link. */
 private const val NAMING_BODY =
-    """{"url":"https://x.googlevideo.com/videoplayback?expire=1&ip=198.51.100.7","gl":"ZZ"}"""
+    """{"url":"https://x.googlevideo.com/videoplayback?expire=1&ip=198.51.100.7"}"""
+
+/** sw.js_data, which names the network's country, a code that no country has, as YouTube's does. */
+private const val SW_JS_DATA_BODY = """)]}'[["x",null,[[["en","ZZ"]]]]]"""
 
 /**
  * Tests that the recorder writes nothing unless every set passes its checks. The calls are made up,
@@ -39,7 +39,7 @@ class RecordYouTubeResponsesTest {
 
         assertTrue(written)
         assertEquals(
-            setOf(EXCHANGES_FILE, "01-sw.js", "02-browse.json"),
+            setOf(EXCHANGES_FILE, "01-sw.js_data", "02-browse.json"),
             File(folder, SavedSet.UPLOADS_JAWED.directory).list().orEmpty().toSet(),
         )
         assertTrue(File(folder, SavedSet.CHANNEL_DELETED.directory).isDirectory)
@@ -126,7 +126,10 @@ class RecordYouTubeResponsesTest {
 
     private fun writtenFiles(): List<File> = folder.walk().filter { it.isFile }.toList()
 
-    /** A made-up recording of [set] that sends [requests], each answered with [body]. */
+    /**
+     * A made-up recording of [set] that sends [requests], each answered with [body], but
+     * sw.js_data, which names the network's country.
+     */
     private fun recordingOf(
         set: SavedSet,
         requests: List<Endpoint> = set.requests,
@@ -143,7 +146,11 @@ class RecordYouTubeResponsesTest {
                         emptyList(),
                         body = if (endpoint.method == "POST") "{}" else null,
                     ),
-                    SavedResponse(200, listOf(Header(CONTENT_TYPE, "application/json")), body),
+                    SavedResponse(
+                        200,
+                        listOf(Header(CONTENT_TYPE, "application/json")),
+                        if (endpoint == Endpoint.SW_JS_DATA) SW_JS_DATA_BODY else body,
+                    ),
                 )
             },
         )

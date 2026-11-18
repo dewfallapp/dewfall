@@ -1,29 +1,29 @@
 # Saved YouTube responses for the set VIDEO_AGE_RESTRICTED.
 # Written by ./gradlew :core:youtube:recordYouTubeResponses. Don't edit it by hand.
 # Signed out, asking for the country GB and the language en-GB.
-# recorded: 2026-11-16
-# newpipe-extractor: v0.26.5
+# recorded: 2026-11-18
+# newpipe-extractor: v0.27.1
 
-> POST https://youtubei.googleapis.com/youtubei/v1/visitor_id?prettyPrint=false
+> POST https://www.youtube.com/youtubei/v1/visitor_id?prettyPrint=false
 > Accept-Language: en-GB, en;q=0.9
 > Content-Type: application/json
-> User-Agent: com.google.android.youtube/21.03.36 (Linux; U; Android 15; GB) gzip
+> User-Agent: com.google.visionos.youtube/1.04(RealityDevice17,1; U; CPU visionOS 26_6_0 like Mac OS X; GB)
 > X-Goog-Api-Format-Version: 2
 >
-> {"context":{"client":{"clientName":"ANDROID","clientVersion":"21.03.36","clientScreen":"WATCH","platform":"MOBILE","osName":"Android","osVersion":"16","androidSdkVersion":36,"hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}}}
+> {"context":{"client":{"clientName":"VISIONOS","clientVersion":"1.04","clientScreen":"WATCH","platform":"MOBILE","deviceMake":"Apple","deviceModel":"RealityDevice17,1","osName":"visionOS","osVersion":"26.6.0.23O770","hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}}}
 < 200
 < content-type: application/json; charset=UTF-8
 <
 < @01-visitor_id.json
 
-> POST https://youtubei.googleapis.com/youtubei/v1/reel/reel_item_watch?prettyPrint=false&t=867fZ6WKSXg3&id=rwcfPqbAx-0&$fields=playerResponse
+> POST https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false&t=867fZ6WKSXg3&id=rwcfPqbAx-0
 > Accept-Language: en-GB, en;q=0.9
 > Content-Type: application/json
-> User-Agent: com.google.android.youtube/21.03.36 (Linux; U; Android 15; GB) gzip
+> User-Agent: com.google.visionos.youtube/1.04(RealityDevice17,1; U; CPU visionOS 26_6_0 like Mac OS X; GB)
 > X-Goog-Api-Format-Version: 2
 >
-> {"context":{"client":{"clientName":"ANDROID","clientVersion":"21.03.36","clientScreen":"WATCH","platform":"MOBILE","visitorData":"VISITOR_DATA_1","osName":"Android","osVersion":"16","androidSdkVersion":36,"hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}},"playerRequest":{"videoId":"rwcfPqbAx-0","cpn":"uGaaNCVq9tAJ9K8j","contentCheckOk":true,"racyCheckOk":true},"disablePlayerResponse":false}
+> {"context":{"client":{"clientName":"VISIONOS","clientVersion":"1.04","clientScreen":"WATCH","platform":"MOBILE","visitorData":"VISITOR_DATA_1","deviceMake":"Apple","deviceModel":"RealityDevice17,1","osName":"visionOS","osVersion":"26.6.0.23O770","hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}},"videoId":"rwcfPqbAx-0","cpn":"uGaaNCVq9tAJ9K8j","contentCheckOk":true,"racyCheckOk":true}
 < 200
 < content-type: application/json; charset=UTF-8
 <
-< @02-reel_item_watch.json
+< @02-player.json

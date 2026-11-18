@@ -36,8 +36,8 @@ private const val BYTES_PER_KIBIBYTE = 1024
 
 /**
  * The set whose call the recorder also makes, without writing it, when no set it records names the
- * machine's address or the network's country: its stream links name the address, and its sw.js the
- * country.
+ * machine's address or the network's country: its stream links name the address, and its sw.js_data
+ * and visitor data the country.
  */
 internal val LEARNING_SET = SavedSet.VIDEO_BIG_BUCK_BUNNY
 

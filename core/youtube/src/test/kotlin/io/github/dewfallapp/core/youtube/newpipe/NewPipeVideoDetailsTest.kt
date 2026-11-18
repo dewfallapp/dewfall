@@ -38,7 +38,7 @@ class NewPipeVideoDetailsTest {
                 name = { "Title" },
                 uploaderLink = channelLink(CHANNEL_A),
                 uploaderName = "Channel",
-                description = { Description("Line one<br>Line two", Description.HTML) },
+                description = { Description("Line one<br>Line two", Description.Type.HTML) },
                 length = { 19 },
                 uploadDate = { date },
                 uploaderAvatars = { avatars },

@@ -77,18 +77,15 @@ private const val API_HOST = "youtubei.googleapis.com"
  */
 internal enum class Endpoint(val method: String, val host: String, val path: String) {
     /**
-     * The script that NewPipeExtractor reads the web client's version from. The first call in a
+     * The answer that NewPipeExtractor reads the web client's version from. The first call in a
      * process that uses the web client fetches it, and every saved set's call is a first call,
      * because resetNewPipeExtractorState makes NewPipeExtractor forget the version that it read.
      */
-    SW_JS("GET", WEB_HOST, "/sw.js"),
+    SW_JS_DATA("GET", WEB_HOST, "/sw.js_data"),
     SEARCH("POST", WEB_HOST, "/youtubei/v1/search"),
     BROWSE("POST", WEB_HOST, "/youtubei/v1/browse"),
-    /** The Android client's visitor ID. */
-    VISITOR_ID_ON_API_HOST("POST", API_HOST, "/youtubei/v1/visitor_id"),
     /** The visionOS and web clients' visitor IDs. */
     VISITOR_ID_ON_WEB_HOST("POST", WEB_HOST, "/youtubei/v1/visitor_id"),
-    ANDROID_PLAYER("POST", API_HOST, "/youtubei/v1/reel/reel_item_watch"),
     VISIONOS_PLAYER("POST", API_HOST, "/youtubei/v1/player"),
     WEB_PLAYER("POST", WEB_HOST, "/youtubei/v1/player"),
     /** The rest of a video's page. */
@@ -109,17 +106,16 @@ internal enum class Endpoint(val method: String, val host: String, val path: Str
 }
 
 /**
- * A video's page: a visitor ID and a player request for each of YouTube's Android, visionOS and web
- * clients, and the page's other data. The Android client asks for its visitor ID on YouTube's API
- * host, and the other two on www.youtube.com. sw.js comes before the web client's first request.
+ * A video's page: a visitor ID and a player request for each of YouTube's visionOS and web clients,
+ * and the page's other data. Both clients ask for their visitor ID on www.youtube.com, and the
+ * visionOS client sends its player request to YouTube's API host. sw.js_data comes before the web
+ * client's first request.
  */
 private val VIDEO_PAGE =
     listOf(
-        Endpoint.VISITOR_ID_ON_API_HOST,
-        Endpoint.ANDROID_PLAYER,
         Endpoint.VISITOR_ID_ON_WEB_HOST,
         Endpoint.VISIONOS_PLAYER,
-        Endpoint.SW_JS,
+        Endpoint.SW_JS_DATA,
         Endpoint.VISITOR_ID_ON_WEB_HOST,
         Endpoint.WEB_PLAYER,
         Endpoint.NEXT,
@@ -132,9 +128,10 @@ private val VIDEO_PAGE =
 private const val SYSTEM_PLAYLIST_PATH_REQUESTS = 5
 
 /**
- * A video that YouTube says can't be played. NewPipeExtractor stops at the Android client's answer.
+ * A video that YouTube says can't be played. NewPipeExtractor stops at the visionOS client's
+ * answer.
  */
-private val UNPLAYABLE_VIDEO = listOf(Endpoint.VISITOR_ID_ON_API_HOST, Endpoint.ANDROID_PLAYER)
+private val UNPLAYABLE_VIDEO = listOf(Endpoint.VISITOR_ID_ON_WEB_HOST, Endpoint.VISIONOS_PLAYER)
 
 /**
  * The saved sets: each one is a call through the YouTube layer, with YouTube's answers saved in
@@ -143,8 +140,8 @@ private val UNPLAYABLE_VIDEO = listOf(Endpoint.VISITOR_ID_ON_API_HOST, Endpoint.
  * every set's call against YouTube, as docs/testing.md#the-daily-youtube-check describes.
  *
  * Each set says how its call ends, [expectedError], and which [requests] it sends. Apart from
- * sw.js, the requests are the ones that docs/architecture.md#what-each-function-sends counts. The
- * recorder keeps a set's old files when either differs, and the tests check both.
+ * sw.js_data, the requests are the ones that docs/architecture.md#what-each-function-sends counts.
+ * The recorder keeps a set's old files when either differs, and the tests check both.
  */
 internal enum class SavedSet(
     /** The category that the call fails with, or null when it succeeds. */
@@ -154,19 +151,19 @@ internal enum class SavedSet(
     /** The call through the layer. */
     val call: suspend YouTubeLayer.() -> YouTubeResult<*>,
 ) {
-    SEARCH_NASA(null, listOf(Endpoint.SW_JS, Endpoint.SEARCH), { search(NASA_QUERY) }),
+    SEARCH_NASA(null, listOf(Endpoint.SW_JS_DATA, Endpoint.SEARCH), { search(NASA_QUERY) }),
     /** Video details and stream links send the same requests, so their tests share this set. */
     VIDEO_BIG_BUCK_BUNNY(null, VIDEO_PAGE, { videoDetails(VideoId(BIG_BUCK_BUNNY_ID)) }),
     /** The channel's page, which holds its Videos tab, then its Live tab. */
     UPLOADS_NASA(
         null,
-        listOf(Endpoint.SW_JS, Endpoint.BROWSE, Endpoint.BROWSE),
+        listOf(Endpoint.SW_JS_DATA, Endpoint.BROWSE, Endpoint.BROWSE),
         { latestUploads(ChannelId(NASA_CHANNEL_ID)) },
     ),
     /** The channel's page alone, because the channel has no Live tab. */
     UPLOADS_JAWED(
         null,
-        listOf(Endpoint.SW_JS, Endpoint.BROWSE),
+        listOf(Endpoint.SW_JS_DATA, Endpoint.BROWSE),
         { latestUploads(ChannelId(JAWED_CHANNEL_ID)) },
     ),
     /**
@@ -175,7 +172,7 @@ internal enum class SavedSet(
      */
     UPLOADS_AGE_RESTRICTED(
         null,
-        listOf(Endpoint.SW_JS) + List(SYSTEM_PLAYLIST_PATH_REQUESTS) { Endpoint.BROWSE },
+        listOf(Endpoint.SW_JS_DATA) + List(SYSTEM_PLAYLIST_PATH_REQUESTS) { Endpoint.BROWSE },
         { latestUploads(ChannelId(AGE_RESTRICTED_CHANNEL_ID)) },
     ),
     VIDEO_PRIVATE(
@@ -183,19 +180,24 @@ internal enum class SavedSet(
         UNPLAYABLE_VIDEO,
         { videoDetails(VideoId(PRIVATE_VIDEO_ID)) },
     ),
+    /**
+     * UNAVAILABLE, not AGE_RESTRICTED. The visionOS client's answer asks the viewer to sign in to
+     * confirm their age, and NewPipeExtractor v0.27.1 recognises an age-restricted video only by
+     * the Android client's wording, so it reports the generic ContentNotAvailableException.
+     */
     VIDEO_AGE_RESTRICTED(
-        YouTubeError.AGE_RESTRICTED,
+        YouTubeError.UNAVAILABLE,
         UNPLAYABLE_VIDEO,
         { videoDetails(VideoId(AGE_RESTRICTED_VIDEO_ID)) },
     ),
     CHANNEL_TERMINATED(
         YouTubeError.CHANNEL_CLOSED,
-        listOf(Endpoint.SW_JS, Endpoint.BROWSE),
+        listOf(Endpoint.SW_JS_DATA, Endpoint.BROWSE),
         { latestUploads(ChannelId(TERMINATED_CHANNEL_ID)) },
     ),
     CHANNEL_DELETED(
         YouTubeError.UNAVAILABLE,
-        listOf(Endpoint.SW_JS, Endpoint.BROWSE),
+        listOf(Endpoint.SW_JS_DATA, Endpoint.BROWSE),
         { latestUploads(ChannelId(DELETED_CHANNEL_ID)) },
     );
 

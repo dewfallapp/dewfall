@@ -16,7 +16,7 @@ private const val NEW_PIPE_LOGGER_INTERFACE = "org.schabi.newpipe.extractor.util
  * the logger on, and any class that implements its Logger interface. See ADR 0007.
  */
 internal class ExtractorLoggerDetector : MethodUseDetector() {
-    // Every public method of ExtractorLogger in NewPipeExtractor v0.26.5.
+    // Every public method of ExtractorLogger in NewPipeExtractor v0.27.1.
     override val methodNames: List<String> = listOf("setLogger", "d", "w", "e")
 
     override fun visitMethodUse(context: JavaContext, use: UElement, method: PsiMethod) {

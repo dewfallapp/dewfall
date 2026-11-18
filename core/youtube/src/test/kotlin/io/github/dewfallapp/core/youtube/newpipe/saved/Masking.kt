@@ -162,7 +162,7 @@ internal enum class MaskedValue {
      * of a description, bui and spc in googlevideo links, the signatures sig and lsig of
      * googlevideo links, which cover their ip parameter, a googlevideo link's id, the attestation
      * challenge, videoPlaybackUstreamerConfig, continue_action and continueAction in sign-in links,
-     * and the number at the start of sw.js.
+     * and the number at the start of sw.js, which NewPipeExtractor read before v0.27.0.
      */
     SESSION_TOKEN,
 
@@ -191,9 +191,9 @@ internal enum class MaskedValue {
     EXPERIMENT_IDS,
 
     /**
-     * The network's country, which sw.js names as the web client's gl, sw.js_data as its one string
-     * of two capital letters, and visitor data in a field of its own. It is masked wherever a
-     * country field names it, and in sw.js_data.
+     * The network's country, which sw.js_data names as its one string of two capital letters, and
+     * visitor data in a field of its own. It is masked wherever a country field names it, and in
+     * sw.js_data.
      */
     COUNTRY,
 
@@ -210,7 +210,10 @@ internal enum class MaskedValue {
     /** Data about a viewer, such as a comment and who wrote it, see [maskViewerData]. */
     VIEWER_DATA,
 
-    /** The experiment flags in sw.js, see [maskExperimentFlags]. */
+    /**
+     * The experiment flags that sw.js and the Android client's player answer held before
+     * NewPipeExtractor v0.27.0, see [maskExperimentFlags].
+     */
     EXPERIMENT_FLAGS,
 }
 
@@ -302,7 +305,7 @@ private val RULES =
             MASKED_SESSION_TOKEN,
         ),
         Rule(MaskedValue.SESSION_TOKEN, Regex("""/id/(o-[^/?&"\\\s]*)"""), MASKED_SESSION_TOKEN),
-        // The number in the comment at the start of sw.js, which changes on every fetch.
+        // The number in the comment at the start of sw.js, which changed on every fetch.
         Rule(MaskedValue.SESSION_TOKEN, Regex("""^/\*\*\s*(\d+)\s*\*/"""), MASKED_SESSION_TOKEN),
     ) +
         parameterRules(MaskedValue.EVENT_ID, "ei", MASKED_EVENT_ID) +
@@ -346,9 +349,6 @@ private val IPV6_LITERAL =
             """((?:[0-9a-f]{1,4}(?::|%3a|%253a)){2,7}(?::|%3a|%253a)?[0-9a-f]{0,4})""" +
             """(?![0-9a-f:%])"""
     )
-
-/** The network's country, as sw.js names it: the web client's gl. */
-private val NETWORK_COUNTRY = Regex(""""gl"\s*:\s*"([A-Z]{2})"""")
 
 /**
  * A string of two capital letters in sw.js_data. sw.js_data is a JSON array without names, and its
@@ -450,8 +450,7 @@ internal class RealValues(
     /** The rollout tokens that YouTube gave. */
     val rolloutTokens: Set<String> = emptySet(),
     /**
-     * The countries that YouTube placed the network in, as sw.js, sw.js_data and visitor data name
-     * them.
+     * The countries that YouTube placed the network in, as sw.js_data and visitor data name them.
      */
     val countries: Set<String> = emptySet(),
     /** The strings in data about a viewer that are long enough to look for anywhere. */
@@ -542,16 +541,12 @@ internal fun realValuesOf(exchanges: List<SavedExchange>): RealValues {
             }
         }
     }
-    val swJs =
-        exchanges.filter { Endpoint.of(it.request) == Endpoint.SW_JS }.map { it.response.body }
     val swJsData = exchanges.map { it.response.body }.filter(::isSwJsData)
     addresses += swJsData.flatMap(::addressStringsIn)
     val countries =
-        swJs.flatMap { text -> NETWORK_COUNTRY.findAll(text).map { it.groupValues[1] } } +
-            swJsData.flatMap { text ->
-                SW_JS_DATA_COUNTRY.findAll(text).map { it.groupValues[1] }
-            } +
-            visitorData.flatMap(::countriesInVisitorData)
+        swJsData.flatMap { text ->
+            SW_JS_DATA_COUNTRY.findAll(text).map { it.groupValues[1] }
+        } + visitorData.flatMap(::countriesInVisitorData)
     val viewerData = texts.map(::maskViewerData)
     // A handle can be short, and is looked for whatever its length. Other strings only from 8
     // characters, as a shorter one could match other text by chance.

@@ -54,13 +54,13 @@ class VideoDetailsReplayTest {
     }
 
     @Test
-    fun `a video's details take seven requests`() = runTest {
+    fun `a video's details take five requests`() = runTest {
         val youTube = savedYouTube()
 
         youTube.call { videoDetails(VideoId(BIG_BUCK_BUNNY_ID)) }
 
         assertEquals(SavedSet.VIDEO_BIG_BUCK_BUNNY.requests, youTube.sentRequests)
-        assertEquals(7, youTube.countedRequests)
+        assertEquals(5, youTube.countedRequests)
     }
 
     private fun TestScope.savedYouTube() =

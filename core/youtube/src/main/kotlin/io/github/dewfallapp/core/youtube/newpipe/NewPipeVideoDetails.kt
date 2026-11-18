@@ -32,9 +32,10 @@ internal class NewPipeVideoDetails(private val calls: NewPipeCalls, logger: Logg
 }
 
 /**
- * A stream extractor for the video with [videoId], with its page fetched. NewPipeExtractor v0.26.5
- * sends seven requests for that: a visitor ID and a player request for each of YouTube's Android,
- * visionOS and web clients, and one for the page's other data.
+ * A stream extractor for the video with [videoId], with its page fetched. NewPipeExtractor v0.27.1
+ * sends five requests for that: a visitor ID and a player request for each of YouTube's visionOS
+ * and web clients, and one for the page's other data. It stops after the visionOS client's two for
+ * a video that YouTube says can't be played.
  */
 internal fun fetchedStreamExtractor(videoId: VideoId, settings: RequestSettings): StreamExtractor {
     val service = ServiceList.YouTube

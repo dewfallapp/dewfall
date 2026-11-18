@@ -47,7 +47,7 @@ internal enum class FailedBecause {
     /** The call succeeded or failed when its saved set expects the other, or failed another way. */
     UNEXPECTED_RESULT,
 
-    /** The call sent other requests than its saved set lists, leaving out sw.js. */
+    /** The call sent other requests than its saved set lists, leaving out sw.js_data. */
     REQUESTS_CHANGED,
 
     /** The call succeeded, but the layer logged that it read YouTube's answer only in part. */

@@ -28,11 +28,12 @@ private val READ_TIMEOUT = 30.seconds
 /** The area of the log tag of the requests for a link's first bytes, Dewfall.FirstBytes. */
 private const val LOG_AREA = "FirstBytes"
 
-/** The YouTube client that a stream link was made for, which its `c` parameter names. */
+/**
+ * The YouTube client that a stream link was made for, which its `c` parameter names.
+ * NewPipeExtractor v0.27.1 gets every link from its visionOS client.
+ */
 internal enum class LinkClient {
-    ANDROID,
     VISIONOS,
-    IOS,
 
     /** Any other client, whose User-Agent the check doesn't know. */
     OTHER,
@@ -101,8 +102,8 @@ internal fun firstBytesClient(): OkHttpClient =
  * - It sends only HTTPS requests to googlevideo.com and its subdomains, and follows at most
  *   [MAX_REDIRECTS] redirects, each checked before it is sent.
  * - It sends the User-Agent that NewPipe's player sends for the link's client, which the link's `c`
- *   parameter names: NewPipeExtractor's own User-Agent for its Android, visionOS or iOS client. It
- *   sends nothing for a link of any other client.
+ *   parameter names: NewPipeExtractor's own User-Agent for its visionOS client. It sends nothing
+ *   for a link of any other client.
  * - It closes every answer, so OkHttp never warns about a leaked one, a warning that names the
  *   host.
  *
@@ -204,22 +205,19 @@ internal fun isGoogleVideoUrl(url: HttpUrl): Boolean =
 /** The client that [link] was made for, which its `c` parameter names. */
 internal fun clientOf(link: String): LinkClient =
     when {
-        YoutubeParsingHelper.isAndroidStreamingUrl(link) -> LinkClient.ANDROID
         YoutubeParsingHelper.isVisionOsStreamingUrl(link) -> LinkClient.VISIONOS
-        YoutubeParsingHelper.isIosStreamingUrl(link) -> LinkClient.IOS
         else -> LinkClient.OTHER
     }
 
 /**
- * The User-Agent that NewPipe v0.29.1's player sends for a link of [client], or null for a client
- * that the check doesn't know. NewPipe's player passes no localization, so NewPipeExtractor uses
- * its default, en-GB, the same one that the layer's requests use. See YoutubeHttpDataSource in
- * [NewPipe v0.29.1](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.1/app/src/main/java/org/schabi/newpipe/player/datasource/YoutubeHttpDataSource.java#L675-L689).
+ * The User-Agent that NewPipe v0.29.3's player, which uses NewPipeExtractor v0.27.1, sends for a
+ * link of [client], or null for a client that the check doesn't know. NewPipe's player passes no
+ * localization, so NewPipeExtractor uses its default, en-GB, the same one that the layer's requests
+ * use. See YoutubeHttpDataSource in
+ * [NewPipe v0.29.3](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/datasource/YoutubeHttpDataSource.java#L669-L675).
  */
 private fun userAgentOf(client: LinkClient): String? =
     when (client) {
-        LinkClient.ANDROID -> YoutubeParsingHelper.getAndroidUserAgent(null)
         LinkClient.VISIONOS -> YoutubeParsingHelper.getVisionOsUserAgent(null)
-        LinkClient.IOS -> YoutubeParsingHelper.getIosUserAgent(null)
         LinkClient.OTHER -> null
     }

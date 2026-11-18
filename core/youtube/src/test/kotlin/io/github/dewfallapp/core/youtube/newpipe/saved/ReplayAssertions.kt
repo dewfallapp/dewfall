@@ -21,12 +21,12 @@ import kotlin.time.toKotlinInstant
 private val EARLIEST_ESTIMATE_SLACK = 2.days
 
 /**
- * The number of requests that the call sent, apart from the one for sw.js. docs/architecture.md
- * counts a function's requests that way, because only the first call in a process that uses the web
- * client fetches sw.js, and every replayed call is a first call.
+ * The number of requests that the call sent, apart from the one for sw.js_data.
+ * docs/architecture.md counts a function's requests that way, because only the first call in a
+ * process that uses the web client fetches sw.js_data, and every replayed call is a first call.
  */
 internal val SavedYouTube.countedRequests: Int
-    get() = sentRequests.count { it != Endpoint.SW_JS }
+    get() = sentRequests.count { it != Endpoint.SW_JS_DATA }
 
 /** The value of this result, or a failed test if the call failed. */
 internal fun <T> YouTubeResult<T>.valueOrFail(): T =

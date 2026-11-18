@@ -169,7 +169,7 @@ class NewPipeDownloaderTest {
         val accepted =
             listOf(
                 "https://youtube.com/",
-                "https://www.youtube.com/sw.js",
+                "https://www.youtube.com/sw.js_data",
                 "https://music.youtube.com/",
                 "https://youtubei.googleapis.com/youtubei/v1/player",
             )

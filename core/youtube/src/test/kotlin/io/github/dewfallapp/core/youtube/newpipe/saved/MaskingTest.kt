@@ -20,7 +20,7 @@ private const val OTHER_TOKEN = "EgthcXotS0UtYnBLUSA-KAE"
 private const val CHANNEL_ID = "UCLA_DiR1FfKNvjuUpBHmylQ"
 private const val VISITOR_ID_URL = "https://www.youtube.com/youtubei/v1/visitor_id"
 private const val PLAYER_URL = "https://www.youtube.com/youtubei/v1/player"
-private const val SW_JS_URL = "https://www.youtube.com/sw.js"
+private const val SW_JS_DATA_URL = "https://www.youtube.com/sw.js_data"
 
 /**
  * A key in the shape of YouTube's public web key, built at run time so that the file holds nothing
@@ -417,10 +417,7 @@ class MaskingTest {
     fun `the network's country is masked in a country field, and a list of countries keeps it`() {
         val recording =
             listOf(
-                exchange(
-                    url = SW_JS_URL,
-                    responseBody = """var ytcfg={"INNERTUBE_CONTEXT":{"client":{"gl":"ZZ"}}};""",
-                ),
+                exchange(url = SW_JS_DATA_URL, responseBody = """)]}'[[["en","ZZ"]]]"""),
                 exchange(
                     responseBody =
                         """{"countryCode":"ZZ","availableCountries":["GB","ZZ"],"region":"FR"}"""
@@ -440,7 +437,7 @@ class MaskingTest {
     }
 
     @Test
-    fun `only sw_js and visitor data say which country the network is in`() {
+    fun `only sw_js_data and visitor data say which country the network is in`() {
         val echo = exchange(responseBody = """{"responseContext":{"gl":"ZZ"}}""")
 
         assertEquals(emptySet(), realValuesOf(listOf(echo)).countries)

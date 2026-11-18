@@ -19,10 +19,10 @@ import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 /**
  * The User-Agent of a request that NewPipeExtractor sends without one of its own. It sets one only
  * for the mobile clients that it pretends to be, so the web client's requests get this one, of
- * Firefox ESR on Windows, the same one that NewPipeExtractor v0.26.5's own tests send.
+ * Firefox ESR on Windows, the same one that NewPipeExtractor v0.27.1's own tests send.
  */
 private const val DEFAULT_USER_AGENT =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
 
 /** The status code that YouTube answers with when it limits an app's requests. */
 private const val TOO_MANY_REQUESTS = 429

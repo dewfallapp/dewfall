@@ -31,13 +31,14 @@ class UnavailableContentReplayTest {
     }
 
     @Test
-    fun `an age-restricted video is AGE_RESTRICTED, after two requests`() = runTest {
+    fun `an age-restricted video is UNAVAILABLE, after two requests`() = runTest {
         val youTube = savedYouTube(SavedSet.VIDEO_AGE_RESTRICTED)
 
         val result = youTube.call { videoDetails(VideoId(AGE_RESTRICTED_VIDEO_ID)) }
 
-        assertEquals(YouTubeResult.Failure(YouTubeError.AGE_RESTRICTED), result)
-        assertEquals(listOf(failedLine("VIDEO_DETAILS", YouTubeError.AGE_RESTRICTED)), lines)
+        // NewPipeExtractor v0.27.1 doesn't recognise the visionOS client's wording. See SavedSet.
+        assertEquals(YouTubeResult.Failure(YouTubeError.UNAVAILABLE), result)
+        assertEquals(listOf(failedLine("VIDEO_DETAILS", YouTubeError.UNAVAILABLE)), lines)
         assertEquals(SavedSet.VIDEO_AGE_RESTRICTED.requests, youTube.sentRequests)
         assertEquals(2, youTube.countedRequests)
     }

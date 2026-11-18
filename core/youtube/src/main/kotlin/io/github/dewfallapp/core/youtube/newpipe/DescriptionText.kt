@@ -18,9 +18,10 @@ private const val NO_BREAK_SPACE = '\u00A0'
 /** This description as plain text. */
 internal fun Description.toPlainText(): String =
     when (type) {
-        Description.HTML -> htmlDescriptionToText(content)
+        Description.Type.HTML -> htmlDescriptionToText(content)
         // Plain text, and Markdown, which YouTube doesn't send, are already text.
-        else -> content
+        Description.Type.PLAIN_TEXT,
+        Description.Type.MARKDOWN -> content
     }
 
 /**

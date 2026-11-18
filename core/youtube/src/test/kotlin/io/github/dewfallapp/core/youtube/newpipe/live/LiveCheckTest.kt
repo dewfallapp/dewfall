@@ -34,9 +34,9 @@ import kotlinx.coroutines.test.runTest
 /** A clock long before any saved link expires. */
 private val EARLY_CLOCK = fixedClock(Instant.fromEpochSeconds(0))
 
-/** The requests of a video call that YouTube stops at the Android client's answer. */
+/** The requests of a video call that YouTube stops at the visionOS client's answer. */
 private val STOPPED_VIDEO_REQUESTS =
-    listOf(Endpoint.VISITOR_ID_ON_API_HOST, Endpoint.ANDROID_PLAYER)
+    listOf(Endpoint.VISITOR_ID_ON_WEB_HOST, Endpoint.VISIONOS_PLAYER)
 
 /** A call that YouTube blocked, as it blocks video calls from GitHub's runners. */
 private val BLOCKED = failure(YouTubeError.BLOCKED)
@@ -296,7 +296,10 @@ class LiveCheckTest {
         val results =
             liveCheck(
                     replacing(SavedSet.UPLOADS_NASA) {
-                        success(it.result.valueOrFail(), listOf(Endpoint.SW_JS, Endpoint.BROWSE))
+                        success(
+                            it.result.valueOrFail(),
+                            listOf(Endpoint.SW_JS_DATA, Endpoint.BROWSE),
+                        )
                     }
                 )
                 .run()
@@ -308,7 +311,7 @@ class LiveCheckTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.LiveCheck A live call sent a request kind=UPLOADS_NASA position=1 " +
-                    "endpoint=SW_JS",
+                    "endpoint=SW_JS_DATA",
                 "WARN Dewfall.LiveCheck A live call sent a request kind=UPLOADS_NASA position=2 " +
                     "endpoint=BROWSE",
             ),
@@ -317,11 +320,11 @@ class LiveCheckTest {
     }
 
     @Test
-    fun `sw js counts as no request, wherever it comes or doesn't`() = runTest {
+    fun `sw_js_data counts as no request, wherever it comes or doesn't`() = runTest {
         val results =
             liveCheck(
                     replayCaller { _, outcome ->
-                        val requests = outcome.requests.filter { it != Endpoint.SW_JS }
+                        val requests = outcome.requests.filter { it != Endpoint.SW_JS_DATA }
                         CallOutcome(outcome.result, requests, outcome.warnings, outcome.duration)
                     }
                 )
