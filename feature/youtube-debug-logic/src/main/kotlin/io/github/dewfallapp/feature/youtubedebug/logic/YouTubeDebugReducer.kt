@@ -16,6 +16,8 @@ import io.github.dewfallapp.core.mvi.Reducer
  *   after a cancel, or for a request that a Run with other input replaced, is dropped. A Run with
  *   the same input replaces the call too, and the ViewModel cancels the old call before it starts
  *   the new one, so the old answer never arrives.
+ * - The subtitles section reads a track's lines too, one track at a time. ReadLines counts only for
+ *   a track of the listing on screen. A new Run of the tracks clears the lines.
  */
 object YouTubeDebugReducer : Reducer<YouTubeDebugState, YouTubeDebugIntent, Nothing> {
     override fun reduce(
@@ -57,8 +59,46 @@ object YouTubeDebugReducer : Reducer<YouTubeDebugState, YouTubeDebugIntent, Noth
                             }
                     )
                 }
+                is YouTubeDebugIntent.SubtitleTracksFinished -> {
+                    state.copy(
+                        subtitleTracks =
+                            state.subtitleTracks.finished(intent.videoId, intent.result) {
+                                it.toSummary(intent.videoId)
+                            }
+                    )
+                }
+                is YouTubeDebugIntent.ReadLines -> state.readingLines(intent.number)
+                YouTubeDebugIntent.CancelLines -> {
+                    state.copy(subtitleLines = state.subtitleLines.cancelled())
+                }
+                is YouTubeDebugIntent.SubtitleLinesFinished -> state.linesFinished(intent)
             }
         )
+}
+
+/** The listing of subtitle tracks on screen, or null while none is. */
+private val YouTubeDebugState.listing: SubtitleTracksSummary?
+    get() = (subtitleTracks.status as? CallStatus.Succeeded)?.summary
+
+/** Starts reading the lines of track [number] of the listing on screen, if there is one. */
+private fun YouTubeDebugState.readingLines(number: Int): YouTubeDebugState {
+    val videoId = listing?.takeIf { summary -> summary.tracks.any { it.number == number } }?.videoId
+    return videoId?.let { copy(subtitleLines = CallStatus.Running(TrackPick(it, number))) } ?: this
+}
+
+/** Shows the lines in [intent], if they are of the track that is being read. */
+private fun YouTubeDebugState.linesFinished(
+    intent: YouTubeDebugIntent.SubtitleLinesFinished
+): YouTubeDebugState {
+    val track = listing?.tracks?.firstOrNull { it.number == intent.pick.number }
+    if (subtitleLines != CallStatus.Running(intent.pick) || track == null) return this
+    return copy(
+        subtitleLines =
+            when (val result = intent.result) {
+                is YouTubeResult.Success -> CallStatus.Succeeded(result.value.toSummary(track))
+                is YouTubeResult.Failure -> CallStatus.Failed(result.error)
+            }
+    )
 }
 
 private fun YouTubeDebugState.withInput(call: DebugCall, text: String): YouTubeDebugState =
@@ -67,6 +107,7 @@ private fun YouTubeDebugState.withInput(call: DebugCall, text: String): YouTubeD
         DebugCall.VIDEO_DETAILS -> copy(videoDetails = videoDetails.copy(input = text))
         DebugCall.LATEST_UPLOADS -> copy(latestUploads = latestUploads.copy(input = text))
         DebugCall.STREAM_LINKS -> copy(streamLinks = streamLinks.copy(input = text))
+        DebugCall.SUBTITLE_TRACKS -> copy(subtitleTracks = subtitleTracks.copy(input = text))
     }
 
 private fun YouTubeDebugState.started(call: DebugCall): YouTubeDebugState =
@@ -75,6 +116,13 @@ private fun YouTubeDebugState.started(call: DebugCall): YouTubeDebugState =
         DebugCall.VIDEO_DETAILS -> copy(videoDetails = videoDetails.started(::parseVideoId))
         DebugCall.LATEST_UPLOADS -> copy(latestUploads = latestUploads.started(::parseChannelId))
         DebugCall.STREAM_LINKS -> copy(streamLinks = streamLinks.started(::parseVideoId))
+        // A new listing clears the lines of the old one.
+        DebugCall.SUBTITLE_TRACKS -> {
+            copy(
+                subtitleTracks = subtitleTracks.started(::parseVideoId),
+                subtitleLines = CallStatus.Idle,
+            )
+        }
     }
 
 private fun YouTubeDebugState.cancelled(call: DebugCall): YouTubeDebugState =
@@ -83,6 +131,7 @@ private fun YouTubeDebugState.cancelled(call: DebugCall): YouTubeDebugState =
         DebugCall.VIDEO_DETAILS -> copy(videoDetails = videoDetails.cancelled())
         DebugCall.LATEST_UPLOADS -> copy(latestUploads = latestUploads.cancelled())
         DebugCall.STREAM_LINKS -> copy(streamLinks = streamLinks.cancelled())
+        DebugCall.SUBTITLE_TRACKS -> copy(subtitleTracks = subtitleTracks.cancelled())
     }
 
 private fun parseVideoId(input: String): VideoId? = VideoId.parseOrNull(input.trim())
@@ -97,8 +146,10 @@ private fun <R, S> Section<R, S>.started(parse: (String) -> R?): Section<R, S> {
     )
 }
 
-private fun <R, S> Section<R, S>.cancelled(): Section<R, S> =
-    if (status is CallStatus.Running) copy(status = CallStatus.Cancelled) else this
+private fun <R, S> Section<R, S>.cancelled(): Section<R, S> = copy(status = status.cancelled())
+
+private fun <R, S> CallStatus<R, S>.cancelled(): CallStatus<R, S> =
+    if (this is CallStatus.Running) CallStatus.Cancelled else this
 
 /**
  * Shows the answer to [request], if the section is still running that request. [summarize] turns a

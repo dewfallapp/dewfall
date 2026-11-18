@@ -553,13 +553,14 @@ adb shell am start -n io.github.dewfallapp/io.github.dewfallapp.feature.youtubed
 
 ### What to check
 
-- Run each section with the input it starts with. All four should work, with the answers that the saved sets describe: NASA's channels for the search, Big Buck Bunny's details with a length of 10m 35s, NASA's uploads with no Shorts, and Big Buck Bunny's formats with an expiry a few hours ahead.
+- Run each section with the input it starts with. All five should work, with the answers that the saved sets describe: NASA's channels for the search, Big Buck Bunny's details with a length of 10m 35s, NASA's uploads with no Shorts, Big Buck Bunny's formats with an expiry a few hours ahead, and Tears of Steel's tracks.
+- In the Subtitles section, Tears of Steel lists written tracks, a Hebrew one among them tagged he, not iw, and at least one auto-generated English track. Read lines on a written track and on the auto-generated one. Each shows lines with plain text, no markup, and times within the film's 12:14. No auto-generated line starts with the last row of the line before it. Auto-generated lines may overlap, so their overlap count may be above 0.
 - A wrong ID, such as @NASA, shows "Not a video ID" or "Not a channel ID", and sends nothing.
 - The failure categories show as text. The IDs of the saved sets VIDEO_PRIVATE and CHANNEL_TERMINATED, in SavedSet.kt, give PRIVATE and CHANNEL_CLOSED. With the network off, every call gives NETWORK.
 - Cancel while a call runs shows Cancelled. Leaving the screen stops its calls. Neither writes a "YouTube call failed" line, because a cancelled call isn't a failure.
-- `adb logcat -d | grep ' Dewfall'` shows only constant messages with call names, categories and counts, never a search text, ID, title or URL. ADR 0007 lists what counts as user data.
+- `adb logcat -d | grep ' Dewfall'` shows only constant messages with call names, categories and counts, never a search text, ID, title, subtitle text or URL. ADR 0007 lists what counts as user data.
 - On Android 10, NewPipeExtractor runs with core library desugaring, and Animal Sniffer doesn't check NewPipeExtractor's own calls ([architecture.md](architecture.md#formatting-and-lint)). An API that Android 10 lacks shows up as NoSuchMethodError, NoClassDefFoundError, VerifyError or AbstractMethodError in `adb logcat -b crash -d`. These are errors, which the layer doesn't catch, so the app stops. A missing API that throws an exception instead shows as BROKEN, with an ERROR line in logcat.
-- The calls run from the main thread, so a request that the layer didn't move off the main thread would fail with NetworkOnMainThreadException, which shows as BROKEN. Four working calls also show that the layer is main-safe.
+- The calls run from the main thread, so a request that the layer didn't move off the main thread would fail with NetworkOnMainThreadException, which shows as BROKEN. Six working calls, the listing and the lines included, also show that the layer is main-safe.
 - The screen in light and dark theme, with dynamic color on Android 12 and later, and at a large font size, such as `adb shell settings put system font_scale 2.0`. Text wraps, and nothing sits under the system bars or the display cutout.
 
 ### Checking that release builds leave it out

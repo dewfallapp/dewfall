@@ -62,14 +62,7 @@ internal fun YouTubeDebugScreen(
                     .padding(DewfallSpacing.margin),
             verticalArrangement = Arrangement.spacedBy(DewfallSpacing.lg),
         ) {
-            Text(
-                text = stringResource(R.string.youtube_debug_title),
-                style = MaterialTheme.typography.headlineSmall,
-            )
-            Text(
-                text = stringResource(R.string.youtube_debug_intro),
-                style = MaterialTheme.typography.bodyMedium,
-            )
+            ScreenIntro()
             CallSection(
                 call = DebugCall.SEARCH,
                 title = stringResource(R.string.youtube_debug_search),
@@ -109,7 +102,44 @@ internal fun YouTubeDebugScreen(
             ) {
                 StreamLinksResult(it)
             }
+            SubtitlesSection(state = state, onIntent = onIntent)
         }
+    }
+}
+
+@Composable
+private fun ScreenIntro(modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(DewfallSpacing.lg)) {
+        Text(
+            text = stringResource(R.string.youtube_debug_title),
+            style = MaterialTheme.typography.headlineSmall,
+        )
+        Text(
+            text = stringResource(R.string.youtube_debug_intro),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+/**
+ * The subtitles section: the tracks of a video, then the lines of the track that the user picks.
+ */
+@Composable
+private fun SubtitlesSection(
+    state: YouTubeDebugState,
+    onIntent: (YouTubeDebugIntent) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    CallSection(
+        call = DebugCall.SUBTITLE_TRACKS,
+        title = stringResource(R.string.youtube_debug_subtitles),
+        inputLabel = stringResource(R.string.youtube_debug_video_id),
+        section = state.subtitleTracks,
+        onIntent = onIntent,
+        modifier = modifier,
+        invalidInputMessage = stringResource(R.string.youtube_debug_not_a_video_id),
+    ) {
+        SubtitleTracksResult(summary = it, lines = state.subtitleLines, onIntent = onIntent)
     }
 }
 
