@@ -65,16 +65,16 @@ The Gradle task `:core:youtube:liveYouTubeCheck` runs the check. Its code is in 
 
 | Kind | Passes when |
 |---|---|
-| Every saved set | The call ends as SavedSet expects, and sends the requests that the set lists, leaving out sw.js. A success logs no warning. VIDEO_BIG_BUCK_BUNNY must succeed, so any failure fails it, UNAVAILABLE included, apart from BLOCKED and NETWORK, which work as [Calls that can't be checked](#calls-that-cant-be-checked) says. |
+| Every saved set | The call ends as SavedSet expects, and sends the requests that the set lists, leaving out sw.js_data. A success logs no warning. VIDEO_BIG_BUCK_BUNNY must succeed, so any failure fails it, UNAVAILABLE included, apart from BLOCKED and NETWORK, which work as [Calls that can't be checked](#calls-that-cant-be-checked) says. |
 | SEARCH_NASA | A channel with NASA in its name, and at least one ordinary video |
 | VIDEO_BIG_BUCK_BUNNY | Its title, the Blender Foundation's channel, the length 10:35, the exact publish time, and not live |
 | UPLOADS_NASA and UPLOADS_AGE_RESTRICTED | The channel's own videos, at least one, with ChannelUploads' promises kept: no Short, no video twice, and newest first |
 | UPLOADS_JAWED | One video, "Me at the zoo", 19 seconds long |
 | The other saved sets | Only how the call ends, and its requests |
-| STREAM_LINKS_BIG_BUCK_BUNNY | The requests of video details. An audio-only and a video-only MP4 format with known lengths, a format with both, an HLS manifest, and every link HTTPS to googlevideo.com. The links work for at least another hour. An audio-only and a video-only link each answer a GET for their first KiB, with a Range header, with 206, the format's length as the total in Content-Range, and the bytes asked for. |
+| STREAM_LINKS_BIG_BUCK_BUNNY | The requests of video details. An audio-only and a video-only MP4 format with known lengths, an HLS manifest, and every link HTTPS to googlevideo.com. The links work for at least another hour. An audio-only and a video-only link each answer a GET for their first KiB, with a Range header, with 206, the format's length as the total in Content-Range, and the bytes asked for. |
 | NOTHING_CHECKED | At least one other kind wasn't skipped |
 
-- Requests are compared by their Endpoint names, not in full. The web client's version, which the check reads from sw.js on every run, changes with YouTube's releases, and visitor data and nonces change on every request, so a full comparison would fail every day. The replay tests already pin the exact requests of each NewPipeExtractor version.
+- Requests are compared by their Endpoint names, not in full. The web client's version, which the check reads from sw.js_data on every run, changes with YouTube's releases, and visitor data and nonces change on every request, so a full comparison would fail every day. The replay tests already pin the exact requests of each NewPipeExtractor version.
 - A success that logs "YouTube answer read in part" fails with READ_IN_PART. A part that NewPipeExtractor can't read is often the first sign that YouTube changed its answers.
 - The ranged GETs send the User-Agent of the client that made each link, as [Network access](architecture.md#network-access) describes.
 - Each call's duration is logged, but never fails the check.
@@ -162,7 +162,16 @@ On November 17, 2026, a probe ran the layer's calls once on a GitHub runner, ubu
 - Search, NASA's latest uploads and the age-restricted channel's latest uploads succeeded, with the usual requests.
 - Video details and stream links failed with BLOCKED after two requests. YouTube answered the Android client's player request with its "confirm you're not a bot" status, which NewPipeExtractor throws as SignInConfirmNotBotException.
 
-YouTube filters requests from data-center addresses such as GitHub's. Phones on home or mobile networks don't use those addresses, so the block affects CI only. That is why the workflow skips blocked calls, and why the run by hand, which skips nothing, checks what the runners can't reach. NewPipeExtractor v0.27.1 [asks the visionOS client first](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L834), so its update may change what the runners can reach, and the daily check will show it.
+YouTube filters requests from data-center addresses such as GitHub's. Phones on home or mobile networks don't use those addresses, so the block affects CI only. That is why the workflow skips blocked calls, and why the run by hand, which skips nothing, checks what the runners can't reach.
+
+On November 18, 2026, with NewPipeExtractor v0.27.1, the workflow ran once on this update's branch, and a probe ran video details three more times, each on another runner. Search and every channel call passed. The video calls failed in one of two ways, depending on the runner:
+
+- On two of the probe's runners, YouTube answered the visionOS client's player request with its "confirm you're not a bot" status, so the calls were BLOCKED, and the workflow skips them.
+- On the workflow's runner and on one of the probe's, YouTube answered it with HTTP 403 and an HTML page titled "Sorry...", Google's block page for networks that it suspects of automated requests. NewPipeExtractor reports an HTML answer as a ParsingException, so at the time the calls were BROKEN. The workflow failed VIDEO_BIG_BUCK_BUNNY, VIDEO_PRIVATE, VIDEO_AGE_RESTRICTED, VIDEO_NEVER_EXISTED and STREAM_LINKS_BIG_BUCK_BUNNY, and opened an issue for each, #162 to #166, which were closed because main didn't have the update.
+
+Now NewPipeDownloader turns HTTP 403 with an HTML body from YouTube's hosts into ReCaptchaException, so the layer reports the block page as BLOCKED, like the bot check ([ADR 0009](adr/0009-how-the-youtube-layer-reaches-youtube.md)). It reads only the status and the content type, never the page's text. So on the runners, the workflow skips the video kinds as RUNNER_BLOCKED, whichever of the two answers its runner gets. A run by hand fails them with RUNNER_BLOCKED instead, so a block that reaches every network still fails a run.
+
+After that change, the workflow ran once more on the update's branch on November 18, 2026 ([run 44356669712](https://github.com/dewfallapp/dewfall/actions/runs/44356669712)), on ubuntu-24.04 image version 20261116.376.1. No kind failed, and it opened no issue. VIDEO_BIG_BUCK_BUNNY and STREAM_LINKS_BIG_BUCK_BUNNY were skipped as RUNNER_BLOCKED, and every other kind passed, VIDEO_PRIVATE, VIDEO_AGE_RESTRICTED and VIDEO_NEVER_EXISTED included. That runner got the bot check, not the block page, so the run didn't reach the new rule. NewPipeDownloaderTest covers it.
 
 #### When the schedule stops
 
@@ -264,48 +273,48 @@ A saved set is one call through the layer, with every request it sent and YouTub
 
 | Set | Call | Requests | Size | What its tests check |
 |---|---|---|---|---|
-| SEARCH_NASA | Search for "nasa" | 1 | 408 KiB | Channels named after NASA, Shorts are marked, nothing is dropped |
-| VIDEO_BIG_BUCK_BUNNY | Video details of aqz-KE-bpKQ, the Blender Foundation's Big Buck Bunny | 7 | 438 KiB | Every detail, the description as plain text, and the stream links |
-| UPLOADS_NASA | Latest uploads of NASA's channel, which has a Live tab | 2 | 804 KiB | The two tabs merged in the order that ChannelUploads states, with no Shorts |
-| UPLOADS_JAWED | Latest uploads of jawed's channel, which has no Live tab | 1 | 48 KiB | Its one video, "Me at the zoo", and its relative publish time |
-| UPLOADS_AGE_RESTRICTED | Latest uploads of an age-restricted channel | 5 | 1,049 KiB | Its system playlists, read in place of its tabs |
-| VIDEO_PRIVATE | Video details of a private video | 2 | 4 KiB | PRIVATE |
-| VIDEO_AGE_RESTRICTED | Video details of an age-restricted video | 2 | 5 KiB | AGE_RESTRICTED |
-| CHANNEL_TERMINATED | Latest uploads of a channel that YouTube closed | 1 | 22 KiB | CHANNEL_CLOSED |
-| CHANNEL_DELETED | Latest uploads of a deleted channel | 1 | 21 KiB | UNAVAILABLE |
+| SEARCH_NASA | Search for "nasa" | 1 | 425 KiB | Channels named after NASA, Shorts are marked, nothing is dropped |
+| VIDEO_BIG_BUCK_BUNNY | Video details of aqz-KE-bpKQ, the Blender Foundation's Big Buck Bunny | 5 | 413 KiB | Every detail, the description as plain text, and the stream links |
+| UPLOADS_NASA | Latest uploads of NASA's channel, which has a Live tab | 2 | 841 KiB | The two tabs merged in the order that ChannelUploads states, with no Shorts |
+| UPLOADS_JAWED | Latest uploads of jawed's channel, which has no Live tab | 1 | 39 KiB | Its one video, "Me at the zoo", and its relative publish time |
+| UPLOADS_AGE_RESTRICTED | Latest uploads of an age-restricted channel | 5 | 1,122 KiB | Its system playlists, read in place of its tabs |
+| VIDEO_PRIVATE | Video details of a private video | 2 | 2 KiB | PRIVATE |
+| VIDEO_AGE_RESTRICTED | Video details of an age-restricted video | 2 | 2 KiB | UNAVAILABLE, because NewPipeExtractor v0.27.1 doesn't recognise the visionOS client's wording, as [architecture.md](architecture.md#mapping-newpipeextractors-exceptions) explains |
+| VIDEO_NEVER_EXISTED | Video details of don-t-exist, an ID that no video ever had | 2 | 2 KiB | UNAVAILABLE, for video details and stream links (#155) |
+| CHANNEL_TERMINATED | Latest uploads of a channel that YouTube closed | 1 | 12 KiB | CHANNEL_CLOSED |
+| CHANNEL_DELETED | Latest uploads of a deleted channel | 1 | 12 KiB | UNAVAILABLE |
 
-- The requests don't count sw.js, which every set that reaches the web client also fetches. See [What the tests check](#what-the-tests-check).
-- Together the sets take about 2.7 MiB, or about 230 KiB compressed. Each new recording can add up to about that much to the repository's history.
-- Video details and stream links send the same requests, so their tests share one set.
+- The requests don't count sw.js_data, which every set that reaches the web client also fetches. See [What the tests check](#what-the-tests-check).
+- Together the sets take about 2.8 MiB, or about 193 KiB compressed. Each new recording can add up to about that much to the repository's history.
+- Video details and stream links send the same requests, so their tests share one set, and so do their tests of a video that never existed.
 - The content should last: the Blender Foundation's film, NASA's channel, and "Me at the zoo", the first video on YouTube. The failures use the IDs that NewPipeExtractor's own tests use.
-- Whether YouTube treats a channel as age-restricted can depend on the country of the network that asks, as a note in NewPipeExtractor's own tests says ([YoutubeChannelExtractorTest](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeChannelExtractorTest.java#L714-L723)). The recorder checks the set's requests, so it fails if the channel's page came back without the restriction.
-- A video that never existed has no set yet. #155 adds one when it maps that case to UNAVAILABLE.
+- Whether YouTube treats a channel as age-restricted can depend on the country of the network that asks, as a note in NewPipeExtractor's own tests says ([YoutubeChannelExtractorTest](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeChannelExtractorTest.java#L714-L723)). The recorder checks the set's requests, so it fails if the channel's page came back without the restriction.
 
 ### What the tests check
 
 - Each function's result, read from a real answer, as the table says. Each test makes one call, through a SavedYouTube of its own.
-- The requests that each call sends, in order. They match the counts in [What each function sends](architecture.md#what-each-function-sends). The first call in a process that uses the web client also fetches www.youtube.com/sw.js, and every replayed call is a first call, so each one that reaches the web client fetches it too.
-- A playable stream link. A test can't play anything, so it checks what a player needs: a sound format and a picture format that play together, and a format that has both, each with a known length, and the HLS manifest, all HTTPS links to googlevideo.com. The layer keeps a format only when it is a single file with a direct link, and no link needed YouTube's player code to decode, which would have added a request. Fetching real bytes from a link is left to the live check, which [The daily YouTube check](#the-daily-youtube-check) describes.
+- The requests that each call sends, in order. They match the counts in [What each function sends](architecture.md#what-each-function-sends). The first call in a process that uses the web client also fetches www.youtube.com/sw.js_data, and every replayed call is a first call, so each one that reaches the web client fetches it too.
+- A playable stream link. A test can't play anything, so it checks what a player needs: a sound format and a picture format that play together, each with a known length, and the HLS manifest, all HTTPS links to googlevideo.com. The layer keeps a format only when it is a single file with a direct link, and no link needed YouTube's player code to decode, which would have added a request. Fetching real bytes from a link is left to the live check, which [The daily YouTube check](#the-daily-youtube-check) describes.
 - Relative publish times. See [Relative dates](#relative-dates).
 
 ### How a set is stored
 
-Each set has a folder named after it, such as video-big-buck-bunny. It holds exchanges.txt, which lists each request and its answer in order, and one file for each answer's body, named by its place and the last segment of its link, such as 07-player.json. A body stays exactly as YouTube sent it, apart from masking.
+Each set has a folder named after it, such as video-big-buck-bunny. It holds exchanges.txt, which lists each request and its answer in order, and one file for each answer's body, named by its place and the last segment of its link, such as 05-player.json. A body stays exactly as YouTube sent it, apart from masking.
 
 ```
 # Saved YouTube responses for the set VIDEO_BIG_BUCK_BUNNY.
 # Written by ./gradlew :core:youtube:recordYouTubeResponses. Don't edit it by hand.
 # Signed out, asking for the country GB and the language en-GB.
-# recorded: 2026-11-16
-# newpipe-extractor: v0.26.5
+# recorded: 2026-11-18
+# newpipe-extractor: v0.27.1
 
-> POST https://youtubei.googleapis.com/youtubei/v1/visitor_id?prettyPrint=false
+> POST https://www.youtube.com/youtubei/v1/visitor_id?prettyPrint=false
 > Accept-Language: en-GB, en;q=0.9
 > Content-Type: application/json
-> User-Agent: com.google.android.youtube/21.03.36 (Linux; U; Android 15; GB) gzip
+> User-Agent: com.google.visionos.youtube/1.04(RealityDevice17,1; U; CPU visionOS 26_6_0 like Mac OS X; GB)
 > X-Goog-Api-Format-Version: 2
 >
-> {"context":{"client":{"clientName":"ANDROID","clientVersion":"21.03.36", ...}}}
+> {"context":{"client":{"clientName":"VISIONOS","clientVersion":"1.04", ...}}}
 < 200
 < content-type: application/json; charset=UTF-8
 <
@@ -322,30 +331,30 @@ Lines that start with `>` are the request: the method and link, the headers sort
 
 SavedYouTube builds the layer over one saved set for a test. Its HTTP client, ReplayingClient, answers each request from the set in an interceptor, before OkHttp opens a connection. It goes under NewPipeDownloader, as the app's client does, so the layer's own HTTP code runs too, with its host checks.
 
-A request matches a saved one when its method, link, headers and body are the same. Only the order of the headers may differ, because NewPipeExtractor builds the Origin and Referer headers with Map.of, whose order changes from one JVM to the next ([getOriginReferrerHeaders](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L1184-L1187)). Matching exactly means that any change in NewPipeExtractor's requests fails a test.
+A request matches a saved one when its method, link, headers and body are the same. Only the order of the headers may differ, because NewPipeExtractor builds the Origin and Referer headers with Map.of, whose order changes from one JVM to the next ([getOriginReferrerHeaders](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L1138-L1141)). Matching exactly means that any change in NewPipeExtractor's requests fails a test.
 
 These parts of a request change from one run to the next. Each is made the same:
 
 | Part | Why it changes | How it stays the same |
 |---|---|---|
-| Visitor data, in three player requests | Each comes from the answer to the visitor ID request before it | The recorder gives each value the same placeholder in the answer and in the request |
+| Visitor data, in two player requests | Each comes from the answer to the visitor ID request before it | The recorder gives each value the same placeholder in the answer and in the request |
 | The playback nonce in the body, and the `t` parameter in the link | NewPipeExtractor makes them with a random generator | resetNewPipeExtractorState gives the generator a fixed seed before each call |
-| The web client's version, in a header and in the body | NewPipeExtractor reads it from sw.js once per process, and keeps it in a static field | resetNewPipeExtractorState makes it read sw.js again, so each call takes its own set's version |
+| The web client's version, in a header and in the body | NewPipeExtractor reads it from sw.js_data once per process, and keeps it in a static field | resetNewPipeExtractorState makes it read sw.js_data again, so each call takes its own set's version |
 | The order of the Origin and Referer headers | Map.of | Headers match in any order |
 | The country | It is the device's region | The recorder and the tests give NewPipeCalls a UK locale, so every request asks for GB |
 
-Before each call, resetNewPipeExtractorState resets the static state that NewPipeExtractor keeps between calls, as NewPipeExtractor's own tests do in [ensureStateless](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeTestsUtils.java#L27-L32): the client version, the random generator, the cookie consent flag, and YouTube's player code with what NewPipeExtractor decoded with it. SavedYouTube then builds a NewPipeCalls of its own, whose first call sets NewPipeExtractor up with the replaying client. NewPipeCalls' Mutex doesn't cover the reset, so the replay relies on this module's tests running one at a time, as JUnit and Gradle run them by default. If parallel test runs are ever turned on, these tests must still run alone.
+Before each call, resetNewPipeExtractorState resets the static state that NewPipeExtractor keeps between calls, as NewPipeExtractor's own tests do in [ensureStateless](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeTestsUtils.java#L27-L32): the client version, the random generator, the cookie consent flag, and YouTube's player code with what NewPipeExtractor decoded with it. SavedYouTube then builds a NewPipeCalls of its own, whose first call sets NewPipeExtractor up with the replaying client. NewPipeCalls' Mutex doesn't cover the reset, so the replay relies on this module's tests running one at a time, as JUnit and Gradle run them by default. If parallel test runs are ever turned on, these tests must still run alone.
 
 A request without a saved answer fails the test with a report. This one came from a change to the random generator's seed:
 
 ```
-No saved YouTube response matches request 2 of the saved set VIDEO_BIG_BUCK_BUNNY, recorded with NewPipeExtractor v0.26.5 on 2026-11-16. This build uses NewPipeExtractor v0.26.5.
-  POST https://youtubei.googleapis.com/youtubei/v1/reel/reel_item_watch?prettyPrint=false&t=vP8jBHsy2YDR&id=aqz-KE-bpKQ&$fields=playerResponse
+No saved YouTube response matches request 2 of the saved set VIDEO_BIG_BUCK_BUNNY, recorded with NewPipeExtractor v0.27.1 on 2026-11-18. This build uses NewPipeExtractor v0.27.1.
+  POST https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false&t=vP8jBHsy2YDR&id=aqz-KE-bpKQ
 Closest saved request: number 2.
-  Its link differs. Saved: https://youtubei.googleapis.com/youtubei/v1/reel/reel_item_watch?prettyPrint=false&t=867fZ6WKSXg3&id=aqz-KE-bpKQ&$fields=playerResponse
-  Its body differs at character 389:
-    saved: quest":{"videoId":"aqz-KE-bpKQ","cpn":"uGaaNCVq9tAJ9K8j","contentCheckOk":true,"
-    sent:  quest":{"videoId":"aqz-KE-bpKQ","cpn":"uS5Af2_C27_cOhE1","contentCheckOk":true,"
+  Its link differs. Saved: https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false&t=867fZ6WKSXg3&id=aqz-KE-bpKQ
+  Its body differs at character 413:
+    saved: false}},"videoId":"aqz-KE-bpKQ","cpn":"uGaaNCVq9tAJ9K8j","contentCheckOk":true,"
+    sent:  false}},"videoId":"aqz-KE-bpKQ","cpn":"uS5Af2_C27_cOhE1","contentCheckOk":true,"
 If NewPipeExtractor changed its requests, record the set again with ./gradlew :core:youtube:recordYouTubeResponses. See docs/testing.md#saved-youtube-responses.
 ```
 
@@ -353,7 +362,7 @@ The layer itself reports such a request as NETWORK, so SavedYouTube fails the te
 
 ### Relative dates
 
-YouTube gives most publish times in lists as relative text, such as "21 years ago". NewPipeExtractor turns the text into an instant by counting back from the clock at the moment it reads the answer, in the JVM's time zone. It truncates a time in days or longer to midnight there, and takes one more day off for years ([TimeAgoParser](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/localization/TimeAgoParser.java#L106-L115), [TimeAgoPatternsManager](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/localization/TimeAgoPatternsManager.java#L22-L24)). It takes no clock from the caller, so a saved answer gives a different instant on each day that a test runs.
+YouTube gives most publish times in lists as relative text, such as "21 years ago". NewPipeExtractor turns the text into an instant by counting back from the clock at the moment it reads the answer, in the JVM's time zone. It truncates a time in days or longer to midnight there, and takes one more day off for years ([TimeAgoParser](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/localization/TimeAgoParser.java#L106-L115), [TimeAgoPatternsManager](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/localization/TimeAgoPatternsManager.java#L22-L24)). It takes no clock from the caller, so a saved answer gives a different instant on each day that a test runs.
 
 assertAgo checks such a time against the test's own clock: the time is an estimate, and lies between the count back from just before the call, less two days, and the count back from just after it. That holds on any day and in any time zone. The test reads the amount, such as 21 years, from the saved answer, so it still passes after the set is recorded again. Exact times, such as the publish time on a video's page, are checked exactly.
 
@@ -363,22 +372,22 @@ The repository is public, so no saved file may say which machine, session or net
 
 | Value | Where YouTube puts it | What the recorder does |
 |---|---|---|
-| The machine's IP address | The `ip` parameter of googlevideo links, URL-encoded for IPv6, and `/ip/` in the link of an HLS manifest | Replaces every form of it with a documentation address, 192.0.2.1 or 2001:db8::1 |
-| Visitor data | The answer to each visitor ID request and the context of other answers, and the player request that follows. It holds a visitor ID, a time and the network's country. | Replaces each value with VISITOR_DATA_1, VISITOR_DATA_2 and so on, the same in answers and requests |
+| The machine's IP address | The `ip` parameter of googlevideo links, URL-encoded for IPv6, `/ip/` in the link of an HLS manifest, and sw.js_data, as a string of its own, written out in full for IPv6 | Replaces every form of it with a documentation address, 192.0.2.1 or 2001:db8::1 |
+| Visitor data | The answer to each visitor ID request and the context of other answers, the player request that follows, and sw.js_data, which holds it under no name. It holds a visitor ID, a time and the network's country. | Replaces each value with VISITOR_DATA_1, VISITOR_DATA_2 and so on, the same in answers and requests. In sw.js_data, each string that decodes to a visitor ID counts. |
 | The visitor ID in another encoding | The `visitor_data` tracking parameter | Replaces it with VISITOR_DATA |
 | Cookies | Set-Cookie headers on the web client's answers: YSC, VISITOR_INFO1_LIVE, VISITOR_PRIVACY_METADATA, __Secure-YNID, __Secure-YEC and __Secure-ROLLOUT_TOKEN | Keeps only the Content-Type and Location headers of an answer, and masks a cookie's value where a body repeats it |
 | The rollout token | The context of some answers | Replaces it with ROLLOUT_TOKEN, wherever it appears |
 | Event IDs | The `ei` parameter of links, the `responseId` of each answer, the tracking parameters that carry the same ID (`trackingParams`, `clickTrackingParams` and `trackingParam`), and the request IDs in the CSI tracking parameters, such as `GetPlayer_rid` | Replaces them with EVENT_ID |
-| Tokens that YouTube encrypts or hashes, so no check can see what they hold | `plid`, `vm` and `of` in playback statistics links, `redir_token` in the links of a description, `id`, `bui`, `spc` and the signatures `sig` and `lsig` in googlevideo links, which cover the `ip` parameter, the attestation challenge, `videoPlaybackUstreamerConfig`, `continue_action` and `continueAction` in sign-in links, and the number in the comment at the start of sw.js, which changes on every fetch | Replaces them with TOKEN |
+| Tokens that YouTube encrypts or hashes, so no check can see what they hold | `plid`, `vm` and `of` in playback statistics links, `redir_token` in the links of a description, `id`, `bui`, `spc` and the signatures `sig` and `lsig` in googlevideo links, which cover the `ip` parameter, the attestation challenge, `videoPlaybackUstreamerConfig`, `continue_action` and `continueAction` in sign-in links, the number in the comment at the start of sw.js, which NewPipeExtractor fetched before v0.27.0, and the value at the end of sw.js_data, before two vertical bars, which changes on every fetch | Replaces them with TOKEN |
 | The network's CDN node | The host and the `mn` parameter of googlevideo links | Replaces it with sn-masked |
 | The connection's bandwidth | The `initcwndbps` parameter | Replaces it with 0 |
 | The size of the machine's network | The `pl` parameter of googlevideo links: the length of the address prefix that a link was made for | Replaces it with 0 |
 | The experiments that YouTube put the visitor in, some of which change from one visitor to the next | The `e` tracking parameter, and `fexp` in links | Replaces them with EXPERIMENTS |
-| The network's country | sw.js, as the web client's `gl`, even though the request asks for GB, and visitor data | Replaces it with GB in `gl` and in any other country field, such as `countryCode` or `regionCode`. Lists of available countries keep it. |
-| YouTube's public API key for its web client | sw.js | Replaces it with API_KEY, because GitHub's secret scanning would flag it |
+| The network's country | sw.js_data, as its one string of two capital letters, even though the request asks for GB, and visitor data | Replaces it with GB in sw.js_data, where every string of two capital letters counts, in `gl` and in any other country field, such as `countryCode` or `regionCode`. Lists of available countries keep it. |
+| YouTube's public API key for its web client | sw.js_data | Replaces it with API_KEY, because GitHub's secret scanning would flag it |
 | The parameters of stream, ad and tracking links that nothing reads, such as `cps`, `mh`, `mm`, `ms`, `mv`, `rms` and `pcm2cms` in googlevideo links, and `ord` and `dc_rdid` in an ad link | googlevideo links, in their query and, for an HLS manifest, their path, links to ad.doubleclick.net and other ad hosts, in their query and after semicolons in their path, the playback statistics links on s.youtube.com, `/ptracking` links, and links through YouTube's `/redirect` | Replaces each value with MASKED, but those that [Links](#links) lists, and any placeholder that a rule above wrote first |
 | Data about viewers: comments, who wrote them, their handles, avatars and profile links | The comments in a video's microformat, as schema.org Comment objects, and any member whose name starts with `comment`, `teaser` or `liveChat` | Replaces each string with VIEWER_DATA and each number with 0. Only the `@type` of a schema.org object stays. Wherever else they appear, the recorder also masks every string of at least 8 characters that it found there, and every handle and channel ID, whatever its length. |
-| The experiments that YouTube put the visitor in, as flags | The EXPERIMENT_FLAGS object in sw.js, and the `experiments` and `experimentFlags` objects in the Android client's player answer | Replaces each flag's value with false, 0, an empty string, or an empty list or object. The flags' names stay. |
+| The experiments that YouTube put the visitor in, as flags | The EXPERIMENT_FLAGS object in sw.js, and the `experiments` and `experimentFlags` objects in the Android client's player answer, which NewPipeExtractor fetched before v0.27.0. No answer of v0.27.1 holds them, and the masking stays in case one does again. | Replaces each flag's value with false, 0, an empty string, or an empty list or object. The flags' names stay. |
 | Any other opaque value | Anywhere, such as entity keys, share entities, thumbnail parameters and the IDs in image links | Replaces each value that isn't kept with TOKEN_1, TOKEN_2 and so on, the same in answers and requests, or with the number alone for a value that is a number |
 
 #### Opaque values
@@ -398,7 +407,7 @@ Words don't count, such as COMPACT_VIDEO_RENDERER, YoutubeChannelV2 or GetPlayer
 
 The check looks for opaque values in every saved file, exchanges.txt included:
 
-- In a JSON body or a script, each string sits under its member's name, or under the name of the array it is in. Members' names count too, and so does text outside strings, such as a comment at the start of sw.js.
+- In a JSON body or a script, each string sits under its member's name, or under the name of the array it is in. Members' names count too, and so does text outside strings, such as a number or a comment in a script.
 - In a link, the host counts, each path segment sits under the segment before it, or the host, each query parameter under its name, and the fragment after `#` counts too. Parameters' names count. Links inside other values count, and so do the request links and the headers in exchanges.txt.
 - URL-encoded text is decoded, and so is base64, from each run of at least 6 characters that base64 can be made of, and from each of the run's first four characters, so a value that follows other text still decodes. A last character that can't make a byte is dropped, so a value that runs on into other characters decodes too. Decoded text that has its own names, such as a link, is checked by those names. Other decoded text stays under the outer key. In decoded bytes that are mostly not text, each printable run of at least 6 characters is read further.
 - Each link, parameter, decoding and the like is one step deeper. Past 8 steps, every run counts as opaque, so a value can't hide by being nested deeper.
@@ -416,33 +425,33 @@ These keep their values in a request, when no earlier answer in the set holds th
 | Kept key | Why |
 |---|---|
 | params | The parameters that pick a channel's tab, a search's filter or a playlist's view, which NewPipeExtractor sends as constants. The replay compares them. |
-| continuation | The request that NewPipeExtractor builds from a playlist's ID to read its first videos ([YoutubePlaylistExtractor](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubePlaylistExtractor.java#L103-L118)). It holds that ID and a constant, and the replay compares it. |
+| continuation | The request that NewPipeExtractor builds from a playlist's ID to read its first videos ([YoutubePlaylistExtractor](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubePlaylistExtractor.java#L103-L118)). It holds that ID and a constant, and the replay compares it. |
 | cpn | The playback nonce, which NewPipeExtractor makes from the fixed seed, so it is the same on every run. The replay compares it. |
 
 YouTube also names the tabs of a channel in its answer, with the same params that NewPipeExtractor sends for them, so these constants in NewPipeExtractor's code stay in a request even when an earlier answer holds them:
 
 | Value | Why |
 |---|---|
-| EgZ2aWRlb3PyBgQKAjoA | The params of a channel's Videos tab, which NewPipeExtractor sends for a channel's uploads ([YoutubeChannelTabExtractor](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelTabExtractor.java#L61-L62)). |
-| EgdzdHJlYW1z8gYECgJ6AA | The params of a channel's Live tab, without its URL-encoded padding, which NewPipeExtractor sends for a channel's past live streams ([YoutubeChannelTabExtractor](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelTabExtractor.java#L65-L66)). |
+| EgZ2aWRlb3PyBgQKAjoA | The params of a channel's Videos tab, which NewPipeExtractor sends for a channel's uploads ([YoutubeChannelTabExtractor](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelTabExtractor.java#L61-L62)). |
+| EgdzdHJlYW1z8gYECgJ6AA | The params of a channel's Live tab, without its URL-encoded padding, which NewPipeExtractor sends for a channel's past live streams ([YoutubeChannelTabExtractor](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeChannelTabExtractor.java#L65-L66)). |
 
 KEPT_KEYS, KEPT_REQUEST_KEYS and NEWPIPE_EXTRACTOR_VALUES in OpaqueValues.kt are the lists, with the same reasons. When the test fails, its message names each file and key, never the value, and writes (opaque key) in place of a key that may itself be opaque or real, such as a path segment or a host. Mask the value in Masking.kt. Add its key to a list only when it meets the rule above, with the reason.
 
 #### Links
 
-Stream links on googlevideo.com, links to ads and ad trackers, the links that YouTube's player reports playback to, and links through YouTube's redirect say what happened in the session, and which machine and network they were for. Their parameters are masked by default: each value becomes MASKED, unless Dewfall or NewPipeExtractor v0.26.5 reads it for the layer's calls. Links.kt holds the kept parameters, with the same reasons:
+Stream links on googlevideo.com, links to ads and ad trackers, the links that YouTube's player reports playback to, and links through YouTube's redirect say what happened in the session, and which machine and network they were for. Their parameters are masked by default: each value becomes MASKED, unless Dewfall or NewPipeExtractor v0.27.1 reads it for the layer's calls. Links.kt holds the kept parameters, with the same reasons:
 
 | Link | Kept parameter | Why |
 |---|---|---|
 | googlevideo.com | `expire` | When the link stops working. Dewfall's expiryOf in FormatMapping.kt reads it from a format's link, and from the path of an HLS manifest's link, and StreamLinksReplayTest checks it. |
-| www.youtube.com/redirect | `q` | The page that a link in a description goes to. NewPipeExtractor reads it to write the description ([getUrlFromNavigationEndpoint](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L695-L721)), and VideoDetailsReplayTest checks the description. |
+| www.youtube.com/redirect | `q` | The page that a link in a description goes to. NewPipeExtractor reads it to write the description ([getUrlFromNavigationEndpoint](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L692-L717)), and VideoDetailsReplayTest checks the description. |
 
 NewPipeExtractor reads a format's length, type and quality from the answer's fields, not from its link. Its code reads two more parameters of a googlevideo link, and both are masked, because nothing that the layer does reads them:
 
-- `c`, the client that asked for the link, only to fetch the start of a format for a DASH manifest, which Dewfall never asks for ([the patterns](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L184-L189), [getInitializationResponse](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java#L603-L652)).
-- `n`, only to decode it with YouTube's player code ([getThrottlingParameterFromStreamingUrl](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeThrottlingParameterUtils.java#L207-L221)). No saved link has one, and a link that did would need the player code, which no set fetches.
+- `c`, the client that asked for the link, only to fetch the start of a format for a DASH manifest, which Dewfall never asks for ([the patterns](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L186-L191), [getInitializationResponse](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/dashmanifestcreators/YoutubeDashManifestCreatorsUtils.java#L597-L629)).
+- `n`, only to decode it with YouTube's player code ([getThrottlingParameterFromStreamingUrl](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeThrottlingParameterUtils.java#L143-L157)). No saved link has one, and a link that did would need the player code, which no set fetches.
 
-The ad link that a recording showed, on ad.doubleclick.net, carries its parameters after semicolons in its path, among them `ord` and `dc_rdid`. Nothing reads any of them. NewPipeExtractor only recognises a link on googleads.g.doubleclick.net as an ad, when it is asked to open one ([YoutubeStreamLinkHandlerFactory](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/linkHandler/YoutubeStreamLinkHandlerFactory.java#L127-L131)).
+The ad link that a recording showed, on ad.doubleclick.net, carries its parameters after semicolons in its path, among them `ord` and `dc_rdid`. Nothing reads any of them. NewPipeExtractor only recognises a link on googleads.g.doubleclick.net as an ad, when it is asked to open one ([YoutubeStreamLinkHandlerFactory](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/linkHandler/YoutubeStreamLinkHandlerFactory.java#L126-L130)).
 
 #### Known limits
 
@@ -456,16 +465,16 @@ The recorder's check is the guarantee: it looks for every real value that it kno
 
 The recorder's check has limits of its own:
 
-- It knows the machine's address only from the `ip` parameter of stream links. If the machine reaches YouTube over both IPv4 and IPv6 in one run, an address that no link names is found only as text, by the check for any public address.
-- It knows the network's country from sw.js's `gl` and from visitor data, not from the `gl` that other answers repeat from the request.
+- It knows the machine's address only from the `ip` parameter of stream links and from the strings of sw.js_data. If the machine reaches YouTube over both IPv4 and IPv6 in one run, an address that neither a link nor sw.js_data names is found only as text, by the check for any public address.
+- It knows the network's country from sw.js_data and from visitor data, not from the `gl` that other answers repeat from the request.
 - From data about a viewer, it looks elsewhere only for strings of at least 8 characters, and for handles and channel IDs of any length: a string that is a handle, and the handle or channel ID in a link to a viewer's page, also decoded from its URL encoding. It finds a handle only where the handle ends, so a viewer's @al doesn't match a channel's @alpha. A shorter name or text is masked where the shape is known, but not looked for anywhere else, as it could match other text by chance.
 - A comment by the channel itself counts as data about a viewer too, so its name and channel ID are masked wherever they appear. If that breaks a replay test, record another video.
 
-NewPipeExtractor's own recorder masks only IPv4 addresses, and only in the bodies of answers ([RecordingDownloader](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/test/java/org/schabi/newpipe/downloader/RecordingDownloader.java#L39-L84)), so its saved answers keep IPv6 addresses, cookies and visitor data.
+NewPipeExtractor's own recorder masks only IPv4 addresses, and only in the bodies of answers ([RecordingDownloader](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/test/java/org/schabi/newpipe/downloader/RecordingDownloader.java#L39-L96)), so its saved answers keep IPv6 addresses, cookies and visitor data.
 
 The recorder records signed out: its client keeps no cookies, and the only cookie in its requests is the fixed `SOCS=CAE=` that NewPipeExtractor adds. It asks for GB and en-GB, as the tests do.
 
-The recorder keeps YouTube's answers in memory only. First it collects the real values from every set that it records: the machine's address, the session's values, the network's country and the strings in data about viewers. If no set names the address or the country, it also makes VIDEO_BIG_BUCK_BUNNY's call, whose stream links name the address and whose sw.js names the country, keeps only those values, and writes nothing of it. If they are still unknown, it writes nothing at all, because its check couldn't look for them.
+The recorder keeps YouTube's answers in memory only. First it collects the real values from every set that it records: the machine's address, the session's values, the network's country and the strings in data about viewers. If no set names the address or the country, it also makes VIDEO_BIG_BUCK_BUNNY's call, whose stream links name the address and whose sw.js_data and visitor data name the country, keeps only those values, and writes nothing of it. If they are still unknown, it writes nothing at all, because its check couldn't look for them.
 
 Then it masks each set and checks it for every real value of the run. The check decodes exactly as the check of opaque values does, with the same code: every string of a body, every link and its parameters, URL-encoded text, and base64, nested in each other, up to 8 steps deep. In every text, at every layer, it looks for:
 
@@ -486,11 +495,11 @@ Record every set with:
 ./gradlew :core:youtube:recordYouTubeResponses
 ```
 
-`-PyoutubeSets=SEARCH_NASA,UPLOADS_NASA` records only the sets it names. If none of them names the machine's address and the network's country, the recorder also makes VIDEO_BIG_BUCK_BUNNY's call to learn them, and writes nothing of it. The task sends real requests to YouTube, through the layer's own HTTP client and NewPipeDownloader, so the saved requests are the ones that the app sends, and the host allow list applies. It logs through the Logger, with ConsoleLogWriter: a line for each set that it records, with the number of requests, sw.js included, and the size, and a line for each kind of value that it masked, with how many. It never logs a value. For example:
+`-PyoutubeSets=SEARCH_NASA,UPLOADS_NASA` records only the sets it names. If none of them names the machine's address and the network's country, the recorder also makes VIDEO_BIG_BUCK_BUNNY's call to learn them, and writes nothing of it. The task sends real requests to YouTube, through the layer's own HTTP client and NewPipeDownloader, so the saved requests are the ones that the app sends, and the host allow list applies. It logs through the Logger, with ConsoleLogWriter: a line for each set that it records, with the number of requests, sw.js_data included, and the size, and a line for each kind of value that it masked, with how many. It never logs a value. For example:
 
 ```
-INFO Dewfall.Recorder Recorded a saved set set=UPLOADS_NASA requests=3 kibibytes=804
-INFO Dewfall.Recorder Masked values in a saved set set=UPLOADS_NASA value=ADDRESS count=182
+INFO Dewfall.Recorder Recorded a saved set set=UPLOADS_NASA requests=3 kibibytes=841
+INFO Dewfall.Recorder Masked values in a saved set set=UPLOADS_NASA value=ADDRESS count=183
 ```
 
 The recorder writes no set, keeps every old file, says why, and fails when a set's call ends differently than SavedSet expects, when it sends other requests, when a real value is still in the masked set, or when no answer names the machine's address or the network's country. When a call sends other requests, it logs each one, in order, by its name in the Endpoint enum, or OTHER for a request that the enum doesn't name, so SavedSet can be changed to match. Each line looks like this:
@@ -503,7 +512,7 @@ WARN Dewfall.Recorder A saved set's call sent a request set=UPLOADS_JAWED positi
 
 Record the sets again:
 
-- **When a NewPipeExtractor update changes its requests.** Renovate's pull request then fails Checks with a report like the one above. Check out Renovate's branch and record every set. If the requests changed, the recorder writes nothing and logs the requests that each call sent. Change them in SavedSet, add any new endpoint to the Endpoint enum, change the counts in the tests and in architecture.md, and record again. Then run `./gradlew :core:youtube:test`, review `git diff --stat`, and commit with a message such as "test: record saved YouTube responses again for NewPipeExtractor vX.Y.Z". Push it to Renovate's branch. Renovate then leaves the branch alone, as [Dependency updates](#dependency-updates) explains. NewPipeExtractor v0.27.0 and v0.27.1 no longer send the Android client's requests for a video's page, so their update will need this: compare onFetchPage in [v0.26.5](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L836-L871) and in [v0.27.0](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.0/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L827-L850).
+- **When a NewPipeExtractor update changes its requests.** Renovate's pull request then fails Checks with a report like the one above. Check out Renovate's branch and record every set. If the requests changed, the recorder writes nothing and logs the requests that each call sent. Change them in SavedSet, add any new endpoint to the Endpoint enum, change the counts in the tests and in architecture.md, and record again. Then run `./gradlew :core:youtube:test`, review `git diff --stat`, and commit with a message such as "test: record saved YouTube responses again for NewPipeExtractor vX.Y.Z". Push it to Renovate's branch. Renovate then leaves the branch alone, as [Dependency updates](#dependency-updates) explains. When the update also changes what YouTube's answers hold, as v0.27.1's sw.js_data did, check that the masking still finds every real value before you record: a value with a shape or a place that no rule knows yet can pass every check.
 - **After any other NewPipeExtractor update,** so that the version the app ships reads the saved answers.
 - **When the live check shows that YouTube changed its answers,** such as with REQUESTS_CHANGED or READ_IN_PART. See [The daily YouTube check](#the-daily-youtube-check).
 
