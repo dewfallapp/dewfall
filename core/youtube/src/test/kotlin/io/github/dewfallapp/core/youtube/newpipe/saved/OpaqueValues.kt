@@ -45,7 +45,7 @@ internal val KEPT_REQUEST_KEYS: Map<String, String> =
 
 /** NewPipeExtractor's source at the version that recorded the sets, for the reasons below. */
 internal const val NEWPIPE_EXTRACTOR_SOURCE =
-    "https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.26.5/extractor/src/main/java/org/" +
+    "https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/" +
         "schabi/newpipe/extractor/services/youtube"
 
 /**

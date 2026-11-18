@@ -1,18 +1,18 @@
 # Saved YouTube responses for the set CHANNEL_TERMINATED.
 # Written by ./gradlew :core:youtube:recordYouTubeResponses. Don't edit it by hand.
 # Signed out, asking for the country GB and the language en-GB.
-# recorded: 2026-11-16
-# newpipe-extractor: v0.26.5
+# recorded: 2026-11-18
+# newpipe-extractor: v0.27.1
 
-> GET https://www.youtube.com/sw.js
+> GET https://www.youtube.com/sw.js_data
 > Accept-Language: en-GB, en;q=0.9
 > Origin: https://www.youtube.com
 > Referer: https://www.youtube.com
-> User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0
+> User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0
 < 200
-< content-type: text/javascript; charset=utf-8
+< content-type: application/json; charset=utf-8
 <
-< @01-sw.js
+< @01-sw.js_data
 
 > POST https://www.youtube.com/youtubei/v1/browse?prettyPrint=false
 > Accept-Language: en-GB, en;q=0.9
@@ -20,7 +20,7 @@
 > Cookie: SOCS=CAE=
 > Origin: https://www.youtube.com
 > Referer: https://www.youtube.com
-> User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0
+> User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0
 > X-YouTube-Client-Name: 1
 > X-YouTube-Client-Version: 2.20261116.00.00
 >

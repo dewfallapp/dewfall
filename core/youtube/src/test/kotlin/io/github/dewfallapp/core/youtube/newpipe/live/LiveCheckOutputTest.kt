@@ -32,7 +32,7 @@ private const val ADDRESS = "203.0.113.7"
 
 /** A made-up stream link that holds both. */
 private const val LINK =
-    "https://rr1---sn-$SENTINEL.googlevideo.com/videoplayback?ip=$ADDRESS&id=$SENTINEL&c=ANDROID"
+    "https://rr1---sn-$SENTINEL.googlevideo.com/videoplayback?ip=$ADDRESS&id=$SENTINEL&c=VISIONOS"
 
 /** The clock of the check, long before the made-up links expire. */
 private val CLOCK: Clock =

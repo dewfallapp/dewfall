@@ -25,7 +25,7 @@ internal val KEPT_REDIRECT_LINK_PARAMETERS: Map<String, String> =
         "q" to
             "The page that a link in a description goes to. NewPipeExtractor reads it to write " +
                 "the description " +
-                "($NEWPIPE_EXTRACTOR_SOURCE/YoutubeParsingHelper.java#L695-L721), and " +
+                "($NEWPIPE_EXTRACTOR_SOURCE/YoutubeParsingHelper.java#L692-L717), and " +
                 "VideoDetailsReplayTest checks the description."
     )
 

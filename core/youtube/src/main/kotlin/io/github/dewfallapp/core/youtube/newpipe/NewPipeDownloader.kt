@@ -9,6 +9,7 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.schabi.newpipe.extractor.downloader.Downloader
@@ -19,13 +20,20 @@ import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 /**
  * The User-Agent of a request that NewPipeExtractor sends without one of its own. It sets one only
  * for the mobile clients that it pretends to be, so the web client's requests get this one, of
- * Firefox ESR on Windows, the same one that NewPipeExtractor v0.26.5's own tests send.
+ * Firefox ESR on Windows, the same one that NewPipeExtractor v0.27.1's own tests send.
  */
 private const val DEFAULT_USER_AGENT =
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
 
 /** The status code that YouTube answers with when it limits an app's requests. */
 private const val TOO_MANY_REQUESTS = 429
+
+/**
+ * The status code of Google's block page, which YouTube's hosts send instead of an answer to a
+ * network that Google suspects of automated requests. YouTube's API answers in JSON, so an HTML
+ * answer with this code from YouTube's hosts is the block page.
+ */
+private const val BLOCK_PAGE_STATUS = 403
 
 /** How long a request waits for the next bytes of an answer, as in NewPipeExtractor's tests. */
 private val READ_TIMEOUT = 30.seconds
@@ -70,8 +78,9 @@ internal class HostNotAllowedException :
  * is usually [youTubeHttpClient].
  * - It sends only HTTPS requests to YouTube's hosts, and throws [HostNotAllowedException] for any
  *   other link without sending anything.
- * - HTTP 429, and a redirect to Google's captcha page, throw ReCaptchaException. The client follows
- *   no redirects, so any other answer, a redirect included, goes back to NewPipeExtractor as it is.
+ * - HTTP 429, a redirect to Google's captcha page, and HTTP 403 with an HTML body, Google's block
+ *   page, throw ReCaptchaException. The client follows no redirects, so any other answer, a
+ *   redirect included, goes back to NewPipeExtractor as it is.
  * - Interrupting the thread that waits for an answer cancels the request and throws
  *   InterruptedIOException. The thread stays interrupted, so NewPipeExtractor's next request stops
  *   before it is sent. NewPipeCalls interrupts the thread when the calling coroutine is cancelled.
@@ -156,11 +165,21 @@ private class AnswerReader(private val answer: CompletableFuture<Response>) : Ca
 
 /** This answer for NewPipeExtractor, or ReCaptchaException if YouTube refused to answer. */
 private fun okhttp3.Response.toNewPipeResponse(): Response {
-    if (code == TOO_MANY_REQUESTS || isRedirectToCaptcha()) {
-        // The layer never shows the captcha, so the exception doesn't carry its link.
-        throw ReCaptchaException("YouTube asked for a captcha", "")
+    if (code == TOO_MANY_REQUESTS || isRedirectToCaptcha() || isBlockPage()) {
+        // The layer never shows the captcha or the block page, so the exception carries neither
+        // a link nor a body.
+        throw ReCaptchaException("YouTube refused to answer", "")
     }
     return Response(code, message, headers.toMultimap(), body.string(), request.url.toString())
+}
+
+/**
+ * Whether this answer is Google's block page: [BLOCK_PAGE_STATUS] with an HTML body. Only the
+ * status and the content type count, never the page's text.
+ */
+private fun okhttp3.Response.isBlockPage(): Boolean {
+    val contentType = header("Content-Type")?.toMediaTypeOrNull()
+    return code == BLOCK_PAGE_STATUS && contentType?.type == "text" && contentType.subtype == "html"
 }
 
 /** Whether this answer sends the app on to Google's captcha page. */

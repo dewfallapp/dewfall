@@ -8,7 +8,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private const val PLAYER_URL = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false"
-private const val SW_JS_URL = "https://www.youtube.com/sw.js"
+private const val SW_JS_DATA_URL = "https://www.youtube.com/sw.js_data"
 
 class SavedExchangesTest {
     private val content =
@@ -20,14 +20,14 @@ class SavedExchangesTest {
                     SavedExchange(
                         SavedRequest(
                             "GET",
-                            SW_JS_URL,
+                            SW_JS_DATA_URL,
                             listOf(Header("Referer", "https://www.youtube.com")),
                             body = null,
                         ),
                         SavedResponse(
                             200,
-                            listOf(Header(CONTENT_TYPE, "text/javascript")),
-                            "var ytcfg = {};\r\nself.x = 1;\n",
+                            listOf(Header(CONTENT_TYPE, "application/json")),
+                            ")]}'\r\n[[\"x\",null]]\n",
                         ),
                     ),
                     SavedExchange(
@@ -72,7 +72,7 @@ class SavedExchangesTest {
     fun `each body has a file named by its place and its link`() {
         val files = formatSavedSet(SavedSet.SEARCH_NASA, content)
 
-        assertEquals(setOf(EXCHANGES_FILE, "01-sw.js", "02-player.json"), files.keys)
+        assertEquals(setOf(EXCHANGES_FILE, "01-sw.js_data", "02-player.json"), files.keys)
         assertEquals(content.exchanges[1].response.body, files.getValue("02-player.json"))
     }
 
@@ -109,7 +109,7 @@ class SavedExchangesTest {
     @Test
     fun `the values of one header must keep their order`() {
         fun request(vararg values: String) =
-            SavedRequest("GET", SW_JS_URL, values.map { Header("Accept", it) }, body = null)
+            SavedRequest("GET", SW_JS_DATA_URL, values.map { Header("Accept", it) }, body = null)
 
         assertFalse(request("a", "b").matches(request("b", "a")))
     }

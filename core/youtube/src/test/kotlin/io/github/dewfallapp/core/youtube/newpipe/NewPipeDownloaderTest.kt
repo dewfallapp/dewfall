@@ -13,6 +13,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import okhttp3.Call
 import okhttp3.OkHttpClient
@@ -23,6 +24,9 @@ import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 
 private const val SEARCH_URL = "https://www.youtube.com/youtubei/v1/search?prettyPrint=false"
+
+/** A made-up page in the place of Google's block page. Only its status and type count. */
+private const val BLOCK_PAGE = "<html><body>A made-up block page</body></html>"
 
 /** How long a test waits for another thread before it fails. */
 private const val WAIT_SECONDS = 5L
@@ -125,6 +129,76 @@ class NewPipeDownloaderTest {
     }
 
     @Test
+    fun `HTTP 403 with an HTML body, Google's block page, throws ReCaptchaException`() {
+        val downloader =
+            NewPipeDownloader(
+                clientAnswering {
+                    answer(it, code = 403, body = BLOCK_PAGE, contentType = "text/html")
+                }
+            )
+
+        assertFailsWith<ReCaptchaException> {
+            downloader.execute(Request.newBuilder().get(SEARCH_URL).build())
+        }
+    }
+
+    @Test
+    fun `the block page's exception holds no link or body`() {
+        val downloader =
+            NewPipeDownloader(
+                clientAnswering {
+                    answer(
+                        it,
+                        code = 403,
+                        body = BLOCK_PAGE,
+                        contentType = "text/html; charset=utf-8",
+                    )
+                }
+            )
+
+        val thrown =
+            assertFailsWith<ReCaptchaException> {
+                downloader.execute(Request.newBuilder().get(SEARCH_URL).build())
+            }
+
+        assertEquals("", thrown.url)
+        assertNull(thrown.cause)
+        val message = thrown.message.orEmpty()
+        for (part in listOf("youtube.com", "search", "<html", "made-up")) {
+            assertFalse(message.contains(part), message)
+        }
+    }
+
+    @Test
+    fun `HTTP 403 with a JSON body comes back as it is`() {
+        val body = """{"error":{"code":403,"status":"PERMISSION_DENIED"}}"""
+        val downloader =
+            NewPipeDownloader(
+                clientAnswering {
+                    answer(it, code = 403, body = body, contentType = "application/json")
+                }
+            )
+
+        val response = downloader.execute(Request.newBuilder().get(SEARCH_URL).build())
+
+        assertEquals(403, response.responseCode())
+        assertEquals(body, response.responseBody())
+    }
+
+    @Test
+    fun `HTTP 200 with an HTML body comes back as it is`() {
+        val downloader =
+            NewPipeDownloader(
+                clientAnswering { answer(it, body = BLOCK_PAGE, contentType = "text/html") }
+            )
+
+        val response = downloader.execute(Request.newBuilder().get(SEARCH_URL).build())
+
+        assertEquals(200, response.responseCode())
+        assertEquals(BLOCK_PAGE, response.responseBody())
+    }
+
+    @Test
     fun `another redirect comes back as it is`() {
         val downloader =
             NewPipeDownloader(
@@ -169,7 +243,7 @@ class NewPipeDownloaderTest {
         val accepted =
             listOf(
                 "https://youtube.com/",
-                "https://www.youtube.com/sw.js",
+                "https://www.youtube.com/sw.js_data",
                 "https://music.youtube.com/",
                 "https://youtubei.googleapis.com/youtubei/v1/player",
             )
@@ -269,14 +343,18 @@ class NewPipeDownloaderTest {
         request: okhttp3.Request,
         code: Int = 200,
         body: String = "{}",
-    ): okhttp3.Response =
-        okhttp3.Response.Builder()
-            .request(request)
-            .protocol(Protocol.HTTP_1_1)
-            .code(code)
-            .message("Message")
-            .body(body.toResponseBody())
-            .build()
+        contentType: String? = null,
+    ): okhttp3.Response {
+        val builder =
+            okhttp3.Response.Builder()
+                .request(request)
+                .protocol(Protocol.HTTP_1_1)
+                .code(code)
+                .message("Message")
+                .body(body.toResponseBody())
+        if (contentType != null) builder.header("Content-Type", contentType)
+        return builder.build()
+    }
 
     private companion object {
         /** How often the slow fake server checks whether its request was cancelled. */

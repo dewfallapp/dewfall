@@ -12,9 +12,9 @@ import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 
-/** A made-up link of YouTube's Android client. */
-private const val ANDROID_LINK =
-    "https://rr1---sn-test.googlevideo.com/videoplayback?itag=140&c=ANDROID"
+/** A made-up link of YouTube's visionOS client, the one that every link comes from. */
+private const val VISIONOS_LINK =
+    "https://rr1---sn-test.googlevideo.com/videoplayback?itag=140&c=VISIONOS"
 
 /** The length of the made-up format, in bytes. */
 private const val LENGTH = 5000L
@@ -25,48 +25,35 @@ class FirstBytesTest {
 
     @Test
     fun `a 206 with the format's length as the total is playable`() {
-        val result = firstBytes { partial(it) }.fetch(ANDROID_LINK, LENGTH)
+        val result = firstBytes { partial(it) }.fetch(VISIONOS_LINK, LENGTH)
 
         assertEquals(FirstBytesAnswer.PLAYABLE, result.answer)
-        assertEquals(LinkClient.ANDROID, result.client)
+        assertEquals(LinkClient.VISIONOS, result.client)
         assertEquals(206, result.status)
         val request = sent.single()
         assertEquals("GET", request.method)
-        assertEquals(ANDROID_LINK, request.url.toString())
+        assertEquals(VISIONOS_LINK, request.url.toString())
         assertEquals("bytes=0-1023", request.header("Range"))
-        assertEquals(YoutubeParsingHelper.getAndroidUserAgent(null), request.header("User-Agent"))
+        assertEquals(YoutubeParsingHelper.getVisionOsUserAgent(null), request.header("User-Agent"))
         assertEquals(emptyList(), lines)
     }
 
     @Test
-    fun `a link of the visionOS or iOS client gets that client's User-Agent`() {
-        val visionOs = firstBytes { partial(it) }.fetch(link(client = "VISIONOS"), LENGTH)
-        val ios = firstBytes { partial(it) }.fetch(link(client = "IOS"), LENGTH)
-
-        assertEquals(LinkClient.VISIONOS, visionOs.client)
-        assertEquals(LinkClient.IOS, ios.client)
-        assertEquals(
-            listOf(
-                YoutubeParsingHelper.getVisionOsUserAgent(null),
-                YoutubeParsingHelper.getIosUserAgent(null),
-            ),
-            sent.map { it.header("User-Agent") },
-        )
-    }
-
-    @Test
     fun `a link of another client is refused, and nothing is sent`() {
-        val result = firstBytes { partial(it) }.fetch(link(client = "WEB"), LENGTH)
+        // The Android and iOS clients made links until NewPipeExtractor v0.27.0 removed them.
+        for (client in listOf("WEB", "ANDROID", "IOS")) {
+            val result = firstBytes { partial(it) }.fetch(link(client = client), LENGTH)
 
-        assertEquals(FirstBytesAnswer.UNKNOWN_CLIENT, result.answer)
-        assertEquals(LinkClient.OTHER, result.client)
+            assertEquals(FirstBytesAnswer.UNKNOWN_CLIENT, result.answer, client)
+            assertEquals(LinkClient.OTHER, result.client, client)
+        }
         assertEquals(emptyList(), sent)
     }
 
     @Test
     fun `any status code but 206 is not playable, and names the code`() {
         for (code in listOf(200, 403, 404)) {
-            val result = firstBytes { answer(it, code) }.fetch(ANDROID_LINK, LENGTH)
+            val result = firstBytes { answer(it, code) }.fetch(VISIONOS_LINK, LENGTH)
 
             assertEquals(FirstBytesAnswer.WRONG_STATUS, result.answer)
             assertEquals(code, result.status)
@@ -75,9 +62,9 @@ class FirstBytesTest {
 
     @Test
     fun `a total length other than the format's is WRONG_LENGTH`() {
-        val wrongTotal = firstBytes { partial(it, total = "4999") }.fetch(ANDROID_LINK, LENGTH)
-        val unknownTotal = firstBytes { partial(it, total = "*") }.fetch(ANDROID_LINK, LENGTH)
-        val noRange = firstBytes { answer(it, 206, ByteArray(1024)) }.fetch(ANDROID_LINK, LENGTH)
+        val wrongTotal = firstBytes { partial(it, total = "4999") }.fetch(VISIONOS_LINK, LENGTH)
+        val unknownTotal = firstBytes { partial(it, total = "*") }.fetch(VISIONOS_LINK, LENGTH)
+        val noRange = firstBytes { answer(it, 206, ByteArray(1024)) }.fetch(VISIONOS_LINK, LENGTH)
 
         assertEquals(FirstBytesAnswer.WRONG_LENGTH, wrongTotal.answer)
         assertEquals(FirstBytesAnswer.WRONG_LENGTH, unknownTotal.answer)
@@ -86,14 +73,17 @@ class FirstBytesTest {
 
     @Test
     fun `fewer bytes than asked for is SHORT_BODY`() {
-        val result = firstBytes { partial(it, bytes = 100) }.fetch(ANDROID_LINK, LENGTH)
+        val result = firstBytes { partial(it, bytes = 100) }.fetch(VISIONOS_LINK, LENGTH)
 
         assertEquals(FirstBytesAnswer.SHORT_BODY, result.answer)
     }
 
     @Test
     fun `a file shorter than a KiB is playable when all of it comes back`() {
-        val result = firstBytes { partial(it, bytes = 100, total = "100") }.fetch(ANDROID_LINK, 100)
+        val result = firstBytes {
+            partial(it, bytes = 100, total = "100")
+        }
+            .fetch(VISIONOS_LINK, 100)
 
         assertEquals(FirstBytesAnswer.PLAYABLE, result.answer)
     }
@@ -102,12 +92,12 @@ class FirstBytesTest {
     fun `a redirect to googlevideo com is followed with the same headers`() {
         val other = link(host = "rr2---sn-other.googlevideo.com")
         val result = firstBytes {
-            if (it.url.toString() == ANDROID_LINK) redirect(it, other) else partial(it)
+            if (it.url.toString() == VISIONOS_LINK) redirect(it, other) else partial(it)
         }
-            .fetch(ANDROID_LINK, LENGTH)
+            .fetch(VISIONOS_LINK, LENGTH)
 
         assertEquals(FirstBytesAnswer.PLAYABLE, result.answer)
-        assertEquals(listOf(ANDROID_LINK, other), sent.map { it.url.toString() })
+        assertEquals(listOf(VISIONOS_LINK, other), sent.map { it.url.toString() })
         assertEquals(1, sent.map { it.header("User-Agent") }.toSet().size)
         assertEquals(listOf("bytes=0-1023", "bytes=0-1023"), sent.map { it.header("Range") })
     }
@@ -115,17 +105,17 @@ class FirstBytesTest {
     @Test
     fun `a redirect to another host is refused without sending anything there`() {
         val result = firstBytes {
-            redirect(it, "https://example.com/videoplayback?c=ANDROID")
+            redirect(it, "https://example.com/videoplayback?c=VISIONOS")
         }
-            .fetch(ANDROID_LINK, LENGTH)
+            .fetch(VISIONOS_LINK, LENGTH)
 
         assertEquals(FirstBytesAnswer.HOST_NOT_ALLOWED, result.answer)
-        assertEquals(listOf(ANDROID_LINK), sent.map { it.url.toString() })
+        assertEquals(listOf(VISIONOS_LINK), sent.map { it.url.toString() })
     }
 
     @Test
     fun `a redirect without a Location header is WRONG_STATUS`() {
-        val result = firstBytes { answer(it, 302) }.fetch(ANDROID_LINK, LENGTH)
+        val result = firstBytes { answer(it, 302) }.fetch(VISIONOS_LINK, LENGTH)
 
         assertEquals(FirstBytesAnswer.WRONG_STATUS, result.answer)
         assertEquals(302, result.status)
@@ -135,10 +125,10 @@ class FirstBytesTest {
     fun `a link that isn't HTTPS to googlevideo com is refused, and nothing is sent`() {
         val links =
             listOf(
-                ANDROID_LINK.replace("https://", "http://"),
+                VISIONOS_LINK.replace("https://", "http://"),
                 link(host = "googlevideo.com.example.com"),
                 link(host = "notgooglevideo.com"),
-                "not a link&c=ANDROID",
+                "not a link&c=VISIONOS",
             )
 
         for (link in links) {
@@ -156,7 +146,7 @@ class FirstBytesTest {
         val result = firstBytes {
             redirect(it, link(host = "rr${++hop}---sn-hop.googlevideo.com"))
         }
-            .fetch(ANDROID_LINK, LENGTH)
+            .fetch(VISIONOS_LINK, LENGTH)
 
         assertEquals(FirstBytesAnswer.TOO_MANY_REDIRECTS, result.answer)
         assertEquals(302, result.status)
@@ -167,7 +157,7 @@ class FirstBytesTest {
     @Test
     fun `a request that fails is NETWORK, and the log line holds no message`() {
         val message = "Failed to connect to rr1---sn-test.googlevideo.com/203.0.113.7"
-        val result = firstBytes { throw IOException(message) }.fetch(ANDROID_LINK, LENGTH)
+        val result = firstBytes { throw IOException(message) }.fetch(VISIONOS_LINK, LENGTH)
 
         assertEquals(FirstBytesAnswer.NETWORK, result.answer)
         assertEquals(
@@ -191,7 +181,7 @@ class FirstBytesTest {
 }
 
 /** A made-up link on [host] of the YouTube client [client]. */
-private fun link(host: String = "rr1---sn-test.googlevideo.com", client: String = "ANDROID") =
+private fun link(host: String = "rr1---sn-test.googlevideo.com", client: String = "VISIONOS") =
     "https://$host/videoplayback?itag=140&c=$client"
 
 /** A 206 answer to [request] with [bytes] bytes of a file whose total length is [total]. */

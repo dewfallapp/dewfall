@@ -36,13 +36,13 @@ junit4 = "4.13.2"
 kotlinxSerialization = "1.11.0"
 # NewPipeExtractor's releases are only on JitPack, so settings.gradle.kts adds JitPack for
 # TeamNewPipe's group alone. See docs/architecture.md#build-settings.
-newpipeExtractor = "v0.26.5"
+newpipeExtractor = "v0.27.1"
 okhttp = "5.5.0"
 # The YouTube layer turns video descriptions, which NewPipeExtractor gives as HTML, into plain
-# text with jsoup. NewPipeExtractor already ships it, so this started at the version that
-# NewPipeExtractor v0.26.5 uses. Renovate updates it like any other dependency, and Gradle picks
-# the higher version when this one and NewPipeExtractor's differ.
-jsoup = "1.23.2"
+# text with jsoup. NewPipeExtractor already ships it, so this is at least the version that
+# NewPipeExtractor uses, 1.24.1 for v0.27.1. Renovate updates it like any other dependency, and
+# Gradle picks the higher version when this one and NewPipeExtractor's differ.
+jsoup = "1.24.1"
 
 [libraries]
 desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugarJdkLibsNio" }

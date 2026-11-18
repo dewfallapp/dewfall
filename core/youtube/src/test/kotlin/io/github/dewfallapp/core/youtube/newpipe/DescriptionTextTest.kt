@@ -61,15 +61,16 @@ class DescriptionTextTest {
     }
 
     @Test
-    fun `a plain text description stays as it is`() {
+    fun `a plain text or Markdown description stays as it is`() {
         assertEquals(
             "a <b> &amp; c",
-            Description("a <b> &amp; c", Description.PLAIN_TEXT).toPlainText(),
+            Description("a <b> &amp; c", Description.Type.PLAIN_TEXT).toPlainText(),
         )
+        assertEquals("a **b**", Description("a **b**", Description.Type.MARKDOWN).toPlainText())
     }
 
     @Test
     fun `an HTML description becomes plain text`() {
-        assertEquals("a\nb", Description("a<br>b", Description.HTML).toPlainText())
+        assertEquals("a\nb", Description("a<br>b", Description.Type.HTML).toPlainText())
     }
 }
