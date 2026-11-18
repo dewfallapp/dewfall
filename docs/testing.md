@@ -180,7 +180,7 @@ The three subtitle kinds list a video's tracks first, which sends the player req
 
 #### When the schedule stops
 
-In a public repository, GitHub turns off scheduled workflows when the repository has had no activity for 60 days ([Disabling and enabling a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows)). A turned-off workflow opens no issues, so a quiet issue list doesn't mean the check passes. Look at the date of its last run, especially before a release. To turn it back on, run `gh workflow enable daily-youtube-check.yml`, then start a run. #39 adds this to the playbook in [breakage.md](breakage.md).
+In a public repository, GitHub turns off scheduled workflows when the repository has had no activity for 60 days ([Disabling and enabling a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows)). A turned-off workflow opens no issues, so a quiet issue list doesn't mean the check passes. Look at the date of its last run, especially before a release. To turn it back on, run `gh workflow enable daily-youtube-check.yml`, then start a run. [breakage.md](breakage.md#when-the-schedule-stops) has the steps.
 
 ### Dependency updates
 
