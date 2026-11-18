@@ -10,6 +10,7 @@ import io.github.dewfallapp.core.youtube.ChannelUploadsRemoteDataSource
 import io.github.dewfallapp.core.youtube.NewPipeYouTube
 import io.github.dewfallapp.core.youtube.SearchRemoteDataSource
 import io.github.dewfallapp.core.youtube.StreamLinksRemoteDataSource
+import io.github.dewfallapp.core.youtube.SubtitlesRemoteDataSource
 import io.github.dewfallapp.core.youtube.VideoDetailsRemoteDataSource
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,8 @@ internal interface YouTubeModule {
     @Binds fun bindChannelUploads(youTube: NewPipeYouTube): ChannelUploadsRemoteDataSource
 
     @Binds fun bindStreamLinks(youTube: NewPipeYouTube): StreamLinksRemoteDataSource
+
+    @Binds fun bindSubtitles(youTube: NewPipeYouTube): SubtitlesRemoteDataSource
 
     companion object {
         @Provides

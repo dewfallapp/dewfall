@@ -36,7 +36,8 @@ private val newPipeExtractorLock = Mutex()
  * - The first call sets NewPipeExtractor up with [downloader] and British English.
  * - Each call runs its blocking work on [dispatcher], so it is safe to call from the main thread.
  * - One call runs at a time, across every NewPipeCalls. Every call reads or writes
- *   NewPipeExtractor's static caches, which have no locks.
+ *   NewPipeExtractor's static caches, which have no locks. A download that only sends its own
+ *   requests through the downloader, [runDownload], touches none of them, so it doesn't wait.
  * - A failure comes back as [YouTubeResult.Failure], and is logged once, with the call and the
  *   category. Cancelling the calling coroutine cancels the request in progress, and the call then
  *   throws CancellationException, the only exception that it throws.
@@ -62,9 +63,8 @@ internal class NewPipeCalls(
      * Runs [block], which calls NewPipeExtractor and turns its answer into Dewfall's types. The
      * block gets the language and country to ask YouTube for, and may block its thread.
      */
-    @Suppress("TooGenericExceptionCaught")
     suspend fun <T> run(call: YouTubeCall, block: (RequestSettings) -> T): YouTubeResult<T> =
-        try {
+        mapFailures(call) {
             newPipeExtractorLock.withLock {
                 runInterruptible(dispatcher) {
                     setUp.value
@@ -75,9 +75,31 @@ internal class NewPipeCalls(
                     // Setting it here, on the thread that runs the block and under the lock, makes
                     // their requests name the call's country too.
                     NewPipe.setPreferredContentCountry(settings.contentCountry)
-                    YouTubeResult.Success(block(settings))
+                    block(settings)
                 }
             }
+        }
+
+    /**
+     * Runs [block], which sends its own requests through the layer's downloader, with its host
+     * checks, and calls no NewPipeExtractor code that reads or writes NewPipeExtractor's static
+     * state. So it doesn't wait for NewPipeExtractor's lock, and NewPipeExtractor isn't set up for
+     * it. It keeps the other rules of [run]: it runs on the dispatcher, a cancelled call throws
+     * CancellationException, and a failure is logged once and comes back as its category. The block
+     * may block its thread. Subtitle lines are read this way, as
+     * docs/architecture.md#how-a-call-runs explains.
+     */
+    suspend fun <T> runDownload(call: YouTubeCall, block: (Downloader) -> T): YouTubeResult<T> =
+        mapFailures(call) { runInterruptible(dispatcher) { block(downloader) } }
+
+    /** The value that [work] returns as a Success, or its failure as the call's category. */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun <T> mapFailures(
+        call: YouTubeCall,
+        work: suspend () -> T,
+    ): YouTubeResult<T> =
+        try {
+            YouTubeResult.Success(work())
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
