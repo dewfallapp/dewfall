@@ -61,7 +61,7 @@ gh workflow run daily-youtube-check.yml
 
 #### What it checks
 
-The Gradle task `:core:youtube:liveYouTubeCheck` runs the check. Its code is in the `newpipe.live` package of `:core:youtube`'s tests, next to the recorder, and never runs in `./gradlew test`. It makes every saved set's call, one at a time, through one layer for the whole run, as the app does. Then it gets Big Buck Bunny's stream links. A new saved set, such as the subtitles that #148 adds, joins the check on its own. Each call is a kind, and each kind passes or fails. In the workflow, a kind can also be skipped.
+The Gradle task `:core:youtube:liveYouTubeCheck` runs the check. Its code is in the `newpipe.live` package of `:core:youtube`'s tests, next to the recorder, and never runs in `./gradlew test`. It makes every saved set's call, one at a time, through one layer for the whole run, as the app does. Then it gets Big Buck Bunny's stream links. A new saved set, such as the three of subtitles, joins the check on its own. Each call is a kind, and each kind passes or fails. In the workflow, a kind can also be skipped.
 
 | Kind | Passes when |
 |---|---|
@@ -70,6 +70,9 @@ The Gradle task `:core:youtube:liveYouTubeCheck` runs the check. Its code is in 
 | VIDEO_BIG_BUCK_BUNNY | Its title, the Blender Foundation's channel, the length 10:35, the exact publish time, and not live |
 | UPLOADS_NASA and UPLOADS_AGE_RESTRICTED | The channel's own videos, at least one, with ChannelUploads' promises kept: no Short, no video twice, and newest first |
 | UPLOADS_JAWED | One video, "Me at the zoo", 19 seconds long |
+| SUBTITLES_ME_AT_THE_ZOO | A written English and a written German track, other tracks allowed. A track counts by its language, whatever region its tag adds. The lines of both read clean: each has text, ends after it starts, starts within the video's 19 seconds, comes in order, and has no markup and no character reference left. The English lines mention the elephants. |
+| SUBTITLES_TEARS_OF_STEEL | At least 20 written tracks, one of them in Hebrew, and an auto-generated English track. Every track's tag is BCP 47 as Locale writes it, so he, not iw. At least 50 auto-generated lines, which read clean as above, within the film's 12:14, and none starts by repeating the last row of the line before it, as WebVTT's rolling cues do. Lines may overlap. |
+| SUBTITLES_AUTO_DUBBED | At least one auto-generated track, and every auto-generated track in English, the video's language, as en or with a region, such as en-US, which YouTube sometimes lists too. A machine translation made from the video's AI-dubbed audio fails it. |
 | The other saved sets | Only how the call ends, and its requests |
 | STREAM_LINKS_BIG_BUCK_BUNNY | The requests of video details. An audio-only and a video-only MP4 format with known lengths, an HLS manifest, and every link HTTPS to googlevideo.com. The links work for at least another hour. An audio-only and a video-only link each answer a GET for their first KiB, with a Range header, with 206, the format's length as the total in Content-Range, and the bytes asked for. |
 | NOTHING_CHECKED | At least one other kind wasn't skipped |
@@ -153,7 +156,7 @@ It logs the same results, writes the same file, and files no issue, because only
 - before each release,
 - and when the daily check reports a change.
 
-While YouTube blocks the runners, the run by hand is the only place where video details, stream links and the ranged GETs are checked. A run by hand skips nothing, so it ends without an error only when every kind was checked and passed.
+While YouTube blocks the runners, the run by hand is the only place where video details, stream links, subtitles and the ranged GETs are checked. A run by hand skips nothing, so it ends without an error only when every kind was checked and passed.
 
 #### YouTube blocks the runners' video calls
 
@@ -172,6 +175,8 @@ On November 18, 2026, with NewPipeExtractor v0.27.1, the workflow ran once on th
 Now NewPipeDownloader turns HTTP 403 with an HTML body from YouTube's hosts into ReCaptchaException, so the layer reports the block page as BLOCKED, like the bot check ([ADR 0009](adr/0009-how-the-youtube-layer-reaches-youtube.md)). It reads only the status and the content type, never the page's text. So on the runners, the workflow skips the video kinds as RUNNER_BLOCKED, whichever of the two answers its runner gets. A run by hand fails them with RUNNER_BLOCKED instead, so a block that reaches every network still fails a run.
 
 After that change, the workflow ran once more on the update's branch on November 18, 2026 ([run 44356669712](https://github.com/dewfallapp/dewfall/actions/runs/44356669712)), on ubuntu-24.04 image version 20261116.376.1. No kind failed, and it opened no issue. VIDEO_BIG_BUCK_BUNNY and STREAM_LINKS_BIG_BUCK_BUNNY were skipped as RUNNER_BLOCKED, and every other kind passed, VIDEO_PRIVATE, VIDEO_AGE_RESTRICTED and VIDEO_NEVER_EXISTED included. That runner got the bot check, not the block page, so the run didn't reach the new rule. NewPipeDownloaderTest covers it.
+
+The three subtitle kinds list a video's tracks first, which sends the player requests of the video's page, so the runners block them as they block video details, and the workflow skips them as RUNNER_BLOCKED. A run by hand checks them.
 
 #### When the schedule stops
 
@@ -283,11 +288,14 @@ A saved set is one call through the layer, with every request it sent and YouTub
 | VIDEO_NEVER_EXISTED | Video details of don-t-exist, an ID that no video ever had | 2 | 2 KiB | UNAVAILABLE, for video details and stream links (#155) |
 | CHANNEL_TERMINATED | Latest uploads of a channel that YouTube closed | 1 | 12 KiB | CHANNEL_CLOSED |
 | CHANNEL_DELETED | Latest uploads of a deleted channel | 1 | 12 KiB | UNAVAILABLE |
+| SUBTITLES_ME_AT_THE_ZOO | The subtitle tracks of "Me at the zoo", then the lines of its first written English and German tracks | 7 | 455 KiB | Its two written tracks with TTML links, and every line's times and text |
+| SUBTITLES_TEARS_OF_STEEL | The subtitle tracks of Tears of Steel, the Blender Foundation's film, then the lines of its first auto-generated English track | 6 | 441 KiB | iw written as he, and clean auto-generated lines with YouTube's times |
+| SUBTITLES_AUTO_DUBBED | The subtitle tracks of "Who Can Be a NASA Astronaut? Myth or Fact", a NASA video with AI-dubbed audio | 5 | 530 KiB | The 20 machine-translated tracks of its dubbed audio left out |
 
 - The requests don't count sw.js_data, which every set that reaches the web client also fetches. See [What the tests check](#what-the-tests-check).
-- Together the sets take about 2.8 MiB, or about 193 KiB compressed. Each new recording can add up to about that much to the repository's history.
-- Video details and stream links send the same requests, so their tests share one set, and so do their tests of a video that never existed.
-- The content should last: the Blender Foundation's film, NASA's channel, and "Me at the zoo", the first video on YouTube. The failures use the IDs that NewPipeExtractor's own tests use.
+- Together the sets take about 4.2 MiB, or about 350 KiB compressed. Each new recording can add up to about that much to the repository's history.
+- Video details, stream links and subtitle tracks send the same requests, so their tests share one set, and so do their tests of a video that can't be played. Big Buck Bunny, which has no speech, also stands for a video with no subtitle tracks.
+- The content should last: the Blender Foundation's films, NASA's channel, and "Me at the zoo", the first video on YouTube. "Me at the zoo" has only written subtitles, so Tears of Steel, the foundation's open film from 2012, with speech, stands for an auto-generated track, and its 28 written tracks bring YouTube's odd codes, such as iw. The NASA video is the newest content: if NASA takes it down or YouTube drops its dubbing, record another video with AI-dubbed audio. The failures use the IDs that NewPipeExtractor's own tests use.
 - Whether YouTube treats a channel as age-restricted can depend on the country of the network that asks, as a note in NewPipeExtractor's own tests says ([YoutubeChannelExtractorTest](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/test/java/org/schabi/newpipe/extractor/services/youtube/YoutubeChannelExtractorTest.java#L714-L723)). The recorder checks the set's requests, so it fails if the channel's page came back without the restriction.
 
 ### What the tests check
@@ -296,6 +304,7 @@ A saved set is one call through the layer, with every request it sent and YouTub
 - The requests that each call sends, in order. They match the counts in [What each function sends](architecture.md#what-each-function-sends). The first call in a process that uses the web client also fetches www.youtube.com/sw.js_data, and every replayed call is a first call, so each one that reaches the web client fetches it too.
 - A playable stream link. A test can't play anything, so it checks what a player needs: a sound format and a picture format that play together, each with a known length, and the HLS manifest, all HTTPS links to googlevideo.com. The layer keeps a format only when it is a single file with a direct link, and no link needed YouTube's player code to decode, which would have added a request. Fetching real bytes from a link is left to the live check, which [The daily YouTube check](#the-daily-youtube-check) describes.
 - Relative publish times. See [Relative dates](#relative-dates).
+- Subtitles: the tracks of each video, with their tags and TTML links, and the lines of a written and an auto-generated track, read from YouTube's real TTML. The parsing of odd files, such as a document type declaration, styling or a time that can't be read, has tests of its own, with made-up files.
 
 ### How a set is stored
 
@@ -385,7 +394,7 @@ The repository is public, so no saved file may say which machine, session or net
 | The experiments that YouTube put the visitor in, some of which change from one visitor to the next | The `e` tracking parameter, and `fexp` in links | Replaces them with EXPERIMENTS |
 | The network's country | sw.js_data, as its one string of two capital letters, even though the request asks for GB, and visitor data | Replaces it with GB in sw.js_data, where every string of two capital letters counts, in `gl` and in any other country field, such as `countryCode` or `regionCode`. Lists of available countries keep it. |
 | YouTube's public API key for its web client | sw.js_data | Replaces it with API_KEY, because GitHub's secret scanning would flag it |
-| The parameters of stream, ad and tracking links that nothing reads, such as `cps`, `mh`, `mm`, `ms`, `mv`, `rms` and `pcm2cms` in googlevideo links, and `ord` and `dc_rdid` in an ad link | googlevideo links, in their query and, for an HLS manifest, their path, links to ad.doubleclick.net and other ad hosts, in their query and after semicolons in their path, the playback statistics links on s.youtube.com, `/ptracking` links, and links through YouTube's `/redirect` | Replaces each value with MASKED, but those that [Links](#links) lists, and any placeholder that a rule above wrote first |
+| The parameters of stream, ad, tracking and subtitle links that nothing reads, such as `cps`, `mh`, `mm`, `ms`, `mv`, `rms` and `pcm2cms` in googlevideo links, `ord` and `dc_rdid` in an ad link, and `signature`, `expire` and `ip` in a subtitle link | googlevideo links, in their query and, for an HLS manifest, their path, links to ad.doubleclick.net and other ad hosts, in their query and after semicolons in their path, the playback statistics links on s.youtube.com, `/ptracking` links, links through YouTube's `/redirect`, and subtitle links on `/api/timedtext` | Replaces each value with MASKED, but those that [Links](#links) lists, and any placeholder that a rule above wrote first |
 | Data about viewers: comments, who wrote them, their handles, avatars and profile links | The comments in a video's microformat, as schema.org Comment objects, and any member whose name starts with `comment`, `teaser` or `liveChat` | Replaces each string with VIEWER_DATA and each number with 0. Only the `@type` of a schema.org object stays. Wherever else they appear, the recorder also masks every string of at least 8 characters that it found there, and every handle and channel ID, whatever its length. |
 | The experiments that YouTube put the visitor in, as flags | The EXPERIMENT_FLAGS object in sw.js, and the `experiments` and `experimentFlags` objects in the Android client's player answer, which NewPipeExtractor fetched before v0.27.0. No answer of v0.27.1 holds them, and the masking stays in case one does again. | Replaces each flag's value with false, 0, an empty string, or an empty list or object. The flags' names stay. |
 | Any other opaque value | Anywhere, such as entity keys, share entities, thumbnail parameters and the IDs in image links | Replaces each value that isn't kept with TOKEN_1, TOKEN_2 and so on, the same in answers and requests, or with the number alone for a value that is a number |
@@ -439,12 +448,18 @@ KEPT_KEYS, KEPT_REQUEST_KEYS and NEWPIPE_EXTRACTOR_VALUES in OpaqueValues.kt are
 
 #### Links
 
-Stream links on googlevideo.com, links to ads and ad trackers, the links that YouTube's player reports playback to, and links through YouTube's redirect say what happened in the session, and which machine and network they were for. Their parameters are masked by default: each value becomes MASKED, unless Dewfall or NewPipeExtractor v0.27.1 reads it for the layer's calls. Links.kt holds the kept parameters, with the same reasons:
+Stream links on googlevideo.com, links to ads and ad trackers, the links that YouTube's player reports playback to, links through YouTube's redirect, and subtitle links, which YouTube signs for the session that asked for them, say what happened in the session, and which machine and network they were for. Their parameters are masked by default: each value becomes MASKED, unless Dewfall or NewPipeExtractor v0.27.1 reads it for the layer's calls, or, in a subtitle link, the value is public and the replay needs it to tell a set's requests apart. Links.kt holds the kept parameters, with the same reasons:
 
 | Link | Kept parameter | Why |
 |---|---|---|
 | googlevideo.com | `expire` | When the link stops working. Dewfall's expiryOf in FormatMapping.kt reads it from a format's link, and from the path of an HLS manifest's link, and StreamLinksReplayTest checks it. |
 | www.youtube.com/redirect | `q` | The page that a link in a description goes to. NewPipeExtractor reads it to write the description ([getUrlFromNavigationEndpoint](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L692-L717)), and VideoDetailsReplayTest checks the description. |
+| www.youtube.com/api/timedtext | `fmt` | The format of the subtitle file. NewPipeExtractor removes it from YouTube's link and adds the one asked for ([getSubtitles](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/extractors/YoutubeStreamExtractor.java#L683-L723)), the layer asks for ttml, and SubtitlesReplayTest checks it. |
+| www.youtube.com/api/timedtext | `variant` | How YouTube made an auto-generated track, such as timing-optimized for a track made from AI-dubbed audio. Dewfall's isMadeFromDubbedAudio in NewPipeSubtitles.kt reads it to leave those tracks out, and SubtitlesReplayTest checks it. |
+| www.youtube.com/api/timedtext | `lang` | The track's language, which YouTube's answer also names in the track's languageCode. It is public, and it keeps the requests for a video's tracks apart, which the replay needs. |
+| www.youtube.com/api/timedtext | `kind` | asr for an auto-generated track. It is public, and it keeps the request for an auto-generated track apart from the one for a written track in the same language, which the replay needs. |
+
+A subtitle link also has an `ip` parameter. In the recordings it named no address, 0.0.0.0, so it isn't the machine's, and the recorder masks it as MASKED with the link's other parameters. Its `ipbits` was 0, which stays, because 0 is what a masked number becomes.
 
 NewPipeExtractor reads a format's length, type and quality from the answer's fields, not from its link. Its code reads two more parameters of a googlevideo link, and both are masked, because nothing that the layer does reads them:
 
@@ -465,7 +480,7 @@ The recorder's check is the guarantee: it looks for every real value that it kno
 
 The recorder's check has limits of its own:
 
-- It knows the machine's address only from the `ip` parameter of stream links and from the strings of sw.js_data. If the machine reaches YouTube over both IPv4 and IPv6 in one run, an address that neither a link nor sw.js_data names is found only as text, by the check for any public address.
+- It knows the machine's address only from the `ip` parameter of stream links and from the strings of sw.js_data. It doesn't take 0.0.0.0 or ::, which name no address, for the machine's, so the `ip=0.0.0.0` of a subtitle link doesn't make it look for the number 0 everywhere. If the machine reaches YouTube over both IPv4 and IPv6 in one run, an address that neither a link nor sw.js_data names is found only as text, by the check for any public address.
 - It knows the network's country from sw.js_data and from visitor data, not from the `gl` that other answers repeat from the request.
 - From data about a viewer, it looks elsewhere only for strings of at least 8 characters, and for handles and channel IDs of any length: a string that is a handle, and the handle or channel ID in a link to a viewer's page, also decoded from its URL encoding. It finds a handle only where the handle ends, so a viewer's @al doesn't match a channel's @alpha. A shorter name or text is masked where the shape is known, but not looked for anywhere else, as it could match other text by chance.
 - A comment by the channel itself counts as data about a viewer too, so its name and channel ID are masked wherever they appear. If that breaks a replay test, record another video.

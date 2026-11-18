@@ -78,6 +78,8 @@ YouTube doesn't always give an exact upload time. Lists often give a relative ti
 
 The first three mean that nothing from YouTube can load right now. The others concern one video or channel. #35 and #148 map NewPipeExtractor's exceptions to these categories. docs/architecture.md lists the mapping.
 
+Note, November 19, 2026: #148 also returns UNAVAILABLE when YouTube refuses the link of a subtitle track, with 403, 404 or 410, such as after the link expired. YouTube gives no reason that the layer can tell apart there either. For reading a track's lines, it means that the link no longer works, and the caller lists the tracks again, which also shows whether the video is still there. SubtitlesRemoteDataSource's KDoc says so. The categories are unchanged.
+
 **IDs.** `VideoId` and `ChannelId` are value classes. Their constructors check the formats above, strictly, and throw IllegalArgumentException with a message that never contains the text. `parseOrNull` returns null instead, for text from outside the app. Their toString leaves out the ID, because an ID is user data. Playlist IDs get no type, because no function takes or returns one.
 
 **Times.** Times are `kotlin.time.Instant`, and lengths are `kotlin.time.Duration`. A publish time is a `PublishedTime`, whose `isApproximate` is true when YouTube gave only a date, or a relative time in days or longer. Then the time is an estimate.
