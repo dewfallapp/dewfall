@@ -26,6 +26,7 @@ class JvmLibraryConventionPlugin : Plugin<Project> {
             // Lint's general checks. Its API check doesn't run here, so configureAndroidApiCheck
             // checks these modules against the minSdk instead.
             extensions.configure<Lint> { configureDewfallLint() }
+            addDewfallLintChecks()
             configureAndroidApiCheck()
         }
     }

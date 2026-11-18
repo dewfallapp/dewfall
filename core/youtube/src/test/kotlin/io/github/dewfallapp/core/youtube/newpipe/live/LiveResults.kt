@@ -1,5 +1,6 @@
 package io.github.dewfallapp.core.youtube.newpipe.live
 
+import io.github.dewfallapp.core.logging.ConstantText
 import io.github.dewfallapp.core.logging.LogField
 
 /**
@@ -84,11 +85,11 @@ private constructor(
 ) {
     companion object {
         /** An enum constant, written by its name. */
-        fun state(name: String, value: Enum<*>): ResultField =
+        fun state(@ConstantText name: String, value: Enum<*>): ResultField =
             ResultField("$name=${value.name}", LogField.state(name, value))
 
         /** A count, which is never negative. */
-        fun count(name: String, value: Int): ResultField {
+        fun count(@ConstantText name: String, value: Int): ResultField {
             require(value >= 0) { "A count is never negative" }
             return ResultField("$name=$value", LogField.count(name, value))
         }

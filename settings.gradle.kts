@@ -47,3 +47,7 @@ include(":core:youtube")
 include(":feature:youtube-debug-logic")
 
 include(":feature:youtube-debug-ui")
+
+// Dewfall's own lint checks, which lint runs on every module of the app. Nothing from it ships. See
+// docs/architecture.md#dewfalls-lint-checks.
+include(":lint-rules")

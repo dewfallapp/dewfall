@@ -14,6 +14,7 @@ Fast tests run on every change. They cover:
 - The YouTube layer against saved responses.
 - Room queries.
 - The theme against the design tokens. [architecture.md](architecture.md#the-theme) explains the check.
+- Dewfall's lint checks, with lint-tests. See [Dewfall's lint checks](#dewfalls-lint-checks).
 - Background jobs.
 - Screenshot tests of each screen, in light, dark and large font.
 
@@ -184,6 +185,7 @@ In a public repository, GitHub turns off scheduled workflows when the repository
 - **Fixing a pull request.** Some updates need a change before Checks passes. A ktfmt update can change the formatting, a Kotlin or library update can deprecate an API the code uses, an AGP update can need new build tools, and a NewPipeExtractor update can need the saved YouTube responses recorded again. Push the fix to Renovate's branch. Renovate then leaves the branch alone, so keep it up to date with main yourself. For ktfmt and AGP updates, the pull request's description names the usual fix.
 - **The Gradle wrapper.** Renovate writes the new distributionSha256Sum, then runs the wrapper task to update gradle-wrapper.jar, gradlew and gradlew.bat. If that task fails on Mend's servers, only gradle-wrapper.properties changes. Then run `./gradlew wrapper` on the branch and push any changes it makes.
 - **Review.** Nothing merges on its own. Before merging, check that Checks passed and read the release notes, especially detekt's. For a library that ships in the app, check that the update adds no artifact whose license breaks the rule in AGENTS.md.
+- **Lint.** `:lint-rules` compiles against lint-api and tests with lint-tests, at AGP's version plus 23. build-logic derives that version from AGP's, so the catalog has no entry for them, and Renovate's AGP update moves them too. Lint runs the checks on its own Kotlin standard library, so on each AGP update, check that the Kotlin API version that dewfall.lint.rules sets is still no newer than the kotlin-stdlib that the new lint-api POM names. Renovate's AGP pull request says so.
 - **Exceptions.** Renovate's pull requests don't use the pull request template, and their branches start with renovate/.
 
 AGENTS.md has the command that checks renovate.json.
@@ -237,6 +239,20 @@ A class that logs receives a Logger in its constructor, as [architecture.md](arc
 
 - Check log lines only where logging is the behavior under test, such as a warning that a class must write when a retry fails. Compare the message and the fields, not stack frames, which change whenever the code moves.
 - Tests never read logcat. LogcatWriter's own tests pass a function in place of Log.println, because android.util.Log has no working code in local unit tests.
+- Tests follow the logging rules too. Lint checks test sources with Dewfall's checks, so a println, a printStackTrace or a message built from a template fails `./gradlew lint` in a test as well. Only ConsoleLogWriter, in `:core:youtube`'s tests, writes to standard output, and it never writes to standard error. See [Dewfall's lint checks](#dewfalls-lint-checks).
+
+## Dewfall's lint checks
+
+`:lint-rules`' tests check each lint issue with lint-tests, Google's library for testing lint checks ([unit testing](https://github.com/googlesamples/android-custom-lint-rules/blob/5751b4f0b7d6c5af67b990e7e06571179baa1e07/docs/api-guide/unit-testing.md.html)). Run them with `./gradlew :lint-rules:test`. [architecture.md](architecture.md#dewfalls-lint-checks) explains the checks.
+
+- **The runner.** Tests call lint-tests' `lint()` from kotlin.test tests, which run on JUnit 6 like the other plain Kotlin/JVM modules. LintTestFiles.kt sets up a project with a Gradle build file, so src/main holds main sources and src/test holds test sources. `lintJvmWith` sets up a plain Kotlin/JVM project instead, for Java's API that Android lacks, such as System.Logger.
+- **Test modes.** lint-tests runs each test again with the source rewritten: with fully qualified names, import aliases, extra parentheses, reordered arguments and more. Each run must give the same result, so every form of a call is covered. The tests skip the mode that suppresses each finding and expects it to go away, because nothing can suppress Dewfall's issues. Each detector has a test that shows @Suppress and `//noinspection` don't work.
+- **Expected output.** Each test compares lint's whole text output, with the file, line, message and the part of the line that it marks. lint-tests writes a `$` in that output as `＄`.
+- **What lint-tests can't do.** Its test sources have no Kotlin standard library, so a call into it, such as println, can't be resolved there. Tests of test sources use Java's classes instead, such as System.out. Its bytecode stubs accept only methods without bodies, so the test of a compiled Logger uses an abstract one.
+
+### Checking a rule in the real build
+
+A unit test can't show that the real build runs the checks. To check a rule, break it in a real file for a moment, then run `./gradlew lint`. The build fails, and the report names the issue, such as `[DewfallConsoleOutput from dewfall]`. Then undo the change and check that `git diff` is empty. Do this when a check changes, or when an AGP update changes lint.
 
 ## Saved YouTube responses
 

@@ -35,20 +35,14 @@ style:
     active: false
   # GlobalCoroutineUsage only sees GlobalScope.launch and GlobalScope.async. Forbidding the
   # import blocks every other use too.
-  # The logging entries enforce ADR 0007. This rule runs without type resolution, so it sees only
-  # imports, and a call that names a class in full still passes. LogcatWriter.kt in :app, the one
-  # file allowed to call android.util.Log, and its test suppress the rule for the whole file.
+  # ADR 0007's logging rules aren't here. Dewfall's lint checks in :lint-rules enforce them, because
+  # lint resolves each call, however it is written, and detekt sees only imports without type
+  # resolution.
   ForbiddenImport:
     active: true
     forbiddenImports:
       - value: 'kotlinx.coroutines.GlobalScope'
         reason: 'AGENTS.md says never to use GlobalScope. Use a scope the class receives.'
-      - value: 'android.util.Log'
-        reason: 'Log through the Logger from :core:logging, which keeps out user data. ADR 0007.'
-      - value: 'org.schabi.newpipe.extractor.utils.ExtractorLogger'
-        reason: 'Dewfall never sets the NewPipeExtractor logger, whose lines hold URLs. ADR 0007.'
-      - value: 'org.schabi.newpipe.extractor.utils.Logger'
-        reason: 'Dewfall never sets the NewPipeExtractor logger, whose lines hold URLs. ADR 0007.'
   # AGENTS.md's Kotlin style rule says every for, while and do has braces:
   # https://github.com/dewfallapp/dewfall/blob/main/AGENTS.md#commands
   # This rule flags a for, while or do loop without braces whose body starts on a new line. It

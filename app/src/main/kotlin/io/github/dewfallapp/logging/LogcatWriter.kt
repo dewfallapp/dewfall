@@ -1,9 +1,3 @@
-// This is the one file allowed to call android.util.Log, as ADR 0007 says, so it imports the
-// class that detekt's ForbiddenImport rejects everywhere else. detekt can suppress an import
-// finding only for a whole file, because an import can't carry an annotation. That also lifts the
-// rule's other entries, such as GlobalScope, in this file.
-@file:Suppress("ForbiddenImport")
-
 package io.github.dewfallapp.logging
 
 import android.util.Log
@@ -39,7 +33,9 @@ private const val MAX_CODE_POINT_BYTES = 2 * MAX_UTF16_CHAR_BYTES
 private const val LINE_BREAK_BYTES = 1
 
 /**
- * Writes log lines to logcat. It is the only code that calls android.util.Log. See ADR 0007.
+ * Writes log lines to logcat. It is the only code that calls android.util.Log, and only its
+ * println. Dewfall's lint check DewfallAndroidLog flags any other call, here or anywhere else, this
+ * file's other functions included. See ADR 0007.
  *
  * Text longer than one entry holds goes out as several entries, with the same priority and tag.
  */

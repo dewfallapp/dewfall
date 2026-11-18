@@ -57,7 +57,28 @@ Dewfall has its own small logger, in the plain Kotlin/JVM module `:core:logging`
 - **The writer.** In `:app`, LogcatWriter is the only code that calls android.util.Log. It splits text longer than 4000 bytes at line breaks into several entries, with the same priority and tag. It splits a single longer line between characters. Log.println hands the text to liblog through JNI's GetStringUTFChars ([android_util_Log.cpp](https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/jni/android_util_Log.cpp#92)). The [JNI spec](https://docs.oracle.com/en/java/javase/17/docs/specs/jni/functions.html#getstringutfchars) says that returns modified UTF-8, which writes a character outside the Basic Multilingual Plane, such as most emoji, as 6 bytes. ART writes such a character as UTF-8's 4 bytes instead, against the spec ([jni_internal.cc](https://android.googlesource.com/platform/art/+/6484611fd45e69db9f33f98bfd6864014b030ecf/runtime/jni/jni_internal.cc#222)). LogcatWriter counts it as 6, so an entry stays within 4000 bytes either way.
 - **Levels.** Debug builds keep every level. Release builds keep WARN and ERROR. `:app` picks the level from BuildConfig.DEBUG.
 - **NewPipeExtractor's logger.** Dewfall never sets ExtractorLogger, in any build. Half of its calls log user data, and a bridge couldn't separate the constant text from the values. Left unset, it costs nothing.
-- **Checks.** detekt's ForbiddenImport rejects imports of android.util.Log, ExtractorLogger and NewPipeExtractor's Logger. It runs without type resolution, so it sees only imports. LogcatWriter.kt and its test import android.util.Log, and suppress the rule for their whole file, because an import can't carry an annotation.
+- **Checks.** Dewfall's own lint checks enforce these rules in every module of the app, tests included. [The lint checks](#the-lint-checks) describes them.
+
+### The lint checks
+
+Note, November 18, 2026: #144 replaced detekt's import rules for android.util.Log and NewPipeExtractor's two loggers with the lint checks below. This section's facts were checked on November 18, 2026, with AGP 9.4.1 and lint 32.4.1.
+
+The build-time module `:lint-rules` holds five lint issues, which lint runs on the main and test sources of every module of the app. Lint resolves each call, so a fully qualified call, an import alias or a callable reference such as `Log::println` is caught too.
+
+| Issue | What it flags |
+|---|---|
+| DewfallAndroidLog | Any use of android.util.Log's methods, except LogcatWriter's use of Log.println. Its priority constants, such as Log.WARN, stay allowed. |
+| DewfallConsoleOutput | Kotlin's print and println, any use of System.out and System.err, every printStackTrace, and Thread.dumpStack, except ConsoleLogWriter's writes to standard output |
+| DewfallLogTextNotConstant | An argument for a parameter marked @ConstantText that isn't constant text: a string literal, a `const val`, another @ConstantText parameter, or `+` of those. A string template never counts, even when every part is a `const val`. Logger's messages, withTag's area and every LogField name are marked. A function that passes its own parameter on to them marks it too, and its callers are checked instead. |
+| DewfallExtractorLogger | Any use of NewPipeExtractor's ExtractorLogger, setLogger included, and any class that implements its Logger interface |
+| DewfallOtherLogger | Any use of java.util.logging, Java's System.Logger, android.util.LogPrinter or android.util.EventLog |
+
+Each issue is an error, and nothing can suppress it. Lint reports @Suppress, @SuppressLint, `//noinspection` and a `disable` setting for these issues as errors of their own, and ignores them in lint.xml, in baselines, in severity settings and in `checkOnly`. There are exactly two exceptions, both in LogWriterClass.kt in `:lint-rules`. Each allows only what its writer needs:
+
+- LogcatWriter, in `:app`'s main sources, may call android.util.Log.println.
+- ConsoleLogWriter, in `:core:youtube`'s tests, may write to standard output, with Kotlin's print and println or System.out. Standard error, printStackTrace and Thread.dumpStack stay forbidden there too.
+
+Any change to these exceptions updates this ADR in the same pull request, with a dated note here, the way [ADR 0008](0008-youtube-layer-contract.md) records #37's exception.
 
 ### Why release builds keep warnings and errors
 
@@ -94,7 +115,7 @@ The "Copy debug info" button in settings (#82) comes in Phase 9. It includes the
 
 - No new dependency, and one logging API in every module.
 - Logs say less than they could. Debugging relies on the debugger and on the YouTube layer's debug screen (#37) more than on log lines.
-- Some things stay unchecked until the lint check in #144: messages, tags and field names that aren't constant, and calls to println, System.out, System.err or printStackTrace. detekt's PrintStackTrace rule catches only `printStackTrace()` on a catch block's own exception. detekt's ForbiddenMethodCall could catch println, but it needs type resolution, which this build doesn't run.
+- The lint checks can't see what a value holds. LogField's types and the error summary keep user data out of the values, as the Decision describes.
 - **Uncaught exceptions are a permanent gap.** No app can replace RuntimeInit's pre-handler, so the full trace of an uncaught exception, messages included, always reaches logcat's crash buffer. Catching exceptions at module edges narrows the gap, such as the YouTube layer turning NewPipeExtractor's exceptions into Dewfall's own errors.
 - Release builds still contain the debug and info calls and their constant text, because nothing shrinks the code. They return after one level check, before building any text.
 - When Phase 9 turns on R8 (#146), a `-assumenosideeffects` rule on Logger.debug and Logger.info removes those calls ([rule types](https://developer.android.com/topic/performance/app-optimization/additional-rule-types)). Phase 9 checks R8's output for what stays, such as the code that builds the LogField arguments. That page describes `-maximumremovedandroidloglevel` as removing Android logging calls, such as Log.w and Log.isLoggable, at or below a level. LogcatWriter passes the priority as a variable, so that rule can't remove its calls by level. Dewfall's own `-assumenosideeffects` rule does that job instead.

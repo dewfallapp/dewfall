@@ -46,6 +46,10 @@ gradlePlugin {
             id = "dewfall.jvm.library"
             implementationClass = "io.github.dewfallapp.buildlogic.JvmLibraryConventionPlugin"
         }
+        register("lintRules") {
+            id = "dewfall.lint.rules"
+            implementationClass = "io.github.dewfallapp.buildlogic.LintRulesConventionPlugin"
+        }
         register("detekt") {
             id = "dewfall.detekt"
             implementationClass = "io.github.dewfallapp.buildlogic.DetektConventionPlugin"
