@@ -33,3 +33,6 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Python's compiled files, from the pre-push gate's scripts
+__pycache__/
