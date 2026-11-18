@@ -5,6 +5,7 @@ import io.github.dewfallapp.core.logging.Logger
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.SearchResults
 import io.github.dewfallapp.core.model.StreamLinks
+import io.github.dewfallapp.core.model.SubtitleLine
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
@@ -15,6 +16,7 @@ import io.github.dewfallapp.core.youtube.newpipe.saved.BIG_BUCK_BUNNY_ID
 import io.github.dewfallapp.core.youtube.newpipe.saved.Endpoint
 import io.github.dewfallapp.core.youtube.newpipe.saved.SavedSet
 import io.github.dewfallapp.core.youtube.newpipe.saved.SavedYouTube
+import io.github.dewfallapp.core.youtube.newpipe.saved.VideoSubtitles
 import io.github.dewfallapp.core.youtube.newpipe.saved.valueOrFail
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -372,6 +374,134 @@ class LiveCheckTest {
     }
 
     @Test
+    fun `Me at the zoo without its English or German track fails WRONG_CONTENT`() = runTest {
+        assertWrongContent(SavedSet.SUBTITLES_ME_AT_THE_ZOO, "MISSING_TRACK") {
+            val subtitles = it as VideoSubtitles
+            subtitles.copy(read = subtitles.read.filter { read -> read.track.languageTag != "de" })
+        }
+    }
+
+    @Test
+    fun `a track that someone adds to Me at the zoo fails nothing`() = runTest {
+        val results =
+            liveCheck(
+                    replacing(SavedSet.SUBTITLES_ME_AT_THE_ZOO) { outcome ->
+                        val subtitles =
+                            (outcome.result as YouTubeResult.Success).value as VideoSubtitles
+                        val added = subtitles.tracks.first().copy(languageTag = "fr")
+                        success(subtitles.copy(tracks = subtitles.tracks + added), outcome.requests)
+                    }
+                )
+                .run()
+
+        assertEquals(
+            "SUBTITLES_ME_AT_THE_ZOO PASSED",
+            results.single { it.kind == SavedSet.SUBTITLES_ME_AT_THE_ZOO }.line,
+        )
+    }
+
+    @Test
+    fun `lines that lost their text, their order or their decoding fail WRONG_CONTENT`() = runTest {
+        val cases =
+            listOf<Pair<String, (List<SubtitleLine>) -> List<SubtitleLine>>>(
+                "NO_LINES" to { emptyList() },
+                "EMPTY_LINE" to { lines -> listOf(lines.first().copy(text = " ")) + lines.drop(1) },
+                "LINE_OUT_OF_RANGE" to
+                    { lines ->
+                        lines + lines.last().copy(start = 20.seconds, end = 21.seconds)
+                    },
+                "LINE_OUT_OF_ORDER" to { lines -> lines.reversed() },
+                "MARKUP_LEFT" to { lines -> lines + lines.last().copy(text = "that&#39;s") },
+                "MARKUP_LEFT" to { lines -> lines + lines.last().copy(text = "<b>cool</b>") },
+            )
+        for ((what, change) in cases) {
+            assertWrongContent(SavedSet.SUBTITLES_ME_AT_THE_ZOO, what) {
+                (it as VideoSubtitles).changeLines("en", change)
+            }
+        }
+        assertWrongContent(SavedSet.SUBTITLES_ME_AT_THE_ZOO, "WRONG_TEXT") {
+            (it as VideoSubtitles).changeLines("en") { lines ->
+                lines.map { line -> line.copy(text = line.text.replace("elephants", "giraffes")) }
+            }
+        }
+    }
+
+    @Test
+    fun `auto-generated lines that repeat the line before fail WRONG_CONTENT`() = runTest {
+        assertWrongContent(SavedSet.SUBTITLES_TEARS_OF_STEEL, "REPEATED_TEXT") {
+            (it as VideoSubtitles).changeLines("en") { lines ->
+                // As WebVTT's rolling cues do: each cue starts with the whole line before it.
+                lines.zipWithNext { previous, next ->
+                    next.copy(text = previous.text + "\n" + next.text)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `Tears of Steel without its tracks, or with YouTube's own codes, fails WRONG_CONTENT`() =
+        runTest {
+            assertWrongContent(SavedSet.SUBTITLES_TEARS_OF_STEEL, "WRONG_LANGUAGE_TAG") {
+                val subtitles = it as VideoSubtitles
+                subtitles.copy(
+                    tracks =
+                        subtitles.tracks.map { track ->
+                            if (track.languageTag == "he") track.copy(languageTag = "iw") else track
+                        }
+                )
+            }
+            assertWrongContent(SavedSet.SUBTITLES_TEARS_OF_STEEL, "MISSING_TRACK") {
+                (it as VideoSubtitles).copy(read = emptyList())
+            }
+            assertWrongContent(SavedSet.SUBTITLES_TEARS_OF_STEEL, "TOO_FEW_TRACKS") {
+                val subtitles = it as VideoSubtitles
+                subtitles.copy(
+                    tracks = subtitles.tracks.filter { track -> track.languageTag in KEPT }
+                )
+            }
+            assertWrongContent(SavedSet.SUBTITLES_TEARS_OF_STEEL, "TOO_FEW_LINES") {
+                (it as VideoSubtitles).changeLines("en") { lines -> lines.take(10) }
+            }
+        }
+
+    @Test
+    fun `a second auto-generated track in English with a region fails nothing`() = runTest {
+        // YouTube's answer for the dubbed video sometimes lists its English track as en and en-US.
+        val results =
+            liveCheck(
+                    replacing(SavedSet.SUBTITLES_AUTO_DUBBED) { outcome ->
+                        val subtitles =
+                            (outcome.result as YouTubeResult.Success).value as VideoSubtitles
+                        val auto = subtitles.tracks.first { track -> track.isAutoGenerated }
+                        val regional = auto.copy(languageTag = "en-US")
+                        success(
+                            subtitles.copy(tracks = subtitles.tracks + regional),
+                            outcome.requests,
+                        )
+                    }
+                )
+                .run()
+
+        assertEquals(
+            "SUBTITLES_AUTO_DUBBED PASSED",
+            results.single { it.kind == SavedSet.SUBTITLES_AUTO_DUBBED }.line,
+        )
+    }
+
+    @Test
+    fun `a machine-translated track of dubbed audio fails WRONG_CONTENT`() = runTest {
+        assertWrongContent(SavedSet.SUBTITLES_AUTO_DUBBED, "TRANSLATED_TRACK") {
+            val subtitles = it as VideoSubtitles
+            val auto = subtitles.tracks.first { track -> track.isAutoGenerated }
+            subtitles.copy(tracks = subtitles.tracks + auto.copy(languageTag = "hi"))
+        }
+        assertWrongContent(SavedSet.SUBTITLES_AUTO_DUBBED, "MISSING_TRACK") {
+            val subtitles = it as VideoSubtitles
+            subtitles.copy(tracks = subtitles.tracks.filter { track -> !track.isAutoGenerated })
+        }
+    }
+
+    @Test
     fun `stream links without what a player needs fail WRONG_CONTENT`() = runTest {
         val kind = LiveKind.STREAM_LINKS_BIG_BUCK_BUNNY
         assertWrongContent(kind, "NO_HLS_MANIFEST") {
@@ -572,6 +702,21 @@ private suspend fun TestScope.savedStreamLinks(): StreamLinks =
         )
         .call { streamLinks(VideoId(BIG_BUCK_BUNNY_ID)) }
         .valueOrFail()
+
+/** The languages of the Tears of Steel tracks that a test keeps when it takes the others away. */
+private val KEPT = setOf("en", "he")
+
+/** These subtitles, with the read lines of the written or auto track in [languageTag] changed. */
+private fun VideoSubtitles.changeLines(
+    languageTag: String,
+    change: (List<SubtitleLine>) -> List<SubtitleLine>,
+) =
+    copy(
+        read =
+            read.map {
+                if (it.track.languageTag == languageTag) it.copy(lines = change(it.lines)) else it
+            }
+    )
 
 /** A call that succeeded with [value] after [requests]. */
 private fun success(value: Any?, requests: List<Endpoint>) =
