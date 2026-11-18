@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<tt xml:lang="de" xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" ttp:profile="http://www.w3.org/TR/profile/sdp-us" >
+<head>
+<styling>
+<style xml:id="s1" tts:textAlign="center" tts:extent="90% 90%" tts:origin="5% 5%" tts:displayAlign="after"/>
+<style xml:id="s2" tts:fontSize=".72c" tts:backgroundColor="black" tts:color="white"/>
+</styling>
+<layout>
+<region xml:id="r1" style="s1"/>
+</layout>
+</head>
+<body region="r1">
+<div>
+<p begin="00:00:00.000" end="00:00:05.067" style="s2">Also hier sind wir vor den Elefanten.</p>
+<p begin="00:00:05.067" end="00:00:12.467" style="s2">Das Coole an den Typen ist dass sie sehr, sehr, sehr, lange Rüssel haben.</p>
+<p begin="00:00:12.467" end="00:00:14.267" style="s2">Und das ist cool.</p>
+<p begin="00:00:17.067" end="00:00:21.000" style="s2">Ansonsten gibt es nicht wirklich viel zu sagen.</p>
+</div>
+</body>
+</tt>
