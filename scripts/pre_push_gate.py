@@ -24,6 +24,13 @@ workflow's command, and checks again that the build changed no file. Its own
 tests run first, so a broken check fails instead of passing. It prints rule
 names, commit hashes and subjects, never an identity or a found value.
 
+--remote-branch origin/<name>, or --remote-branch=origin/<name>, names the
+branch on GitHub whose Renovate commits are exempt from the identity rule. It
+must start with origin/, or the gate stops with exit code 2. Without
+it, the gate uses origin/ and the current branch's name, and a detached HEAD
+has none, so nothing is exempt. The gate reads the branch under refs/remotes/,
+so a local branch or tag with the same name can't stand in for it.
+
 --no-build skips the build. The gate then ends INCOMPLETE, with exit code 3,
 when every other check passed, and FAIL, with exit code 1, when one didn't. It
 never ends PASS without the build. It needs Python 3.9 or later.
@@ -237,10 +244,41 @@ def uncommitted():
     return git("status", "--porcelain", "--untracked-files=all").strip()
 
 
+def named_remote_branch(arguments):
+    """The branch that --remote-branch names, or None without it.
+
+    Raises ValueError unless it names a branch under origin/, because any other
+    ref, such as HEAD, would exempt Renovate commits that aren't on GitHub.
+    """
+    named = None
+    for index, argument in enumerate(arguments):
+        if argument == "--remote-branch":
+            named = arguments[index + 1] if index + 1 < len(arguments) else ""
+        elif argument.startswith("--remote-branch="):
+            named = argument.split("=", 1)[1]
+    if named is not None and (
+        not named.startswith("origin/") or named == "origin/" or ".." in named
+    ):
+        raise ValueError("--remote-branch must name a branch under origin/, such as origin/feat/x.")
+    return named
+
+
+def remote_branch_of(named, branch):
+    """The [named] remote branch, else origin/[branch], as a full ref, or None if detached."""
+    if named is not None:
+        return "refs/remotes/" + named
+    return None if branch == "HEAD" else "refs/remotes/origin/" + branch
+
+
 def main(arguments, own_tests=True):
     """Runs the gate and returns its exit code. [own_tests] is false only in the gate's tests."""
     build = "--no-build" not in arguments
     failed = False
+    try:
+        named = named_remote_branch(arguments)
+    except ValueError as error:
+        print("FAIL " + str(error))
+        return 2
 
     def verdict(name, passed, detail=""):
         nonlocal failed
@@ -269,9 +307,9 @@ def main(arguments, own_tests=True):
     local = (git_config("--local", "user.name"), git_config("--local", "user.email"))
     global_email = git_config("--global", "user.email")
     branch = git("rev-parse", "--abbrev-ref", "HEAD").strip()
-    remote_branch = "origin/" + branch
+    remote_branch = remote_branch_of(named, branch)
     on_remote_branch = set()
-    if tree_id(remote_branch, "") is not None:
+    if remote_branch is not None and tree_id(remote_branch, "") is not None:
         on_remote_branch = set(git("rev-list", remote_branch).split())
 
     for commit in commits:
