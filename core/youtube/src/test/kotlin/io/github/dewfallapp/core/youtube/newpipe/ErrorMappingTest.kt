@@ -43,6 +43,9 @@ class ErrorMappingTest {
                 ParsingException("Changed") to YouTubeError.BROKEN,
                 MissingFieldException() to YouTubeError.BROKEN,
                 NoStreamLinksException() to YouTubeError.BROKEN,
+                SubtitleLinkRefusedException() to YouTubeError.UNAVAILABLE,
+                YouTubeServerErrorException() to YouTubeError.NETWORK,
+                NotSubtitlesException() to YouTubeError.BROKEN,
                 ExtractionException("Changed") to YouTubeError.BROKEN,
                 IllegalStateException("Bug") to YouTubeError.BROKEN,
             )

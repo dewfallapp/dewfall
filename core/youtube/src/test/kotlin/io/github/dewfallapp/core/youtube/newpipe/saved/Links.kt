@@ -29,6 +29,33 @@ internal val KEPT_REDIRECT_LINK_PARAMETERS: Map<String, String> =
                 "VideoDetailsReplayTest checks the description."
     )
 
+/**
+ * The parameters of a subtitle link on www.youtube.com/api/timedtext that a saved set keeps, with
+ * the reason for each. The others, such as the signature, the event ID and the link's expiry, say
+ * when and for which session the link was made, and nothing reads them.
+ */
+internal val KEPT_SUBTITLE_LINK_PARAMETERS: Map<String, String> =
+    mapOf(
+        "fmt" to
+            "The format of the subtitle file. NewPipeExtractor removes it from YouTube's link " +
+                "and adds the one asked for " +
+                "($NEWPIPE_EXTRACTOR_SOURCE/extractors/" +
+                "YoutubeStreamExtractor.java#L683-L723), " +
+                "the layer asks for ttml, and SubtitlesReplayTest checks it.",
+        "variant" to
+            "How YouTube made an auto-generated track, such as timing-optimized for a track made " +
+                "from AI-dubbed audio. Dewfall's isMadeFromDubbedAudio in NewPipeSubtitles.kt " +
+                "reads it to leave those tracks out, and SubtitlesReplayTest checks it.",
+        "lang" to
+            "The track's language, which YouTube's answer also names in the track's " +
+                "languageCode. It is public, and it keeps the requests for a video's tracks " +
+                "apart, which the replay needs.",
+        "kind" to
+            "asr for an auto-generated track. It is public, and it keeps the request for an " +
+                "auto-generated track apart from the one for a written track in the same " +
+                "language, which the replay needs.",
+    )
+
 /** The hosts of YouTube's own site. */
 private val YOUTUBE_HOST = Regex("""(?:www\.|m\.)?youtube\.com""")
 
@@ -48,8 +75,9 @@ private class TrackedLink(
 /**
  * The links whose parameters a saved set masks: stream links on googlevideo.com, which also carry
  * them as path segments in an HLS manifest's link, links to ads and ad trackers, which also carry
- * them after semicolons in their path, the links that YouTube's player reports playback to, and
- * links through YouTube's redirect, which counts the clicks on a description's links.
+ * them after semicolons in their path, the links that YouTube's player reports playback to, links
+ * through YouTube's redirect, which counts the clicks on a description's links, and subtitle links,
+ * which are signed for the session that asked for them.
  */
 private val TRACKED_LINKS =
     listOf(
@@ -67,6 +95,7 @@ private val TRACKED_LINKS =
         TrackedLink(Regex("""s\.youtube\.com"""), Regex(".*"), emptySet()),
         TrackedLink(YOUTUBE_HOST, Regex("""/(?:ptracking|api/stats/|pagead/).*"""), emptySet()),
         TrackedLink(YOUTUBE_HOST, Regex("""/redirect"""), KEPT_REDIRECT_LINK_PARAMETERS.keys),
+        TrackedLink(YOUTUBE_HOST, Regex("""/api/timedtext"""), KEPT_SUBTITLE_LINK_PARAMETERS.keys),
     )
 
 /**

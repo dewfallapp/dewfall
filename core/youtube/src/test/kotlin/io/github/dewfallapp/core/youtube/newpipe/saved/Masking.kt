@@ -320,7 +320,11 @@ private val RULES =
             parameterRules(MaskedValue.SESSION_TOKEN, it, MASKED_SESSION_TOKEN, inPath = false)
         }
 
-/** Where a googlevideo link names the machine's address: its ip parameter, or /ip/ in its path. */
+/**
+ * Where a link names the machine's address: the ip parameter of a googlevideo link, or /ip/ in its
+ * path. A subtitle link has an ip parameter too, which named no address, 0.0.0.0, in the
+ * recordings.
+ */
 private val ADDRESS_CARRIERS =
     listOf(
         Regex("""(?:[?&]|\\u0026)ip=([0-9A-Fa-f.:%]+)"""),
@@ -519,9 +523,14 @@ internal fun realValuesOf(exchanges: List<SavedExchange>): RealValues {
         for (carrier in ADDRESS_CARRIERS) {
             for (match in carrier.findAll(text)) {
                 val address = urlDecodedColons(match.groupValues[1])
-                if (isAddress(address) && address != MASKED_IPV4 && address != MASKED_IPV6) {
-                    addresses += address
-                }
+                // A subtitle link names 0.0.0.0, which stands for no address. It isn't the
+                // machine's, and as a number, 0, it would match all kinds of text.
+                val isMachines =
+                    isAddress(address) &&
+                        !isUnspecifiedAddress(address) &&
+                        address != MASKED_IPV4 &&
+                        address != MASKED_IPV6
+                if (isMachines) addresses += address
             }
         }
     }
@@ -1048,6 +1057,14 @@ private fun urlDecodedColons(text: String): String =
     text.replace("%253A", ":").replace("%253a", ":").replace("%3A", ":").replace("%3a", ":")
 
 private fun isAddress(text: String): Boolean = isIpv4(text) || expandedIpv6(text) != null
+
+/** Whether [address] is 0.0.0.0 or ::, the address that stands for no address. */
+private fun isUnspecifiedAddress(address: String): Boolean =
+    if (isIpv4(address)) {
+        ipv4Value(address) == 0L
+    } else {
+        expandedIpv6(address)?.all { it == '0' || it == ':' } == true
+    }
 
 private fun isIpv4(text: String): Boolean {
     val octets = text.split('.')

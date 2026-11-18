@@ -39,7 +39,10 @@ private const val BLANK_LINE = "\n\n"
 /** The extension of a body file whose link has none and whose content type is JSON. */
 private const val JSON_EXTENSION = ".json"
 
-/** The extension of a body file whose link has none and whose content type isn't JSON. */
+/** The extension of a body file whose link has none and whose content type is XML. */
+private const val XML_EXTENSION = ".xml"
+
+/** The extension of a body file whose link has none and whose content type is neither. */
 private const val TEXT_EXTENSION = ".txt"
 
 /** The digits of the number at the start of a body file's name, so the files list in order. */
@@ -183,6 +186,7 @@ private fun bodyFileName(number: Int, exchange: SavedExchange): String {
         when {
             '.' in segment -> ""
             contentType?.value?.contains("json") == true -> JSON_EXTENSION
+            contentType?.value?.contains("xml") == true -> XML_EXTENSION
             else -> TEXT_EXTENSION
         }
     return "${number.toString().padStart(FILE_NUMBER_DIGITS, '0')}-$segment$extension"

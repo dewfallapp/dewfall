@@ -60,6 +60,8 @@ Note, November 18, 2026: NewPipeDownloader also turns HTTP 403 with an HTML body
 
 **One NewPipeExtractor setup, and one call at a time.** NewPipeCalls sets NewPipeExtractor up on its first call, and runs one call at a time behind a Mutex, because every call reads or writes NewPipeExtractor's static caches, which have no locks. The caches belong to the process, so the Mutex does too. docs/architecture.md lists them.
 
+Note, November 19, 2026: #148 reads a subtitle track's lines without the Mutex. That download sends one request through NewPipeDownloader, which keeps no state of its own, and parses the answer with jsoup, so it reads and writes none of the static fields that the Mutex guards. Behind the Mutex, a slow download would make every other call wait, such as a search on a screen, and a download would wait for a slow video page. NewPipeCalls.runDownload keeps the rest of this decision: the dispatcher, cancellation, the error mapping and logging, and the host allow list. The download asks for British English in its Accept-Language header. It names no country, like NewPipeExtractor's request for sw.js_data, because the link comes from the call that listed the tracks, which named the call's country. Every call into NewPipeExtractor still holds the Mutex. See [How a call runs](../architecture.md#how-a-call-runs).
+
 ## Consequences
 
 - Lists, such as search results and a channel's uploads, may show YouTube's English machine translations of titles, while video details show the original title. A later phase can store the original title from video details.

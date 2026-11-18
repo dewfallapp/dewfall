@@ -45,6 +45,8 @@ private fun categoryOfType(error: Throwable): YouTubeError? =
             is PaidContentException,
             is YoutubeMusicPremiumContentException -> YouTubeError.MEMBERS_OR_PAID
             is AccountTerminatedException -> YouTubeError.CHANNEL_CLOSED
+            // A subtitle link that no longer works. The caller lists the tracks again.
+            is SubtitleLinkRefusedException -> YouTubeError.UNAVAILABLE
             is ContentNotAvailableException,
             is ContentNotSupportedException -> YouTubeError.UNAVAILABLE
             else -> null

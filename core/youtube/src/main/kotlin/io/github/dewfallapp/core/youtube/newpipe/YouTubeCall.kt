@@ -9,4 +9,6 @@ internal enum class YouTubeCall {
     VIDEO_DETAILS,
     LATEST_UPLOADS,
     STREAM_LINKS,
+    SUBTITLE_TRACKS,
+    SUBTITLE_LINES,
 }

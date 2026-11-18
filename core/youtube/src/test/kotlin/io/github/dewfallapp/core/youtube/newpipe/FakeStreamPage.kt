@@ -1,6 +1,7 @@
 package io.github.dewfallapp.core.youtube.newpipe
 
 import org.schabi.newpipe.extractor.Image
+import org.schabi.newpipe.extractor.MediaFormat
 import org.schabi.newpipe.extractor.ServiceList
 import org.schabi.newpipe.extractor.downloader.Downloader
 import org.schabi.newpipe.extractor.localization.DateWrapper
@@ -8,6 +9,7 @@ import org.schabi.newpipe.extractor.stream.AudioStream
 import org.schabi.newpipe.extractor.stream.Description
 import org.schabi.newpipe.extractor.stream.StreamExtractor
 import org.schabi.newpipe.extractor.stream.StreamType
+import org.schabi.newpipe.extractor.stream.SubtitlesStream
 import org.schabi.newpipe.extractor.stream.VideoStream
 
 /**
@@ -29,6 +31,7 @@ internal class FakeStreamPage(
     private val videoStreams: () -> List<VideoStream> = { emptyList() },
     private val videoOnlyStreams: () -> List<VideoStream> = { emptyList() },
     private val hlsUrl: () -> String = { "" },
+    private val subtitles: (MediaFormat) -> List<SubtitlesStream> = { emptyList() },
 ) : StreamExtractor(ServiceList.YouTube, ServiceList.YouTube.streamLHFactory.fromId(videoId)) {
     override fun onFetchPage(downloader: Downloader) = Unit
 
@@ -57,4 +60,6 @@ internal class FakeStreamPage(
     override fun getVideoOnlyStreams(): List<VideoStream> = videoOnlyStreams()
 
     override fun getHlsUrl(): String = hlsUrl()
+
+    override fun getSubtitles(format: MediaFormat): List<SubtitlesStream> = subtitles(format)
 }

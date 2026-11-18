@@ -293,6 +293,88 @@ class NewPipeCallsTest {
         }
     }
 
+    @Test
+    fun `a download gets the layer's downloader and returns its block's value`() = runTest {
+        val calls = NewPipeCalls(NoRequests, logger, StandardTestDispatcher(testScheduler))
+
+        val result = calls.runDownload(YouTubeCall.SUBTITLE_LINES) { it }
+
+        assertEquals(YouTubeResult.Success(NoRequests), result)
+        assertEquals(emptyList(), lines)
+    }
+
+    @Test
+    fun `a failed download comes back as its category and is logged once with the call`() =
+        runTest {
+            val calls = NewPipeCalls(NoRequests, logger, StandardTestDispatcher(testScheduler))
+
+            val result = calls.runDownload(YouTubeCall.SUBTITLE_LINES) { throw IOException("Lost") }
+
+            assertEquals(YouTubeResult.Failure(YouTubeError.NETWORK), result)
+            assertEquals(
+                listOf(
+                    "WARN Dewfall.YouTube YouTube call failed call=SUBTITLE_LINES error=NETWORK"
+                ),
+                lines,
+            )
+        }
+
+    @Test
+    fun `cancelling a download throws CancellationException and logs nothing`() = runBlocking {
+        Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { dispatcher ->
+            val calls = NewPipeCalls(NoRequests, logger, dispatcher)
+            val waiting = CountDownLatch(1)
+            val thrown = AtomicReference<Throwable>()
+            val job =
+                launch(Dispatchers.Default) {
+                    try {
+                        calls.runDownload(YouTubeCall.SUBTITLE_LINES) {
+                            waiting.countDown()
+                            waitAsTheDownloaderDoes()
+                        }
+                    } catch (e: CancellationException) {
+                        thrown.set(e)
+                        throw e
+                    }
+                }
+
+            assertTrue(waiting.await(WAIT_SECONDS, TimeUnit.SECONDS))
+            job.cancelAndJoin()
+
+            assertIs<CancellationException>(thrown.get())
+            assertEquals(emptyList(), lines)
+        }
+    }
+
+    @Test
+    fun `a download doesn't wait while a call holds NewPipeExtractor's lock`() = runBlocking {
+        // Two real threads, so the download could run beside the call if nothing held it back.
+        Executors.newFixedThreadPool(2).asCoroutineDispatcher().use { dispatcher ->
+            val calls = NewPipeCalls(NoRequests, logger, dispatcher)
+            val callStarted = CountDownLatch(1)
+            val releaseCall = CountDownLatch(1)
+            val call =
+                launch(Dispatchers.Default) {
+                    calls.run(YouTubeCall.VIDEO_DETAILS) {
+                        callStarted.countDown()
+                        releaseCall.await(WAIT_SECONDS, TimeUnit.SECONDS)
+                    }
+                }
+            assertTrue(callStarted.await(WAIT_SECONDS, TimeUnit.SECONDS))
+
+            // A download that waited for the lock would time out here.
+            val download =
+                withTimeout(WAIT_SECONDS.seconds) {
+                    calls.runDownload(YouTubeCall.SUBTITLE_LINES) { 7 }
+                }
+
+            assertEquals(YouTubeResult.Success(7), download)
+            assertEquals(1, releaseCall.count)
+            releaseCall.countDown()
+            call.join()
+        }
+    }
+
     /**
      * Blocks as NewPipeDownloader does while it waits for an answer, and passes an interrupt on as
      * NewPipeExtractor does, as an InterruptedIOException.

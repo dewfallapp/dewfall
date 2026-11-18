@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<tt xml:lang="en" xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" ttp:profile="http://www.w3.org/TR/profile/sdp-us" >
+<head>
+<styling>
+<style xml:id="s1" tts:textAlign="center" tts:extent="90% 90%" tts:origin="5% 5%" tts:displayAlign="after"/>
+<style xml:id="s2" tts:fontSize=".72c" tts:backgroundColor="black" tts:color="white"/>
+</styling>
+<layout>
+<region xml:id="r1" style="s1"/>
+</layout>
+</head>
+<body region="r1">
+<div>
+<p begin="00:00:04.799" end="00:00:11.320" style="s2">we have main engine start 4 3 2</p>
+<p begin="00:00:22.160" end="00:00:27.760" style="s2">1 you&#39;re a jerk D look Celia we have to</p>
+<p begin="00:00:25.800" end="00:00:29.480" style="s2">follow our passions you have your</p>
+<p begin="00:00:27.760" end="00:00:30.679" style="s2">Robotics and I just want to be awesome</p>
+<p begin="00:00:29.480" end="00:00:32.520" style="s2">in space</p>
+<p begin="00:00:30.679" end="00:00:35.000" style="s2">why don&#39;t you just admit that you&#39;re</p>
+<p begin="00:00:32.520" end="00:00:36.520" style="s2">freaked out by my robot hand I I&#39;m not</p>
+<p begin="00:00:35.000" end="00:00:39.520" style="s2">freaked out but</p>
+<p begin="00:00:36.520" end="00:00:40.840" style="s2">it&#39;s all right fine I&#39;m freaked out I&#39;m</p>
+<p begin="00:00:39.520" end="00:00:43.320" style="s2">having nightmares that I&#39;m being chased</p>
+<p begin="00:00:40.840" end="00:00:46.640" style="s2">by these giant robotic claw whatever</p>
+<p begin="00:00:43.320" end="00:00:46.640" style="s2">done we&#39;re</p>
+<p begin="00:00:49.079" end="00:00:56.239" style="s2">done robot&#39;s memory synced and locked</p>
+<p begin="00:01:00.879" end="00:01:04.719" style="s2">this is pretty freaky</p>
+<p begin="00:01:05.360" end="00:01:08.959" style="s2">[Music]</p>
+<p begin="00:01:17.560" end="00:01:20.769" style="s2">[Music]</p>
+<p begin="00:01:41.790" end="00:01:44.949" style="s2">[Music]</p>
+<p begin="00:01:57.600" end="00:02:01.439" style="s2">shouldn&#39;t you be down there</p>
+<p begin="00:02:11.280" end="00:02:14.599" style="s2">I heard you guys talking last</p>
+<p begin="00:02:15.360" end="00:02:20.440" style="s2">night it&#39;s not my fault you know</p>
+<p begin="00:02:28.480" end="00:02:35.020" style="s2">[Music]</p>
+<p begin="00:02:39.080" end="00:02:42.080" style="s2">oh</p>
+<p begin="00:02:44.980" end="00:02:51.020" style="s2">[Music]</p>
+<p begin="00:03:11.400" end="00:03:15.920" style="s2">are you ready of course you&#39;re ready</p>
+<p begin="00:03:13.560" end="00:03:15.920" style="s2">you&#39;re a</p>
+<p begin="00:03:16.120" end="00:03:20.799" style="s2">rockar how&#39;s it looking barley we should</p>
+<p begin="00:03:19.360" end="00:03:24.239" style="s2">have about 10</p>
+<p begin="00:03:20.799" end="00:03:28.760" style="s2">minutes well that&#39;s perfect we&#39;re only</p>
+<p begin="00:03:24.239" end="00:03:34.560" style="s2">one all systems go yeah you go</p>
+<p begin="00:03:28.760" end="00:03:37.560" style="s2">go go your asses go go go I love it come</p>
+<p begin="00:03:34.560" end="00:03:37.560" style="s2">on</p>
+<p begin="00:03:41.959" end="00:03:47.599" style="s2">go that&#39;s nice nothing to worry about</p>
+<p begin="00:03:49.680" end="00:03:59.799" style="s2">done D there she is</p>
+<p begin="00:03:54.360" end="00:04:02.640" style="s2">now you love her she&#39;s your passion the</p>
+<p begin="00:03:59.799" end="00:04:04.599" style="s2">be tender to her be</p>
+<p begin="00:04:02.640" end="00:04:10.599" style="s2">honest be</p>
+<p begin="00:04:04.599" end="00:04:10.599" style="s2">tender remind her what love is</p>
+<p begin="00:04:20.320" end="00:04:23.410" style="s2">[Music]</p>
+<p begin="00:04:26.540" end="00:04:33.989" style="s2">[Music]</p>
+<p begin="00:04:48.760" end="00:04:51.820" style="s2">[Music]</p>
+<p begin="00:04:53.440" end="00:04:59.199" style="s2">and</p>
+<p begin="00:04:55.680" end="00:05:01.240" style="s2">action memory override in progress</p>
+<p begin="00:04:59.199" end="00:05:07.160" style="s2">you&#39;re jerk</p>
+<p begin="00:05:01.240" end="00:05:07.160" style="s2">D oh sorry sorry</p>
+<p begin="00:05:14.960" end="00:05:20.319" style="s2">sorry look</p>
+<p begin="00:05:17.360" end="00:05:23.960" style="s2">Celia we have to follow our</p>
+<p begin="00:05:20.319" end="00:05:23.960" style="s2">passions you have your</p>
+<p begin="00:05:24.160" end="00:05:30.280" style="s2">Robotics and I just want to be awesome</p>
+<p begin="00:05:27.039" end="00:05:30.280" style="s2">in space</p>
+<p begin="00:05:36.170" end="00:05:44.880" style="s2">[Music]</p>
+<p begin="00:05:39.160" end="00:05:44.880" style="s2">get it coming 2 minutes left 2 minutes</p>
+<p begin="00:05:46.039" end="00:05:51.680" style="s2">spe why don&#39;t you just admit that you&#39;re</p>
+<p begin="00:05:48.360" end="00:05:51.680" style="s2">freaked out by my robot</p>
+<p begin="00:05:55.880" end="00:06:04.000" style="s2">hand listen Celia I was young and a dick</p>
+<p begin="00:06:01.160" end="00:06:08.000" style="s2">but there&#39;s no reason to destroy the</p>
+<p begin="00:06:04.000" end="00:06:10.240" style="s2">world why does he do this we already try</p>
+<p begin="00:06:08.000" end="00:06:10.240" style="s2">that</p>
+<p begin="00:06:11.000" end="00:06:14.000" style="s2">one</p>
+<p begin="00:06:18.400" end="00:06:22.639" style="s2">a</p>
+<p begin="00:06:20.120" end="00:06:25.160" style="s2">no</p>
+<p begin="00:06:22.639" end="00:06:29.400" style="s2">no you broke my</p>
+<p begin="00:06:25.160" end="00:06:30.520" style="s2">heart I know you forgot me on Earth I</p>
+<p begin="00:06:29.400" end="00:06:34.319" style="s2">know</p>
+<p begin="00:06:30.520" end="00:06:34.319" style="s2">I should just Crush you</p>
+<p begin="00:06:36.160" end="00:06:39.160" style="s2">no</p>
+<p begin="00:06:43.040" end="00:06:49.319" style="s2">[Music]</p>
+<p begin="00:06:46.639" end="00:06:52.800" style="s2">I&#39;m I&#39;m</p>
+<p begin="00:06:49.319" end="00:06:52.800" style="s2">sorry good at</p>
+<p begin="00:06:58.280" end="00:07:04.560" style="s2">lip I&#39;m my</p>
+<p begin="00:07:01.319" end="00:07:04.560" style="s2">fault This</p>
+<p begin="00:07:07.560" end="00:07:13.240" style="s2">Time Quiet on set we&#39;re out of time</p>
+<p begin="00:07:10.759" end="00:07:13.240" style="s2">we&#39;re out of</p>
+<p begin="00:07:15.639" end="00:07:19.639" style="s2">time human</p>
+<p begin="00:07:29.680" end="00:07:32.680" style="s2">a</p>
+<p begin="00:07:43.800" end="00:07:47.350" style="s2">[Music]</p>
+<p begin="00:08:22.960" end="00:08:30.800" style="s2">on memory overr at</p>
+<p begin="00:08:25.560" end="00:08:30.800" style="s2">90% Captain we have to abort</p>
+<p begin="00:08:39.120" end="00:08:43.819" style="s2">the world&#39;s changed</p>
+<p begin="00:08:40.679" end="00:08:43.819" style="s2">[Music]</p>
+<p begin="00:08:52.300" end="00:08:57.160" style="s2">[Music]</p>
+<p begin="00:08:54.080" end="00:09:01.440" style="s2">Celia maybe we can</p>
+<p begin="00:08:57.160" end="00:09:01.440" style="s2">too memory override complete</p>
+<p begin="00:09:06.040" end="00:09:09.190" style="s2">[Music]</p>
+<p begin="00:09:13.110" end="00:09:17.049" style="s2">[Music]</p>
+<p begin="00:09:19.160" end="00:09:20.920" style="s2">you</p>
+<p begin="00:09:19.500" end="00:09:24.920" style="s2">[Music]</p>
+<p begin="00:09:20.920" end="00:09:29.560" style="s2">know there&#39;s a lesson to be learned from</p>
+<p begin="00:09:24.920" end="00:09:29.560" style="s2">this could have gone worse</p>
+<p begin="00:09:34.840" end="00:09:43.700" style="s2">[Music]</p>
+<p begin="00:09:48.250" end="00:09:51.919" style="s2">[Music]</p>
+<p begin="00:09:59.480" end="00:10:02.480" style="s2">hey</p>
+<p begin="00:10:08.010" end="00:10:11.299" style="s2">[Music]</p>
+<p begin="00:11:03.780" end="00:11:18.880" style="s2">[Music]</p>
+<p begin="00:11:20.490" end="00:11:24.720" style="s2">[Applause]</p>
+<p begin="00:11:33.320" end="00:11:37.009" style="s2">[Music]</p>
+<p begin="00:11:39.780" end="00:11:48.070" style="s2">[Music]</p>
+<p begin="00:11:50.130" end="00:11:53.360" style="s2">[Music]</p>
+</div>
+</body>
+</tt>

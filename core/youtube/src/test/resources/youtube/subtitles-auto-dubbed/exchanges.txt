@@ -1,0 +1,87 @@
+# Saved YouTube responses for the set SUBTITLES_AUTO_DUBBED.
+# Written by ./gradlew :core:youtube:recordYouTubeResponses. Don't edit it by hand.
+# Signed out, asking for the country GB and the language en-GB.
+# recorded: 2026-11-18
+# newpipe-extractor: v0.27.1
+
+> POST https://www.youtube.com/youtubei/v1/visitor_id?prettyPrint=false
+> Accept-Language: en-GB, en;q=0.9
+> Content-Type: application/json
+> User-Agent: com.google.visionos.youtube/1.04(RealityDevice17,1; U; CPU visionOS 26_6_0 like Mac OS X; GB)
+> X-Goog-Api-Format-Version: 2
+>
+> {"context":{"client":{"clientName":"VISIONOS","clientVersion":"1.04","clientScreen":"WATCH","platform":"MOBILE","deviceMake":"Apple","deviceModel":"RealityDevice17,1","osName":"visionOS","osVersion":"26.6.0.23O770","hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}}}
+< 200
+< content-type: application/json; charset=UTF-8
+<
+< @01-visitor_id.json
+
+> POST https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false&t=867fZ6WKSXg3&id=K8DG7LUTbaM
+> Accept-Language: en-GB, en;q=0.9
+> Content-Type: application/json
+> User-Agent: com.google.visionos.youtube/1.04(RealityDevice17,1; U; CPU visionOS 26_6_0 like Mac OS X; GB)
+> X-Goog-Api-Format-Version: 2
+>
+> {"context":{"client":{"clientName":"VISIONOS","clientVersion":"1.04","clientScreen":"WATCH","platform":"MOBILE","visitorData":"VISITOR_DATA_1","deviceMake":"Apple","deviceModel":"RealityDevice17,1","osName":"visionOS","osVersion":"26.6.0.23O770","hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}},"videoId":"K8DG7LUTbaM","cpn":"uGaaNCVq9tAJ9K8j","contentCheckOk":true,"racyCheckOk":true}
+< 200
+< content-type: application/json; charset=UTF-8
+<
+< @02-player.json
+
+> GET https://www.youtube.com/sw.js_data
+> Accept-Language: en-GB, en;q=0.9
+> Origin: https://www.youtube.com
+> Referer: https://www.youtube.com
+> User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0
+< 200
+< content-type: application/json; charset=utf-8
+<
+< @03-sw.js_data
+
+> POST https://www.youtube.com/youtubei/v1/visitor_id?prettyPrint=false
+> Accept-Language: en-GB, en;q=0.9
+> Content-Type: application/json
+> Cookie: SOCS=CAE=
+> Origin: https://www.youtube.com
+> Referer: https://www.youtube.com
+> User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0
+> X-YouTube-Client-Name: 1
+> X-YouTube-Client-Version: 2.20261118.01.00
+>
+> {"context":{"client":{"clientName":"WEB","clientVersion":"2.20261118.01.00","clientScreen":"WATCH","platform":"DESKTOP","hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}}}
+< 200
+< content-type: application/json; charset=UTF-8
+<
+< @04-visitor_id.json
+
+> POST https://www.youtube.com/youtubei/v1/player?prettyPrint=false&$fields=microformat,videoDetails.thumbnail.thumbnails,videoDetails.videoId
+> Accept-Language: en-GB, en;q=0.9
+> Content-Type: application/json
+> Cookie: SOCS=CAE=
+> Origin: https://www.youtube.com
+> Referer: https://www.youtube.com
+> User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0
+> X-YouTube-Client-Name: 1
+> X-YouTube-Client-Version: 2.20261118.01.00
+>
+> {"context":{"client":{"clientName":"WEB","clientVersion":"2.20261118.01.00","clientScreen":"WATCH","platform":"DESKTOP","visitorData":"VISITOR_DATA_5","hl":"en-GB","gl":"GB","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}},"videoId":"K8DG7LUTbaM","contentCheckOk":true,"racyCheckOk":true}
+< 200
+< content-type: application/json; charset=UTF-8
+<
+< @05-player.json
+
+> POST https://www.youtube.com/youtubei/v1/next?prettyPrint=false
+> Accept-Language: en-GB, en;q=0.9
+> Content-Type: application/json
+> Cookie: SOCS=CAE=
+> Origin: https://www.youtube.com
+> Referer: https://www.youtube.com
+> User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0
+> X-YouTube-Client-Name: 1
+> X-YouTube-Client-Version: 2.20261118.01.00
+>
+> {"context":{"client":{"hl":"en-GB","gl":"GB","clientName":"WEB","clientVersion":"2.20261118.01.00","originalUrl":"https://www.youtube.com","platform":"DESKTOP","utcOffsetMinutes":0},"request":{"internalExperimentFlags":[],"useSsl":true},"user":{"lockedSafetyMode":false}},"videoId":"K8DG7LUTbaM","contentCheckOk":true,"racyCheckOk":true}
+< 200
+< content-type: application/json; charset=UTF-8
+<
+< @06-next.json
