@@ -9,6 +9,7 @@ import kotlin.test.assertTrue
 
 private const val PLAYER_URL = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false"
 private const val SW_JS_DATA_URL = "https://www.youtube.com/sw.js_data"
+private const val TIMEDTEXT_URL = "https://www.youtube.com/api/timedtext?lang=MASKED&fmt=ttml"
 
 class SavedExchangesTest {
     private val content =
@@ -74,6 +75,29 @@ class SavedExchangesTest {
 
         assertEquals(setOf(EXCHANGES_FILE, "01-sw.js_data", "02-player.json"), files.keys)
         assertEquals(content.exchanges[1].response.body, files.getValue("02-player.json"))
+    }
+
+    @Test
+    fun `a body without an extension is named by its content type`() {
+        fun exchange(url: String, contentType: String) =
+            SavedExchange(
+                SavedRequest("GET", url, emptyList(), body = null),
+                SavedResponse(200, listOf(Header(CONTENT_TYPE, contentType)), "body"),
+            )
+        val bodies =
+            SavedSetContent(
+                recordedOn = LocalDate.parse("2026-11-18"),
+                newPipeExtractorVersion = "v0.27.1",
+                exchanges =
+                    listOf(
+                        exchange(TIMEDTEXT_URL, "text/xml; charset=UTF-8"),
+                        exchange(TIMEDTEXT_URL, "text/html; charset=UTF-8"),
+                    ),
+            )
+
+        val files = formatSavedSet(SavedSet.SEARCH_NASA, bodies)
+
+        assertEquals(setOf(EXCHANGES_FILE, "01-timedtext.xml", "02-timedtext.txt"), files.keys)
     }
 
     @Test
