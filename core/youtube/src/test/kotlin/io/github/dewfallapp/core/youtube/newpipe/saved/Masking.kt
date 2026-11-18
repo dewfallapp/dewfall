@@ -86,6 +86,9 @@ private const val MASKED_EXPERIMENT_IDS = "EXPERIMENTS"
 private val NON_PUBLIC_IPV6 =
     setOf("0000:0000:0000:0000:0000:0000:0000:0001", "0000:0000:0000:0000:0000:0000:0000:0000")
 
+/** The documentation address that a masked IPv6 address becomes, written out in full. */
+private val MASKED_IPV6_EXPANDED = expandedIpv6(MASKED_IPV6)
+
 /** The start of every documentation address from RFC 3849, written out. */
 private const val IPV6_DOCUMENTATION_PREFIX = "2001:0db8:"
 
@@ -115,6 +118,13 @@ private const val HANDLE_END = """(?![\p{L}\p{N}_\-]|\.[\p{L}\p{N}_\-])"""
 
 /** The start of an IPv4 address mapped into IPv6, before the address as two hex groups. */
 private const val IPV4_MAPPED_PREFIX = "::ffff:"
+
+/**
+ * The start of the body of sw.js_data, the answer that NewPipeExtractor reads the web client's
+ * version from. YouTube writes it before the JSON, so that no page can load the answer as a script.
+ * No other answer that the layer gets starts with it.
+ */
+private const val SW_JS_DATA_PREFIX = ")]}'"
 
 /**
  * What the recorder replaces or drops before it writes a set, so that no saved file says which
@@ -181,8 +191,9 @@ internal enum class MaskedValue {
     EXPERIMENT_IDS,
 
     /**
-     * The network's country, which sw.js names as the web client's gl, and which visitor data
-     * holds, wherever a country field names it.
+     * The network's country, which sw.js names as the web client's gl, sw.js_data as its one string
+     * of two capital letters, and visitor data in a field of its own. It is masked wherever a
+     * country field names it, and in sw.js_data.
      */
     COUNTRY,
 
@@ -339,6 +350,31 @@ private val IPV6_LITERAL =
 /** The network's country, as sw.js names it: the web client's gl. */
 private val NETWORK_COUNTRY = Regex(""""gl"\s*:\s*"([A-Z]{2})"""")
 
+/**
+ * A string of two capital letters in sw.js_data. sw.js_data is a JSON array without names, and its
+ * only such string is the network's country, next to the language that the request asked for. It
+ * names the country even though the request asks for GB.
+ */
+private val SW_JS_DATA_COUNTRY = Regex(""""([A-Z]{2})"""")
+
+/**
+ * A string in sw.js_data that may be visitor data, which sw.js_data holds under no name. Each one
+ * that decodes to a visitor ID counts, see [visitorIdOf].
+ */
+private val SW_JS_DATA_STRING = Regex(""""([A-Za-z0-9_%=-]{16,})"""")
+
+/**
+ * Any string in sw.js_data, such as the machine's address, which sw.js_data holds under no name.
+ */
+private val SW_JS_DATA_ANY_STRING = Regex(""""([^"\\]*)"""")
+
+/**
+ * The value at the end of sw.js_data, before two vertical bars, such as V and eight hex digits. It
+ * changes on every fetch, so it says which session fetched it, and NewPipeExtractor doesn't read
+ * it.
+ */
+private val SW_JS_DATA_FETCH_TOKEN = Regex(""""([^"|]+)\|\|"""")
+
 /** The names of the fields that hold a country: gl, a country code, or a region. */
 private const val COUNTRY_NAMES = "gl|[a-z_]+_gl|country|country_?code|region_?code|content_?region"
 
@@ -403,7 +439,7 @@ private val NON_PUBLIC_IPV4_NETWORKS =
  * every set.
  */
 internal class RealValues(
-    /** The machine's addresses, as googlevideo links carry them, decoded. */
+    /** The machine's addresses, as googlevideo links and sw.js_data carry them, decoded. */
     val addresses: Set<String> = emptySet(),
     /** YouTube's visitor data values, in the order they first appear. */
     val visitorData: List<String> = emptyList(),
@@ -413,7 +449,10 @@ internal class RealValues(
     val cookieValues: Set<String> = emptySet(),
     /** The rollout tokens that YouTube gave. */
     val rolloutTokens: Set<String> = emptySet(),
-    /** The countries that YouTube placed the network in, as sw.js and visitor data name them. */
+    /**
+     * The countries that YouTube placed the network in, as sw.js, sw.js_data and visitor data name
+     * them.
+     */
     val countries: Set<String> = emptySet(),
     /** The strings in data about a viewer that are long enough to look for anywhere. */
     val viewerValues: Set<String> = emptySet(),
@@ -487,8 +526,7 @@ internal fun realValuesOf(exchanges: List<SavedExchange>): RealValues {
             }
         }
     }
-    val visitorData =
-        texts.flatMap { text -> VISITOR_DATA.findAll(text).map { it.groupValues[1] } }.distinct()
+    val visitorData = texts.flatMap(::visitorDataIn).distinct()
     val rolloutTokens = texts.flatMap { text ->
         ROLLOUT_TOKEN.findAll(text).map { it.groupValues[1] }
     }
@@ -506,8 +544,13 @@ internal fun realValuesOf(exchanges: List<SavedExchange>): RealValues {
     }
     val swJs =
         exchanges.filter { Endpoint.of(it.request) == Endpoint.SW_JS }.map { it.response.body }
+    val swJsData = exchanges.map { it.response.body }.filter(::isSwJsData)
+    addresses += swJsData.flatMap(::addressStringsIn)
     val countries =
         swJs.flatMap { text -> NETWORK_COUNTRY.findAll(text).map { it.groupValues[1] } } +
+            swJsData.flatMap { text ->
+                SW_JS_DATA_COUNTRY.findAll(text).map { it.groupValues[1] }
+            } +
             visitorData.flatMap(::countriesInVisitorData)
     val viewerData = texts.map(::maskViewerData)
     // A handle can be short, and is looked for whatever its length. Other strings only from 8
@@ -566,6 +609,27 @@ internal fun mask(
                         withValueReplaced(match, MASKED_COUNTRY)
                     } else {
                         match.value
+                    }
+                }
+        }
+        // sw.js_data names the network's country in no field, so it is found by its shape there.
+        if (isSwJsData(masked)) {
+            masked =
+                SW_JS_DATA_COUNTRY.replace(masked) { match ->
+                    if (match.groupValues[1] == MASKED_COUNTRY) {
+                        match.value
+                    } else {
+                        count(MaskedValue.COUNTRY, 1)
+                        withValueReplaced(match, MASKED_COUNTRY)
+                    }
+                }
+            masked =
+                SW_JS_DATA_FETCH_TOKEN.replace(masked) { match ->
+                    if (match.groupValues[1] == MASKED_SESSION_TOKEN) {
+                        match.value
+                    } else {
+                        count(MaskedValue.SESSION_TOKEN, 1)
+                        withValueReplaced(match, MASKED_SESSION_TOKEN)
                     }
                 }
         }
@@ -831,9 +895,10 @@ internal fun isPlaceholder(value: String): Boolean {
  * The kinds of value in [text], a saved file, that aren't masked, found without knowing any real
  * value: an IP address, an address in a googlevideo link that isn't a documentation address,
  * visitor data that isn't a placeholder, any value that a masking rule finds where its placeholder
- * should be, a tracked link's parameter that is neither kept nor masked, data about a viewer that
- * isn't masked, and an experiment flag that isn't masked. The recorder runs this before it writes a
- * set, and SavedResponsesPrivacyTest runs it on every saved file.
+ * should be, a country or a value of the fetch in sw.js_data that isn't its placeholder, a tracked
+ * link's parameter that is neither kept nor masked, data about a viewer that isn't masked, and an
+ * experiment flag that isn't masked. The recorder runs this before it writes a set, and
+ * SavedResponsesPrivacyTest runs it on every saved file.
  */
 internal fun unmaskedKindsIn(text: String): Set<MaskedValue> {
     val found = mutableSetOf<MaskedValue>()
@@ -844,7 +909,7 @@ internal fun unmaskedKindsIn(text: String): Set<MaskedValue> {
             if (address != MASKED_IPV4 && address != MASKED_IPV6) found += MaskedValue.ADDRESS
         }
     }
-    if (VISITOR_DATA.findAll(text).any { !MASKED_VISITOR_DATA_VALUE.matches(it.groupValues[1]) }) {
+    if (visitorDataIn(text).any { !MASKED_VISITOR_DATA_VALUE.matches(it) }) {
         found += MaskedValue.VISITOR_DATA
     }
     for (rule in RULES) {
@@ -852,6 +917,7 @@ internal fun unmaskedKindsIn(text: String): Set<MaskedValue> {
             found += rule.kind
         }
     }
+    if (isSwJsData(text)) found += unmaskedKindsInSwJsData(text)
     if (unmaskedLinkParametersIn(text).isNotEmpty()) found += MaskedValue.LINK_PARAMETER
     if (hasUnmaskedViewerData(text)) found += MaskedValue.VIEWER_DATA
     if (hasUnmaskedExperimentFlags(text)) found += MaskedValue.EXPERIMENT_FLAGS
@@ -913,6 +979,43 @@ private fun withValueReplaced(match: MatchResult, placeholder: String): String {
     val value = checkNotNull(match.groups[1])
     val start = value.range.first - match.range.first
     return match.value.replaceRange(start, start + value.value.length, placeholder)
+}
+
+/** Whether [text] is the body of sw.js_data, which starts with [SW_JS_DATA_PREFIX]. */
+private fun isSwJsData(text: String): Boolean = text.startsWith(SW_JS_DATA_PREFIX)
+
+/**
+ * The kinds of value in [text], the body of sw.js_data, that a rule for sw.js_data finds where its
+ * placeholder should be: a country that isn't GB, and a value of the fetch that isn't TOKEN.
+ */
+private fun unmaskedKindsInSwJsData(text: String): Set<MaskedValue> {
+    val found = mutableSetOf<MaskedValue>()
+    val countries = SW_JS_DATA_COUNTRY.findAll(text).map { it.groupValues[1] }
+    if (countries.any { it != MASKED_COUNTRY }) found += MaskedValue.COUNTRY
+    val tokens = SW_JS_DATA_FETCH_TOKEN.findAll(text).map { it.groupValues[1] }
+    if (tokens.any { it != MASKED_SESSION_TOKEN }) found += MaskedValue.SESSION_TOKEN
+    return found
+}
+
+/**
+ * The IP addresses that [text], the body of sw.js_data, holds as strings of their own, as it holds
+ * the machine's, written out in full for IPv6. The placeholders don't count.
+ */
+private fun addressStringsIn(text: String): List<String> =
+    SW_JS_DATA_ANY_STRING.findAll(text)
+        .map { it.groupValues[1] }
+        .filter { isAddress(it) && it != MASKED_IPV4 && expandedIpv6(it) != MASKED_IPV6_EXPANDED }
+        .toList()
+
+/**
+ * The visitor data in [text], in the order it appears: every visitorData member of a JSON body, and
+ * in sw.js_data, every string that decodes to a visitor ID.
+ */
+private fun visitorDataIn(text: String): List<String> {
+    val named = VISITOR_DATA.findAll(text).map { it.groupValues[1] }.toList()
+    if (!isSwJsData(text)) return named
+    val unnamed = SW_JS_DATA_STRING.findAll(text).map { it.groupValues[1] }
+    return named + unnamed.filter { visitorIdOf(it) != null }
 }
 
 /** Every text of [exchange] that a real value could be in. */
