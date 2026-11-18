@@ -582,6 +582,48 @@ apkanalyzer manifest print app/build/outputs/apk/release/app-release-unsigned.ap
 
 Both print 0. For app/build/outputs/apk/debug/app-debug.apk, the first prints several hundred and the second prints 1, which shows that the commands find the screen where it is. The release workflow on version tags should run the same two commands, and fail if either finds the screen. A comment on #78, the task that adds the workflow, asks for this.
 
+## The pre-push gate
+
+scripts/pre_push_gate.py checks every commit that a push would send, before the push. Run it from the repository's folder:
+
+```bash
+python3 scripts/pre_push_gate.py
+```
+
+It fetches origin, then checks every commit in origin/main..HEAD, not just the last one, then the build. It ends with PASS only when every check passed. It prints the names of the rules that failed, with each commit's hash and subject, and never an identity or a value it found.
+
+| Check | Fails when |
+|---|---|
+| The gate's own tests | A test in scripts/tests fails, so a broken check can't pass by finding nothing. They run first. |
+| The branch | origin/main isn't part of HEAD's history, or a commit is a merge. Rebase onto origin/main instead of merging it. |
+| Identity | A commit's author or committer isn't this clone's own `user.name` and `user.email` from `git config --local`, or uses the email of the global configuration when that differs. The clone must set its identity locally. Renovate's commits are exempt, only once they are on the branch on GitHub, because a fix pushed to Renovate's branch sends them again, as [Dependency updates](#dependency-updates) describes. |
+| Messages | A subject doesn't start with one of the conventional types in AGENTS.md, a message has a trailer, such as a co-author line, or a closing word, such as "closes", comes before an issue's number or link. The pull request's description closes issues, never a commit. |
+| Secrets | A commit adds or changes a local.properties, .env, keystore or key file, or a line with a private key, a GitHub token, an AWS access key or a Google API key. |
+| Saved responses | A commit changes core/youtube/src/test/resources/youtube/, and its own copy of the folder fails the scan below. |
+| Nothing uncommitted | The folder has a change or a file that no commit holds, which the build would check although the push doesn't send it. |
+| The build | The pull request workflow's command, with `--continue` and `-Pandroid.builder.sdkDownload=false`, fails, or changes a file, such as a Room schema. |
+
+`--no-build` skips the build for a quick look. The gate then ends INCOMPLETE, with exit code 3, when every other check passed, and FAIL, with exit code 1, when one didn't, never PASS. With no commit to push, it says so and ends with exit code 0. It needs Python 3.9 or later.
+
+The gate reads each commit's saved responses from Git's objects, not from an archive, so `export-ignore` and other settings in the commit's .gitattributes can't leave a file out. A commit that deletes the folder has nothing to scan. Its tests in scripts/tests build small repositories of their own, without the user's Git configuration, to check merges, the Renovate exemption, the scan of saved responses and the exit codes.
+
+### The scan of saved responses
+
+scripts/scan_saved_responses.py is a second check of the saved responses, next to [Privacy](#privacy)'s masking and SavedResponsesPrivacyTest. It shares no code with them, so a mistake in one doesn't hide in the other. It can scan any folder:
+
+```bash
+python3 scripts/scan_saved_responses.py core/youtube/src/test/resources/youtube
+```
+
+It reads every file, with JSON's `\uXXXX` and `\/` escapes undone, then decodes URL encoding, up to three times. It splits a link's parameters where the link appears, then decodes each value and checks it, so a link inside a value, such as a description's link through YouTube's redirect, can't look like more parameters of the outer link. Text that a fourth decoding would still change fails. It fails on:
+
+- an `ip=` or `/ip/` value other than the documentation address 2001:db8::1. A subtitle link's `ip` may be MASKED, because YouTube's subtitle links name no address, 0.0.0.0, which the masking replaces with MASKED like the link's other parameters;
+- an IPv4 address outside the documentation and private ranges, or an IPv6 address outside 2001:db8::/32 other than the loopback address. No letter, digit or dot may touch an IPv4 address, so a version such as 26.6.0.23O770 isn't one;
+- a `gl`, `countryCode`, `contentRegion` or `regionCode` that isn't GB, or a two-letter string in sw.js_data that isn't GB. Lists of the countries where a video plays aren't country fields;
+- visitor data that isn't a placeholder, as `visitorData`, as a `visitor_data` key and value, or as a `visitor_data` parameter;
+- a Set-Cookie header, or a Google API key;
+- a parameter of a googlevideo link, a link through YouTube's redirect or a subtitle link that isn't on its list in [Links](#links) and isn't a placeholder, and a googlevideo host other than a masked one, such as rr1---sn-masked.googlevideo.com.
+
 ## Screenshot tests
 
 TODO

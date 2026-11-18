@@ -97,7 +97,7 @@ Read AGENTS.md and docs/vision.md first. Read any ADR in docs/adr/ and any spec 
    - @ConstantText goes only on a String parameter that its function passes on as log text.
 5. **Kotlin style.** Read every changed Kotlin file, main code and tests, against the Kotlin style rule next to the formatting commands in AGENTS.md.
 6. **Tests.** New logic has tests. Unit tests never touch the network. No test was deleted, skipped or weakened.
-7. **Workflow.** The work is on a branch, not main. Commit messages follow the conventional format. A behavior change has an OpenSpec change. A hard-to-reverse decision has an ADR. docs/architecture.md is updated if the structure changed. If the work fully finishes a roadmap task, the pull request closes that task's issue on the project board. It never closes the issue of an unfinished task.
+7. **Workflow.** The work is on a branch, not main. Commit messages follow the conventional format. Before a push, the hand-off shows the pre-push gate's output for HEAD, ending with PASS, as AGENTS.md asks. A behavior change has an OpenSpec change. A hard-to-reverse decision has an ADR. docs/architecture.md is updated if the structure changed. If the work fully finishes a roadmap task, the pull request closes that task's issue on the project board. It never closes the issue of an unfinished task.
 8. **Invented facts.** Flag any URL, email address, name, version number or factual claim that does not come from the repository or the task. If you cannot tell where it came from, flag it.
 9. **Secrets.** No API keys, tokens, keystores, signing passwords or local.properties.
 10. **Writing.** Plain English, short sentences, no emoji, Markdown for docs.
