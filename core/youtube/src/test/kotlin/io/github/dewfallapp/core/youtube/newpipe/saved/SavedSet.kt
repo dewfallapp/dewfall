@@ -59,6 +59,9 @@ internal const val PRIVATE_VIDEO_ID = "8VajtrESJzA"
 /** An age-restricted video, which NewPipeExtractor's own tests use too. */
 internal const val AGE_RESTRICTED_VIDEO_ID = "rwcfPqbAx-0"
 
+/** A video ID that no video ever had, which NewPipeExtractor's own tests use too. */
+internal const val NEVER_EXISTED_VIDEO_ID = "don-t-exist"
+
 /** A channel that YouTube closed, which NewPipeExtractor's own tests use too. */
 internal const val TERMINATED_CHANNEL_ID = "UCTGjY2I-ZUGnwVoWAGRd7XQ"
 
@@ -189,6 +192,16 @@ internal enum class SavedSet(
         YouTubeError.UNAVAILABLE,
         UNPLAYABLE_VIDEO,
         { videoDetails(VideoId(AGE_RESTRICTED_VIDEO_ID)) },
+    ),
+    /**
+     * YouTube answers the visionOS client's player request with an error and no reason that
+     * NewPipeExtractor tells apart, so it is UNAVAILABLE. Video details and stream links send the
+     * same requests, so their tests share this set.
+     */
+    VIDEO_NEVER_EXISTED(
+        YouTubeError.UNAVAILABLE,
+        UNPLAYABLE_VIDEO,
+        { videoDetails(VideoId(NEVER_EXISTED_VIDEO_ID)) },
     ),
     CHANNEL_TERMINATED(
         YouTubeError.CHANNEL_CLOSED,

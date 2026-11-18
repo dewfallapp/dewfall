@@ -44,6 +44,31 @@ class UnavailableContentReplayTest {
     }
 
     @Test
+    fun `a video that never existed is UNAVAILABLE, after two requests`() = runTest {
+        val youTube = savedYouTube(SavedSet.VIDEO_NEVER_EXISTED)
+
+        val result = youTube.call { videoDetails(VideoId(NEVER_EXISTED_VIDEO_ID)) }
+
+        assertEquals(YouTubeResult.Failure(YouTubeError.UNAVAILABLE), result)
+        // One WARN line and no ERROR line: only BROKEN, which needs an update, logs at ERROR.
+        assertEquals(listOf(failedLine("VIDEO_DETAILS", YouTubeError.UNAVAILABLE)), lines)
+        assertEquals(SavedSet.VIDEO_NEVER_EXISTED.requests, youTube.sentRequests)
+        assertEquals(2, youTube.countedRequests)
+    }
+
+    @Test
+    fun `the stream links of a video that never existed are UNAVAILABLE too`() = runTest {
+        val youTube = savedYouTube(SavedSet.VIDEO_NEVER_EXISTED)
+
+        val result = youTube.call { streamLinks(VideoId(NEVER_EXISTED_VIDEO_ID)) }
+
+        assertEquals(YouTubeResult.Failure(YouTubeError.UNAVAILABLE), result)
+        assertEquals(listOf(failedLine("STREAM_LINKS", YouTubeError.UNAVAILABLE)), lines)
+        assertEquals(SavedSet.VIDEO_NEVER_EXISTED.requests, youTube.sentRequests)
+        assertEquals(2, youTube.countedRequests)
+    }
+
+    @Test
     fun `a channel that YouTube closed is CHANNEL_CLOSED`() = runTest {
         val youTube = savedYouTube(SavedSet.CHANNEL_TERMINATED)
 
