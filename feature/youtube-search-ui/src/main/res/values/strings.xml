@@ -1,0 +1,66 @@
+<resources>
+    <!-- The Search YouTube screen. See openspec/specs/youtube-search/spec.md. -->
+    <string name="youtube_search_title">Search YouTube</string>
+    <string name="youtube_search_subtitle">Videos to stream</string>
+    <string name="youtube_search_placeholder">Search YouTube</string>
+    <string name="youtube_search_field_icon">Search</string>
+    <string name="youtube_search_clear">Clear search</string>
+
+    <string name="youtube_search_intro_title">Find a video</string>
+    <string name="youtube_search_intro_body">Videos you open from here stream right away.</string>
+    <string name="youtube_search_loading">Searching YouTube</string>
+    <string name="youtube_search_videos_heading">Videos</string>
+
+    <string name="youtube_search_no_results_title">No results</string>
+    <!-- %1$s is the search text, as the user typed it, trimmed. -->
+    <string name="youtube_search_no_results_body">No videos on YouTube match “%1$s”. Check the spelling, or try fewer words.</string>
+
+    <!-- The content description of the error glyph in a failed search's banner. -->
+    <string name="youtube_search_failed_icon">Couldn\'t search</string>
+    <string name="youtube_search_failed_network">YouTube can\'t be reached. Check your connection.</string>
+    <string name="youtube_search_failed_other">YouTube isn\'t loading right now.</string>
+    <string name="youtube_search_try_again">Try again</string>
+
+    <!-- The length tag on a video's thumbnail box. -->
+    <string name="youtube_search_length_hours">%1$dh %2$02dm</string>
+    <string name="youtube_search_length_minutes">%1$dm</string>
+    <string name="youtube_search_length_seconds">%1$ds</string>
+    <string name="youtube_search_live">Live</string>
+    <string name="youtube_search_upcoming">Upcoming</string>
+
+    <!-- The length as a screen reader says it, such as "1 hour 6 minutes". -->
+    <string name="youtube_search_spoken_hours_and_minutes">%1$s %2$s</string>
+    <plurals name="youtube_search_spoken_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="youtube_search_spoken_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="youtube_search_spoken_seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+
+    <!-- How long ago a video was published. -->
+    <string name="youtube_search_minutes_ago">%1$dm ago</string>
+    <string name="youtube_search_hours_ago">%1$dh ago</string>
+    <string name="youtube_search_yesterday">Yesterday</string>
+    <plurals name="youtube_search_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <plurals name="youtube_search_weeks_ago">
+        <item quantity="one">%d week ago</item>
+        <item quantity="other">%d weeks ago</item>
+    </plurals>
+    <plurals name="youtube_search_months_ago">
+        <item quantity="one">%d month ago</item>
+        <item quantity="other">%d months ago</item>
+    </plurals>
+    <plurals name="youtube_search_years_ago">
+        <item quantity="one">%d year ago</item>
+        <item quantity="other">%d years ago</item>
+    </plurals>
+</resources>

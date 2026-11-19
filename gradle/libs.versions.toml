@@ -72,6 +72,9 @@ androidx-room3-compiler = { module = "androidx.room3:room3-compiler", version.re
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel", version.ref = "lifecycle" }
 # collectAsStateWithLifecycle, which screens use to read their ViewModel's state.
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+# viewModel() in Compose, which gets a screen's @HiltViewModel through the activity's Hilt factory.
+# The maintainer approved it in #40.
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 
 # Unit test libraries. The convention plugins in build-logic add them to every module's tests.

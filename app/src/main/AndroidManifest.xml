@@ -27,11 +27,19 @@
         <!--
             adjustResize lets screens move their content out of the keyboard's way through
             window insets, as edge-to-edge apps do.
+
+            Phones stay in portrait, as docs/design/brief.md says. Android ignores this on screens
+            at least 600dp wide, so every screen also works in any other window (ADR 0006).
+            tools:ignore turns off the two lint checks that discourage a fixed orientation,
+            LockedOrientationActivity and DiscouragedApi, for this one attribute's element: the
+            brief keeps phones in portrait, and names the conflict with Android's guidance.
         -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustResize">
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"
+            tools:ignore="LockedOrientationActivity,DiscouragedApi">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -1,0 +1,83 @@
+package io.github.dewfallapp.feature.youtubesearch.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import io.github.dewfallapp.feature.youtubesearch.logic.LengthLabel
+import io.github.dewfallapp.feature.youtubesearch.logic.TimeAgo
+
+/** The length tag's text, such as "1h 06m", "54m", "45s", "Live" or "Upcoming". */
+@Composable
+internal fun lengthText(label: LengthLabel): String =
+    when (label) {
+        is LengthLabel.HoursAndMinutes -> {
+            stringResource(R.string.youtube_search_length_hours, label.hours, label.minutes)
+        }
+        is LengthLabel.Minutes -> {
+            stringResource(R.string.youtube_search_length_minutes, label.minutes)
+        }
+        is LengthLabel.Seconds -> {
+            stringResource(R.string.youtube_search_length_seconds, label.seconds)
+        }
+        LengthLabel.Live -> stringResource(R.string.youtube_search_live)
+        LengthLabel.Upcoming -> stringResource(R.string.youtube_search_upcoming)
+    }
+
+/** The length as a screen reader says it, such as "1 hour 6 minutes", or "1 hour" with none. */
+@Composable
+internal fun spokenLength(label: LengthLabel): String =
+    when (label) {
+        is LengthLabel.HoursAndMinutes -> {
+            val hours =
+                pluralStringResource(
+                    R.plurals.youtube_search_spoken_hours,
+                    label.hours.toInt(),
+                    label.hours,
+                )
+            if (label.minutes == 0) {
+                hours
+            } else {
+                stringResource(
+                    R.string.youtube_search_spoken_hours_and_minutes,
+                    hours,
+                    pluralStringResource(
+                        R.plurals.youtube_search_spoken_minutes,
+                        label.minutes,
+                        label.minutes,
+                    ),
+                )
+            }
+        }
+        is LengthLabel.Minutes -> {
+            pluralStringResource(
+                R.plurals.youtube_search_spoken_minutes,
+                label.minutes,
+                label.minutes,
+            )
+        }
+        is LengthLabel.Seconds -> {
+            pluralStringResource(
+                R.plurals.youtube_search_spoken_seconds,
+                label.seconds,
+                label.seconds,
+            )
+        }
+        LengthLabel.Live -> stringResource(R.string.youtube_search_live)
+        LengthLabel.Upcoming -> stringResource(R.string.youtube_search_upcoming)
+    }
+
+/** The time ago as a row shows it, such as "7h ago", "Yesterday" or "3 weeks ago". */
+@Composable
+internal fun timeAgoText(timeAgo: TimeAgo): String =
+    when (timeAgo) {
+        is TimeAgo.Minutes -> stringResource(R.string.youtube_search_minutes_ago, timeAgo.count)
+        is TimeAgo.Hours -> stringResource(R.string.youtube_search_hours_ago, timeAgo.count)
+        TimeAgo.Yesterday -> stringResource(R.string.youtube_search_yesterday)
+        is TimeAgo.Days -> plural(R.plurals.youtube_search_days_ago, timeAgo.count)
+        is TimeAgo.Weeks -> plural(R.plurals.youtube_search_weeks_ago, timeAgo.count)
+        is TimeAgo.Months -> plural(R.plurals.youtube_search_months_ago, timeAgo.count)
+        is TimeAgo.Years -> plural(R.plurals.youtube_search_years_ago, timeAgo.count)
+    }
+
+@Composable
+private fun plural(id: Int, count: Long): String = pluralStringResource(id, count.toInt(), count)
