@@ -10,6 +10,8 @@
     <string name="youtube_search_intro_body">Videos you open from here stream right away.</string>
     <string name="youtube_search_loading">Searching YouTube</string>
     <string name="youtube_search_videos_heading">Videos</string>
+    <!-- What a screen reader says that tapping a row does. -->
+    <string name="youtube_search_open_video">Open video</string>
 
     <string name="youtube_search_no_results_title">No results</string>
     <!-- %1$s is the search text, as the user typed it, trimmed. -->
@@ -46,6 +48,7 @@
     <!-- How long ago a video was published. -->
     <string name="youtube_search_minutes_ago">%1$dm ago</string>
     <string name="youtube_search_hours_ago">%1$dh ago</string>
+    <string name="youtube_search_today">Today</string>
     <string name="youtube_search_yesterday">Yesterday</string>
     <plurals name="youtube_search_days_ago">
         <item quantity="one">%d day ago</item>

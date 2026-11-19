@@ -15,8 +15,10 @@ interface MviState
 interface MviIntent
 
 /**
- * A one-time instruction to the UI, such as showing a message or opening another screen. The
- * ViewModel holds it as pending until the UI reports that it handled it. Each screen declares a
- * sealed interface that extends this one.
+ * A one-time instruction to the UI that starts in the ViewModel, such as a message after a load, or
+ * a screen that opens only after work finishes. The ViewModel holds it as pending until the UI
+ * reports that it handled it. Each screen declares a sealed interface that extends this one. An
+ * action that starts in the UI and changes no state, such as opening a screen on a tap, needs no
+ * effect. See ADR 0002.
  */
 interface MviEffect

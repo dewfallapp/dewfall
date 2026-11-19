@@ -7,25 +7,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.dewfallapp.core.model.VideoId
 import java.time.ZoneId
 import kotlin.time.Clock
 
 /**
- * The Search YouTube screen, with its ViewModel. The app shows it as its first screen. See
- * openspec/specs/youtube-search/spec.md.
+ * The Search YouTube screen, with its ViewModel. The app shows it as its first screen.
+ * [onOpenVideo] runs when the user taps a video. See openspec/specs/youtube-search/spec.md.
  */
 @Composable
-fun YouTubeSearch(modifier: Modifier = Modifier) {
-    YouTubeSearchRoute(modifier = modifier)
+fun YouTubeSearch(onOpenVideo: (VideoId) -> Unit, modifier: Modifier = Modifier) {
+    YouTubeSearchRoute(onOpenVideo = onOpenVideo, modifier = modifier)
 }
 
 /**
- * Connects the screen to its ViewModel. [viewModel] comes from the activity, whose default factory
- * Hilt provides, so @HiltViewModel works with viewModel(). The field keeps its own text, and saves
- * it across process death as rememberSaveable would.
+ * Connects the screen to its ViewModel. [viewModel] comes from the current ViewModelStoreOwner, the
+ * screen's entry on the app's back stack, whose default factory is the activity's, which Hilt
+ * provides, so @HiltViewModel works with viewModel(). The field keeps its own text, and saves it
+ * across process death as rememberSaveable would.
  */
 @Composable
 internal fun YouTubeSearchRoute(
+    onOpenVideo: (VideoId) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: YouTubeSearchViewModel = viewModel(),
 ) {
@@ -40,6 +43,7 @@ internal fun YouTubeSearchRoute(
         now = now,
         zone = zone,
         onIntent = viewModel::dispatch,
+        onOpenVideo = onOpenVideo,
         modifier = modifier,
     )
 }

@@ -6,6 +6,8 @@ Accepted
 
 Changed in #136: the reducer can return effects, intents include work results, and effects are delivered as state.
 
+Changed in #41, which the maintainer approved on November 19, 2026: an action that starts in the UI, changes no state and needs no business logic, such as opening or closing a screen, goes straight to the app's navigation, with no intent or effect. The UI calls the action its caller gave it, as Android's [UI events guidance](https://developer.android.com/topic/architecture/ui-layer/events) describes. Effects stay for instructions that start in the ViewModel.
+
 ## Context
 
 Every screen needs a clear way to hold its state and handle what the user does. Screen logic should be easy to test without a phone.

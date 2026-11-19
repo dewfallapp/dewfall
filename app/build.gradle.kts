@@ -2,6 +2,8 @@ plugins {
     id("dewfall.android.application")
     id("dewfall.android.compose")
     id("dewfall.android.hilt")
+    // The navigation keys are @Serializable, so the back stack survives process death.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -28,15 +30,25 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:logging"))
+    implementation(project(":feature:player-ui"))
     implementation(project(":feature:youtube-search-ui"))
 
     implementation(libs.androidx.activity.compose)
+    // The navigation between screens. See docs/architecture.md#navigation.
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.kotlinx.serialization.core)
     implementation(libs.androidx.compose.material3)
     // The manifest names App Startup's InitializationProvider to remove emoji2's initializer.
     // Compose already brings App Startup in. Declaring it lets lint find the class.
     implementation(libs.androidx.startup.runtime)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
+
+    // Saves navigation keys as JSON in tests, because the Bundle that SavedState writes needs
+    // Android.
+    testImplementation(libs.kotlinx.serialization.json)
 
     // The YouTube layer's debug screen. Only debug builds contain it. See
     // docs/architecture.md#the-youtube-layers-debug-screen.

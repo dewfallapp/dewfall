@@ -1,54 +1,25 @@
-package io.github.dewfallapp.feature.youtubesearch.logic
+package io.github.dewfallapp.core.model
 
-import io.github.dewfallapp.core.model.PublishedTime
-import io.github.dewfallapp.core.model.VideoKind
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-/** What a row's thumbnail box says about the video's length. The UI turns it into text. */
-sealed interface LengthLabel {
-    /** An hour or more, such as 1h 06m. Seconds are dropped. */
-    data class HoursAndMinutes(val hours: Long, val minutes: Int) : LengthLabel
-
-    /** At least a minute and under an hour, such as 54m. Seconds are dropped. */
-    data class Minutes(val minutes: Int) : LengthLabel
-
-    /** Under a minute, such as 45s. */
-    data class Seconds(val seconds: Int) : LengthLabel
-
-    data object Live : LengthLabel
-
-    data object Upcoming : LengthLabel
-}
-
 /**
- * The label for a video of [kind] and [duration], or null when there is nothing to say, because
- * YouTube gave no length for a video that is neither live nor upcoming.
+ * How long ago a video was published, in the unit a screen shows. Each screen turns it into its own
+ * text, such as "7h ago" in a row or "Published 7 hours ago" on the video screen.
  */
-fun lengthLabel(duration: Duration?, kind: VideoKind): LengthLabel? =
-    when {
-        kind == VideoKind.LIVE -> LengthLabel.Live
-        kind == VideoKind.UPCOMING -> LengthLabel.Upcoming
-        duration == null -> null
-        duration >= 1.hours -> {
-            duration.toComponents { hours, minutes, _, _ ->
-                LengthLabel.HoursAndMinutes(hours, minutes)
-            }
-        }
-        duration >= 1.minutes -> LengthLabel.Minutes(duration.inWholeMinutes.toInt())
-        else -> LengthLabel.Seconds(duration.inWholeSeconds.toInt())
-    }
-
-/** How long ago a video was published, in the unit a row shows. The UI turns it into text. */
 sealed interface TimeAgo {
     data class Minutes(val count: Long) : TimeAgo
 
     data class Hours(val count: Long) : TimeAgo
+
+    /**
+     * Today's date, for a time that isn't shown in minutes or hours: an estimated time, or, on the
+     * day the clocks go back, an exact time a day or more ago.
+     */
+    data object Today : TimeAgo
 
     data object Yesterday : TimeAgo
 
@@ -61,7 +32,7 @@ sealed interface TimeAgo {
     data class Years(val count: Long) : TimeAgo
 }
 
-/** The last day count that a row shows in days. From 14 days on, it shows weeks. */
+/** The last day count shown in days. From 14 days on, it shows weeks. */
 private const val LAST_DAY_COUNT = 13L
 private const val DAYS_IN_A_WEEK = 7L
 
@@ -70,9 +41,9 @@ private const val DAYS_IN_A_WEEK = 7L
  * YouTube gave no time or the time is in the future.
  *
  * YouTube's lists give times such as "10 days ago" or "1 month ago", which NewPipeExtractor turns
- * into an approximate time by going back that many calendar units from now. Counting the same
- * calendar units reads each of them back as YouTube wrote it. An approximate time never shows
- * minutes or hours. See openspec/changes/archive/2026-11-19-youtube-search/design.md.
+ * into an estimated time by going back that many calendar units from now. Counting the same
+ * calendar units reads each of them back as YouTube wrote it. An estimated time never shows minutes
+ * or hours. See openspec/changes/archive/2026-11-19-youtube-search/design.md.
  */
 fun timeAgo(published: PublishedTime?, now: Instant, zone: ZoneId): TimeAgo? {
     if (published == null || published.instant > now) return null
@@ -91,7 +62,8 @@ private fun calendarTimeAgo(published: LocalDate, today: LocalDate): TimeAgo {
     val months = ChronoUnit.MONTHS.between(published, today)
     val years = ChronoUnit.YEARS.between(published, today)
     return when {
-        days <= 1 -> TimeAgo.Yesterday
+        days < 1 -> TimeAgo.Today
+        days == 1L -> TimeAgo.Yesterday
         days <= LAST_DAY_COUNT -> TimeAgo.Days(days)
         months < 1 -> TimeAgo.Weeks(days / DAYS_IN_A_WEEK)
         years < 1 -> TimeAgo.Months(months)

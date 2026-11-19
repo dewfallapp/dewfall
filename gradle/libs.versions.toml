@@ -27,6 +27,8 @@ ksp = "2.3.12"
 # Room 2 is deprecated. See docs/architecture.md#build-settings.
 room3 = "3.0.3"
 lifecycle = "2.11.0"
+# The app's navigation between screens. See docs/architecture.md#navigation.
+navigation3 = "1.2.1"
 kotlinxCoroutines = "1.11.0"
 # JUnit 6 runs the unit tests of the plain Kotlin/JVM modules. See docs/testing.md.
 junit = "6.1.3"
@@ -75,6 +77,15 @@ androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-ru
 # viewModel() in Compose, which gets a screen's @HiltViewModel through the activity's Hilt factory.
 # The maintainer approved it on November 19, 2026, for #40.
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+# The back stack and NavDisplay, in :app only, and the decorator that gives each screen on the back
+# stack its own ViewModels. The maintainer approved them on November 19, 2026, for #41.
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+# :app's navigation keys are @Serializable, so the back stack survives process death. Navigation 3
+# brings an older version in through SavedState. The maintainer approved it on November 19, 2026,
+# for #41.
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerialization" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 
 # Unit test libraries. The convention plugins in build-logic add them to every module's tests.
@@ -88,8 +99,8 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
-# Only :core:designsystem's tests use it, to check the theme against the design tokens. See
-# docs/architecture.md#the-theme.
+# Only tests use it: :core:designsystem's, to check the theme against the design tokens (see
+# docs/architecture.md#the-theme), and :app's, to check that navigation keys survive being saved.
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 # A detekt plugin. The detekt convention plugin in build-logic adds it to detekt in every project.
@@ -108,6 +119,9 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 # The Compose compiler ships with Kotlin, so it always has the Kotlin version.
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+# Kotlin's serialization plugin ships with Kotlin too. :app uses it for its navigation keys. The
+# maintainer approved it on November 19, 2026, for #41.
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 room3 = { id = "androidx.room3", version.ref = "room3" }

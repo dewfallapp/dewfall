@@ -4,14 +4,14 @@ This is the design document for Dewfall. It explains how the app is built: its m
 
 ## Modules
 
-Dewfall is one Gradle build with an app module, core modules, and feature modules as features arrive. Today the feature modules hold the Search YouTube screen, the app's first screen, and the YouTube layer's debug screen, which only debug builds contain. Some modules are plain Kotlin/JVM and the rest are Android modules. [ADR 0006](adr/0006-platform-and-android-versions.md) explains why.
+Dewfall is one Gradle build with an app module, core modules, and feature modules as features arrive. Today the feature modules hold the Search YouTube screen, the app's first screen, the video screen, which opens from it, and the YouTube layer's debug screen, which only debug builds contain. Some modules are plain Kotlin/JVM and the rest are Android modules. [ADR 0006](adr/0006-platform-and-android-versions.md) explains why.
 
 - A plain Kotlin/JVM module can't see Android classes, so the build itself keeps Android code out of it. Its tests run on the computer's JVM with nothing from Android to fake. It can't hold user-facing text, because string resources are part of Android, so it returns types that the screens turn into text.
 - An Android module is the app or an Android library. It holds everything that needs Android, such as the database, screens, ViewModels, resources and background jobs.
 
 ### The module graph
 
-Solid arrows are dependencies in the build today. An arrow labeled api is an api dependency, so a module that depends on the module where the arrow starts sees the module where it ends too. For example, `:core:data` sees `:core:logging` through `:core:youtube`. The arrow labeled debug only is a debugImplementation dependency, so release builds leave out the debug screen's modules. See [The YouTube layer's debug screen](#the-youtube-layers-debug-screen). Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds, and `:core:ui`, which comes when a second feature needs shared UI.
+Solid arrows are dependencies in the build today. An arrow labeled api is an api dependency, so a module that depends on the module where the arrow starts sees the module where it ends too. For example, `:core:data` sees `:core:logging` through `:core:youtube`. The arrow labeled debug only is a debugImplementation dependency, so release builds leave out the debug screen's modules. See [The YouTube layer's debug screen](#the-youtube-layers-debug-screen). Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds, and `:core:ui`, which comes when features share UI that needs the domain models or string resources, such as the video row that the inbox shares with search.
 
 ```mermaid
 graph TD
@@ -25,6 +25,8 @@ graph TD
     mvi[":core:mvi<br/>Kotlin/JVM"]
     searchUi[":feature:youtube-search-ui<br/>Android library"]
     searchLogic[":feature:youtube-search-logic<br/>Kotlin/JVM"]
+    playerUi[":feature:player-ui<br/>Android library"]
+    playerLogic[":feature:player-logic<br/>Kotlin/JVM"]
     debugUi[":feature:youtube-debug-ui<br/>Android library, debug builds only"]
     debugLogic[":feature:youtube-debug-logic<br/>Kotlin/JVM, debug builds only"]
     coreUi[":core:ui<br/>Android library, later"]
@@ -48,6 +50,14 @@ graph TD
     searchUi --> mvi
     searchLogic -->|api| mvi
     searchLogic -->|api| model
+    app --> playerUi
+    playerUi --> playerLogic
+    playerUi --> data
+    playerUi --> designsystem
+    playerUi --> model
+    playerUi --> mvi
+    playerLogic -->|api| mvi
+    playerLogic -->|api| model
     app -->|debug only| debugUi
     debugUi --> debugLogic
     debugUi --> designsystem
@@ -75,20 +85,20 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
-| `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class and the app's only activity, which shows the Search YouTube screen. Once there is more than one screen, it also handles navigation between them. It also holds the logcat writer and the Hilt module that provides the logger. See [Logging](#logging). | `:core:data`, `:core:designsystem`, `:core:logging`, and each feature's `-ui` module, today `:feature:youtube-search-ui`. In debug builds only, `:feature:youtube-debug-ui`. |
-| `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError. See [The YouTube layer](#the-youtube-layer). | Nothing |
+| `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class, the app's only activity, and the navigation between screens, which opens on Search YouTube. See [Navigation](#navigation). It also holds the logcat writer and the Hilt module that provides the logger. See [Logging](#logging). | `:core:data`, `:core:designsystem`, `:core:logging`, and each feature's `-ui` module, today `:feature:youtube-search-ui` and `:feature:player-ui`. In debug builds only, `:feature:youtube-debug-ui`. Navigation 3 and kotlinx-serialization-core, for the back stack. |
+| `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError, and TimeAgo, which counts how long ago a PublishedTime was, the way YouTube writes it, for screens to turn into text. See [The YouTube layer](#the-youtube-layer). | Nothing |
 | `:core:logging` | core/logging/ | Kotlin/JVM | io.github.dewfallapp.core.logging | The Logger that every module logs through, its levels and fields, and the error summary that leaves out messages. See [Logging](#logging). | Nothing |
 | `:core:mvi` | core/mvi/ | Kotlin/JVM | io.github.dewfallapp.core.mvi | The MVI base: MviState, MviIntent, MviEffect, the Reducer, and MviViewModel, the base class of every screen's ViewModel. See [The MVI contract](#the-mvi-contract). | Nothing. It uses Lifecycle's ViewModel and kotlinx.coroutines. |
 | `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation. NewPipeYouTube, its one public class, implements all five. It also holds the HTTP code that NewPipeExtractor sends its requests through, and the code that runs each call. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md) and [The YouTube layer](#the-youtube-layer). | `:core:model`, `:core:logging` and kotlinx.coroutines, all three as api dependencies, because the interfaces return the models, and NewPipeYouTube's constructor takes a Logger and a CoroutineDispatcher |
 | `:core:database` | core/database/ | Android library | io.github.dewfallapp.core.database | The Room database: entities, DAOs, migrations and the exported schemas | `:core:model` |
-| `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer. Today it holds YouTubeSearchRepository, which the Search YouTube screen uses, and YouTubeModule, the Hilt module that provides the YouTube layer. See [How Hilt provides the layer](#how-hilt-provides-the-layer) and [Reading from YouTube](#reading-from-youtube). | `:core:model`, `:core:database`, `:core:youtube` |
-| `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). It also holds the shared icons, today the search, close and error glyphs from Material Symbols Rounded, under the Apache License 2.0. Later, shared components too. | Nothing. It exposes Material 3 as an api dependency. |
+| `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer. Today it holds YouTubeSearchRepository, which the Search YouTube screen uses, VideoDetailsRepository, which the video screen uses, and YouTubeModule, the Hilt module that provides the YouTube layer. See [How Hilt provides the layer](#how-hilt-provides-the-layer) and [Reading from YouTube](#reading-from-youtube). | `:core:model`, `:core:database`, `:core:youtube` |
+| `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). It also holds the shared icons, today the search, close, error and keyboard_arrow_down glyphs from Material Symbols Rounded, under the Apache License 2.0, ReadableWidth, the widest a screen's column gets, and the first shared component, Banner. | Nothing. It exposes Material 3 as an api dependency. |
 
-`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds the search repository and the Hilt module that provides the YouTube layer. A module that logs depends on `:core:logging`. Today `:app` and `:core:youtube` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements all five of the YouTube layer's interfaces. Compose is set up in `:app`, `:core:designsystem`, `:feature:youtube-search-ui` and `:feature:youtube-debug-ui`. Hilt is set up in `:app`, `:core:data`, `:feature:youtube-search-ui` and `:feature:youtube-debug-ui`.
+`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds the search and video details repositories and the Hilt module that provides the YouTube layer. A module that logs depends on `:core:logging`. Today `:app` and `:core:youtube` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements all five of the YouTube layer's interfaces. Compose is set up in `:app`, `:core:designsystem` and every feature's `-ui` module. Hilt is set up in `:app`, `:core:data` and every feature's `-ui` module.
 
 `:lint-rules` is a build tool, not part of the app. It holds Dewfall's own lint checks, which lint runs on every module of the app. No module's code depends on it, and nothing from it ships. See [Dewfall's lint checks](#dewfalls-lint-checks).
 
-`:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the code that formats a duration, goes in a `:core:ui` Android library instead. `:core:ui` gets created when a second feature needs such a piece. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
+`:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the text of a duration, goes in a `:core:ui` Android library instead. Counting that needs no text, such as TimeAgo, stays in `:core:model`, a plain Kotlin/JVM module, as ADR 0006 asks. `:core:ui` gets created when two features first need such a piece. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
 
 ### Feature modules
 
@@ -101,14 +111,23 @@ Each feature has two modules, because its reducer has to be plain Kotlin/JVM and
 
 - Feature modules depend on core modules, never on another feature's modules. A feature's `-ui` module also depends on its own `-logic` module.
 - The ViewModel goes in the `-ui` module and extends MviViewModel from `:core:mvi`. It runs side effects through `:core:data` and uses Hilt, and both are Android. A plain Kotlin/JVM module can't depend on an Android module.
-- `:app` depends on every feature's `-ui` module and handles navigation between features.
+- `:app` depends on every feature's `-ui` module and handles navigation between features. A feature whose screen sits on `:app`'s back stack exposes one public composable from its `-ui` module, which takes plain values and actions, such as `onOpenVideo`, and never sees Navigation 3. See [Navigation](#navigation). The YouTube layer's debug screen has its own activity instead.
 
 The Search YouTube screen is the first feature. Its pair:
 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
-| `:feature:youtube-search-logic` | feature/youtube-search-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.youtubesearch.logic | YouTubeSearchState, YouTubeSearchIntent, the reducer, the length and time-ago functions, and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
+| `:feature:youtube-search-logic` | feature/youtube-search-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.youtubesearch.logic | YouTubeSearchState, YouTubeSearchIntent, the reducer, the length label, the line-break functions, and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
 | `:feature:youtube-search-ui` | feature/youtube-search-ui/ | Android library | io.github.dewfallapp.feature.youtubesearch.ui | The Compose screen and its previews, YouTubeSearchViewModel and its tests, and string resources | `:feature:youtube-search-logic`, `:core:data`, `:core:designsystem`, `:core:model`, `:core:mvi` |
+
+The video screen, which opens from a search result, is the second. Its pair:
+
+| Module | Folder | Type | Namespace or package | What it holds | Depends on |
+|---|---|---|---|---|---|
+| `:feature:player-logic` | feature/player-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.player.logic | PlayerState, PlayerIntent, the reducer, the channel's initial, which errors offer "Try again", and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
+| `:feature:player-ui` | feature/player-ui/ | Android library | io.github.dewfallapp.feature.player.ui | PlayerRoute, the Compose screen and its previews, PlayerViewModel and its tests, and string resources | `:feature:player-logic`, `:core:data`, `:core:designsystem`, `:core:model`, `:core:mvi` |
+
+The modules are named player, because #42 to #44 add playback to the same screen. The service that plays media won't depend on any screen, so it will go in a core module of its own.
 
 The YouTube layer's debug screen has a pair of its own, which `:app` adds to debug builds only. [The YouTube layer's debug screen](#the-youtube-layers-debug-screen) explains it.
 
@@ -136,7 +155,7 @@ Every module of the app applies one of three convention plugins from build-logic
 
 Another plugin, dewfall.detekt, holds the detekt settings and adds the compose-rules plugin to detekt. The four plugins above apply it, and so does the root project, to check the code in build-logic.
 
-Android modules that use Compose, Hilt or Room also apply the matching plugins below, after dewfall.android.application or dewfall.android.library. Today `:app`, `:core:designsystem` and `:feature:youtube-debug-ui` apply dewfall.android.compose, `:app`, `:core:data` and `:feature:youtube-debug-ui` apply dewfall.android.hilt, and only `:core:database` applies dewfall.android.room. Each feature's `-ui` module will apply both dewfall.android.compose and dewfall.android.hilt.
+Android modules that use Compose, Hilt or Room also apply the matching plugins below, after dewfall.android.application or dewfall.android.library. Today `:app`, `:core:designsystem` and every feature's `-ui` module apply dewfall.android.compose, `:app`, `:core:data` and every feature's `-ui` module apply dewfall.android.hilt, and only `:core:database` applies dewfall.android.room. `:app` also applies Kotlin's serialization plugin, for its navigation keys. See [Navigation](#navigation).
 
 `:app` also turns on BuildConfig, which AGP 8.0 and later generate only for modules that ask ([AGP 8.0.0](https://developer.android.com/build/releases/agp-8-0-0-release-notes)). The Hilt module that provides the logger reads BuildConfig.DEBUG to pick the lowest log level. See [Logging](#logging).
 
@@ -156,7 +175,7 @@ The Room Gradle plugin tells Room's compiler where the schemas go. Room writes t
 
 Room 3 adds a service, MultiInstanceInvalidationService, to the app's manifest. It isn't exported, and it runs only for a database built with enableMultiInstanceInvalidation(), which keeps database instances in several processes in sync. The app runs in a single process, so it doesn't need that.
 
-**The same versions in debug and release.** Checks on an emulator run a debug build, so debug and release builds must resolve the same version of every library they share. A debugImplementation dependency can break that, because Gradle resolves each build type's dependencies on its own. Until #40, only the debug screen brought `:core:mvi`, whose Lifecycle 2.11.0 is newer than 2.9.4, the highest version that the app's other AndroidX libraries ask for. Without a constraint, debug builds would have run Lifecycle 2.11.0 and SavedState 1.4.0 while release builds kept 2.9.4 and 1.3.2. A constraint in `:app` on lifecycle-viewmodel gave release the same versions, because Lifecycle publishes rules that keep all its artifacts on one version, and Lifecycle 2.11.0 needs SavedState 1.4.0 ([dependency constraints](https://docs.gradle.org/9.8.1/userguide/dependency_constraints.html)). Now the Search YouTube screen brings `:core:mvi` and Lifecycle 2.11.0 into release builds too, so both builds resolve the same versions with no constraint, and #40 removed it. A new debugImplementation dependency needs the same check. To compare the two builds, run `./gradlew -q :app:dependencies --configuration debugRuntimeClasspath` and the same for releaseRuntimeClasspath. Today the debug build has only these extra parts: Compose's preview tooling and the debug screen's two modules.
+**The same versions in debug and release.** Checks on an emulator run a debug build, so debug and release builds must resolve the same version of every library they share. A debugImplementation dependency can break that, because Gradle resolves each build type's dependencies on its own. Until #40, only the debug screen brought `:core:mvi`, whose Lifecycle 2.11.0 is newer than 2.9.4, the highest version that the app's other AndroidX libraries ask for. Without a constraint, debug builds would have run Lifecycle 2.11.0 and SavedState 1.4.0 while release builds kept 2.9.4 and 1.3.2. A constraint in `:app` on lifecycle-viewmodel gave release the same versions, because Lifecycle publishes rules that keep all its artifacts on one version, and Lifecycle 2.11.0 needs SavedState 1.4.0 ([dependency constraints](https://docs.gradle.org/9.8.1/userguide/dependency_constraints.html)). Now the Search YouTube screen brings `:core:mvi` and Lifecycle 2.11.0 into release builds too, so both builds resolve the same versions with no constraint, and #40 removed it. A new debugImplementation dependency needs the same check. To compare the two builds, run `./gradlew -q :app:dependencies --configuration debugRuntimeClasspath` and the same for releaseRuntimeClasspath. Today the debug build has only these extra parts: Compose's preview tooling and the debug screen's two modules. #41 checked it again for Navigation 3: both builds resolve the same versions, and the only versions that changed are navigationevent and navigationevent-compose, from 1.0.0 to 1.1.1, and kotlinx-serialization-core and its BOM, kotlinx-serialization-bom, from 1.7.3 to 1.11.0. The merged release manifest didn't change.
 
 Every module compiles with JDK 17, and the Java and Kotlin bytecode targets follow the toolchain. So every module produces Java 17 bytecode, and the version is written in one place. Android modules get Kotlin from AGP's built-in Kotlin support.
 
@@ -586,7 +605,7 @@ adb shell am start -n io.github.dewfallapp/io.github.dewfallapp.feature.youtubed
 
 ### Reading from YouTube
 
-This is how a screen reads from YouTube, through a repository in `:core:data`. The Search YouTube screen and YouTubeSearchRepository are the first to do it. Feature modules can't see `:core:youtube`, because `:core:data` depends on it as an implementation dependency. Feature modules see the models, `YouTubeResult` and `YouTubeError`, because those live in `:core:model`. The debug screen is the one feature module that sees `:core:youtube` too.
+This is how a screen reads from YouTube, through a repository in `:core:data`. The Search YouTube screen with YouTubeSearchRepository, and the video screen with VideoDetailsRepository, do it. Feature modules can't see `:core:youtube`, because `:core:data` depends on it as an implementation dependency. Feature modules see the models, `YouTubeResult` and `YouTubeError`, because those live in `:core:model`. The debug screen is the one feature module that sees `:core:youtube` too.
 
 ```mermaid
 sequenceDiagram
@@ -603,7 +622,7 @@ sequenceDiagram
 ```
 
 1. The ViewModel's runSideEffects calls the repository from viewModelScope. The call is main-safe, so the ViewModel doesn't switch threads.
-2. The repository calls the YouTube layer, and returns its result, or a result of its own built from it. YouTubeSearchRepository returns the layer's result unchanged. It is an interface, so a ViewModel's tests fake it without seeing `:core:youtube`.
+2. The repository calls the YouTube layer, and returns its result, or a result of its own built from it. YouTubeSearchRepository and VideoDetailsRepository return the layer's result unchanged. Each is an interface, so a ViewModel's tests fake it without seeing `:core:youtube`.
 3. The ViewModel dispatches the result as an intent, such as SearchFinished. The reducer turns a Success into content and a Failure into an error state.
 
 The rest of this section, such as how data moves through the database and background jobs, comes with Phase 5.
@@ -618,12 +637,14 @@ Every screen uses MVI, as [ADR 0002](adr/0002-mvi-with-playback-state-outside.md
 |---|---|
 | MviState | A screen's state. One immutable class per screen, usually a data class with val properties and read-only collections. After the initial state, only the screen's reducer makes new ones. |
 | MviIntent | Something that happens to the screen: what the user does, or the result of work the ViewModel ran. A screen's intents form a sealed interface. Results are named in the past tense, such as Loaded. |
-| MviEffect | A one-time instruction to the UI, such as showing a message or opening another screen. A screen's effects form a sealed interface. |
+| MviEffect | A one-time instruction to the UI that starts in the ViewModel, such as a message after a load, or a screen that opens only after work finishes. A screen's effects form a sealed interface. |
 | Reducer | A pure function from the old state and an intent to a Next: the new state and any effects, in order. It runs no coroutines, I/O, clock, randomness or shared mutable state. |
 | PendingEffect | An effect that the UI hasn't handled yet, with an id that is unique within its ViewModel. |
 | MviViewModel | The base class of every screen's ViewModel. It holds the state and the pending effects, and runs every intent through the reducer. |
 
 A feature's State, Intent, Effect and reducer go in its `-logic` module. Its ViewModel extends MviViewModel and goes in its `-ui` module. The base type names start with Mvi, so they don't clash with Compose's State or Android's Intent.
+
+An action that starts in the UI, changes no state and needs no business logic, such as opening or closing a screen, skips intents and effects. The UI calls the action its caller gave it, such as `onOpenVideo`, and `:app`'s navigation handles it, as Android's [UI events guidance](https://developer.android.com/topic/architecture/ui-layer/events) describes. [ADR 0002](adr/0002-mvi-with-playback-state-outside.md) records this.
 
 ### How an intent flows
 
@@ -709,6 +730,19 @@ A screen calls it with `viewModel.pendingEffects.collectAsStateWithLifecycle().v
 `:core:mvi` exposes Lifecycle and kotlinx.coroutines as api dependencies, because MviViewModel extends ViewModel and exposes StateFlows. So `-logic` modules can see ViewModel too. They don't use it, because ViewModels go in `-ui` modules.
 
 On the computer's JVM there's no Main dispatcher, and viewModelScope then quietly falls back to EmptyCoroutineContext, so its coroutines run on Dispatchers.Default's threads ([Lifecycle 2.8.0](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.8.0)). That's why every ViewModel test sets Main first, as [testing.md](testing.md#running-tests-locally) shows.
+
+## Navigation
+
+`:app` owns the back stack and the screens on it, with [Navigation 3](https://developer.android.com/guide/navigation/navigation-3). Only `:app` sees it. Each feature whose screen sits on the back stack exposes one public composable from its `-ui` module, which takes plain values and actions: `YouTubeSearch(onOpenVideo)` and `PlayerRoute(videoId, onClose)`. So features never depend on each other or on the navigation library, and replacing it would change only `:app`.
+
+- **The keys.** Each screen has a key: SearchKey, an object, and PlayerKey, which holds the video's VideoId and an entry ID. They are `@Serializable` NavKeys, so `rememberNavBackStack(SearchKey)` saves the back stack across configuration changes and process death ([Save your back stack](https://developer.android.com/guide/navigation/navigation-3/save-state)). VideoId lives in `:core:model`, which has no serialization plugin, so `:app`'s VideoIdSerializer saves its text and restores it through VideoId's constructor, which checks it.
+- **The ID in saved state.** The back stack is saved in the state Android keeps for a process it ends in the background, so the video ID of an open video screen is in it, on the device only, as the search field's text is. PlayerKey's toString hides the ID, as VideoId's does ([ADR 0007](adr/0007-how-the-app-logs.md)).
+- **The content key.** Navigation 3 tells entries apart by their content key, and NavEntry's toString prints it. Since Navigation 3 1.1.6, its default is made from the key's toString and its class ([release notes](https://developer.android.com/jetpack/androidx/releases/navigation3)), and in 1.2.1 it is the string `"$key:${key::class}"` ([NavEntry.kt at 1.2.1](https://android.googlesource.com/platform/frameworks/support/+/65822252146d26e872acf03dc11bda43f11efa3b/navigation3/navigation3-runtime/src/commonMain/kotlin/androidx/navigation3/runtime/NavEntry.kt)). PlayerKey's toString hides the ID, so that default would be the same for every video. So PlayerKey's entry ID, a random UUID's text made when the key is created, is its content key. It keeps two entries apart, even two for the same video, and holds no ID.
+- **The decorators.** NavDisplay gets `rememberSaveableStateHolderNavEntryDecorator()` and `rememberViewModelStoreNavEntryDecorator()`, so each entry keeps its own saved state, such as the search field's text, and its own ViewModels, which are cleared when the entry leaves the back stack. From Lifecycle 2.11.0 the decorator passes the activity's default factory, which is Hilt's, on to each entry, so `viewModel()` works for a @HiltViewModel inside an entry ([Lifecycle 2.11.0](https://developer.android.com/jetpack/androidx/releases/lifecycle)).
+- **A ViewModel per video.** PlayerViewModel takes its video through Hilt's [assisted injection](https://dagger.dev/hilt/view-model.html): PlayerRoute adds a creation callback to the entry's default creation extras, which calls the ViewModel's assisted factory. The factory takes PlayerArgs, an ordinary class that holds the VideoId, because Kotlin renames any function that takes a value class ([inline classes](https://kotlinlang.org/docs/inline-classes.html)), and Dagger can't inject value classes ([google/dagger#2930](https://github.com/google/dagger/issues/2930)).
+- **Opening and closing.** Three small functions of the back stack, in BackStack.kt, change it. openVideo adds a PlayerKey only while SearchKey is on top, so a second tap while the video screen opens opens nothing. close removes that entry's own key, if it is still there. goBack, which NavDisplay calls for the system's back gesture, removes the top key only while there is more than one. So a double tap on close can't empty the back stack, which would crash NavDisplay: it requires at least one entry, and throws "NavDisplay backstack cannot be empty" otherwise ([NavDisplay.kt at 1.2.1](https://android.googlesource.com/platform/frameworks/support/+/65822252146d26e872acf03dc11bda43f11efa3b/navigation3/navigation3-ui/src/commonMain/kotlin/androidx/navigation3/ui/NavDisplay.kt)).
+
+The three facts about Navigation 3 above, NavEntry's toString, the default content key and the empty back stack, were checked on November 19, 2026, in version 1.2.1, the one the app uses, both in its source at the release commit and in its compiled classes.
 
 ## The theme
 
