@@ -26,10 +26,11 @@ names, commit hashes and subjects, never an identity or a found value.
 
 --remote-branch origin/<name>, or --remote-branch=origin/<name>, names the
 branch on GitHub whose Renovate commits are exempt from the identity rule. It
-must start with origin/, or the gate stops with exit code 2. Without
-it, the gate uses origin/ and the current branch's name, and a detached HEAD
-has none, so nothing is exempt. The gate reads the branch under refs/remotes/,
-so a local branch or tag with the same name can't stand in for it.
+must start with origin/ and have no .., or the gate stops with exit code 2.
+Without it, the gate uses origin/ and the current branch's name, and a
+detached HEAD has none, so nothing is exempt. The gate reads the branch under
+refs/remotes/, so a local branch or tag with the same name can't stand in for
+it.
 
 --no-build skips the build. The gate then ends INCOMPLETE, with exit code 3,
 when every other check passed, and FAIL, with exit code 1, when one didn't. It

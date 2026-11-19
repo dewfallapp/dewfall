@@ -26,7 +26,9 @@ A guard, scripts/maintainer_guard.py, checks every Bash, Read, Grep and Glob cal
 
 First, check that the guard runs. Claude Code skips an agent's hooks in a workspace it doesn't trust, and then nothing stops a write. Run `echo $HOME`, which the guard must refuse. If it runs, stop and report `Verdict: Incomplete`, because the guard isn't running.
 
-The guard and the checkout script run from the coordinator's working copy, not from origin/main. Run `git status` and `git diff origin/main -- scripts/maintainer_guard.py scripts/maintainer_checkout.py .claude/agents/maintainer.md`, and say in your report if they differ from main.
+The guard and the checkout script run from the coordinator's working copy, not from origin/main. Run `git status` and `git diff --stat origin/main -- scripts/maintainer_guard.py scripts/maintainer_checkout.py .claude/agents/maintainer.md`, and say in your report if they differ from main.
+
+Keep each command's output short. Claude Code saves a long Bash output to a file outside the repository, which the guard won't let you read, so you would see only its start. Use `--stat`, `head` and `tail`, and open files with Read.
 
 In short, the guard's rules are:
 
@@ -55,7 +57,9 @@ Run the pre-push gate in your worktree through the checkout script, with the rem
 python3 -I scripts/maintainer_checkout.py gate <path> --remote-branch origin/<branch>
 ```
 
-The gate ends with PASS, FAIL or INCOMPLETE. A timeout counts as INCOMPLETE. The gate and its scan are the pull request's own copies, so a pull request that changes anything in scripts/ is judged partly by its own code. Read such a diff line by line, and say in your report that the gate was the pull request's own.
+The gate ends with PASS, FAIL or INCOMPLETE, on its last lines. If they are cut off, run it again with `| tail -n 60` after the command. A timeout counts as INCOMPLETE. The gate and its scan are the pull request's own copies, so a pull request that changes anything in scripts/ is judged partly by its own code. Read such a diff line by line, and say in your report that the gate was the pull request's own.
+
+`gate` and `dependencies` run the pull request's own build and scripts, with the maintainer's rights, and the guard can't see what they do. The checkout script refuses forks, so the pull request's own code comes only from someone who can push to the repository. But a dependency pull request makes the build download and run outside code, such as a plugin, a library or a new Gradle distribution, which no diff shows. So read a change to the build, such as a build script, a Gradle plugin or the Gradle wrapper, before you run anything. For a dependency pull request, check the release dates, the advisories and the release notes below before any `gate` or `dependencies` run, because both run Gradle with the new code.
 
 For a dependency's tree, run its project's dependencies task in your worktree, such as:
 
@@ -80,7 +84,7 @@ Verdict: Build, Fix first, or Ask the maintainer.
 
 Inputs: the pull request number and the issue number. Do these in order:
 
-1. Read the issue, the pull request's description with `gh pr view <n>`, and the whole diff with `gh pr diff <n>`.
+1. Read the issue and the pull request's description with `gh pr view <n>`. List the changed files with `gh pr diff <n> --name-only`, then read each one's diff with `git diff origin/main...<commit> -- <file>` once your worktree exists, so no output is too long to read.
 2. Make your worktree, and note the commit that `add` printed. Everything you check is about that commit.
 3. Read every changed file in your worktree, for readability as well as correctness: plain English and short sentences in docs, AGENTS.md's Kotlin style in code, names that say what things are, no dead code.
 4. Run the gate there. Never say Merge without a gate PASS on that commit. Read the gate's line for each commit, which covers the identity, the conventional prefix, the trailers, the closing words, secrets and the saved responses.

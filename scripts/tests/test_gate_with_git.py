@@ -227,6 +227,7 @@ class GateWithGitTest(unittest.TestCase):
             ["--remote-branch", "HEAD"],
             ["--remote-branch=main"],
             ["--remote-branch", "origin/"],
+            ["--remote-branch", "origin/../main"],
             ["--remote-branch"],
         ):
             with self.subTest(arguments=arguments):

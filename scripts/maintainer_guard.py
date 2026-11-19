@@ -33,8 +33,12 @@ In Claude Code's shell, grep may be a function that runs ugrep. The options
 listed for grep mean the same in ugrep and in BSD grep, and none of them runs
 a program or writes a file.
 
-So the coordinator's memory notes, in ~/.claude/projects/, are out of reach,
-and the maintainer subagent judges the work on its own.
+So the coordinator's memory notes, in ~/.claude/projects/, are out of reach of
+the subagent's own calls, and it judges the work on its own. The worktree's
+gate and build run the pull request's own code, which the guard can't check.
+The checkout script refuses forks, so that code comes only from someone who
+can push to the repository, though a dependency update can make the build
+download outside code that no diff shows.
 """
 
 import json
