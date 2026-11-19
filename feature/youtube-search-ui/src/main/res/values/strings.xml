@@ -1,5 +1,5 @@
 <resources>
-    <!-- The Search YouTube screen. See openspec/changes/youtube-search/. -->
+    <!-- The Search YouTube screen. See openspec/specs/youtube-search/spec.md. -->
     <string name="youtube_search_title">Search YouTube</string>
     <string name="youtube_search_subtitle">Videos to stream</string>
     <string name="youtube_search_placeholder">Search YouTube</string>

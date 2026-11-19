@@ -36,8 +36,9 @@
 
 - [x] 5.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. Verify that it passes.
 - [x] 5.2 Check by hand on an emulator with Android 10 and with the newest Android: search "nasa" and see rows with no Shorts, search for nonsense and see no results, turn the network off and see the NETWORK message, then "Try again" with the network on. Search with Gboard's search key on both emulators and with a hardware keyboard's Enter, and paste text with a line break. Check that the keyboard opens once and closes after a search. Check light, dark and a large font, that a phone stays in portrait, a tablet or foldable emulator in landscape, split screen, and that nothing sits under the system bars or the keyboard. Verify that `adb logcat` shows no search text, title or ID.
-  - Done on November 19, 2026, on Android 10 (API 29) and Android 16 (API 36), the newest system image installed on this Mac. Android 17 has no emulator image here. A 1600x2560 window at 240dpi on Android 10, and a 2560x1600 window at 240dpi on Android 16, stood in for a tablet in portrait and in landscape.
-  - Not done: split screen, and pasting text with a line break, which adb can't paste. An Enter that adb injects through Gboard sends the search but leaves the on-screen keyboard up, as design.md records.
+  - Done on November 19, 2026, on Android 10 (API 29) and Android 16 (API 36), the newest system image installed on this Mac. A 1600x2560 window at 240dpi on Android 10, and a 2560x1600 window at 240dpi on Android 16, stood in for a tablet in portrait and in landscape. Split screen, opened from the app's menu in Overview on Android 16, kept the results in the top half.
+  - An Enter that adb injects through Gboard sends the search but leaves the on-screen keyboard up, as design.md records.
+- [ ] 5.3 The two parts of 5.2 that are still open, for the maintainer to accept or ask for: pasting text with a line break by hand, and a run on Android 17 (API 37). The Mac's clipboard didn't reach the emulator, and the other apps with a multi-line field need first-run setup, so the line-break functions' unit tests cover pasting for now. No Android 17 system image is installed, and installing one means downloading it.
 
 ## Workflow follow-up
 

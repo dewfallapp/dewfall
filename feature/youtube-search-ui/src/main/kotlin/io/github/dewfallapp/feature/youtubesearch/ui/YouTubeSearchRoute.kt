@@ -12,7 +12,7 @@ import kotlin.time.Clock
 
 /**
  * The Search YouTube screen, with its ViewModel. The app shows it as its first screen. See
- * openspec/changes/youtube-search/.
+ * openspec/specs/youtube-search/spec.md.
  */
 @Composable
 fun YouTubeSearch(modifier: Modifier = Modifier) {

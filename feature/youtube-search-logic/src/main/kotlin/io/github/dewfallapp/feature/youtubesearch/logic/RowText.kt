@@ -72,7 +72,7 @@ private const val DAYS_IN_A_WEEK = 7L
  * YouTube's lists give times such as "10 days ago" or "1 month ago", which NewPipeExtractor turns
  * into an approximate time by going back that many calendar units from now. Counting the same
  * calendar units reads each of them back as YouTube wrote it. An approximate time never shows
- * minutes or hours. See openspec/changes/youtube-search/design.md.
+ * minutes or hours. See openspec/changes/archive/2026-11-19-youtube-search/design.md.
  */
 fun timeAgo(published: PublishedTime?, now: Instant, zone: ZoneId): TimeAgo? {
     if (published == null || published.instant > now) return null
