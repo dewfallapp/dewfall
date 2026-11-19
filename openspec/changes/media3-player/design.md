@@ -23,7 +23,7 @@ See proposal.md for why. The pieces this change builds on:
     - `/videoplayback` URLs without an `rn` parameter get one that numbers the data source's requests from 0.
     - The User-Agent is the visionOS one for a visionOS link, which `isVisionOsStreamingUrl` recognises by its `c=VISIONOS`.
     - There is no Accept-Language, and at most 20 redirects are followed.
-  - **Live HLS** ([PlaybackResolver](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/resolver/PlaybackResolver.java), `buildLiveMediaSource`): Media3's DefaultHttpDataSource sends plain GET requests with NewPipe's own User-Agent. The only saved manifest link, the saved set VIDEO_BIG_BUCK_BUNNY's `hlsManifestUrl`, belongs to a video that isn't live, and is in path form with no `c` key. No saved set holds a live stream's links, so the plan takes a live manifest link to have the same form, and the hand check of a live stream tests it.
+  - **Live HLS** ([PlaybackResolver](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/resolver/PlaybackResolver.java), `buildLiveMediaSource`): Media3's DefaultHttpDataSource sends plain GET requests with NewPipe's own User-Agent. Four saved sets hold an `hlsManifestUrl`: VIDEO_BIG_BUCK_BUNNY's and the three subtitle sets'. All belong to videos that aren't live, and all are in path form with no `c` key. No saved set holds a live stream's links, so the plan takes a live manifest link to have the same form, and the hand check of a live stream tests it.
 - ADR 0002 keeps playback state out of screen state: the player lives in a MediaSessionService and exposes its state as its own stream, updated only as often as the visible UI needs.
 - The maintainer decided on November 19, 2026:
   - at most 480p on metered networks, and the best up to 1080p on unmetered ones, with no setting yet
@@ -66,7 +66,7 @@ See proposal.md for why. The pieces this change builds on:
 - **Both.**
   - They send only HTTPS requests to googlevideo.com and its subdomains.
   - The client follows no redirects itself. The interceptor follows at most 20, the same as NewPipe's, and checks each Location's host before sending it.
-  - It copies OkHttp's own redirect rule ([RetryAndFollowUpInterceptor at parent-5.5.0](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt), `buildRedirectRequest`): a 307 or 308 keeps the method and the body, and 301, 302 and 303 become a GET with no body.
+  - It copies OkHttp's own redirect rule ([RetryAndFollowUpInterceptor at parent-5.5.0](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt), `buildRedirectRequest`): a 307 or 308 keeps the method and the body, and 300, 301, 302 and 303 become a GET with no body.
   - It closes each redirect's response, as the daily check's FirstBytes does, so OkHttp never warns about a leaked body, a warning that names the host.
   - They send `Accept-Language: en-GB` with no country, as ADR 0009's new note records. The bytes have no text, so the language changes nothing in them, and the links already carry the country of the call that made them.
 - **Refusals.** A refused request fails with MediaRequestRefused, a new IOException in `:core:model` whose message is constant text. The player maps it to YOUTUBE, BROKEN's words, so the screen says that YouTube isn't loading right now. Its reason is an enum: another host, http, too many redirects, or an unknown client.
@@ -124,6 +124,12 @@ ExoPlayer.Builder sets `usePlatformDiagnostics` to true by default. Its MediaMet
 The player follows Android's [audio focus guidance](https://developer.android.com/media/optimize/audio-focus):
 - `setAudioAttributes(AudioAttributes(USAGE_MEDIA, AUDIO_CONTENT_TYPE_MOVIE), handleAudioFocus = true)`, so Media3 asks for audio focus when it plays, and pauses or lowers its sound when another app takes it, such as a call or another music app
 - `setHandleAudioBecomingNoisy(true)`, so unplugging headphones or a Bluetooth headset disconnecting pauses it
+
+### Player commands skip intents
+
+Play, pause, seek, the playback "Try again", the first start and pressing play after process death go from the UI straight to the player through PlaybackConnection, not through PlayerIntent. The screen reads the playback state through the MediaController's state holders, at the rate the visible controls need, never in PlayerState. ADR 0002 already keeps playback state out of screen state. Sending every tap through an intent would only forward it, with no state change for the reducer. The maintainer approved a dated "Changed in #42" note in ADR 0002 for this on November 20, 2026. docs/architecture.md's MVI contract, at its intents and its playback state rule, says the same.
+
+PlayerRoute reaches PlaybackConnection through PlayerViewModel, which gets it in its constructor and exposes it to the route as a plain property, not as state. The start decision is a pure function in `:feature:player-logic`, `startAction(started, playbackIdKnown)`, which returns PLAY, WAIT_FOR_PLAY or NOTHING. The route keeps its two inputs in rememberSaveable and PlaybackItems, and its tests cover each case.
 
 ### Starting, pausing and stopping
 
@@ -214,18 +220,21 @@ docs/architecture.md:
 - **"Network access"** gets googlevideo.com as a host the app contacts while a video plays, with MediaRequests' rules. It also notes that opening a video now sends the video details call and the stream links call, five requests each, one after the other behind the layer's Mutex. So the picture starts after both.
 - **"The player"**, a TODO today, describes the service, the opaque IDs, the format choice, MediaRequests and the errors.
 
-Dated notes, which the maintainer approved on November 20, 2026:
-- **ADR 0007:** Media3's logging is off, which its line on other libraries' logs asks for.
+Dated notes:
+- **ADR 0007:** Media3's logging is off. This note only carries out ADR 0007's own line on other libraries' logs, so it needs no separate approval.
+
+The maintainer approved these on November 20, 2026:
+- **ADR 0002:** player commands and playback state skip the screen's MVI, as [Player commands skip intents](#player-commands-skip-intents) describes.
 - **ADR 0008:** MediaRequests is part of the layer, but not one of its data source functions. Its calls throw IOException, MediaRequestRefused included, because Media3's data source drives them.
 - **ADR 0009:** The layer has a second client, for googlevideo.com, which follows at most 20 redirects, each checked. Its progressive requests use the visionOS User-Agent, and its live requests NewPipeDownloader's own. Its requests name en-GB with no country, with the reasons above.
 
-AGENTS.md's rule on the YouTube layer's functions names MediaRequests as its one exception.
+AGENTS.md's rule on the YouTube layer's functions names MediaRequests as its one exception, which follows from the approved ADR 0008 note. Its rule that every request names the device's country gets the exceptions that ADR 0009's notes record, the subtitle download and MediaRequests, which follows from the approved ADR 0009 note.
 
 ## Risks / Trade-offs
 
 - [Guava 33.3.1, which Media3 1.11.1 brings, has a high-severity advisory] → GHSA-xxph-c9ww-hj94, published on October 27, 2026: uncontrolled memory allocation when deserializing untrusted data. A dependency constraint raises Guava to 33.7.2-android, released on September 29, 2026, which fixes it and has no advisory.
 - [Media3's `@UnstableApi`] → Parts of `:core:playback` and `:feature:player-ui` use it, so a Media3 update can change them; 1.12.0-alpha01 already changes two state holders. They opt in file by file, and Renovate's updates run the build and the emulator checks ([Media3 release notes](https://developer.android.com/jetpack/androidx/releases/media3)).
-- [Slower start] → The details call and the stream links call wait for each other behind the layer's Mutex. The video area shows loading meanwhile. A later change can start the links call first if it matters.
+- [Slower start and more data] → The details call and the stream links call wait for each other behind the layer's Mutex, and each fetches the video's page, so opening a video costs about 1 to 1.4 MB before the video itself, by docs/architecture.md's 0.5 to 0.7 MB per page. The video area shows loading meanwhile. A later change can share one call between the details and the links, which would also halve the requests that might draw bot checks.
 - [The request shape is NewPipe's fallback, not its main path] → MediaRequests' progressive requests match NewPipe v0.29.3's fallback for the same NewPipeExtractor. Task 7.2's long 1080p run and seek near the end check it in Dewfall. If it fails, the maintainer chooses between NewPipe's DASH path and the HLS manifest.
 - [Metered choice made at start] → A user who moves from Wi-Fi to mobile data keeps the higher format until the next video.
 - [YouTube changes what it accepts] → A NewPipeExtractor update follows YouTube, as for the layer's own requests. The daily check's first bytes use their own GET client, not MediaRequests' shape, and the runners skip video calls, so a refusal of the player's shape shows first on a phone or in a hand check, not in the daily check.

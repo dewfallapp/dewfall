@@ -25,7 +25,7 @@
   - another host
   - a redirect to an allowed host keeping the User-Agent, and one to another host
   - 21 redirects, and a redirect without a Location
-  - a 302 and a 307 after a POST
+  - a 300, a 302 and a 307 after a POST
   - a progressive link of another client
   - `rn` numbering from 0 for each factory, and a URL that already has `rn`
   - a made-up live manifest link in the path form of the saved set VIDEO_BIG_BUCK_BUNNY's `hlsManifestUrl`, with no `c` key, sent as a GET
@@ -94,7 +94,7 @@
   - pause on ON_STOP, unless the activity is changing configurations
   - give PlayerViewModel, which gets PlaybackConnection in its constructor, the entry's playback ID, and have its `onCleared` clear the items only if the current item is that playback ID
 
-  PlayerState doesn't change. Verify with unit tests of the start decision and the clear decision, including a second video that started during the first one's exit, through a fake connection.
+  PlayerState doesn't change. Add `startAction` to `:feature:player-logic`. Verify with unit tests of `startAction` for each case and of the clear decision, including a second video that started during the first one's exit, through a fake connection.
 
 ## 6. Docs
 
@@ -107,7 +107,8 @@
     - "Reading from YouTube" with the third repository
     - the sentences on where Compose and Hilt are set up
     - "Other libraries' own logs"
-  - ADR 0007, ADR 0008 and ADR 0009: the dated notes from design.md, citing the maintainer's approval, each saying why MediaRequests is an exception rather than a new decision.
+  - ADR 0002, ADR 0007, ADR 0008 and ADR 0009: the dated notes from design.md. Those on ADR 0002, ADR 0008 and ADR 0009 cite the maintainer's approval of November 20, 2026, and each says why it is an exception rather than a new decision. ADR 0007's carries out its own line on Media3's logs.
+  - docs/architecture.md's MVI contract: the intents row and the playback state rule, as ADR 0002's note says.
   - AGENTS.md's rule that the player exposes playback state as its own Flow: through its MediaController, which screens read with media3-ui-compose's state holders or as Flows, at the rate the visible UI needs, never in screen state.
   - AGENTS.md's rule on the YouTube layer's functions: MediaRequests as its one exception. Its rule that every request names the device's country: the subtitle download and MediaRequests name none, as ADR 0009's notes say.
   - openspec/config.yaml's list of core modules.
@@ -124,7 +125,8 @@
   - Close the screen and hear the sound stop. Go home and come back to a paused video.
   - Resize a split screen window, or change the theme, while it plays, and see it keep playing.
   - End the process in the background, and come back to a video that waits for play.
-  - Start music in another app while a video plays, and see the video pause. Unplug headphones, or turn off a Bluetooth headset, while it plays, and see it pause.
+  - Start music in another app while a video plays, and see the video pause.
+  - On a real phone, because an emulator can't do either: unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause.
   - See no notification while playing.
   - Check that `adb shell dumpsys media_session` shows no video ID, title or link.
   - Check that `adb logcat` shows no link, ID or title, and no line from Media3's own tags. Lines from Android's media codecs, such as MediaCodec or CCodec, come from the platform, not from Media3.
