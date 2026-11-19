@@ -66,14 +66,14 @@
   - the LoadErrorHandlingPolicy, a class of its own: 403, 410 and MediaRequestRefused inside that same chain are never retried, and another IOException keeps the default retry delay
   - each PlaybackException code and YouTubeError maps to the category in design.md
 - [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. It has:
-  - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and the empty two-argument `onUpdateNotification`
+  - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and `onUpdateNotificationAsync` returning an immediate future without calling super
   - a coroutine scope on an injected dispatcher, and PlaybackLog, injected into a field, which takes the Logger in its constructor
   - the audio attributes with audio focus, and pausing when the output becomes noisy
-  - `onConnect` accepting only the app's own package, and `onMediaButtonEvent` returning true for every event
+  - `onConnectAsync` returning an immediate future that accepts only the app's own package, and `onMediaButtonEvent` returning true for every event
   - the ForwardingSimpleBasePlayer that gives the session a cleaned error with the same code, a constant message and no cause, with a unit test of the cleaning
   - the service calling `addSession` in `onCreate` and publishing its session, and any resolution failure, to PlaybackSessions
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
-  - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
+  - the MediaSource.Factory for merging, progressive and HLS sources from the tag, which fails an item without the tag, with a unit test, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
   - the LoadErrorHandlingPolicy that doesn't retry 403, 410 or MediaRequestRefused
   - `onStartCommand` returning START_NOT_STICKY, and `onDestroy` releasing the session and the player and clearing PlaybackSessions and PlaybackItems
   - the one refresh, which goes back to the live edge for a live stream, and the live TrackSelectionOverride
@@ -115,6 +115,8 @@
     - "Reading from YouTube" with the third repository
     - the sentences on where Compose and Hilt are set up
     - "Other libraries' own logs"
+    - "How Hilt provides the layer", which calls NewPipeYouTube the layer's one public class, now joined by MediaRequests
+    - the "Errors from YouTube" sentence that the first screen checking the connection adds ACCESS_NETWORK_STATE: Media3 and the metered check bring it now
   - ADR 0002, ADR 0007, ADR 0008 and ADR 0009: the dated notes from design.md. Those on ADR 0002, ADR 0008 and ADR 0009 cite the maintainer's approval of November 20, 2026, and each says why it is an exception rather than a new decision. ADR 0007's carries out its own line on Media3's logs.
   - docs/architecture.md's MVI contract: the intents row and the playback state rule, as ADR 0002's note says.
   - AGENTS.md's MVI rule, worded like ADR 0002's note: player commands from the video screen go to the player through PlaybackConnection, not through intents, and the screen reads playback state through the player's state holders.
@@ -124,7 +126,7 @@
 
 ## 7. Checks
 
-- [ ] 7.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. Verify that it passes.
+- [ ] 7.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. Verify that it passes. Then rerun task 1.1's checks on the final release and debug runtime classpaths, after tasks 4 and 5 declare the libraries: every new or changed artifact, its license, release date and advisories, and the merged release manifest. Ask the maintainer about any artifact that proposal.md doesn't name.
 - [ ] 7.2 Check by hand on an emulator with Android 10, and with the newest Android installed:
   - Open a video and see it start playing, with sound and picture together. Seek, pause and play.
   - Play a video an hour or longer for several minutes at 1080p, and seek near its end.
@@ -137,7 +139,7 @@
   - Start music in another app while a video plays, and see the video pause.
   - On a real phone, because an emulator can't do these: unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause. Press a Bluetooth headset's play button with the app in the background, and hear nothing.
   - Watch a video past the screen timeout without touching the screen, and see it keep playing.
-  - Run `./gradlew :core:youtube:liveYouTubeCheck` by hand, because the stream links call changes and the runners skip that call.
+  - Run `./gradlew :core:youtube:liveYouTubeCheck` by hand, because the stream links call changes and the runners skip that call, and record in the pull request that it passed.
   - See no notification while playing.
   - Play, go home, and send `adb shell input keyevent KEYCODE_MEDIA_PLAY`: no sound. Then end the process with `adb shell am kill io.github.dewfallapp` and send the key again: the app doesn't start, and nothing crashes. Do both on Android 10 and on the newest Android.
   - Check that `adb shell dumpsys media_session` shows no video ID, title or link, both while playing and after a playback failure, whose message the platform session copies.
