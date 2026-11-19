@@ -1,6 +1,7 @@
 package io.github.dewfallapp.feature.youtubesearch.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.core.designsystem.component.Banner
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
+import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.feature.youtubesearch.logic.ResultsArea
 import io.github.dewfallapp.feature.youtubesearch.logic.VideoRow
@@ -51,6 +53,7 @@ internal fun SearchResultsArea(
     now: Instant,
     zone: ZoneId,
     onIntent: (YouTubeSearchIntent) -> Unit,
+    onOpenVideo: (VideoId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (results) {
@@ -63,7 +66,13 @@ internal fun SearchResultsArea(
         }
         is ResultsArea.Loading -> Loading(modifier = modifier)
         is ResultsArea.Results -> {
-            VideoList(rows = results.rows, now = now, zone = zone, modifier = modifier)
+            VideoList(
+                rows = results.rows,
+                now = now,
+                zone = zone,
+                onOpenVideo = onOpenVideo,
+                modifier = modifier,
+            )
         }
         is ResultsArea.NoResults -> {
             Message(
@@ -168,15 +177,17 @@ private fun failureText(error: YouTubeError): Int =
 
 /**
  * The videos found, in YouTube's order, under a "Videos" heading, in one rounded container as in
- * the "Search YouTube, results" frame.
+ * the "Search YouTube, results" frame. Tapping a row opens its video through [onOpenVideo].
  */
 @Composable
 private fun VideoList(
     rows: List<VideoRow>,
     now: Instant,
     zone: ZoneId,
+    onOpenVideo: (VideoId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val openLabel = stringResource(R.string.youtube_search_open_video)
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding =
@@ -199,6 +210,7 @@ private fun VideoList(
                 modifier =
                     Modifier.clip(containerShape(index, rows.size))
                         .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                        .clickable(onClickLabel = openLabel) { onOpenVideo(row.id) }
                         .padding(horizontal = DewfallSpacing.sm),
             )
         }

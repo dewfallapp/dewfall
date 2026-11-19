@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
+import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.feature.youtubesearch.logic.YouTubeSearchIntent
 import io.github.dewfallapp.feature.youtubesearch.logic.YouTubeSearchState
 import java.time.ZoneId
@@ -28,7 +29,8 @@ import kotlin.time.Instant
 /**
  * The Search YouTube screen: its title, the search field, and what the search found. It is
  * stateless: it shows [state], the field's [textFieldState], and time ago counted from [now] in
- * [zone], and reports what the user does through [onIntent].
+ * [zone], and reports what the user does through [onIntent], and a tap on a video through
+ * [onOpenVideo].
  *
  * Its background fills the window behind the system bars. Its content sits inside the safe drawing
  * area, so nothing is under the system bars, the display cutout or the keyboard.
@@ -40,6 +42,7 @@ internal fun YouTubeSearchScreen(
     now: Instant,
     zone: ZoneId,
     onIntent: (YouTubeSearchIntent) -> Unit,
+    onOpenVideo: (VideoId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
@@ -70,6 +73,7 @@ internal fun YouTubeSearchScreen(
                     now = now,
                     zone = zone,
                     onIntent = onIntent,
+                    onOpenVideo = onOpenVideo,
                     modifier = Modifier.weight(1f),
                 )
             }

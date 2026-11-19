@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:logging"))
+    implementation(project(":feature:player-ui"))
     implementation(project(":feature:youtube-search-ui"))
 
     implementation(libs.androidx.activity.compose)

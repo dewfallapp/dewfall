@@ -88,6 +88,7 @@ private fun Preview(state: YouTubeSearchState, text: String = "") {
             now = previewNow,
             zone = previewZone,
             onIntent = {},
+            onOpenVideo = {},
         )
     }
 }
