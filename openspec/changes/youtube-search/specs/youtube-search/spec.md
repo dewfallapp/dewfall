@@ -14,14 +14,14 @@ The app SHALL open on the Search YouTube screen, until a later change makes anot
 - **THEN** the Search YouTube screen shows its title, a line saying it finds videos to stream, and an empty search field
 
 ### Requirement: The keyboard opens once
-The search field SHALL take focus and the on-screen keyboard SHALL open the first time the screen opens. It SHALL NOT open again by itself after a configuration change or when the user comes back to the screen. Sending a search SHALL hide the on-screen keyboard, so the results show.
+The search field SHALL take focus and the on-screen keyboard SHALL open the first time the screen opens. It SHALL NOT open again by itself after a configuration change or when the user comes back to the screen. Sending a search with the on-screen keyboard's search key SHALL hide that keyboard, so the results show.
 
 #### Scenario: First open
 - **WHEN** the screen opens with no saved state, such as when the app starts
 - **THEN** the field has focus and the on-screen keyboard is open
 
 #### Scenario: After a search
-- **WHEN** the user sends a search
+- **WHEN** the user sends a search with the on-screen keyboard's search key
 - **THEN** the on-screen keyboard closes, and opening it again takes a tap on the field
 
 #### Scenario: A configuration change
@@ -74,7 +74,7 @@ While a search runs, the screen SHALL show that it is loading. A new search SHAL
 - **THEN** the screen shows only the answer to the second search
 
 ### Requirement: Results show videos in YouTube's order
-A successful search SHALL list the videos that YouTube returned, in YouTube's order, leaving out only Shorts. Each row SHALL show a thumbnail box, the title, the channel's name and when the video was published.
+A successful search SHALL list the videos that YouTube returned, in YouTube's order, leaving out Shorts, and showing a video that YouTube lists twice only once, at its first place. Each row SHALL show a thumbnail box, the title, the channel's name and when the video was published.
 
 #### Scenario: Videos found
 - **WHEN** a search returns three videos
@@ -83,6 +83,10 @@ A successful search SHALL list the videos that YouTube returned, in YouTube's or
 #### Scenario: Shorts in the answer
 - **WHEN** a search returns four videos, and one of them is a Short
 - **THEN** the screen lists the other three, in YouTube's order
+
+#### Scenario: A video listed twice
+- **WHEN** a search returns the same video twice
+- **THEN** the screen lists it once, where it first appears
 
 #### Scenario: A title that doesn't fit
 - **WHEN** a title is longer than one line, or the font size is large

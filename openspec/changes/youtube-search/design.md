@@ -35,7 +35,7 @@ See proposal.md for why. The pieces this change builds on:
 
 ### A spec area for searching YouTube
 
-The capability is `youtube-search`. ADR 0004 lists the living-spec areas, player, subscriptions, inbox, downloads, background-sync, cleanup, transcript-search and data-export, and none of them is searching YouTube. Search YouTube grows in Phase 5 with channel results, so it gets its own area. That changes ADR 0004's list, so it waits for the maintainer: a dated note in ADR 0004, and the same list in openspec/config.yaml.
+The capability is `youtube-search`. ADR 0004 lists the living-spec areas, player, subscriptions, inbox, downloads, background-sync, cleanup, transcript-search and data-export, and none of them is searching YouTube. Search YouTube grows in Phase 5 with channel results, so it gets its own area. That changes ADR 0004's list, which the maintainer approved: a dated note in ADR 0004, and the same list in openspec/config.yaml and docs/roadmap.md.
 
 ### A thin repository in :core:data
 
@@ -64,7 +64,7 @@ A request holds the trimmed search text and its number. The number lives outside
 
 ### Rows
 
-The reducer turns each VideoSummary into a row with the video's ID, title, channel name, length, kind and publish time, and leaves out Shorts, if the maintainer agrees. The row keeps the ID, so #41 can open the video. It drops the thumbnails, which no image shows yet, and the channel's ID, which nothing uses yet. VideoKind's KDoc already says a screen leaves out the kinds it doesn't show, and the design system's VideoRow says "no Shorts".
+The reducer turns each VideoSummary into a row with the video's ID, title, channel name, length, kind and publish time, and leaves out Shorts, as the maintainer approved. The row keeps the ID, so #41 can open the video. It drops the thumbnails, which no image shows yet, and the channel's ID, which nothing uses yet. VideoKind's KDoc already says a screen leaves out the kinds it doesn't show, and the design system's VideoRow says "no Shorts".
 
 ### Length and time text
 
@@ -94,11 +94,11 @@ The `-ui` module turns them into text with plural string resources, so "1 week a
 
 ### The search field
 
-The field is single-line, if the maintainer agrees, which departs from the design system's SearchField. SearchField says not to set single-line, so that a long text wraps. But a field that allows several lines makes the on-screen keyboard show a return key instead of search ([KeyboardOptions](https://developer.android.com/reference/kotlin/androidx/compose/foundation/text/KeyboardOptions)), and then nothing reliably sends the search, because the screen has no other button for it. A single-line field shows the keyboard's search action, and Enter on a hardware keyboard triggers the same action. A long text scrolls sideways in the field instead of wrapping. So:
+The field is single-line, as the maintainer approved, which departs from the design system's SearchField. SearchField says not to set single-line, so that a long text wraps. But a field that allows several lines makes the on-screen keyboard show a return key instead of search ([KeyboardOptions](https://developer.android.com/reference/kotlin/androidx/compose/foundation/text/KeyboardOptions)), and then nothing reliably sends the search, because the screen has no other button for it. A single-line field shows the keyboard's search action, and Enter on a hardware keyboard triggers the same action. A long text scrolls sideways in the field instead of wrapping. So:
 
 - The field is single-line, with the keyboard's action set to search, and its keyboard action handler sends the search. Enter on a hardware keyboard runs the same handler.
 - An InputTransformation turns every line break in pasted text into a space, so no line break ever gets into the text.
-- The field asks for focus once. A saved flag records that it did, so a configuration change or a return to the screen doesn't open the keyboard again. Sending a search hides the on-screen keyboard and clears the field's focus.
+- The field asks for focus once. A saved flag records that it did, so a configuration change or a return to the screen doesn't open the keyboard again. Sending a search hides the on-screen keyboard and clears the field's focus. In a check by hand, an Enter that adb injected through Gboard sent the search but left the on-screen keyboard up. With a physical keyboard, Android normally shows no on-screen keyboard at all.
 
 ### Failure messages
 
@@ -119,8 +119,8 @@ The field is single-line, if the maintainer agrees, which departs from the desig
 
 DewfallApp calls the screen's route, which gets its ViewModel with `viewModel()` from `androidx.lifecycle:lifecycle-viewmodel-compose`. In an @AndroidEntryPoint activity that function uses the activity's default factory, which Hilt provides, so @HiltViewModel works with no Hilt-specific artifact ([Hilt in Compose](https://developer.android.com/develop/ui/compose/libraries#hilt)).
 
-- The artifact is new to the build, so it waits for the maintainer's answer. It comes from Lifecycle 2.11.0, the catalog's version, released on June 17, 2026, under the Apache License 2.0. Its POM brings lifecycle-viewmodel-savedstate, lifecycle-runtime-compose and kotlinx-serialization-core 1.7.3, all under the Apache License 2.0. activity-compose 1.13.0 already brings lifecycle-runtime-compose into release builds. The PR shows which of them the release dependency tree gains. Lifecycle 2.11.1 came out on November 18, 2026, so the 14-day rule keeps the build on 2.11.0 until December 2.
-- **If the maintainer says no:** MainActivity gets the ViewModel with `by viewModels()`, which activity-compose already brings, and passes it to the route. The ViewModel then has to be public instead of internal.
+- The maintainer approved the artifact on November 19, 2026. It comes from Lifecycle 2.11.0, the catalog's version, released on June 17, 2026, under the Apache License 2.0. Its POM brings lifecycle-viewmodel-savedstate, lifecycle-runtime-compose and kotlinx-serialization-core 1.7.3, all under the Apache License 2.0. activity-compose 1.13.0 already brings lifecycle-runtime-compose into release builds. The PR shows which of them the release dependency tree gains. Lifecycle 2.11.1 came out on November 18, 2026, so the 14-day rule keeps the build on 2.11.0 until December 2.
+- **Alternative:** MainActivity gets the ViewModel with `by viewModels()`, which activity-compose already brings, and passes it to the route. Rejected, because the ViewModel would have to be public instead of internal.
 - **Alternative:** `hiltViewModel()` from `androidx.hilt:hilt-lifecycle-viewmodel-compose`. Rejected for now, because `viewModel()` does the same in a single activity, and #41's navigation decides what scoping it needs.
 
 ### Large screens and resized windows
@@ -140,8 +140,11 @@ This is the rule that later screens follow too:
 - The field follows the design system's SearchField: the keyboard opens as the screen opens, and the keyboard's action is search.
 - Colors come from MaterialTheme's roles and text from its type scale, so light, dark and dynamic color all work.
 - The screen draws edge to edge, and its content sits inside the safe drawing area, so nothing is under the system bars, the display cutout or the keyboard.
-- Every icon has a content description, and every string is a resource.
-- The thumbnail box is a plain surface-colored box with the length in a small label, as in the design frames.
+- Every icon has a content description, and every string is a resource. The glyphs are Material Symbols Rounded, as the design system's Iconography asks, as vector drawables in `:core:designsystem`: search, close and error.
+- The thumbnail box is a plain surface-colored box with the length in a small label, as in the design frames. It grows with the font size, so the label never gets cut off.
+- The rows sit in one rounded container, the messages before a search and for no results sit under the search glyph in a round badge, and they scroll, so a large font or a small window never cuts them off.
+- A failure shows in the design system's neutral Banner: the error glyph in the error color, the message, and "Try again". A screen reader reads it when it appears.
+- The field shows focus with a 2dp primary outline and a 2dp gap, as SearchField says.
 
 ### Logging
 
@@ -153,5 +156,5 @@ The screen adds no log lines. The YouTube layer already logs each call's name, o
 - [Rows that do nothing when tapped until #41 lands] → The two changes are next to each other in the roadmap, and no release comes before both land.
 - [Plain boxes instead of thumbnails make results harder to tell apart] → Titles and channel names carry the meaning for now. Thumbnails need a new dependency and requests to YouTube's image hosts outside the YouTube layer, so they are a question for the maintainer, tracked in an issue of their own.
 - [The portrait request is on the app's only activity, and the fullscreen player, #44, rotates] → #44's change sets the activity's requested orientation while the fullscreen player shows, and puts it back after.
-- [Lint may flag a portrait-locked activity] → Any lint warning fails the build. If lint flags it, the PR suppresses that one check for MainActivity with a comment that cites ADR 0006 and the brief.
+- [Lint flags a portrait-locked activity] → Any lint warning fails the build, and lint flags it twice, as LockedOrientationActivity and DiscouragedApi. The manifest turns off those two checks for MainActivity's element only, with a comment that cites ADR 0006 and the brief.
 - [Time ago depends on the phone's clock] → A wrong clock gives a wrong "time ago", which harms nothing else. The text is only shown, never stored.

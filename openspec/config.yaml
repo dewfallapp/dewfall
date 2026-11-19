@@ -49,7 +49,8 @@ context: |
   Specs:
   - One change per feature. Keep changes small enough for one small pull request.
   - Group living specs by area: player, subscriptions, inbox, downloads,
-    background-sync, cleanup, transcript-search and data-export.
+    background-sync, cleanup, transcript-search, data-export and
+    youtube-search.
   - Write every requirement with WHEN and THEN scenarios, so each one maps onto a
     test.
   - A decision that would be hard to reverse also needs an ADR in docs/adr/.

@@ -10,7 +10,7 @@ Phase 4's goal is that a user can search for any video and watch it. Today the a
 - **The search field** sends the search when the user presses the on-screen keyboard's search key or Enter on a hardware keyboard, not on every letter, so each search is one request to YouTube. The text never holds a line break. A clear button empties the field and shows the screen as it was before the search.
 - **Before the first search** the screen says what it finds and that videos opened from it stream right away.
 - **While a search runs** the screen shows that it is loading. A new search replaces the one that is running.
-- **Results** show YouTube's videos in YouTube's order, without Shorts, as the design system's video row says, if the maintainer agrees. Each row shows a thumbnail box with the length, or a "Live" or "Upcoming" label instead, the title, the channel's name and when it was published, such as "7h ago" or "3 weeks ago", counted by the calendar the way YouTube counts.
+- **Results** show YouTube's videos in YouTube's order, without Shorts, as the design system's video row says and the maintainer approved. Each row shows a thumbnail box with the length, or a "Live" or "Upcoming" label instead, the title, the channel's name and when it was published, such as "7h ago" or "3 weeks ago", counted by the calendar the way YouTube counts.
 - **No results** says that the search found no videos, and names the search text, as the design's "Search YouTube, no results" frame does.
 - **Failures** say that YouTube can't be reached, for NETWORK, or that YouTube isn't loading, for the other categories, with "Try again", as docs/architecture.md plans. Telling "offline" apart comes with the first screen that needs it.
 - **Large screens and resized windows.** Phones stay in portrait, as the brief says. Everywhere else, including tablets, unfolded foldables and split screen, the content sits in one centered column of readable width. docs/design/brief.md records the rule.
@@ -22,7 +22,7 @@ Phase 4's goal is that a user can search for any video and watch it. Today the a
 
 ### New Capabilities
 
-- `youtube-search`: searching YouTube from the app, and how the Search YouTube screen shows its state, results, empty results and failures. Phase 5 adds channel results to it, and Phase 8's subtitle search has its own area, transcript-search. A new area changes ADR 0004's list, so it waits for the maintainer.
+- `youtube-search`: searching YouTube from the app, and how the Search YouTube screen shows its state, results, empty results and failures. Phase 5 adds channel results to it, and Phase 8's subtitle search has its own area, transcript-search. A new area changes ADR 0004's list, which the maintainer approved.
 
 ### Modified Capabilities
 
@@ -34,6 +34,6 @@ None. No living spec exists yet.
 - `:core:data` gains its first repository. It sees `:core:youtube`, and features see only `:core:data` and `:core:model`.
 - No change to the YouTube layer, its saved responses or the daily check.
 - Network: the same search requests the layer already sends. Nothing new is logged: no search text, title or ID, as ADR 0007 requires.
-- Dependencies: getting a Hilt ViewModel inside Compose needs `androidx.lifecycle:lifecycle-viewmodel-compose` 2.11.0, the catalog's Lifecycle version, under the Apache License 2.0. It is a new artifact, so it waits for the maintainer. Without it, MainActivity gets the ViewModel with `by viewModels()`, and the ViewModel becomes public.
+- Dependencies: getting a Hilt ViewModel inside Compose needs `androidx.lifecycle:lifecycle-viewmodel-compose` 2.11.0, the catalog's Lifecycle version, under the Apache License 2.0. It is a new artifact, which the maintainer approved.
 - Docs: docs/architecture.md, AGENTS.md's module list and table, docs/design/brief.md's Rules, ADR 0004 and openspec/config.yaml, as tasks.md lists line by line.
-- Issues: a new issue tracks thumbnail images, so the question isn't lost.
+- Issues: #176 tracks thumbnail images, so the question isn't lost.
