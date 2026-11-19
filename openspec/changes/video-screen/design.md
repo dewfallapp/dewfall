@@ -37,7 +37,7 @@ See proposal.md for why. The pieces this change builds on:
 
 - The keys are `@Serializable` objects and classes that implement NavKey: a `SearchKey` object and a `PlayerKey` that holds the VideoId. `rememberNavBackStack(SearchKey)` saves the back stack across configuration changes and process death, which needs the keys to be serializable ([Save your back stack](https://developer.android.com/guide/navigation/navigation-3/save-state)). That needs the Kotlin serialization plugin in `:app`.
 - NavDisplay shows the top of the back stack, and pops it on the system's back gesture. Its entry decorators are `rememberSaveableStateHolderNavEntryDecorator()` and `rememberViewModelStoreNavEntryDecorator()`, so each entry keeps its own saved state and its own ViewModels, which are cleared when it leaves the back stack ([Scoping ViewModel instances to NavEntry objects](https://developer.android.com/guide/navigation/navigation-3/save-state)).
-- Each feature's `-ui` module exposes one public composable that takes what it needs as plain values and actions: `YouTubeSearch(onOpenVideo: (VideoId) -> Unit)` and `PlayerRoute(videoId: VideoId, onClose: () -> Unit)`, a name that won't clash with Media3's `Player` in #42. Only `:app` sees Navigation 3, so the features don't depend on it or on each other.
+- Each feature's `-ui` module exposes one public composable that takes what it needs as plain values and actions: `YouTubeSearch(onOpenVideo: (VideoId) -> Unit)` and `PlayerRoute(videoId: VideoId, onClose: () -> Unit, modifier: Modifier = Modifier)`, a name that won't clash with Media3's `Player` in #42. Only `:app` sees Navigation 3, so the features don't depend on it or on each other.
 
 Alternatives:
 
@@ -53,7 +53,9 @@ Alternatives:
 
 ### A ViewModel per video, with the ID through Hilt
 
-PlayerViewModel is a `@HiltViewModel(assistedFactory = ...)` whose constructor takes the VideoId as an `@Assisted` parameter, as Hilt's [assisted injection](https://dagger.dev/hilt/view-model.html) describes. The route gets it with `viewModel(extras = owner.defaultViewModelCreationExtras.withCreationCallback<Factory> { it.create(videoId) })`. `withCreationCallback` comes with Hilt itself.
+PlayerViewModel is a `@HiltViewModel(assistedFactory = ...)` whose constructor takes an `@Assisted` parameter, as Hilt's [assisted injection](https://dagger.dev/hilt/view-model.html) describes. The route gets it with `viewModel(extras = owner.defaultViewModelCreationExtras.withCreationCallback<Factory> { it.create(PlayerArgs(videoId)) })`. `withCreationCallback` comes with Hilt itself.
+
+**The parameter is PlayerArgs, not VideoId.** VideoId is a value class, and Kotlin renames any function that takes one, such as the factory's `create`, to `create-<hash>` ([inline classes](https://kotlinlang.org/docs/inline-classes.html)), which the Java that Dagger generates can't implement. Dagger doesn't support value-class parameters ([google/dagger#2930](https://github.com/google/dagger/issues/2930), open since 2021). So the parameter is `PlayerArgs`, a small ordinary class in `:feature:player-ui` that holds the VideoId. The ID stays a VideoId everywhere, as ADR 0008 asks, and no function that Dagger sees takes a value class.
 
 This works because Lifecycle 2.11.0's entry decorator passes the activity's default factory and creation extras on to each entry's ViewModelStoreOwner ([Lifecycle 2.11.0 release notes](https://developer.android.com/jetpack/androidx/releases/lifecycle)), and the activity's default factory is Hilt's. Search YouTube's `viewModel()` keeps working inside its entry for the same reason.
 
@@ -68,7 +70,11 @@ A tap on a row calls `onOpenVideo` from the UI directly. It changes no state and
 
 That narrows the MVI contract. ADR 0002 says intents are "what the user does", and docs/architecture.md gives "opening another screen" as its example of an effect. So this change adds a dated "Changed in #41" note to ADR 0002, which the maintainer approved with the change on November 19, 2026: an action that starts in the UI, changes no state and needs no business logic, such as opening or closing a screen, goes straight to `:app`'s navigation, with no intent. Effects stay for instructions that start in the ViewModel, such as a message after a load, or a screen that opens only after work finishes. docs/architecture.md's MviEffect row gets that example instead.
 
-`:app` adds a PlayerKey only while SearchKey is on top. A second tap that lands while the video screen opens finds PlayerKey on top, so it opens nothing. The check is a small function of the back stack, so a unit test covers it.
+`:app` adds a PlayerKey only while SearchKey is on top. A second tap that lands while the video screen opens finds PlayerKey on top, so it opens nothing.
+
+Closing removes that entry's own PlayerKey, found by its entry ID, and does nothing when the key isn't on the back stack any more. So a double tap on the close button, or a tap during the back gesture or the exit animation, removes the entry once, and SearchKey always stays. An empty back stack would crash, because NavDisplay requires at least one entry. The onBack that `:app` gives NavDisplay, for the system's back gesture, pops only while more than one entry is on the back stack.
+
+Both checks are small functions of the back stack in `:app`, so unit tests cover them: opening twice adds one key, closing twice removes one, and nothing ever removes SearchKey.
 
 - **Alternative:** `dropUnlessResumed`, which Android's UI events guidance shows for navigation clicks. Rejected, because it depends on each entry's lifecycle state during NavDisplay's transition, which a unit test can't show.
 
@@ -130,14 +136,15 @@ The column is at most 640dp wide and centered, and its background fills the wind
 | COUNTRY_BLOCKED | This video isn't available in your country. | No |
 | MEMBERS_OR_PAID | This video is only for the channel's members, or has to be bought. | No |
 | CHANNEL_CLOSED | This video's channel was closed. | No |
-| UNAVAILABLE | This video isn't available. It may have been removed, or it may not have started yet. | No |
+| UNAVAILABLE | This video isn't available. YouTube didn't say why. It may have been removed, be age-restricted, or not have started yet. | No |
 
-The first three are the categories in which nothing from YouTube can load right now, as YouTubeError's KDoc groups them. Trying again can help for NETWORK and BLOCKED. Only an app update fixes BROKEN, but a user can't tell it from the other two, it costs nothing to offer, and Search YouTube offers it for every failure. The others are about this one video, and asking again gives the same answer. The video screen has its own strings, because its messages are about one video.
+The first three are the categories in which nothing from YouTube can load right now, as YouTubeError's KDoc groups them. Trying again can help for NETWORK and BLOCKED. Only an app update fixes BROKEN, but a user can't tell it from the other two, it costs nothing to offer, and Search YouTube offers it for every failure. The others are about this one video, and asking again gives the same answer. The UNAVAILABLE message names age restriction, because NewPipeExtractor v0.27.1 reports an age-restricted video as UNAVAILABLE for now, as docs/architecture.md's "Mapping NewPipeExtractor's exceptions" says, so the AGE_RESTRICTED message can't show until it recognises the visionOS client's wording. The video screen has its own strings, because its messages are about one video.
 
 ## Risks / Trade-offs
 
 - [The entry decorator may not pass Hilt's factory on as the release notes say] → Tasks 6.1 and 7.2 check it early, by opening two different videos one after the other and by opening Search YouTube's entry. If it fails, the fallback is androidx.hilt's `hiltViewModel`, which goes to the maintainer first.
 - [Navigation 3 1.2.1 was built against Compose 1.10, and the app's BOM gives Compose 1.12.1] → AndroidX keeps binary compatibility within a major version, and the build and emulator checks run with the versions the app ships.
+- [PlayerArgs may still trip Dagger, for example through a generated getter] → Task 5.1 builds the ViewModel and its factory first and checks that KSP and the compiler accept them, before the screen builds on them. If they don't, the fallback is a plain class with the ID's text that turns it into a VideoId in the ViewModel's constructor, which goes to the maintainer first.
 - [An upcoming premiere opens a failure] → Its message says it may not have started yet. Telling premieres apart needs the row's kind, which is a later change if users meet it often.
 - [Rows and the video screen read the clock once per answer] → A screen left open for hours shows an old time ago, as Search YouTube already accepts.
 - [The back stack is saved in the state Android keeps for a process it ends] → It holds the video ID, on the device only, like the search text that #40 saves. The spec says so.

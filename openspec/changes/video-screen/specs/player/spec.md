@@ -83,7 +83,7 @@ When YouTube can't give the details, the screen SHALL say why in words for each 
 
 #### Scenario: A video that can't be shown
 - **WHEN** opening a video fails, and YouTube gives no reason the app can tell apart, such as for a premiere that hasn't started
-- **THEN** the screen says that the video isn't available, and that it may have been removed or not have started yet, with no "Try again"
+- **THEN** the screen says that the video isn't available and that YouTube didn't say why, and names removal, age restriction and a start still to come as possible reasons, with no "Try again"
 
 ### Requirement: Closing goes back
 The screen SHALL have a close button at the top, named for screen readers. The close button and the system's back gesture SHALL return to the screen the video was opened from, as that screen was.
@@ -95,6 +95,10 @@ The screen SHALL have a close button at the top, named for screen readers. The c
 #### Scenario: The back gesture
 - **WHEN** the user makes the system's back gesture on the video screen
 - **THEN** the app goes back as the close button does
+
+#### Scenario: A double tap on close
+- **WHEN** the user taps the close button twice quickly, or taps it during the back gesture
+- **THEN** the app goes back once, to the screen the video was opened from, and doesn't close
 
 ### Requirement: The video screen survives process death
 After the system ends the app's process in the background while the video screen shows, the user SHALL come back to the same video's screen, which loads the details again. Going back from it SHALL show the screen it was opened from.

@@ -35,10 +35,10 @@ Phase 4's goal is that a user can search for any video and watch it. Search YouT
 - `:feature:youtube-search-ui`'s public composable takes the action that opens a video. The time-ago count moves from `:feature:youtube-search-logic` to `:core:model`, with its tests.
 - `:core:data` gains its second repository. No change to the YouTube layer, its saved responses or the daily check.
 - Network: opening a video sends the video details requests the layer already sends, once per screen, and again only on "Try again" or after process death. Nothing new is logged: no title, name, description or ID, as ADR 0007 requires.
-- Dependencies, which the maintainer approved on November 19, 2026, with this change and the glyph, all under the Apache License 2.0:
+- Dependencies, which the maintainer approved on November 19, 2026, with this change and the glyph, as the "The maintainer's answers" section of pull request #178's description records, all under the Apache License 2.0:
   - `androidx.navigation3:navigation3-runtime` and `navigation3-ui` 1.2.1, released on November 4, 2026. They raise `androidx.navigationevent`, which the app already ships at 1.0.0 through Activity, to 1.1.1, released on May 6, 2026.
   - `androidx.lifecycle:lifecycle-viewmodel-navigation3` 2.11.0, the catalog's Lifecycle version, released on June 17, 2026.
   - The Kotlin serialization compiler plugin, a build tool at the Kotlin version, 2.4.20, and `org.jetbrains.kotlinx:kotlinx-serialization-core` 1.11.0, the catalog's version, released on April 9, 2026. The app already ships kotlinx-serialization-core 1.7.3 through SavedState.
   - One more Material Symbols Rounded glyph, the down arrow, from the same source and commit as the three that #40 added.
 - ADR 0002 gets a dated note, which the maintainer approved with this change on November 19, 2026: an action that starts in the UI, changes no state and needs no business logic, such as opening or closing a screen, goes straight to the app's navigation, without an intent or an effect. design.md explains why.
-- Docs: docs/architecture.md and AGENTS.md's module list and table, as tasks.md lists line by line.
+- Docs: docs/architecture.md, and AGENTS.md's module list and table and its Modules and MVI rules, as tasks.md lists line by line.

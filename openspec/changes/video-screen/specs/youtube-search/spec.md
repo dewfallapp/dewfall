@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Tapping a video opens it
-Tapping a row SHALL open that video's video screen, for a video, a live stream and an upcoming video alike. Search YouTube SHALL keep its text and results underneath, so going back shows them as they were, with no new search. Tapping a second time while the video screen opens SHALL NOT open it twice.
+Tapping a row SHALL open that video's video screen, for a video, a live stream and an upcoming video alike. Search YouTube SHALL keep its text and results underneath, so going back shows them as they were, with no new search. After the system ends the app's process in the background, going back shows the text alone, as the screen's state requirement says. Tapping a second time while the video screen opens SHALL NOT open it twice.
 
 #### Scenario: Opening a result
 - **WHEN** the screen shows results and the user taps a row
