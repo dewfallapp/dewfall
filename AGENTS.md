@@ -45,7 +45,7 @@ This section is updated whenever a phase's milestone closes.
 | .editorconfig | Editor settings, with a Kotlin section that comes close to the formatter |
 | .github/workflows/ | GitHub Actions workflows. pull-request.yml runs the checks on every pull request to main and every push to main. daily-youtube-check.yml runs the live YouTube check every day and reports failures as issues |
 | renovate.json | Renovate's settings for the weekly dependency update pull requests. docs/testing.md explains them |
-| .claude/ | Claude Code setup: the reviewer and maintainer subagents in agents/, plus the OpenSpec commands and skills. The maintainer subagent critiques plans and checks pull requests on the maintainer's behalf, from its own worktree, and only reads |
+| .claude/ | Claude Code setup: the reviewer and maintainer subagents in agents/, plus the OpenSpec commands and skills. The maintainer subagent critiques plans and checks pull requests on the maintainer's behalf, from its own worktree. Its own commands only read, and it runs a pull request's gate and build, which run that pull request's code |
 
 Some of these are still outlines or empty folders. Later phases fill them in.
 
@@ -81,7 +81,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 - Put the final verdict in the pull request description.
 - Pull request descriptions follow the sections of .github/pull_request_template.md, because `gh pr create --body` doesn't apply the template.
 - If you're not using Claude Code, go through the checklist in .claude/agents/reviewer.md yourself before handing off.
-- In Claude Code, the maintainer subagent judges work on the maintainer's behalf: it critiques a plan before building, and checks a pull request before merge. Pass it only the numbers and the plan's path that .claude/agents/maintainer.md asks for, never a summary of the work. Its verdict is binding. Build only after "Verdict: Build", and merge only after "Verdict: Merge" on the pull request's current head commit. Every other verdict blocks, and a new push needs a new check.
+- In Claude Code, the maintainer subagent judges work on the maintainer's behalf: it critiques a plan before building, and checks a pull request before merge. Pass it only the numbers and the plan's path that .claude/agents/maintainer.md asks for, never a summary of the work. Its verdict is binding. Build only after "Verdict: Build", and merge only after "Verdict: Merge" on the pull request's current head commit. Its Build comes on top of the maintainer's approval of an OpenSpec change, which "Spec first" still asks for, and never replaces it. Every other verdict blocks, and a new push needs a new check.
 
 ## Architecture rules
 

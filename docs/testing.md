@@ -595,7 +595,7 @@ It fetches origin, then checks every commit in origin/main..HEAD, not just the l
 
 | Check | Fails when |
 |---|---|
-| The gate's own tests | A test in scripts/tests fails, so a broken check can't pass by finding nothing. They run first. |
+| The gate's own tests | A test in scripts/tests fails, so a broken check can't pass by finding nothing. They run first. The folder also holds the tests of the maintainer subagent's guard and checkout script, so a broken guard blocks every push too. |
 | The branch | origin/main isn't part of HEAD's history, or a commit is a merge. Rebase onto origin/main instead of merging it. |
 | Identity | A commit's author or committer isn't this clone's own `user.name` and `user.email` from `git config --local`, or uses the email of the global configuration when that differs. The clone must set its identity locally. Renovate's commits are exempt, only once they are on the branch on GitHub, because a fix pushed to Renovate's branch sends them again, as [Dependency updates](#dependency-updates) describes. The gate takes that branch from the current branch's name, or from `--remote-branch origin/<name>` in a detached worktree, where nothing is exempt without it. |
 | Messages | A subject doesn't start with one of the conventional types in AGENTS.md, a message has a trailer, such as a co-author line, or a closing word, such as "closes", comes before an issue's number or link. The pull request's description closes issues, never a commit. |
@@ -604,7 +604,7 @@ It fetches origin, then checks every commit in origin/main..HEAD, not just the l
 | Nothing uncommitted | The folder has a change or a file that no commit holds, which the build would check although the push doesn't send it. |
 | The build | The pull request workflow's command, with `--continue` and `-Pandroid.builder.sdkDownload=false`, fails, or changes a file, such as a Room schema. |
 
-`--no-build` skips the build for a quick look. The gate then ends INCOMPLETE, with exit code 3, when every other check passed, and FAIL, with exit code 1, when one didn't, never PASS. A `--remote-branch` that doesn't start with origin/ stops the gate with exit code 2. With no commit to push, it says so and ends with exit code 0. It needs Python 3.9 or later.
+`--no-build` skips the build for a quick look. The gate then ends INCOMPLETE, with exit code 3, when every other check passed, and FAIL, with exit code 1, when one didn't, never PASS. A `--remote-branch` that doesn't start with origin/, or that holds `..`, stops the gate with exit code 2. With no commit to push, it says so and ends with exit code 0. It needs Python 3.9 or later.
 
 The gate reads each commit's saved responses from Git's objects, not from an archive, so `export-ignore` and other settings in the commit's .gitattributes can't leave a file out. A commit that deletes the folder has nothing to scan. Its tests in scripts/tests build small repositories of their own, without the user's Git configuration, to check merges, the Renovate exemption, the scan of saved responses and the exit codes.
 

@@ -279,27 +279,37 @@ class GuardTest(unittest.TestCase):
         self.assertIsNone(self.refusal(self.call("WebFetch", {"url": "https://example.com"})))
 
     def test_the_guard_fails_closed(self):
-        for text in ("not json", json.dumps({"tool_name": "Bash", "tool_input": []})):
+        # Text that isn't JSON, and a tool input that makes the check itself fail.
+        for text in ("not json", json.dumps({"tool_name": "Bash", "tool_input": ["x"]})):
             with self.subTest(text=text):
                 result = subprocess.run(
                     [sys.executable, "-I", os.path.join(SCRIPTS, "maintainer_guard.py")],
                     input=text, capture_output=True, text=True,
                 )
                 self.assertEqual(2, result.returncode)
-                self.assertIn("Blocked", result.stderr)
+                self.assertIn("the guard failed", result.stderr)
 
 
 class CheckoutTest(unittest.TestCase):
     def setUp(self):
+        # Each change is undone by a cleanup registered right after it, so a failed git
+        # command below can't leave later tests in the temporary repository.
         self.folder = tempfile.TemporaryDirectory()
-        self.saved_directory = os.getcwd()
-        self.saved_environment = dict(os.environ)
-        os.environ["GIT_CONFIG_GLOBAL"] = os.path.join(self.folder.name, "no-global-config")
-        os.environ["GIT_CONFIG_NOSYSTEM"] = "1"
+        self.addCleanup(self.folder.cleanup)
+        environment = mock.patch.dict(
+            os.environ,
+            {
+                "GIT_CONFIG_GLOBAL": os.path.join(self.folder.name, "no-global-config"),
+                "GIT_CONFIG_NOSYSTEM": "1",
+            },
+        )
+        environment.start()
+        self.addCleanup(environment.stop)
         origin = os.path.join(self.folder.name, "origin.git")
         subprocess.run(["git", "init", "--quiet", "--bare", origin], check=True)
         self.repository = os.path.join(self.folder.name, "work")
         os.makedirs(self.repository)
+        self.addCleanup(os.chdir, os.getcwd())
         os.chdir(self.repository)
         for command in (
             ["git", "init", "--quiet", "-b", "main"],
@@ -313,12 +323,6 @@ class CheckoutTest(unittest.TestCase):
         self.sha = subprocess.run(
             ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True
         ).stdout.strip()
-
-    def tearDown(self):
-        os.chdir(self.saved_directory)
-        os.environ.clear()
-        os.environ.update(self.saved_environment)
-        self.folder.cleanup()
 
     def run_main(self, head):
         output = io.StringIO()
