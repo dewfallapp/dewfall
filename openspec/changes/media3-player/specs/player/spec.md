@@ -48,7 +48,7 @@ On a metered network the player SHALL stream a picture whose shorter side is at 
 - **THEN** the player streams a format of 480p or less
 
 #### Scenario: Wi-Fi
-- **WHEN** a video with formats up to 2160p starts playing on Wi-Fi, on a phone that decodes them all
+- **WHEN** a video with formats up to 2160p starts playing on Wi-Fi, on a phone that decodes them all in hardware
 - **THEN** the player streams a 1080p format
 
 #### Scenario: A portrait video

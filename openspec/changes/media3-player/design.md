@@ -64,8 +64,8 @@ See proposal.md for why. The pieces this change builds on:
   The User-Agent comes from the original link, which must be a visionOS link, and is kept across redirects, whose Location may lack `c=VISIONOS`. A link of any other client fails before anything is sent, because only a NewPipeExtractor update can make the layer know its User-Agent.
 
   **No NewPipeExtractor call outside the Mutex.** ADR 0009 says that every call into NewPipeExtractor holds the Mutex, and Media3's loader threads don't. So MediaRequests calls no NewPipeExtractor code itself:
-  - The stream links call, which already holds the Mutex, reads `getVisionOsUserAgent` and keeps the string in a holder inside the layer, for MediaRequests to read. Stream links always come before their bytes, so the string is there when a request needs it. If it isn't, the request fails as an unknown client.
-  - MediaRequests recognises a visionOS link with its own check of the link's `c` query parameter, the same test as `isVisionOsStreamingUrl`'s `&c=VISIONOS`, with tests of its own.
+  - The stream links call, which already holds the Mutex, reads `getVisionOsUserAgent` and keeps the string in a holder inside the layer, for MediaRequests to read. The holder is an AtomicReference, so OkHttp's threads see the string that the call's thread wrote. Stream links always come before their bytes, so the string is there when a request needs it. If it isn't, the request fails as an unknown client.
+  - MediaRequests recognises a visionOS link by parsing the link's `c` query parameter and comparing it with `VISIONOS`. That is stricter than `isVisionOsStreamingUrl`, which searches for the text `&c=VISIONOS`, so it would match `&c=VISIONOSX` and miss `?c=VISIONOS`. Its own tests cover those cases.
 - **Live.** `MediaRequests.live()` makes the Call.Factory for an HLS media source. Its requests stay plain GET requests, as NewPipe sends them for live streams, with the User-Agent that the layer's own NewPipeDownloader sends when NewPipeExtractor sets none. They make no client check, because a live link names no client.
 - **Both.**
   - They send only HTTPS requests to googlevideo.com and its subdomains.
@@ -199,6 +199,12 @@ Alternative: let ExoPlayer choose among every format. Rejected, because progress
 
 The adapters only read fields and build Media3 objects, and task 7.2's checks on the emulators run them.
 
+**The refresh steps.** The steps of a refresh do more than read fields, so they run over a small interface of `:core:playback`'s own, RefreshTarget: replace the item, seek to a position, seek to the live edge, and play. PlaybackService's adapter implements it over the ExoPlayer. A JVM test with a fake RefreshTarget checks:
+- the order of the steps
+- the old position for a video, and the live edge for a live stream
+- play only if the player was playing
+- no second refresh after a second refusal
+
 ### Expired links and errors
 
 The service's player listener handles a refused link once per failure. The limit resets once the refreshed item plays again, so a second expiry hours later refreshes too, while two refusals in a row stop:
@@ -236,7 +242,7 @@ The video screen gets a VideoArea at the top of its column, as the "Player" fram
 - the picture in a 16:9 box, drawn by media3-ui-compose's ContentFrame on its default SurfaceView.
   - A picture of another shape fits inside the box, with bars.
   - Compose's clip doesn't round a SurfaceView, so the box draws its rounded corners as an overlay in the screen's own background role, `surface`, so they match in light, dark and dynamic color.
-  - The shutter, shown before the first frame, is a MaterialTheme color role, `surfaceContainerHighest`, not ContentFrame's default black. The artwork slot is empty.
+  - The shutter, shown before the first frame, is a MaterialTheme color role, `surfaceContainerHighest`, not ContentFrame's default black. ContentFrame at 1.11.1 has no artwork parameter, and the session's item has no artwork.
 - **The screen stays on while the video plays.** The box applies Compose's `Modifier.keepScreenOn()` only while the player plays, as Android's [keep the screen on](https://developer.android.com/develop/background-work/background-tasks/awake/screen-on) guide shows for video. The modifier needs Compose UI 1.9, and the BOM gives 1.12.1. Otherwise the screen would time out, the activity would stop, and the ON_STOP pause would pause the video. When the video is paused, the screen may turn off.
 - the seek bar
 - the play and pause button, then the times, such as "18:24 / 1:14:02"

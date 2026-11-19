@@ -21,7 +21,7 @@
   - MediaRequestRefused for anything they won't send
 
   Make OkHttp an api dependency of `:core:youtube`. In `:core:data`, which keeps `:core:youtube` as an implementation dependency, add the `@ProgressiveMediaCalls` provider, unscoped, and the `@LiveMediaCalls` provider of OkHttp's Call.Factory. Verify with `./gradlew :core:youtube:test`. Tests drive the interceptors through a fake chain:
-  - an allowed visionOS link
+  - an allowed visionOS link, sent as a POST with the body `x\0`, the Range header kept, `TE: trailers`, `Accept-Language: en-GB` and the visionOS User-Agent
   - http
   - another host
   - a redirect to an allowed host keeping the User-Agent, and one to another host
@@ -67,10 +67,11 @@
   - the retry decision behind the LoadErrorHandlingPolicy: 403, 410 and a refused request are never retried, and anything else keeps the default retry delay
   - the decoder codes from design.md map to NOT_DECODABLE, and DECODING_RESOURCES_RECLAIMED to OTHER
   - a link refresh keeps the PlaybackItems entry
-
-  All of these take plain inputs, as design.md's "How the playback tests run" says, so they run on the JVM without Robolectric.
   - each PlaybackException code and YouTubeError maps to the category in design.md
-- [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. It has:
+  - the refresh steps over a fake RefreshTarget: their order, the old position for a video and the live edge for a live stream, play only if it was playing, and no second refresh after a second refusal
+
+  All of these take plain inputs or a fake RefreshTarget, as design.md's "How the playback tests run" says, so they run on the JVM without Robolectric.
+- [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. Before the UI work in task 5, play a video an hour or longer at 1080p for several minutes on an emulator, through a temporary debug call, and seek near its end, to check MediaRequests' request shape early. Remove the debug call afterwards. It has:
   - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and `onUpdateNotificationAsync` returning an immediate future without calling super
   - a coroutine scope on an injected dispatcher, and PlaybackLog, injected into a field, which takes the Logger in its constructor
   - the audio attributes with audio focus, and pausing when the output becomes noisy
@@ -134,6 +135,7 @@
 - [ ] 7.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. Verify that it passes. Then rerun task 1.1's checks on the final release and debug runtime classpaths, after tasks 4 and 5 declare the libraries: every new or changed artifact, its license, release date and advisories, and the merged release manifest. Ask the maintainer about any artifact that proposal.md doesn't name.
 - [ ] 7.2 Check by hand on an emulator with Android 10, and with the newest Android installed:
   - Open a video and see it start playing, with sound and picture together. Seek, pause and play.
+  - Play a short video to its end, see the button offer to play it again, and replay it from the start.
   - Play a video an hour or longer for several minutes at 1080p, and seek near its end.
   - Open a live stream and see "Live".
   - Play once on Wi-Fi and once on mobile data only, with `adb shell svc wifi disable`.
