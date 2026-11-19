@@ -146,6 +146,7 @@ The first three are the categories in which nothing from YouTube can load right 
 - [Navigation 3 1.2.1 was built against Compose 1.10, and the app's BOM gives Compose 1.12.1] → AndroidX keeps binary compatibility within a major version, and the build and emulator checks run with the versions the app ships.
 - [PlayerArgs may still trip Dagger, for example through a generated getter] → Task 5.1 builds the ViewModel and its factory first and checks that KSP and the compiler accept them, before the screen builds on them. If they don't, the fallback is a plain class with the ID's text that turns it into a VideoId in the ViewModel's constructor, which goes to the maintainer first.
 - [An upcoming premiere opens a failure] → Its message says it may not have started yet. Telling premieres apart needs the row's kind, which is a later change if users meet it often.
+- [NewPipeExtractor turns YouTube's "1 day ago" into now minus a day, so on the evening the clocks go back, from 23:00 to midnight in Europe/London, that estimate can fall on today's date] → A row then says "Today" where YouTube said 1 day ago, one hour a year. The date-based estimates, and a video page that gives a date with no time, read correctly the rest of the time.
 - [Rows and the video screen read the clock once per answer] → A screen left open for hours shows an old time ago, as Search YouTube already accepts.
 - [The back stack is saved in the state Android keeps for a process it ends] → It holds the video ID, on the device only, like the search text that #40 saves. The spec says so.
 
