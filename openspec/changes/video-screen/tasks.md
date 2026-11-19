@@ -1,0 +1,48 @@
+# Tasks
+
+## 1. Decisions the maintainer approved first
+
+- [ ] 1.1 The maintainer approved them on November 19, 2026. Add to the catalog `androidx.navigation3:navigation3-runtime` and `navigation3-ui` 1.2.1, `androidx.lifecycle:lifecycle-viewmodel-navigation3` on the Lifecycle version, `kotlinx-serialization-core` on the existing kotlinxSerialization version, and the `org.jetbrains.kotlin.plugin.serialization` plugin on the Kotlin version, each with a comment that says what uses it and the approval date. Verify by comparing `./gradlew -q :app:dependencies --configuration releaseRuntimeClasspath` before and after: list every artifact that is new or changes version, with its license and release date, and check each against AGENTS.md's license and 14-day rules. Ask the maintainer about any artifact that is new or changes version and that proposal.md doesn't name, before going on. Do the same for debugRuntimeClasspath, and check that both resolve the same versions, as docs/architecture.md's "The same versions in debug and release" asks. Compare the merged release manifest before and after too, and check that no new provider, initializer, service or permission arrives, as docs/architecture.md's "Network access" section does for the others.
+- [ ] 1.2 Add the `keyboard_arrow_down` glyph from Material Symbols Rounded to `:core:designsystem`, from the same file path pattern and commit as `ic_close.xml`, with the same header comment. Verify that the header names the source path and commit, and that `./gradlew :core:designsystem:lint` passes.
+
+## 2. Shared pieces
+
+- [ ] 2.1 Move `TimeAgo` and `timeAgo` from `:feature:youtube-search-logic` to `:core:model`, with their tests, and add `TimeAgo.Today` for zero calendar days. Search YouTube's rows say "Today" for it. Verify with `./gradlew :core:model:test`: the moved tests pass unchanged except the ones for zero days, and new tests cover an estimated time on today's date and an exact time 24.5 hours ago on the day the clocks go back in Europe/London, which both read Today, and an exact time 23 hours ago, which reads 23 hours.
+- [ ] 2.2 Move `ReadableWidth` from `:feature:youtube-search-ui` to `:core:designsystem`, and make Search YouTube use it. Verify that `./gradlew :feature:youtube-search-ui:assembleDebug` passes and that the search screen's previews look the same.
+
+## 3. The video details repository
+
+- [ ] 3.1 Add the `VideoDetailsRepository` interface to `:core:data`, with an implementation that calls `VideoDetailsRemoteDataSource` and returns its result unchanged, and its Hilt binding. Verify with a unit test against a fake data source, and `./gradlew :core:data:testDebugUnitTest`.
+- [ ] 3.2 Update docs/architecture.md: `:core:data`'s row and "Reading from YouTube" name both repositories. Verify that the names match the code.
+
+## 4. The logic module
+
+- [ ] 4.1 Add `:feature:player-logic`, a plain Kotlin/JVM module, with the state, intents and page types from design.md. Verify that `./gradlew :feature:player-logic:build` passes.
+- [ ] 4.2 Write the reducer: Load starts Loading with request 1, DetailsFinished counts only while Loading with the same number, a success builds the page and a failure keeps its YouTubeError, and TryAgain counts only while Failed with an error that offers it. Verify with reducer tests for every scenario the reducer decides, including an answer that arrives after "Try again" started a newer request, and a TryAgain after PRIVATE that changes nothing.
+- [ ] 4.3 Write the function that says which errors offer "Try again", and the channel's initial with `BreakIterator.getCharacterInstance(Locale.ROOT)`. Verify with tests for all nine YouTubeError values, and for initials of a letter, a lowercase letter, a letter with a combining accent, an emoji of one code point outside the Basic Multilingual Plane, a name that starts with a space, and a blank name, which gets no initial. These are the cases on which JDK 17 and Android's ICU agree, as design.md explains. Task 7.2 checks a flag and a family emoji by hand.
+
+## 5. The UI module
+
+- [ ] 5.1 Add `:feature:player-ui`, an Android library, with `PlayerViewModel` and its assisted factory. It dispatches Load once when created, runs one call at a time, and dispatches DetailsFinished. Verify with ViewModel tests against a fake VideoDetailsRepository, with Main replaced by Dispatchers.setMain: one call for the ID it was created with, one more call on "Try again" after NETWORK, and none after PRIVATE.
+- [ ] 5.2 Write the stateless `PlayerScreen`, which takes `now`, and the public `PlayerRoute`, which reads the clock, following design.md's layout: the close button, the title as a heading, the publish line with plurals, "Live now", the channel box with the emblem hidden from screen readers, the selectable description, loading, and the failure messages with "Try again" where it applies. All strings in resources, and a content description on every icon. Verify with previews in light, dark, a font scale of 2 and a tablet-sized window, for loaded, live, no description, loading and two failures.
+
+## 6. Navigation in the app
+
+- [ ] 6.1 Add the navigation to `:app` as design.md describes: the serialization plugin, `SearchKey`, `PlayerKey` with its VideoId serializer and hidden toString, `rememberNavBackStack`, NavDisplay with the two entry decorators, PlayerKey's entry ID as its content key, and the guard that adds PlayerKey only while SearchKey is on top, as a small function of the back stack. `YouTubeSearch` takes `onOpenVideo`, and each row becomes clickable, with an action label for screen readers. Verify on an emulator that a row opens its video, that back shows the same results with no new search, and that opening video A, going back and opening video B shows B's details, which proves each entry gets its own ViewModel through Hilt's factory. Verify too, with unit tests, that neither `PlayerKey`'s toString nor its content key holds the video ID, that two keys for the same video get different content keys, that a PlayerKey survives a round trip through its serializer, and that the guard adds a key while SearchKey is on top and nothing while a PlayerKey is.
+- [ ] 6.2 Update the docs this change makes stale, and verify that each line below now matches the code:
+  - ADR 0002: a dated "Changed in #41" note under Status, as design.md words it, which the maintainer approved with this change on November 19, 2026: an action that starts in the UI, changes no state and needs no business logic, such as opening or closing a screen, goes straight to `:app`'s navigation, with no intent.
+  - AGENTS.md: the feature/ row and the Modules rule's list of modules.
+  - docs/architecture.md: the module table and graph with the two new modules, `:app`'s row, which now holds the navigation, `:core:model`'s row with the time ago, and the sentences on where Compose and Hilt are set up.
+  - docs/architecture.md's MVI section: the MviEffect row's example becomes an instruction that starts in the ViewModel, and a sentence says that actions like opening a screen skip intents and effects, as ADR 0002's note says.
+  - docs/architecture.md's `:core:designsystem` paragraph, which says the code that formats a duration goes in `:core:ui`: the text does, and the counting is in `:core:model`.
+  - docs/architecture.md: a short "Navigation" section with the keys, the two entry decorators, the video ID in the state Android saves, and the content key that holds no ID.
+  - docs/architecture.md's "The same versions in debug and release", with what task 1.1 found.
+
+## 7. Checks
+
+- [ ] 7.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. Verify that it passes.
+- [ ] 7.2 Check by hand on an emulator with Android 10 and with the newest Android installed: open a video from search and see its title, publish line, channel and description, scroll a long description and copy a link from it, open a live stream and see "Live now", open an upcoming video and see the "isn't available" message, turn the network off, open a video and see the NETWORK message, then "Try again" with the network on. Open a video from a channel whose name starts with a flag or a family emoji, if search finds one, and check that the emblem shows it whole. Close with the button and with the back gesture, tap a row twice quickly, and check that going back to the results doesn't open the keyboard again. Send the app to the background, end its process with `adb shell am kill io.github.dewfallapp`, come back to the same video, then go back and see Search YouTube with its text. Check light, dark and a large font, that a phone stays in portrait, a tablet or foldable emulator in landscape, split screen, and that nothing sits under the system bars. Verify that `adb logcat` shows no ID, title, channel name or description.
+
+## Workflow follow-up
+
+- Archive the change with /opsx:archive as the last commit of the feature's pull request, then run the reviewer again on that commit.
