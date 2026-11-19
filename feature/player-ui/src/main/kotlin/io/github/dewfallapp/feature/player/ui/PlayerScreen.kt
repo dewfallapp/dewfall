@@ -57,9 +57,10 @@ import kotlin.time.Instant
 private val EmblemSize = 36.dp
 
 /**
- * The video screen: a close button, then the video's details, or loading, or a failure. It is
- * stateless: it shows [state], with the time ago counted from [now] in [zone], and reports what the
- * user does through [onIntent] and [onClose].
+ * The video screen: a close button, then [videoArea], then the video's details, or loading, or a
+ * failure. It is stateless: it shows [state], with the time ago counted from [now] in [zone], and
+ * reports what the user does through [onIntent] and [onClose]. The video area reads the player
+ * itself, so playback state never enters [state].
  *
  * Its background fills the window behind the system bars. Its content sits inside the safe drawing
  * area, in one column at most [ReadableWidth] wide, so nothing is under the system bars or the
@@ -73,6 +74,7 @@ internal fun PlayerScreen(
     onIntent: (PlayerIntent) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    videoArea: @Composable (Modifier) -> Unit = {},
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
         Box(
@@ -90,6 +92,7 @@ internal fun PlayerScreen(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                videoArea(Modifier.padding(horizontal = DewfallSpacing.margin))
                 val areaModifier = Modifier.weight(1f)
                 when (val details = state.details) {
                     is DetailsArea.Loading -> Loading(modifier = areaModifier)
