@@ -9,26 +9,26 @@
   Give each a comment that says what uses it and the approval date. Verify by comparing `./gradlew -q :app:dependencies --configuration releaseRuntimeClasspath` before and after:
   - List every artifact that is new or changes version, with its license and release date, and check each against AGENTS.md's license and 14-day rules and GitHub's advisory database. Ask the maintainer about any that proposal.md doesn't name before going on.
   - Do the same for debugRuntimeClasspath, and check that both resolve the same versions, with Guava at 33.7.2-android.
-  - Compare the merged release manifest before and after. Check that it adds only what proposal.md names: ACCESS_NETWORK_STATE, WAKE_LOCK and the unexported PlaybackService, and no BluetoothValidationActivity.
+  - Compare the merged release manifest before and after. Check that it adds only what proposal.md names: ACCESS_NETWORK_STATE, WAKE_LOCK, and the unexported PlaybackService with its `androidx.media3.session.MediaSessionService` intent filter, and no BluetoothValidationActivity.
 
 ## 2. The YouTube layer's media requests
 
-- [ ] 2.1 Add MediaRequestRefused to `:core:model`: an IOException with constant text and an enum reason. Then add MediaRequests to `:core:youtube`, the Call.Factory from design.md:
-  - an OkHttpClient with no redirects of its own
-  - an interceptor that allows only HTTPS to googlevideo.com and its subdomains, follows at most 20 checked redirects, and closes each redirect's response
-  - the POST with `x\0` and the `rn` parameter for `/videoplayback`
-  - the visionOS User-Agent with the layer's Localization, and `Accept-Language: en-GB`
-  - MediaRequestRefused for anything it won't send
+- [ ] 2.1 Add MediaRequestRefused to `:core:model`: an IOException with constant text and an enum reason. Then add MediaRequests to `:core:youtube`, as design.md describes:
+  - `progressive()`, a new Call.Factory for each progressive source: a POST with `x\0`, the Range header kept, `TE: trailers`, `rn` counting from 0, and the visionOS User-Agent from the original link, kept across redirects
+  - `live()`, the Call.Factory for HLS: plain GET requests with NewPipeDownloader's own User-Agent and no client check
+  - for both: an OkHttpClient with no redirects of its own, only HTTPS to googlevideo.com and its subdomains, at most 20 checked redirects, 307 and 308 keeping the method and body while 301 to 303 become a GET with no body, each redirect's response closed, and `Accept-Language: en-GB`
+  - MediaRequestRefused for anything they won't send
 
-  Make OkHttp an api dependency of `:core:youtube`, and provide MediaRequests through `:core:data` with a qualifier. Verify with `./gradlew :core:youtube:test`. Tests drive the interceptor through a fake chain:
+  Make OkHttp an api dependency of `:core:youtube`, and provide MediaRequests through `:core:data`. Verify with `./gradlew :core:youtube:test`. Tests drive the interceptors through a fake chain:
   - an allowed visionOS link
   - http
   - another host
-  - a redirect to an allowed host, and one to another host
+  - a redirect to an allowed host keeping the User-Agent, and one to another host
   - 21 redirects, and a redirect without a Location
-  - a link of another client
-  - `rn` numbering, and a URL that already has `rn`
-  - an HLS URL
+  - a 302 and a 307 after a POST
+  - a progressive link of another client
+  - `rn` numbering from 0 for each factory, and a URL that already has `rn`
+  - a live manifest link with the saved set VIDEO_BIG_BUCK_BUNNY's path form and no `c` key, sent as a GET
   - a redirect response that is closed
 
   Check that no test name or error message holds a link.
@@ -48,6 +48,7 @@
   - the highest and lowest audio bitrate
   - a format with sound and picture
   - a live stream with only a manifest
+  - the live variants within the limit by their shorter side: a 1920x1080 variant within 1080 and outside 480, and the smallest variant when none is within
 
 ## 4. The playback module
 
@@ -63,13 +64,16 @@
   - each PlaybackException code and YouTubeError maps to the category in design.md
 - [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. It has:
   - the MediaSessionService with one ExoPlayer, Media3's logging turned off in `onCreate`, and the empty `onUpdateNotification`
+  - the audio attributes with audio focus, and pausing when the output becomes noisy
   - `onConnect` accepting only the app's own package
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
   - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over MediaRequests
   - the LoadErrorHandlingPolicy that doesn't retry 403 or 410
-  - the one refresh, and the live track selector limit
-  - the unexported manifest entry and the removed BluetoothValidationActivity
-- [ ] 4.3 Add PlaybackConnection: the Hilt singleton that turns Media3's logging off in its constructor, builds one MediaController for the application's context, prepares a VideoId under a new playback ID, and exposes the PlaybackFailure stream and one WARN log line for each failure, with the category as a state field and the error code as a count field. Verify with a unit test of the log line's fields, through a fake Logger.
+  - the one refresh, and the live TrackSelectionOverride
+  - PlaybackItems' entry removed when its item is replaced, cleared or stopped
+  - one WARN log line for each failure, with the category as a state field and the error code as a count field
+  - the unexported manifest entry with its intent filter, and the removed BluetoothValidationActivity
+- [ ] 4.3 Add PlaybackConnection: the Hilt singleton that turns Media3's logging off in its constructor, builds one MediaController for the application's context, prepares a VideoId under a new playback ID, and exposes the PlaybackFailure stream. Verify with unit tests, through fakes, of the service's log line's fields and of PlaybackItems dropping an entry when its item is replaced or stopped.
 
 ## 5. The video screen
 
@@ -83,7 +87,7 @@
   Opt in to `@UnstableApi` file by file. All strings go in resources, with a content description on every icon and on the seek bar. Verify with previews in light, dark, a font scale of 2 and a tablet-sized window, for playing, paused, live, loading and two failures, with a fake Player.
 - [ ] 5.2 Wire PlayerRoute to PlaybackConnection:
   - start on the entry's first opening, saving the playback ID
-  - prepare a new playback ID without playing after process death
+  - after process death, show the video paused and fetch nothing until the user presses play
   - pause on ON_STOP, unless the activity is changing configurations
   - clear the items when the entry's ViewModel is cleared, only if the current item is this entry's playback ID
 
@@ -100,7 +104,8 @@
     - "Reading from YouTube" with the third repository
     - the sentences on where Compose and Hilt are set up
     - "Other libraries' own logs"
-  - ADR 0007: a dated note that Media3's logging is off.
+  - ADR 0007, ADR 0008 and ADR 0009: the dated notes from design.md, citing the maintainer's approval.
+  - AGENTS.md's rule on the YouTube layer's functions: MediaRequests as its one exception.
   - openspec/config.yaml's list of core modules.
 
 ## 7. Checks
@@ -115,6 +120,7 @@
   - Close the screen and hear the sound stop. Go home and come back to a paused video.
   - Resize a split screen window, or change the theme, while it plays, and see it keep playing.
   - End the process in the background, and come back to a video that waits for play.
+  - Start music in another app while a video plays, and see the video pause. Unplug headphones, or turn off a Bluetooth headset, while it plays, and see it pause.
   - See no notification while playing.
   - Check that `adb shell dumpsys media_session` shows no video ID, title or link.
   - Check that `adb logcat` shows no link, ID or title, and no line from Media3.

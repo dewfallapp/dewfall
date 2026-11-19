@@ -26,7 +26,7 @@ Opening a video SHALL start playing it from the start, without a tap. A video sc
 
 #### Scenario: Coming back after process death
 - **WHEN** the system ended the app's process while it showed a video, and the user returns to it
-- **THEN** the video waits at the start for the user to press play
+- **THEN** the video waits at the start for the user to press play, and nothing is fetched for it until then
 
 ### Requirement: Quality follows the network
 When playback starts on a metered network, such as mobile data, the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered network, such as Wi-Fi, it SHALL stream the largest picture up to 1080 pixels on its shorter side that the phone can decode, with the highest audio bitrate. It SHALL choose only formats the phone can decode, and SHALL keep its choice until playback starts again.
@@ -95,6 +95,17 @@ Closing the video screen SHALL stop playback. Leaving the app, such as with the 
 - **WHEN** a video plays in split screen and the user resizes the window
 - **THEN** it keeps playing without a pause
 
+### Requirement: Playback makes way for other sound
+The player SHALL follow Android's audio focus: it SHALL pause or lower its sound when another app takes audio focus, such as for a call or music, and SHALL pause when headphones are unplugged or a Bluetooth headset disconnects.
+
+#### Scenario: Another app plays music
+- **WHEN** a video plays and the user starts music in another app
+- **THEN** the video pauses
+
+#### Scenario: Unplugging headphones
+- **WHEN** a video plays through headphones and they are unplugged
+- **THEN** the video pauses, and doesn't play through the speaker
+
 ### Requirement: The player shows no notification yet
 Until background play exists, the app SHALL NOT show a media notification, and SHALL NOT run a foreground service.
 
@@ -127,7 +138,7 @@ After the system ends the app's process in the background while the video screen
 - **THEN** the screen says that the same video is loading, then shows its details, and the video waits at the start for the user to press play
 
 ### Requirement: Video details stay private
-The app SHALL never log the video's ID, title, channel name or description, and SHALL send them nowhere but YouTube. The only copy kept outside the screen SHALL be the video's ID in the state Android saves for a process that it ends in the background. The media session SHALL name the video only by a random playback ID.
+The app SHALL never log the video's ID, title, channel name or description, and SHALL send them nowhere but YouTube. The only copies kept outside the screen SHALL be the video's ID in the state Android saves for a process that it ends in the background, and, in memory while its playback lasts, the playing video's ID and stream links in the playback service, which it SHALL drop when that playback is replaced or stops. The media session SHALL name the video only by a random playback ID.
 
 #### Scenario: Logs after opening a video
 - **WHEN** the user opens a video, once with details showing and once with the network off
