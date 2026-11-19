@@ -30,7 +30,7 @@ private fun row(
     title: String,
     channel: String,
     length: Int?,
-    daysAgo: Int,
+    daysAgo: Int?,
     kind: VideoKind,
 ) =
     VideoRow(
@@ -39,7 +39,7 @@ private fun row(
         channelName = channel,
         duration = length?.minutes,
         kind = kind,
-        published = PublishedTime(previewNow - daysAgo.days, isApproximate = true),
+        published = daysAgo?.let { PublishedTime(previewNow - it.days, isApproximate = true) },
     )
 
 private val previewRows =
@@ -73,7 +73,8 @@ private val previewRows =
             "Baking along, live from the bakery",
             "Kettle and Crumb",
             null,
-            0,
+            // A live search result carries no publish time.
+            null,
             VideoKind.LIVE,
         ),
     )
