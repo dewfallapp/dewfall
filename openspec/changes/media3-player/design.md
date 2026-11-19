@@ -18,12 +18,12 @@ See proposal.md for why. The pieces this change builds on:
   docs/architecture.md's "Network access" leaves "what the player sends" to this plan.
 - AGENTS.md's product rules send network calls to YouTube through the YouTube layer, and Phase 3 put all access to YouTube in that one module. Only `:core:youtube` may use NewPipeExtractor.
 - NewPipe v0.29.3's player, which uses NewPipeExtractor v0.27.1, fetches googlevideo.com in two ways:
-  - **Video-only and audio-only formats.** NewPipe's main path builds a DASH manifest for each format with NewPipeExtractor's YoutubeProgressiveDashManifestCreator, and plays it with Media3's DashMediaSource, which puts the byte range in a `range` query parameter ([PlaybackResolver](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/resolver/PlaybackResolver.java), `createYoutubeMediaSourceOfVideoStreamType`). Only when the manifest can't be made does it fall back to a ProgressiveMediaSource, through [YoutubeHttpDataSource](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/datasource/YoutubeHttpDataSource.java) as [PlayerDataSource](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/helper/PlayerDataSource.java) configures it. Both paths share these request rules:
+  - **Video-only and audio-only formats.** NewPipe's main path builds a DASH manifest for each format with NewPipeExtractor's YoutubeProgressiveDashManifestCreator, and plays it with ExoPlayer 2.19.1's DashMediaSource, the version NewPipe v0.29.3 uses, which puts the byte range in a `range` query parameter ([PlaybackResolver](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/resolver/PlaybackResolver.java), `createYoutubeMediaSourceOfVideoStreamType`). Only when the manifest can't be made does it fall back to a ProgressiveMediaSource, through [YoutubeHttpDataSource](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/datasource/YoutubeHttpDataSource.java) as [PlayerDataSource](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/helper/PlayerDataSource.java) configures it. Both paths share these request rules:
     - Every request is a POST with the two-byte body `x\0` and `TE: trailers`. The fallback sends the byte range in a Range header, and the DASH path in a `range` parameter.
     - `/videoplayback` URLs without an `rn` parameter get one that numbers the data source's requests from 0.
     - The User-Agent is the visionOS one for a visionOS link, which `isVisionOsStreamingUrl` recognises by its `c=VISIONOS`.
     - There is no Accept-Language, and at most 20 redirects are followed.
-  - **Live HLS** ([PlaybackResolver](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/resolver/PlaybackResolver.java), `buildLiveMediaSource`): Media3's DefaultHttpDataSource sends plain GET requests with NewPipe's own User-Agent. Four saved sets hold an `hlsManifestUrl`: VIDEO_BIG_BUCK_BUNNY's and the three subtitle sets'. All belong to videos that aren't live, and all are in path form with no `c` key. No saved set holds a live stream's links, so the plan takes a live manifest link to have the same form, and the hand check of a live stream tests it.
+  - **Live HLS** ([PlaybackResolver](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/resolver/PlaybackResolver.java), `buildLiveMediaSource`): ExoPlayer 2.19.1's DefaultHttpDataSource sends plain GET requests with NewPipe's own User-Agent. Four saved sets hold an `hlsManifestUrl`: VIDEO_BIG_BUCK_BUNNY's and the three subtitle sets'. All belong to videos that aren't live, and all are in path form with no `c` key. No saved set holds a live stream's links, so the plan takes a live manifest link to have the same form, and the hand check of a live stream tests it.
 - ADR 0002 keeps playback state out of screen state: the player lives in a MediaSessionService and exposes its state as its own stream, updated only as often as the visible UI needs.
 - The maintainer decided on November 19, 2026:
   - at most 480p on metered networks, and the best up to 1080p on unmetered ones, with no setting yet
@@ -59,9 +59,13 @@ See proposal.md for why. The pieces this change builds on:
   - is a POST with the body `x\0`
   - keeps Media3's Range header, and sends `TE: trailers`
   - gets `rn` when the URL has none
-  - sends the visionOS User-Agent, `YoutubeParsingHelper.getVisionOsUserAgent` with the layer's own Localization, en-GB, the one the player request that made the links named
+  - sends the visionOS User-Agent, the string that `YoutubeParsingHelper.getVisionOsUserAgent` returns for the layer's Localization, en-GB. NewPipe passes null, which falls back to the same en-GB, so the string is the same.
 
   The User-Agent comes from the original link, which must be a visionOS link, and is kept across redirects, whose Location may lack `c=VISIONOS`. A link of any other client fails before anything is sent, because only a NewPipeExtractor update can make the layer know its User-Agent.
+
+  **No NewPipeExtractor call outside the Mutex.** ADR 0009 says that every call into NewPipeExtractor holds the Mutex, and Media3's loader threads don't. So MediaRequests calls no NewPipeExtractor code itself:
+  - The stream links call, which already holds the Mutex, reads `getVisionOsUserAgent` and keeps the string in a holder inside the layer, for MediaRequests to read. Stream links always come before their bytes, so the string is there when a request needs it. If it isn't, the request fails as an unknown client.
+  - MediaRequests recognises a visionOS link with its own check of the link's `c` query parameter, the same test as `isVisionOsStreamingUrl`'s `&c=VISIONOS`, with tests of its own.
 - **Live.** `MediaRequests.live()` makes the Call.Factory for an HLS media source. Its requests stay plain GET requests, as NewPipe sends them for live streams, with the User-Agent that the layer's own NewPipeDownloader sends when NewPipeExtractor sets none. They make no client check, because a live link names no client.
 - **Both.**
   - They send only HTTPS requests to googlevideo.com and its subdomains.
@@ -75,7 +79,7 @@ See proposal.md for why. The pieces this change builds on:
 - **Why the layer.** It keeps all of Dewfall's requests to YouTube in one module, as Phase 3 and AGENTS.md's product rules ask. The User-Agent comes from NewPipeExtractor, which only the layer may use. A NewPipeExtractor update that changes how links must be fetched then changes one module.
 - **Alternative:** a client in `:core:playback`, with a User-Agent field on StreamLinks. Rejected, because it would put YouTube's request rules outside the layer, which the product rule forbids without the maintainer's approval.
 - **OkHttp's version.** media3-datasource-okhttp asks for OkHttp 4.12.0, and the app ships 5.5.0, which Gradle keeps. OkHttp 5 keeps the binary API of OkHttp 4's non-alpha APIs ([OkHttp changelog](https://github.com/square/okhttp/blob/parent-5.5.0/CHANGELOG.md), 5.0.0-alpha.17: "We don't break binary compatibility with non-alpha APIs"). The build and the emulator checks run with 5.5.0.
-- **How it reaches the player.** `:core:data` depends on `:core:youtube` as an implementation dependency, and that stays, so no feature sees the YouTube layer. `:core:data` exposes only OkHttp's `Call.Factory` type, through two Hilt providers with qualifiers of its own: `@ProgressiveMediaCalls`, which isn't scoped, so each `Provider.get()` makes a new factory with its own `rn` count, and `@LiveMediaCalls`. `:core:playback` injects `Provider<Call.Factory>` for the first and `Call.Factory` for the second. It sees OkHttp's type through media3-datasource-okhttp, which depends on OkHttp. `:core:youtube` exposes MediaRequests' Call.Factory type, so OkHttp becomes an api dependency of it.
+- **How it reaches the player.** `:core:data` depends on `:core:youtube` as an implementation dependency, and that stays, so no feature sees the YouTube layer. `:core:data` exposes only OkHttp's `Call.Factory` type, through two Hilt providers with qualifiers of its own: `@ProgressiveMediaCalls`, which isn't scoped, so each `Provider.get()` makes a new factory with its own `rn` count, and `@LiveMediaCalls`. `:core:playback` injects `Provider<Call.Factory>` for the first and `Call.Factory` for the second. It declares OkHttp from the catalog, at the app's 5.5.0, for the type. `:core:youtube` exposes MediaRequests' Call.Factory type, so OkHttp becomes an api dependency of it.
 - **Why the Range header, not NewPipe's DASH path.** The DASH path needs media3-exoplayer-dash, another dependency, and a manifest that the layer would build for each format. The progressive path is NewPipe's own fallback for the same formats with the same NewPipeExtractor, and it needs only what the plan already adds. Its evidence is that fallback and task 7.2's hand check: a video an hour or longer played at 1080p for several minutes, with a seek near its end. If that check fails, the change stops and asks the maintainer between the DASH path and the visionOS HLS manifest, which the saved sets show for videos that aren't live too.
 - **The contract.** MediaRequests isn't one of the layer's data source functions. Its calls run on Media3's loader threads and throw IOException, MediaRequestRefused included, as an OkHttp Call does. That departs from ADR 0008's rule that every layer function is a main-safe suspend function that returns YouTubeResult. It also departs from ADR 0009's single client and allow list. So the change adds dated notes to both ADRs, and refines AGENTS.md's rule on the layer's functions.
 
@@ -86,13 +90,13 @@ See proposal.md for why. The pieces this change builds on:
 - the decodable check and the network check
 - PlaybackConnection, which hands the screen a MediaController
 
-It depends on `:core:data`, for stream links and the two Call.Factory providers, `:core:model` and `:core:logging`, never on `:core:youtube`. `:feature:player-ui` depends on it. The service's manifest entry merges from the library.
+It depends on `:core:data`, for stream links and the two Call.Factory providers, `:core:model` and `:core:logging`, never on `:core:youtube`. It declares OkHttp from the catalog itself, rather than relying on media3-datasource-okhttp's OkHttp 4.12.0. `:feature:player-ui` depends on it. The service's manifest entry merges from the library.
 
 - **Why a core module.** Playback must not depend on a screen, and #43 and #44 use the same player. Features never depend on each other.
 
 ### Playing a video by an opaque ID
 
-PlaybackConnection's `prepare(videoId, play)` makes a playback ID, a random UUID's text, and keeps the map from it to the VideoId in PlaybackItems, a singleton inside the process. It then sets a MediaItem whose `mediaId` is the playback ID, with no metadata and no URI. The session's `onSetMediaItems`:
+PlaybackConnection's `prepare(videoId, play)` makes a playback ID, a random UUID's text, and keeps the map from it to the VideoId in PlaybackItems, a singleton inside the process. It then sets a MediaItem whose `mediaId` is the playback ID, with no URI and empty MediaMetadata, artwork included, so Media3's session bitmap loader never fetches an image outside the YouTube layer. The session's `onSetMediaItems`:
 
 1. looks the VideoId up in PlaybackItems
 2. fetches StreamLinks through StreamLinksRepository in `:core:data`
@@ -109,11 +113,20 @@ The callback returns a Guava SettableFuture, which Guava already brings, complet
 **How long the copies last.** PlaybackItems holds a playback ID only while its item is the player's: it removes the entry when the item is replaced, cleared or stopped. The service keeps only the current item's stream links, in its tag. So, in memory, the process holds the ID and the links of one video at a time, while it plays or is paused, and nothing after the screen closes.
 
 - **Why an opaque ID.** The platform session copies the `mediaId`, and other apps can read it, so a video ID there would leave the app. The playback ID says nothing about the video, no item has a title, and no stream link is ever an item's URI.
-- **Who may connect.** The session's `onConnect` accepts only controllers from the app's own package, so headset buttons and other apps can't control playback until #43 decides they may. The manifest removes media3-session's BluetoothValidationActivity with `tools:node="remove"`, because there is no Bluetooth control yet. #43 adds it back if it keeps Bluetooth control.
+- **Who may connect.** The session's `onConnect` accepts only controllers from the app's own package. That alone doesn't stop media buttons: MediaSessionService connects a media notification controller from the app's own package to every session, and Media3 sends a headset's play and pause as that controller. So the session's `MediaSession.Callback.onMediaButtonEvent` returns true for every media button event, which the [1.11.1 Javadoc](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/MediaSession.java) says stops Media3 from handling it. Headset and Bluetooth buttons do nothing until #43 decides what they do. The manifest removes media3-session's BluetoothValidationActivity with `tools:node="remove"`, because there is no Bluetooth control yet. #43 adds it back if it keeps Bluetooth control.
 
 ### No notification until #43
 
-PlaybackService overrides `onUpdateNotification` to do nothing, so it posts no notification and never starts a foreground service. Its manifest entry isn't exported, has no foregroundServiceType, and declares no foreground service permission. It keeps the intent filter with the action `androidx.media3.session.MediaSessionService`, because a SessionToken finds the service only through it ([SessionToken.java at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/SessionToken.java)). An unexported service still can't be bound by other apps. The app's own MediaController binds to it. Android may stop the service while the app is in the background, which is fine, because leaving the app pauses playback.
+PlaybackService overrides the two-argument `onUpdateNotification(session, startInForegroundRequired)`, which 1.11.1 still supports, to do nothing, so it posts no notification and never starts a foreground service. Its manifest entry isn't exported, has no foregroundServiceType, and declares no foreground service permission. It has no intent filter either, on purpose:
+- **No media button PendingIntent.** On Android 10 and 11, Media3 gives the platform session a media button receiver. It's a `PendingIntent.getForegroundService` for any service with the `androidx.media3.session.MediaSessionService` action, unless there is a manifest MediaButtonReceiver ([MediaSessionLegacyStub at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/MediaSessionLegacyStub.java)).
+- **The crash it avoids.** After the process dies, a headset's play button would start the service as a foreground service. It would never call `startForeground`, because notifications are off, and the app would crash.
+- **The runtime receiver.** With no such service and no manifest receiver, Media3 registers a runtime receiver, which dies with the process.
+
+**Connecting without the filter.** A SessionToken that names the service needs the filter ([SessionToken.java at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/SessionToken.java)), so PlaybackConnection uses the session's own token instead:
+- PlaybackConnection starts PlaybackService with `startService`, which the app may do while a screen is visible.
+- The service publishes its MediaSession to PlaybackSessions, a singleton inside the process.
+- PlaybackConnection builds its MediaController from that session's token.
+- The service runs until the process ends, or until it stops itself. Then PlaybackConnection starts it again on the next prepare.
 
 ### No platform diagnostics
 
@@ -133,7 +146,7 @@ PlayerRoute reaches PlaybackConnection through PlayerViewModel, which gets it in
 
 ### Starting, pausing and stopping
 
-PlaybackConnection is a Hilt singleton. It builds one MediaController for the application's context the first time a screen asks, and keeps it while the process lives, so a configuration change finds it as it was. The video screen's route:
+PlaybackConnection is a Hilt singleton. The first time a screen asks, it starts the service and builds one MediaController for the application's context from the session's token. It keeps the controller while the session lives, so a configuration change finds it as it was. The video screen's route:
 
 - **Starts playback** the first time its back stack entry opens: `prepare(videoId, play = true)`. A rememberSaveable flag marks it as started, and it saves the playback ID too.
 - **After process death** the flag comes back, but PlaybackItems is empty. So the route shows the video area paused and sends nothing until the user presses play, which prepares a new playback ID and plays. No links are fetched and no video is buffered before that.
@@ -157,7 +170,7 @@ FormatChoice is a pure function in `:core:model`, next to StreamLinks, as TimeAg
   1. Take the formats of the ORIGINAL track. If no format has a track, take them all. If no track is ORIGINAL, take the track of the first audio format in YouTube's order.
   2. Among the decodable ones, take the highest bitrate on an unmetered network and the lowest on a metered one.
 - **Both at once.** A chosen video format with `includesAudio` plays on its own.
-- **Live.** A live stream plays its HLS manifest. When ExoPlayer knows the manifest's variants, the service applies a TrackSelectionOverride to the video group with every variant whose shorter side is within the limit, and ExoPlayer adapts among them. If none is within the limit, it overrides with the variant with the smallest shorter side. The same shorter-side rule in FormatChoice picks the variants, so it has its own tests, such as a 1920x1080 variant within 1080 and outside 480.
+- **Live.** StreamLinks has no live flag, so links with no formats and an HLS manifest count as live, and play the manifest through `@LiveMediaCalls`. A video that isn't live but has only a manifest plays the same way. When ExoPlayer knows the manifest's variants, the service applies a TrackSelectionOverride to the video group with every variant whose shorter side is within the limit, and ExoPlayer adapts among them. If none is within the limit, it overrides with the variant with the smallest shorter side. The same shorter-side rule in FormatChoice picks the variants, so it has its own tests, such as a 1920x1080 variant within 1080 and outside 480.
 
 The service supplies the two Android parts:
 
@@ -171,7 +184,7 @@ Alternative: let ExoPlayer choose among every format. Rejected, because progress
 
 ### Expired links and errors
 
-The service's player listener handles a source error once per item:
+The service's player listener handles a refused link once per failure. The limit resets once the refreshed item plays again, so a second expiry hours later refreshes too, while two refusals in a row stop:
 
 - **A refused link.** On HttpDataSource.InvalidResponseCodeException with 403 or 410, it fetches new links, swaps the item for the new one, seeks to the old position, and plays if it was playing. A live stream goes back to its live edge instead. If the new links fail too, the error stands.
 - **No retries of 403 or 410.** A LoadErrorHandlingPolicy of `:core:playback`'s own doesn't retry them, so the refresh happens at once. Other errors keep DefaultLoadErrorHandlingPolicy's retries.
@@ -184,7 +197,7 @@ The service's player listener handles a source error once per item:
 
   MediaRequestRefused is recognised by its class first, because Media3 reports any IOException from a data source as a network error.
 - **What the screen says.** The same words as the details' failures, plus "This video can't play on this phone." for NOT_DECODABLE and "This video stopped playing." for OTHER, words the maintainer approved with this change. "Try again" shows for NETWORK, YOUTUBE and OTHER, and prepares the video again, playing from the last position.
-- **When both fail.** The details' failure shows in the details' place, and the playback failure in the video area. Each "Try again" retries only its own part.
+- **When both fail.** The details' failure shows in the details' place, and the playback failure in the video area, each with its own "Try again". When both fail with the same per-video category, such as PRIVATE, the video area shows no second message, so the screen says it once.
 - **Logs.** Media3's own logging is off: `androidx.media3.common.util.Log.setLogLevel(Log.LOG_LEVEL_OFF)`.
   - It is set in PlaybackConnection's constructor and in PlaybackService's `onCreate`, before either makes its first Media3 call.
   - It is off because Media3's error lines append each throwable's message ([Log.java at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/common/src/main/java/androidx/media3/common/util/Log.java), `getThrowableString`), and messages can name the host or carry a link.

@@ -9,12 +9,13 @@
   Give each a comment that says what uses it and the approval date. Verify by comparing `./gradlew -q :app:dependencies --configuration releaseRuntimeClasspath` before and after:
   - List every artifact that is new or changes version, with its license and release date, and check each against AGENTS.md's license and 14-day rules and GitHub's advisory database. Ask the maintainer about any that proposal.md doesn't name before going on.
   - Do the same for debugRuntimeClasspath, and check that both resolve the same versions, with Guava at 33.7.2-android.
-  - Compare the merged release manifest before and after. Check that it adds only what proposal.md names: ACCESS_NETWORK_STATE, WAKE_LOCK, and the unexported PlaybackService with its `androidx.media3.session.MediaSessionService` intent filter, and no BluetoothValidationActivity.
+  - Compare the merged release manifest before and after. Check that it adds only what proposal.md names: ACCESS_NETWORK_STATE, WAKE_LOCK, and the unexported PlaybackService with no intent filter, and no BluetoothValidationActivity.
 
 ## 2. The YouTube layer's media requests
 
 - [ ] 2.1 Add MediaRequestRefused to `:core:model`: an IOException with constant text and an enum reason. Then add MediaRequests to `:core:youtube`, as design.md describes:
   - `progressive()`, a new Call.Factory for each progressive source: a POST with `x\0`, the Range header kept, `TE: trailers`, `rn` counting from 0, and the visionOS User-Agent from the original link, kept across redirects
+  - the User-Agent read inside the stream links call, which holds the Mutex, and kept for MediaRequests, and MediaRequests' own check of the `c` parameter, so it calls no NewPipeExtractor code
   - `live()`, the Call.Factory for HLS: plain GET requests with NewPipeDownloader's own User-Agent and no client check
   - for both: an OkHttpClient with no redirects of its own, only HTTPS to googlevideo.com and its subdomains, at most 20 checked redirects, 307 and 308 keeping the method and body while 301 to 303 become a GET with no body, each redirect's response closed, and `Accept-Language: en-GB`
   - MediaRequestRefused for anything they won't send
@@ -26,7 +27,7 @@
   - a redirect to an allowed host keeping the User-Agent, and one to another host
   - 21 redirects, and a redirect without a Location
   - a 300, a 302 and a 307 after a POST
-  - a progressive link of another client
+  - a progressive link of another client, and a progressive request before any stream links call
   - `rn` numbering from 0 for each factory, and a URL that already has `rn`
   - a made-up live manifest link in the path form of the saved set VIDEO_BIG_BUCK_BUNNY's `hlsManifestUrl`, with no `c` key, sent as a GET
   - a redirect response that is closed
@@ -64,18 +65,19 @@
   - MediaRequestRefused maps to YOUTUBE, even inside Media3's network error
   - each PlaybackException code and YouTubeError maps to the category in design.md
 - [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. It has:
-  - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and the empty `onUpdateNotification`
+  - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and the empty two-argument `onUpdateNotification`
   - a coroutine scope on an injected dispatcher, and PlaybackLog, injected into a field, which takes the Logger in its constructor
   - the audio attributes with audio focus, and pausing when the output becomes noisy
-  - `onConnect` accepting only the app's own package
+  - `onConnect` accepting only the app's own package, and `onMediaButtonEvent` returning true for every event
+  - the service publishing its session to PlaybackSessions
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
   - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
   - the LoadErrorHandlingPolicy that doesn't retry 403 or 410
   - the one refresh, which goes back to the live edge for a live stream, and the live TrackSelectionOverride
   - PlaybackItems' entry removed when its item is replaced, cleared or stopped
   - one WARN log line for each failure, with the category as a state field and the error code as a count field
-  - the unexported manifest entry with its intent filter, and the removed BluetoothValidationActivity
-- [ ] 4.3 Add PlaybackConnection: the Hilt singleton that turns Media3's logging off in its constructor, builds one MediaController for the application's context, prepares a VideoId under a new playback ID, and exposes the PlaybackFailure stream. Verify with unit tests, through fakes, of the service's log line's fields and of PlaybackItems dropping an entry when its item is replaced or stopped.
+  - the unexported manifest entry with no intent filter, and the removed BluetoothValidationActivity
+- [ ] 4.3 Add PlaybackConnection: the Hilt singleton that turns Media3's logging off in its constructor, starts PlaybackService, builds one MediaController for the application's context from the session's token in PlaybackSessions, starts the service again after it stopped, prepares a VideoId under a new playback ID, and exposes the PlaybackFailure stream. Verify with unit tests, through fakes, of the service's log line's fields and of PlaybackItems dropping an entry when its item is replaced or stopped.
 
 ## 5. The video screen
 
@@ -128,6 +130,7 @@
   - Start music in another app while a video plays, and see the video pause.
   - On a real phone, because an emulator can't do either: unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause.
   - See no notification while playing.
+  - Play, go home, and send `adb shell input keyevent KEYCODE_MEDIA_PLAY`: no sound. Then end the process with `adb shell am kill io.github.dewfallapp` and send the key again: the app doesn't start, and nothing crashes. Do both on Android 10 and on the newest Android.
   - Check that `adb shell dumpsys media_session` shows no video ID, title or link.
   - Check that `adb logcat` shows no link, ID or title, and no line from Media3's own tags. Lines from Android's media codecs, such as MediaCodec or CCodec, come from the platform, not from Media3.
 

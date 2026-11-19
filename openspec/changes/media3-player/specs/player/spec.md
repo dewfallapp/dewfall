@@ -29,7 +29,7 @@ Opening a video SHALL start playing it from the start, without a tap. A video sc
 - **THEN** the video waits at the start for the user to press play, and no stream links are fetched for it until then
 
 ### Requirement: Quality follows the network
-On a metered network, such as mobile data, the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered one, such as Wi-Fi, it SHALL stream the largest picture up to 1080 pixels on its shorter side, with the highest audio bitrate. It SHALL take only formats the phone can decode, the smallest one when none is within the limit, and SHALL keep its choice until playback starts again.
+On a metered network the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered one, at most 1080 pixels, with the highest. Within the limit it SHALL prefer formats the phone decodes in hardware, then the largest. It SHALL take only formats the phone can decode, the smallest one when none is within the limit, and SHALL keep its choice until playback starts again.
 
 #### Scenario: Mobile data
 - **WHEN** a video with formats up to 2160p starts playing on mobile data
@@ -42,6 +42,10 @@ On a metered network, such as mobile data, the player SHALL stream a picture who
 #### Scenario: A portrait video
 - **WHEN** a portrait video with formats up to 2160x3840 starts playing on Wi-Fi
 - **THEN** the player streams a 1080x1920 format
+
+#### Scenario: Hardware before size
+- **WHEN** on Wi-Fi a video's 1080p format decodes only in software and its 720p format in hardware
+- **THEN** the player streams the 720p format
 
 #### Scenario: Nothing within the limit
 - **WHEN** a video's only decodable formats are 720p and 1080p, and it starts playing on mobile data
@@ -66,7 +70,7 @@ When YouTube refuses a stream link, the player SHALL fetch new links once and go
 - **THEN** the player fetches new links and plays on from where it paused
 
 ### Requirement: A playback failure says why
-When a video can't play, the video area SHALL say why in words, and SHALL offer "Try again" when trying again can help: when YouTube can't be reached, refuses to answer, can't be read, or the network failed while playing. When the phone can decode none of the video's formats, it SHALL say so with no "Try again". The details below SHALL stay.
+When a video can't play, the video area SHALL say why in words, and SHALL offer "Try again" when trying again can help: when YouTube can't be reached, refuses to answer, can't be read, the network failed while playing, or playback stopped for another reason. When the phone can decode none of the video's formats, it SHALL say so with no "Try again". The details below SHALL stay.
 
 #### Scenario: No connection while playing
 - **WHEN** the network goes away and the player runs out of data
@@ -110,6 +114,17 @@ The player SHALL follow Android's audio focus: it SHALL pause or lower its sound
 - **WHEN** a video plays through headphones and they are unplugged
 - **THEN** the video pauses, and doesn't play through the speaker
 
+### Requirement: Media buttons do nothing yet
+Until background play exists, headset and Bluetooth media buttons SHALL NOT control playback, and SHALL NOT start the app.
+
+#### Scenario: A headset's play button while the app is in the background
+- **WHEN** a video was playing, the user went home, and a headset's play button is pressed
+- **THEN** no sound plays
+
+#### Scenario: A headset's play button after the process ended
+- **WHEN** the system ended the app's process in the background, and a headset's play button is pressed
+- **THEN** the app doesn't start, and nothing crashes
+
 ### Requirement: The player shows no notification yet
 Until background play exists, the app SHALL NOT show a media notification, and SHALL NOT run a foreground service.
 
@@ -118,7 +133,7 @@ Until background play exists, the app SHALL NOT show a media notification, and S
 - **THEN** no notification about it shows
 
 ### Requirement: Playback stays private
-The player SHALL fetch video only through the YouTube layer, which SHALL send its requests only over HTTPS to googlevideo.com and its subdomains, and SHALL never follow a redirect to another host. The app SHALL never log a stream link, a video's ID or its title, and Media3 SHALL write nothing to the log. Android's media session SHALL hold no video ID, title or link, and the player SHALL send no playback diagnostics to Android's media metrics.
+The player SHALL fetch video only through the YouTube layer, which SHALL send its requests only over HTTPS to googlevideo.com and its subdomains, and SHALL never follow a redirect to another host. The app SHALL never log a stream link, a video's ID or its title, and Media3 SHALL write nothing to the log. Android's media session SHALL hold no video ID, title or link, and ExoPlayer SHALL report no playback session to Android's media metrics.
 
 #### Scenario: Logs while playing
 - **WHEN** the user plays a video, once to the end and once with the network turned off while it plays
