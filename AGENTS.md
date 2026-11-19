@@ -14,7 +14,7 @@ The first version has four parts: overnight downloads with automatic cleanup, a 
 
 ## Current status
 
-The current phase is Phase 3: the YouTube layer. Its goal is that all access to YouTube lives in `:core:youtube`, behind Dewfall's own interfaces, so every future fix stays in one place. Add modules and code only when a Phase 3 task asks for them, and only what that task asks for. Phase 3 adds no features or screens beyond the debug screen its tasks ask for.
+The current phase is Phase 4: search and play. Its goal is that a user can search for any video and watch it, so the app is usable every day from here on. Add modules and code only when a Phase 4 task asks for them, and only what that task asks for.
 
 docs/roadmap.md holds the plan: every phase and its tasks. The [Dewfall roadmap](https://github.com/orgs/dewfallapp/projects/1) project board shows what is done and what is next, with one milestone per phase and one issue per task.
 
