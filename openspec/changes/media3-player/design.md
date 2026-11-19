@@ -72,6 +72,7 @@ See proposal.md for why. The pieces this change builds on:
   - The client follows no redirects itself. The interceptor follows at most 20, the same as NewPipe's, and checks each Location's host before sending it.
   - It copies OkHttp's own redirect rule ([RetryAndFollowUpInterceptor at parent-5.5.0](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt), `buildRedirectRequest`): a 307 or 308 keeps the method and the body, and 300, 301, 302 and 303 become a GET with no body.
   - It closes each redirect's response, as the daily check's FirstBytes does, so OkHttp never warns about a leaked body, a warning that names the host.
+  - Their OkHttpClient keeps no cookies and has no cache, as NewPipeDownloader's doesn't (docs/architecture.md, "Network access").
   - They send `Accept-Language: en-GB` with no country, as ADR 0009's new note records. The bytes have no text, so the language changes nothing in them, and the links already carry the country of the call that made them.
 - **Refusals.** A refused request fails with MediaRequestRefused, a new IOException in `:core:model` whose message is constant text. The player maps it to YOUTUBE, BROKEN's words, so the screen says that YouTube isn't loading right now. Its reason is an enum: another host, http, too many redirects, or an unknown client.
 - **Not adopted.** NewPipe also tunes the HLS playlist tracker's stuck-playlist limit. Dewfall keeps Media3's default until a live stream stalls in the hand check.
@@ -114,12 +115,12 @@ The callback returns a Guava SettableFuture, which Guava already brings, complet
 
 - **Why an opaque ID.** The platform session copies the `mediaId`, and other apps can read it, so a video ID there would leave the app. The playback ID says nothing about the video, no item has a title, and no stream link is ever an item's URI.
 - **The service manages the session.** PlaybackService calls `addSession` for its session in `onCreate`, because the controller connects with the session's own token and so never calls `onGetSession`. With the session added, MediaSessionService connects its media notification controller, runs the session's lifecycle, and calls `onUpdateNotification`, as the next paragraphs assume.
-- **Who may connect.** The session's `onConnectAsync`, which the 1.11.1 Javadoc recommends over the deprecated `onConnect`, returns an immediate future that accepts only controllers from the app's own package. That alone doesn't stop media buttons: MediaSessionService connects a media notification controller from the app's own package to every session, and Media3 sends a headset's play and pause as that controller. So the session's `MediaSession.Callback.onMediaButtonEvent` returns true for every media button event, which the [1.11.1 Javadoc](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/MediaSession.java) says stops Media3 from handling it. Headset and Bluetooth buttons do nothing until #43 decides what they do. The manifest removes media3-session's BluetoothValidationActivity with `tools:node="remove"`, because there is no Bluetooth control yet. #43 adds it back if it keeps Bluetooth control.
+- **Who may connect.** The session's `onConnectAsync`, which the 1.11.1 Javadoc strongly recommends over `onConnect`, a method it says will be deprecated, returns an immediate future that accepts only controllers from the app's own package. That alone doesn't stop media buttons: MediaSessionService connects a media notification controller from the app's own package to every session, and Media3 sends a headset's play and pause as that controller. So the session's `MediaSession.Callback.onMediaButtonEvent` returns true for every media button event, which the [1.11.1 Javadoc](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/MediaSession.java) says stops Media3 from handling it. Headset and Bluetooth buttons do nothing until #43 decides what they do. The manifest removes media3-session's BluetoothValidationActivity with `tools:node="remove"`, because there is no Bluetooth control yet. #43 adds it back if it keeps Bluetooth control.
 
 ### No notification until #43
 
-PlaybackService overrides `onUpdateNotificationAsync` to return `Futures.immediateVoidFuture()` without calling super, so it posts no notification and never starts a foreground service. The 1.11.1 Javadoc names it as the replacement for the two-argument `onUpdateNotification`, and asks for an immediate future. Its manifest entry isn't exported, has no foregroundServiceType, and declares no foreground service permission. It has no intent filter either, on purpose:
-- **No media button PendingIntent.** On Android 10 and 11, Media3 gives the platform session a media button receiver. It's a `PendingIntent.getForegroundService` for any service with the `androidx.media3.session.MediaSessionService` action, unless there is a manifest MediaButtonReceiver ([MediaSessionLegacyStub at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/MediaSessionLegacyStub.java)).
+PlaybackService overrides `onUpdateNotificationAsync` to return `Futures.immediateVoidFuture()` without calling super, so it posts no notification and never starts a foreground service. The 1.11.1 Javadoc of the two-argument `onUpdateNotification` names it as the replacement, and recommends returning an immediate future. Its manifest entry isn't exported, has no foregroundServiceType, and declares no foreground service permission. It has no intent filter either, on purpose:
+- **No media button PendingIntent.** On Android 10 and 11, Media3 gives the platform session a media button receiver. It's a `PendingIntent.getForegroundService` for any service with the `androidx.media3.session.MediaSessionService` action. Below API 31 the service wins even over a manifest MediaButtonReceiver, because the lookup runs when `receiverComponentName == null || SDK_INT < 31` ([MediaSessionLegacyStub at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/MediaSessionLegacyStub.java)). So only having no such service avoids it.
 - **The crash it avoids.** After the process dies, a headset's play button would start the service as a foreground service. It would never call `startForeground`, because notifications are off, and the app would crash.
 - **The runtime receiver.** With no such service and no manifest receiver, Media3 registers a runtime receiver, which dies with the process.
 
@@ -179,13 +180,24 @@ FormatChoice is a pure function in `:core:model`, next to StreamLinks, as TimeAg
 
 The service supplies the two Android parts:
 
-- **Metered.** ConnectivityManager's NetworkCapabilities: NET_CAPABILITY_NOT_METERED means unmetered. It is read when playback starts, and kept until playback starts again. A refresh of expired links chooses again from the new links with the same limit and metered state, so the quality doesn't change within one playback.
+- **Metered.** ConnectivityManager's NetworkCapabilities for the active network: NET_CAPABILITY_NOT_METERED means unmetered. NET_CAPABILITY_TEMPORARILY_NOT_METERED alone, and no active network, count as metered, which errs toward saving data. It is read when playback starts, and kept until playback starts again. A refresh of expired links chooses again from the new links with the same limit and metered state, so the quality doesn't change within one playback.
 - **Decodable.** The same check that ExoPlayer's video and audio renderers make, so the choice and the renderer agree:
   - `MimeTypes.getMediaMimeType` turns the format's codec into a sample MIME type, such as video/x-vnd.on2.vp9 for vp9.
   - `MediaCodecUtil.getDecoderInfos` lists the decoders for it, and `MediaCodecInfo.isFormatSupported` checks each with a Format built from the codec, size and frame rate.
   - `MediaCodecInfo.hardwareAccelerated` says whether a supporting decoder works in hardware.
 
 Alternative: let ExoPlayer choose among every format. Rejected, because progressive formats aren't an adaptive set, so ExoPlayer can only play the ones it is given.
+
+### How the playback tests run
+
+`:core:playback`'s unit tests run on the JVM against AGP's stub android.jar, with no Robolectric, as every Android module's do (build-logic's Testing.kt). Media3's PlaybackException, HttpDataSourceException, MediaItem with a URI, and LoadEventInfo call Android code that the stub throws on. So each decision is a pure function of plain inputs, and a thin adapter turns Media3's objects into them:
+- the failure category from an error code `Int`, an HTTP status `Int?`, and whether the cause chain holds a MediaRequestRefused
+- the cause-chain walk, over plain Throwables such as IOException, ExecutionException and MediaRequestRefused, which tests can build
+- the retry decision from the same HTTP status and refused flag
+- the cleaned error's message and code from an error code
+- the source plan, merging, progressive, HLS or none, from an item's tag
+
+The adapters only read fields and build Media3 objects, and task 7.2's checks on the emulators run them.
 
 ### Expired links and errors
 
@@ -204,7 +216,7 @@ The mapping is a pure function with its own tests:
   - NETWORK: an IO network error, or a resolution that failed with NETWORK
   - YOUTUBE: MediaRequestRefused, BLOCKED or BROKEN, or a refused link after the refresh
   - UNAVAILABLE and the other per-video categories from the resolution
-  - NOT_DECODABLE: the phone decodes no format, or a decoder fails to start or decode at play time, such as ERROR_CODE_DECODER_INIT_FAILED, so "Try again" doesn't retry the same format
+  - NOT_DECODABLE: the phone decodes no format, or a decoder fails at play time with ERROR_CODE_DECODER_INIT_FAILED, DECODER_QUERY_FAILED, DECODING_FAILED, DECODING_FORMAT_EXCEEDS_CAPABILITIES or DECODING_FORMAT_UNSUPPORTED, so "Try again" doesn't retry the same format. ERROR_CODE_DECODING_RESOURCES_RECLAIMED, when the system took the decoder back, is OTHER, whose "Try again" can help
   - OTHER: anything else
 
   MediaRequestRefused is recognised by its class first, because Media3 reports any IOException from a data source as a network error.
@@ -223,7 +235,7 @@ The mapping is a pure function with its own tests:
 The video screen gets a VideoArea at the top of its column, as the "Player" frames show:
 - the picture in a 16:9 box, drawn by media3-ui-compose's ContentFrame on its default SurfaceView.
   - A picture of another shape fits inside the box, with bars.
-  - Compose's clip doesn't round a SurfaceView, so the box draws its rounded corners as an overlay in the background color.
+  - Compose's clip doesn't round a SurfaceView, so the box draws its rounded corners as an overlay in the screen's own background role, `surface`, so they match in light, dark and dynamic color.
   - The shutter, shown before the first frame, is a MaterialTheme color role, `surfaceContainerHighest`, not ContentFrame's default black. The artwork slot is empty.
 - **The screen stays on while the video plays.** The box applies Compose's `Modifier.keepScreenOn()` only while the player plays, as Android's [keep the screen on](https://developer.android.com/develop/background-work/background-tasks/awake/screen-on) guide shows for video. The modifier needs Compose UI 1.9, and the BOM gives 1.12.1. Otherwise the screen would time out, the activity would stop, and the ON_STOP pause would pause the video. When the video is paused, the screen may turn off.
 - the seek bar

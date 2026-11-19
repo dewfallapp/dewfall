@@ -29,6 +29,7 @@
   - a 300, a 302 and a 307 after a POST
   - a progressive link of another client, and a progressive request before any stream links call
   - `rn` numbering from 0 for each factory, and a URL that already has `rn`
+  - the `c` check: `c=VISIONOS` as the first parameter after `?`, a later `&c=VISIONOS`, `c=VISIONOSX`, and no `c`
   - a made-up live manifest link in the path form of the saved set VIDEO_BIG_BUCK_BUNNY's `hlsManifestUrl`, with no `c` key, sent as a GET
   - a redirect response that is closed
 
@@ -62,18 +63,22 @@
 
   Verify with unit tests:
   - 403 and 410 refresh once, and a second refusal stands
-  - MediaRequestRefused maps to YOUTUBE, inside the exact chain OkHttpDataSource builds: HttpDataSourceException, IOException, ExecutionException, MediaRequestRefused
-  - the LoadErrorHandlingPolicy, a class of its own: 403, 410 and MediaRequestRefused inside that same chain are never retried, and another IOException keeps the default retry delay
+  - MediaRequestRefused maps to YOUTUBE when the cause-chain walk finds it behind IOException and ExecutionException, as OkHttpDataSource wraps it, built from plain Throwables
+  - the retry decision behind the LoadErrorHandlingPolicy: 403, 410 and a refused request are never retried, and anything else keeps the default retry delay
+  - the decoder codes from design.md map to NOT_DECODABLE, and DECODING_RESOURCES_RECLAIMED to OTHER
+  - a link refresh keeps the PlaybackItems entry
+
+  All of these take plain inputs, as design.md's "How the playback tests run" says, so they run on the JVM without Robolectric.
   - each PlaybackException code and YouTubeError maps to the category in design.md
 - [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. It has:
   - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and `onUpdateNotificationAsync` returning an immediate future without calling super
   - a coroutine scope on an injected dispatcher, and PlaybackLog, injected into a field, which takes the Logger in its constructor
   - the audio attributes with audio focus, and pausing when the output becomes noisy
   - `onConnectAsync` returning an immediate future that accepts only the app's own package, and `onMediaButtonEvent` returning true for every event
-  - the ForwardingSimpleBasePlayer that gives the session a cleaned error with the same code, a constant message and no cause, with a unit test of the cleaning
+  - the ForwardingSimpleBasePlayer that gives the session a cleaned error with the same code, a constant message and no cause, with a unit test of the pure function that picks that message and code
   - the service calling `addSession` in `onCreate` and publishing its session, and any resolution failure, to PlaybackSessions
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
-  - the MediaSource.Factory for merging, progressive and HLS sources from the tag, which fails an item without the tag, with a unit test, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
+  - the MediaSource.Factory for merging, progressive and HLS sources from the tag, which fails an item without the tag, with a unit test of the pure source plan, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
   - the LoadErrorHandlingPolicy that doesn't retry 403, 410 or MediaRequestRefused
   - `onStartCommand` returning START_NOT_STICKY, and `onDestroy` releasing the session and the player and clearing PlaybackSessions and PlaybackItems
   - the one refresh, which goes back to the live edge for a live stream, and the live TrackSelectionOverride

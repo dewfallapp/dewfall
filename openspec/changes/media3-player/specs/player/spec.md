@@ -17,6 +17,10 @@ The video screen SHALL show the video in a 16:9 area above the title, with a pla
 - **WHEN** the video is paused
 - **THEN** the screen may turn off after the phone's timeout
 
+#### Scenario: The end of a video
+- **WHEN** a video plays to its end
+- **THEN** the button offers to play it again from the start, and the screen may turn off after the phone's timeout
+
 #### Scenario: Seeking
 - **WHEN** the user drags the seek bar to the middle of a video
 - **THEN** playback goes on from the middle
