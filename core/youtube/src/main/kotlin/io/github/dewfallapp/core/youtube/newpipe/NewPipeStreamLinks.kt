@@ -7,6 +7,7 @@ import io.github.dewfallapp.core.model.VideoFormat
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeResult
 import io.github.dewfallapp.core.youtube.StreamLinksRemoteDataSource
+import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 import org.schabi.newpipe.extractor.stream.StreamExtractor
 
 /**
@@ -17,8 +18,11 @@ import org.schabi.newpipe.extractor.stream.StreamExtractor
 internal class NoStreamLinksException : Exception("YouTube's answer has no link that plays")
 
 /** Reads the links that play or download one video, from its fetched page. */
-internal class NewPipeStreamLinks(private val calls: NewPipeCalls, logger: Logger) :
-    StreamLinksRemoteDataSource {
+internal class NewPipeStreamLinks(
+    private val calls: NewPipeCalls,
+    logger: Logger,
+    private val userAgents: MediaUserAgents = MediaUserAgents(),
+) : StreamLinksRemoteDataSource {
     private val log = logger.withTag(LOG_AREA)
 
     override suspend fun streamLinks(videoId: VideoId): YouTubeResult<StreamLinks> =
@@ -26,6 +30,11 @@ internal class NewPipeStreamLinks(private val calls: NewPipeCalls, logger: Logge
             val extractor = fetchedStreamExtractor(videoId, settings)
             val skipped = SkippedParts(YouTubeCall.STREAM_LINKS)
             val links = streamLinksOf(videoId, extractor, skipped)
+            // Read here, while the call holds the Mutex, so MediaRequests calls no
+            // NewPipeExtractor code on the player's threads. See ADR 0009.
+            userAgents.rememberVisionOs(
+                YoutubeParsingHelper.getVisionOsUserAgent(settings.localization)
+            )
             skipped.warnIfAny(log)
             links
         }

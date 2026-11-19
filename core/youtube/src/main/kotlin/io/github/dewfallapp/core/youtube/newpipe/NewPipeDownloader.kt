@@ -22,7 +22,7 @@ import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
  * for the mobile clients that it pretends to be, so the web client's requests get this one, of
  * Firefox ESR on Windows, the same one that NewPipeExtractor v0.27.1's own tests send.
  */
-private const val DEFAULT_USER_AGENT =
+internal const val DEFAULT_USER_AGENT =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0"
 
 /** The status code that YouTube answers with when it limits an app's requests. */
@@ -123,7 +123,7 @@ private fun cancelledException(cause: InterruptedException?): InterruptedIOExcep
     InterruptedIOException("The request was cancelled").apply { initCause(cause) }
 
 /** Whether [host] is [domain] or one of its subdomains. */
-private fun isInDomain(host: String, domain: String): Boolean =
+internal fun isInDomain(host: String, domain: String): Boolean =
     host == domain || host.endsWith(".$domain")
 
 /**

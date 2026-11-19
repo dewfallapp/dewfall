@@ -9,8 +9,9 @@ dependencies {
     // sees both types.
     api(project(":core:logging"))
     api(libs.kotlinx.coroutines.core)
+    // MediaRequests hands out OkHttp's Call.Factory, so whoever uses it sees OkHttp's types.
+    api(libs.okhttp)
     implementation(libs.newpipe.extractor)
-    implementation(libs.okhttp)
     implementation(libs.jsoup)
 }
 
