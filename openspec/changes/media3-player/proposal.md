@@ -1,0 +1,44 @@
+# Proposal
+
+## Why
+
+Phase 4's goal is that a user can search for any video and watch it. Since [#41](https://github.com/dewfallapp/dewfall/issues/41) a search result opens the video screen, which shows the video's details, but nothing plays. This change adds the player, issue [#42](https://github.com/dewfallapp/dewfall/issues/42): Media3's ExoPlayer inside a media session service, which streams the video on the video screen. The background audio and its notification ([#43](https://github.com/dewfallapp/dewfall/issues/43)), and the mini and fullscreen players ([#44](https://github.com/dewfallapp/dewfall/issues/44)), build on this service.
+
+## What Changes
+
+- **The video plays on the video screen.** A 16:9 video area sits above the title, as the "Player" frames show, with a play and pause button, a seek bar, and the position and length, such as "18:24 / 1:14:02". A live stream shows "Live" instead of the seek bar and the times.
+- **It starts on its own.** Opening a video starts playing it, as the maintainer decided on November 19, 2026. A screen that comes back after process death waits for the user to press play, from the start.
+- **Quality, as the maintainer decided on November 19, 2026.** On a metered network, such as mobile data, the player streams at most 480p. On an unmetered one, such as Wi-Fi, it streams the best format up to 1080p that the phone can decode. The limit counts the picture's shorter side, so portrait videos get the same quality. On a metered network it also takes the lowest audio bitrate, and on an unmetered one the highest, which the maintainer approved with this change. The choice is made when playback starts, and there is no setting yet.
+- **Leaving, as the maintainer decided on November 19, 2026.** Closing the video screen stops playback. Leaving the app pauses it, and coming back leaves it paused. Background play and the mini player come with #43 and #44.
+- **Links that expire.** YouTube's stream links stop working after some time. When a link is refused, the player fetches new links once and carries on from the same position.
+- **Failures say why.** A video that can't play says why, with "Try again" when trying again can help, as the details' failures do. A phone that can't decode any of the video's formats says so.
+- **The media session service.** A new core module holds a MediaSessionService with one ExoPlayer, so playback doesn't depend on the screen, as ADR 0002 and the roadmap ask. The screen talks to it through a MediaController, and reads the playback state as its own stream, never as part of its MVI state. The service shows no notification yet, and only the app itself may control it. #43 adds the notification and decides about headset buttons and other apps.
+- **Nothing about the video leaves the app.** The session names each item by a random playback ID, never the video's ID, a title or a link, because Android shares a media session's item IDs with other apps that have notification access.
+- **The player's network requests go through the YouTube layer.** The player fetches the video from googlevideo.com, YouTube's video host, which no app code has contacted before. The YouTube layer makes those requests for it, as AGENTS.md's product rules ask: it sends only HTTPS requests to googlevideo.com and its subdomains, checks every redirect's host before following it, sends the User-Agent of the YouTube client that made the link, and shapes each request as NewPipe's own player does.
+- **A third repository.** `:core:data` gains a stream links repository that the service calls.
+
+## Capabilities
+
+### New Capabilities
+
+None.
+
+### Modified Capabilities
+
+- `player`: the video screen plays the video, with its controls, quality, starting and stopping, expired links and playback failures.
+
+## Impact
+
+- New module `:core:playback`, an Android library with the media session service, the decodable and network checks, and the connection that the screen uses. `:feature:player-ui` depends on it.
+- The YouTube layer gains MediaRequests, the OkHttp client for googlevideo.com that the player's data source uses, so OkHttp becomes an api dependency of `:core:youtube`. No new request to YouTube's other hosts, and the saved responses and the daily check don't change.
+- `:core:model` gains FormatChoice, a pure function that picks the formats, and MediaRequestRefused, the error for a request the layer won't send.
+- Network: the app newly contacts googlevideo.com over HTTPS while a video plays. docs/architecture.md's "Network access" lists it.
+- Logs: Media3's own logging is turned off, because its error messages can name the host or carry a link. The service logs a playback failure through the Logger with its category and Media3's error code only, as ADR 0007 asks.
+- Start time: opening a video now sends the video details call and the stream links call, one after the other, so the picture starts after both.
+- Dependencies, which the maintainer approved on November 19, 2026, with this change, as the "The maintainer's answers" section of pull request #180's description records, all under the Apache License 2.0. Media3 1.11.1 was released on September 10, 2026:
+  - `androidx.media3:media3-exoplayer`, `media3-exoplayer-hls`, `media3-session`, `media3-ui-compose` and `media3-datasource-okhttp` 1.11.1, and the Media3 modules they bring, such as media3-common and media3-common-ktx.
+  - Guava, with failureaccess, which media3-common brings at 33.3.1-android. That version has a high-severity advisory, GHSA-xxph-c9ww-hj94, so a dependency constraint raises it to 33.7.2-android, released on September 29, 2026, which fixes it.
+  - The AndroidX libraries they bring at versions the app doesn't have yet, such as androidx.media 1.7.0 and lifecycle-service. Task 1.1 lists each one with its date.
+  - media3-datasource-okhttp asks for OkHttp 4.12.0. The app already ships OkHttp 5.5.0 through the YouTube layer, and Gradle keeps 5.5.0.
+- Manifest: Media3 adds the ACCESS_NETWORK_STATE and WAKE_LOCK permissions. media3-session's exported BluetoothValidationActivity is removed, because there is no Bluetooth control yet. The service itself isn't exported until #43 decides which other apps may control playback.
+- Docs: docs/architecture.md's "The player" and "Network access" sections, the module table and graph, AGENTS.md's module list, openspec/config.yaml's list of core modules, and a dated note in ADR 0007 on Media3's logs.
