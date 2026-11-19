@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- The metered check reads the active network's capabilities. Media3 asks for it too. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application>
+        <!--
+            Not exported, with no intent filter, so no other app can bind to it and Media3 gives the
+            platform session no media button PendingIntent that would start it as a foreground
+            service. See docs/architecture.md#the-player.
+        -->
+        <service
+            android:name=".PlaybackService"
+            android:exported="false" />
+
+        <!-- There is no Bluetooth control until #43. -->
+        <activity
+            android:name="androidx.media3.session.BluetoothValidationActivity"
+            tools:node="remove" />
+    </application>
+</manifest>
