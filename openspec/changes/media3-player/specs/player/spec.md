@@ -18,7 +18,7 @@ The video screen SHALL show the video in a 16:9 area above the title, with a pla
 - **THEN** the video pauses, and the button offers to play
 
 ### Requirement: Opening a video starts playing it
-Opening a video SHALL start playing it from the start, without a tap. A video screen that comes back after the system ended the app's process, or stopped its player in the background, SHALL wait for the user to press play, at the position where it paused.
+Opening a video SHALL start playing it from the start, or a live stream from its live edge, without a tap. A video screen that comes back after the system ended the app's process, or stopped its player in the background, SHALL wait for the user to press play, at the position where it paused.
 
 #### Scenario: Opening a video
 - **WHEN** the user opens a video from search
@@ -94,7 +94,7 @@ When a video can't play, the video area SHALL say why in words, and SHALL offer 
 
 #### Scenario: Details and playback both fail
 - **WHEN** the network is off as the user opens a video
-- **THEN** the video area and the details' place each say that YouTube can't be reached, each with its own "Try again"
+- **THEN** the screen says once that YouTube can't be reached, with one "Try again" that retries both the details and the video
 
 ### Requirement: Leaving stops or pauses playback
 Closing the video screen SHALL stop playback. Leaving the app, such as with the home gesture, SHALL pause it, and coming back SHALL leave it paused at the same position. A configuration change, such as a resized window or a theme change, SHALL NOT stop, pause or restart playback.
@@ -169,7 +169,7 @@ After the system ends the app's process in the background while the video screen
 - **THEN** the screen says that the same video is loading, then shows its details, and the video waits at the position where it paused for the user to press play
 
 ### Requirement: Video details stay private
-The app SHALL never log the video's ID, title, channel name or description, and SHALL send them nowhere but YouTube. The only copies kept outside the screen SHALL be the video's ID in the state Android saves for a process that it ends in the background, and, in memory while its playback lasts, the playing video's ID and stream links in the playback service, which it SHALL drop when that playback is replaced or stops. The media session SHALL name the video only by a random playback ID.
+The app SHALL never log the video's ID, title, channel name or description, and SHALL send them nowhere but YouTube. The only copies kept outside the screen SHALL be the video's ID in the state Android saves for a process that it ends in the background, the video's paused position, also user data, in that same saved state, and, in memory while its playback lasts, the playing video's ID and stream links in the playback service, which it SHALL drop when that playback is replaced or stops. The media session SHALL name the video only by a random playback ID.
 
 #### Scenario: Logs after opening a video
 - **WHEN** the user opens a video, once with details showing and once with the network off

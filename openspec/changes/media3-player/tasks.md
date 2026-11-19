@@ -58,19 +58,19 @@
   - PlaybackItems
   - the decodable check with MediaCodecUtil and MediaCodecInfo
   - the metered check
-  - the pure error mapping to PlaybackFailure, and the pure refresh decision
+  - the pure error mapping to PlaybackFailure, an enum in `:core:model`, and the pure refresh decision
 
   Verify with unit tests:
   - 403 and 410 refresh once, and a second refusal stands
   - MediaRequestRefused maps to YOUTUBE, inside the exact chain OkHttpDataSource builds: HttpDataSourceException, IOException, ExecutionException, MediaRequestRefused
-  - the shared failure shown once, with one "Try again" for both, as a pure function in `:feature:player-logic`
+  - the LoadErrorHandlingPolicy, a class of its own: 403, 410 and MediaRequestRefused inside that same chain are never retried, and another IOException keeps the default retry delay
   - each PlaybackException code and YouTubeError maps to the category in design.md
 - [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. It has:
   - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and the empty two-argument `onUpdateNotification`
   - a coroutine scope on an injected dispatcher, and PlaybackLog, injected into a field, which takes the Logger in its constructor
   - the audio attributes with audio focus, and pausing when the output becomes noisy
   - `onConnect` accepting only the app's own package, and `onMediaButtonEvent` returning true for every event
-  - the service publishing its session to PlaybackSessions
+  - the service calling `addSession` in `onCreate` and publishing its session, and any resolution failure, to PlaybackSessions
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
   - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
   - the LoadErrorHandlingPolicy that doesn't retry 403, 410 or MediaRequestRefused
@@ -100,7 +100,7 @@
   - pause on ON_STOP, unless the activity is changing configurations
   - give PlayerViewModel, which gets PlaybackConnection in its constructor, the entry's playback ID, and have its `onCleared` clear the items only if the current item is that playback ID
 
-  PlayerState doesn't change. Add `startAction` to `:feature:player-logic`. Verify with unit tests of `startAction` for each case, of closing after "Try again" stopping the sound, and of the clear decision, including a second video that started during the first one's exit, through a fake connection.
+  PlayerState doesn't change. Add `startAction` to `:feature:player-logic`. Add the shared-failure rule to `:feature:player-logic` as a pure function. Verify with unit tests of `startAction` for each case, of the shared failure shown once with one "Try again" for both, of closing after "Try again" stopping the sound, and of the clear decision, including a second video that started during the first one's exit, through a fake connection.
 
 ## 6. Docs
 
