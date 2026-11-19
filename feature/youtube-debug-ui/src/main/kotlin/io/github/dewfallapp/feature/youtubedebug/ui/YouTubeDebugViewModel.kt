@@ -2,11 +2,15 @@ package io.github.dewfallapp.feature.youtubedebug.ui
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.dewfallapp.core.model.SubtitleTrack
+import io.github.dewfallapp.core.model.YouTubeResult
 import io.github.dewfallapp.core.mvi.MviViewModel
 import io.github.dewfallapp.core.youtube.ChannelUploadsRemoteDataSource
 import io.github.dewfallapp.core.youtube.SearchRemoteDataSource
 import io.github.dewfallapp.core.youtube.StreamLinksRemoteDataSource
+import io.github.dewfallapp.core.youtube.SubtitlesRemoteDataSource
 import io.github.dewfallapp.core.youtube.VideoDetailsRemoteDataSource
+import io.github.dewfallapp.feature.youtubedebug.logic.CallStatus
 import io.github.dewfallapp.feature.youtubedebug.logic.DebugCall
 import io.github.dewfallapp.feature.youtubedebug.logic.YouTubeDebugIntent
 import io.github.dewfallapp.feature.youtubedebug.logic.YouTubeDebugReducer
@@ -23,6 +27,11 @@ import kotlinx.coroutines.launch
  * in the state, if the input was valid. Leaving the screen clears the ViewModel, which cancels
  * every call through viewModelScope.
  *
+ * The subtitles section also reads one track's lines at a time. The ViewModel keeps the tracks of
+ * the listing that the screen shows, links included, in memory only, never in the state, so the
+ * screen never holds a link. It sets them in the same step as it dispatches the listing, so a track
+ * that the user picks by its number is always the one on screen.
+ *
  * It takes no dispatcher: the layer's functions are main-safe, and run their blocking work on the
  * dispatcher that the layer receives.
  */
@@ -34,6 +43,7 @@ constructor(
     private val videoDetailsSource: VideoDetailsRemoteDataSource,
     private val channelUploadsSource: ChannelUploadsRemoteDataSource,
     private val streamLinksSource: StreamLinksRemoteDataSource,
+    private val subtitlesSource: SubtitlesRemoteDataSource,
 ) :
     MviViewModel<YouTubeDebugState, YouTubeDebugIntent, Nothing>(
         YouTubeDebugState(),
@@ -43,18 +53,49 @@ constructor(
     /** The job of each section's latest call. Only dispatch, on the main thread, touches it. */
     private val callJobs = EnumMap<DebugCall, Job>(DebugCall::class.java)
 
+    /** The job that reads a track's lines. Only the main thread touches it. */
+    private var linesJob: Job? = null
+
+    /** The tracks of the listing on screen, in its order. Only the main thread touches them. */
+    private var listedTracks: List<SubtitleTrack> = emptyList()
+
     override fun runSideEffects(intent: YouTubeDebugIntent) {
         when (intent) {
             is YouTubeDebugIntent.Run -> {
                 callJobs.remove(intent.call)?.cancel()
+                // A new listing clears the lines, so their call stops too.
+                if (intent.call == DebugCall.SUBTITLE_TRACKS) stopLines()
                 start(intent.call)?.let { callJobs[intent.call] = it }
             }
             is YouTubeDebugIntent.Cancel -> callJobs.remove(intent.call)?.cancel()
+            is YouTubeDebugIntent.ReadLines -> {
+                stopLines()
+                linesJob = startLines()
+            }
+            YouTubeDebugIntent.CancelLines -> stopLines()
             is YouTubeDebugIntent.InputChanged,
             is YouTubeDebugIntent.SearchFinished,
             is YouTubeDebugIntent.VideoDetailsFinished,
             is YouTubeDebugIntent.LatestUploadsFinished,
-            is YouTubeDebugIntent.StreamLinksFinished -> Unit
+            is YouTubeDebugIntent.StreamLinksFinished,
+            is YouTubeDebugIntent.SubtitleTracksFinished,
+            is YouTubeDebugIntent.SubtitleLinesFinished -> Unit
+        }
+    }
+
+    private fun stopLines() {
+        linesJob?.cancel()
+        linesJob = null
+    }
+
+    /** Starts reading the lines that the state shows as being read, or returns null if none are. */
+    private fun startLines(): Job? {
+        val pick = (state.value.subtitleLines as? CallStatus.Running)?.request
+        val track = pick?.let { listedTracks.getOrNull(it.number - 1) }
+        if (pick == null || track == null) return null
+        return viewModelScope.launch {
+            val result = subtitlesSource.subtitleLines(track)
+            dispatch(YouTubeDebugIntent.SubtitleLinesFinished(pick, result))
         }
     }
 
@@ -91,6 +132,15 @@ constructor(
                     viewModelScope.launch {
                         val result = streamLinksSource.streamLinks(videoId)
                         dispatch(YouTubeDebugIntent.StreamLinksFinished(videoId, result))
+                    }
+                }
+            }
+            DebugCall.SUBTITLE_TRACKS -> {
+                current.subtitleTracks.runningRequest?.let { videoId ->
+                    viewModelScope.launch {
+                        val result = subtitlesSource.subtitleTracks(videoId)
+                        if (result is YouTubeResult.Success) listedTracks = result.value
+                        dispatch(YouTubeDebugIntent.SubtitleTracksFinished(videoId, result))
                     }
                 }
             }

@@ -352,5 +352,6 @@ class YouTubeDebugReducerTest {
             DebugCall.VIDEO_DETAILS -> videoDetails.status
             DebugCall.LATEST_UPLOADS -> latestUploads.status
             DebugCall.STREAM_LINKS -> streamLinks.status
+            DebugCall.SUBTITLE_TRACKS -> subtitleTracks.status
         }
 }

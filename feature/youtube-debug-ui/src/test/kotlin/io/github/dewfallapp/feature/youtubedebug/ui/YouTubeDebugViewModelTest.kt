@@ -5,6 +5,8 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.SearchResults
 import io.github.dewfallapp.core.model.StreamLinks
+import io.github.dewfallapp.core.model.SubtitleLine
+import io.github.dewfallapp.core.model.SubtitleTrack
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
@@ -12,11 +14,14 @@ import io.github.dewfallapp.core.model.YouTubeResult
 import io.github.dewfallapp.core.youtube.ChannelUploadsRemoteDataSource
 import io.github.dewfallapp.core.youtube.SearchRemoteDataSource
 import io.github.dewfallapp.core.youtube.StreamLinksRemoteDataSource
+import io.github.dewfallapp.core.youtube.SubtitlesRemoteDataSource
 import io.github.dewfallapp.core.youtube.VideoDetailsRemoteDataSource
 import io.github.dewfallapp.feature.youtubedebug.logic.CallStatus
 import io.github.dewfallapp.feature.youtubedebug.logic.DebugCall
 import io.github.dewfallapp.feature.youtubedebug.logic.YouTubeDebugIntent.Cancel
+import io.github.dewfallapp.feature.youtubedebug.logic.YouTubeDebugIntent.CancelLines
 import io.github.dewfallapp.feature.youtubedebug.logic.YouTubeDebugIntent.InputChanged
+import io.github.dewfallapp.feature.youtubedebug.logic.YouTubeDebugIntent.ReadLines
 import io.github.dewfallapp.feature.youtubedebug.logic.YouTubeDebugIntent.Run
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -26,6 +31,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -111,14 +117,17 @@ class YouTubeDebugViewModelTest {
         viewModel.dispatch(InputChanged(DebugCall.VIDEO_DETAILS, "@NASA"))
         viewModel.dispatch(InputChanged(DebugCall.LATEST_UPLOADS, "@NASA"))
         viewModel.dispatch(InputChanged(DebugCall.STREAM_LINKS, "@NASA"))
+        viewModel.dispatch(InputChanged(DebugCall.SUBTITLE_TRACKS, "@NASA"))
         viewModel.dispatch(Run(DebugCall.VIDEO_DETAILS))
         viewModel.dispatch(Run(DebugCall.LATEST_UPLOADS))
         viewModel.dispatch(Run(DebugCall.STREAM_LINKS))
+        viewModel.dispatch(Run(DebugCall.SUBTITLE_TRACKS))
 
         val state = viewModel.state.value
         assertEquals(CallStatus.InvalidInput, state.videoDetails.status)
         assertEquals(CallStatus.InvalidInput, state.latestUploads.status)
         assertEquals(CallStatus.InvalidInput, state.streamLinks.status)
+        assertEquals(CallStatus.InvalidInput, state.subtitleTracks.status)
     }
 
     @Test
@@ -239,6 +248,77 @@ class YouTubeDebugViewModelTest {
         assertIs<CallStatus.Succeeded<*>>(viewModel.state.value.latestUploads.status)
     }
 
+    @Test
+    fun `reading lines passes the picked track of the listing to the layer`() = runTest {
+        val subtitles = FakeSubtitles()
+        val viewModel = viewModel(subtitles = subtitles)
+        viewModel.dispatch(Run(DebugCall.SUBTITLE_TRACKS))
+        subtitles.tracks.single().complete(YouTubeResult.Success(listOf(track("en"), track("he"))))
+
+        viewModel.dispatch(ReadLines(2))
+
+        assertEquals(listOf(track("he")), subtitles.lines.single().requests)
+        subtitles.lines.single().complete(YouTubeResult.Success(listOf(line())))
+        assertIs<CallStatus.Succeeded<*>>(viewModel.state.value.subtitleLines)
+    }
+
+    @Test
+    fun `picking another track stops the lines being read`() = runTest {
+        val subtitles = FakeSubtitles()
+        val viewModel = viewModel(subtitles = subtitles)
+        viewModel.dispatch(Run(DebugCall.SUBTITLE_TRACKS))
+        subtitles.tracks.single().complete(YouTubeResult.Success(listOf(track("en"), track("he"))))
+        viewModel.dispatch(ReadLines(1))
+
+        viewModel.dispatch(ReadLines(2))
+
+        assertTrue(subtitles.lines[0].wasCancelled)
+        assertEquals(listOf(track("he")), subtitles.lines[1].requests)
+    }
+
+    @Test
+    fun `a new listing stops the lines being read`() = runTest {
+        val subtitles = FakeSubtitles()
+        val viewModel = viewModel(subtitles = subtitles)
+        viewModel.dispatch(Run(DebugCall.SUBTITLE_TRACKS))
+        subtitles.tracks.single().complete(YouTubeResult.Success(listOf(track("en"))))
+        viewModel.dispatch(ReadLines(1))
+
+        viewModel.dispatch(Run(DebugCall.SUBTITLE_TRACKS))
+
+        assertTrue(subtitles.lines.single().wasCancelled)
+        assertEquals(CallStatus.Idle, viewModel.state.value.subtitleLines)
+    }
+
+    @Test
+    fun `a track's number reads the track of the latest listing, whose order may differ`() =
+        runTest {
+            val subtitles = FakeSubtitles()
+            val viewModel = viewModel(subtitles = subtitles)
+            viewModel.dispatch(Run(DebugCall.SUBTITLE_TRACKS))
+            subtitles.tracks[0].complete(YouTubeResult.Success(listOf(track("en"), track("he"))))
+            viewModel.dispatch(Run(DebugCall.SUBTITLE_TRACKS))
+            subtitles.tracks[1].complete(YouTubeResult.Success(listOf(track("he"), track("en"))))
+
+            viewModel.dispatch(ReadLines(1))
+
+            assertEquals(listOf(track("he")), subtitles.lines.single().requests)
+        }
+
+    @Test
+    fun `cancel stops the lines being read`() = runTest {
+        val subtitles = FakeSubtitles()
+        val viewModel = viewModel(subtitles = subtitles)
+        viewModel.dispatch(Run(DebugCall.SUBTITLE_TRACKS))
+        subtitles.tracks.single().complete(YouTubeResult.Success(listOf(track("en"))))
+        viewModel.dispatch(ReadLines(1))
+
+        viewModel.dispatch(CancelLines)
+
+        assertTrue(subtitles.lines.single().wasCancelled)
+        assertEquals(CallStatus.Cancelled, viewModel.state.value.subtitleLines)
+    }
+
     private fun viewModel(
         search: SearchRemoteDataSource = SearchRemoteDataSource { fail("search was called") },
         videoDetails: VideoDetailsRemoteDataSource = VideoDetailsRemoteDataSource {
@@ -250,8 +330,41 @@ class YouTubeDebugViewModelTest {
         streamLinks: StreamLinksRemoteDataSource = StreamLinksRemoteDataSource {
             fail("streamLinks was called")
         },
+        subtitles: SubtitlesRemoteDataSource = FailingSubtitles,
     ): YouTubeDebugViewModel =
-        YouTubeDebugViewModel(search, videoDetails, latestUploads, streamLinks)
+        YouTubeDebugViewModel(search, videoDetails, latestUploads, streamLinks, subtitles)
+}
+
+/** A track of Tears of Steel in [languageTag], with a made-up link. */
+private fun track(languageTag: String) =
+    SubtitleTrack(
+        VideoId("R6MlUcmOul8"),
+        languageTag,
+        isAutoGenerated = false,
+        url = "https://www.youtube.com/api/timedtext?lang=" + languageTag,
+    )
+
+private fun line() = SubtitleLine(1.seconds, 2.seconds, "A line")
+
+/** Subtitles that fail the test if either of their functions is called. */
+private object FailingSubtitles : SubtitlesRemoteDataSource {
+    override suspend fun subtitleTracks(videoId: VideoId): YouTubeResult<List<SubtitleTrack>> =
+        fail("subtitleTracks was called")
+
+    override suspend fun subtitleLines(track: SubtitleTrack): YouTubeResult<List<SubtitleLine>> =
+        fail("subtitleLines was called")
+}
+
+/** Fake subtitles, with one [FakeCall] for each call, which the test completes. */
+private class FakeSubtitles : SubtitlesRemoteDataSource {
+    val tracks = mutableListOf<FakeCall<VideoId, List<SubtitleTrack>>>()
+    val lines = mutableListOf<FakeCall<SubtitleTrack, List<SubtitleLine>>>()
+
+    override suspend fun subtitleTracks(videoId: VideoId): YouTubeResult<List<SubtitleTrack>> =
+        FakeCall<VideoId, List<SubtitleTrack>>().also { tracks += it }.answer(videoId)
+
+    override suspend fun subtitleLines(track: SubtitleTrack): YouTubeResult<List<SubtitleLine>> =
+        FakeCall<SubtitleTrack, List<SubtitleLine>>().also { lines += it }.answer(track)
 }
 
 /**

@@ -4,6 +4,8 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.SearchResults
 import io.github.dewfallapp.core.model.StreamLinks
+import io.github.dewfallapp.core.model.SubtitleLine
+import io.github.dewfallapp.core.model.SubtitleTrack
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
@@ -21,6 +23,8 @@ enum class DebugCall {
     VIDEO_DETAILS,
     LATEST_UPLOADS,
     STREAM_LINKS,
+    /** A video's subtitle tracks. A track's lines are read from the same section. */
+    SUBTITLE_TRACKS,
 }
 
 /**
@@ -32,7 +36,17 @@ data class YouTubeDebugState(
     val videoDetails: Section<VideoId, VideoDetailsSummary> = Section(DEFAULT_VIDEO_ID),
     val latestUploads: Section<ChannelId, UploadsSummary> = Section(DEFAULT_CHANNEL_ID),
     val streamLinks: Section<VideoId, StreamLinksSummary> = Section(DEFAULT_VIDEO_ID),
+    val subtitleTracks: Section<VideoId, SubtitleTracksSummary> =
+        Section(DEFAULT_SUBTITLES_VIDEO_ID),
+    /**
+     * The lines of the track picked from [subtitleTracks]. One lines call runs at a time, and a new
+     * listing of the tracks clears it.
+     */
+    val subtitleLines: CallStatus<TrackPick, SubtitleLinesSummary> = CallStatus.Idle,
 ) : MviState
+
+/** A track picked from a listing of [videoId]'s tracks, by its [number] in that listing. */
+data class TrackPick(val videoId: VideoId, val number: Int)
 
 /**
  * One call's section: the text in its input field, and where its call stands.
@@ -102,6 +116,27 @@ sealed interface YouTubeDebugIntent : MviIntent {
     /** The stream links of [videoId] arrived. */
     data class StreamLinksFinished(val videoId: VideoId, val result: YouTubeResult<StreamLinks>) :
         YouTubeDebugIntent
+
+    /** The subtitle tracks of [videoId] arrived. */
+    data class SubtitleTracksFinished(
+        val videoId: VideoId,
+        val result: YouTubeResult<List<SubtitleTrack>>,
+    ) : YouTubeDebugIntent
+
+    /**
+     * The user asks for the lines of the track with [number] in the listing on screen. If lines are
+     * being read, they stop, and these start.
+     */
+    data class ReadLines(val number: Int) : YouTubeDebugIntent
+
+    /** The user stops reading lines. */
+    data object CancelLines : YouTubeDebugIntent
+
+    /** The lines of the track that [pick] names arrived. */
+    data class SubtitleLinesFinished(
+        val pick: TrackPick,
+        val result: YouTubeResult<List<SubtitleLine>>,
+    ) : YouTubeDebugIntent
 }
 
 /** The search that the saved set SEARCH_NASA records. */
@@ -111,6 +146,13 @@ internal const val DEFAULT_SEARCH_QUERY = "nasa"
  * Big Buck Bunny, the Blender Foundation's film, which the saved set VIDEO_BIG_BUCK_BUNNY records.
  */
 internal const val DEFAULT_VIDEO_ID = "aqz-KE-bpKQ"
+
+/**
+ * Tears of Steel, the Blender Foundation's film, whose subtitle tracks the saved set
+ * SUBTITLES_TEARS_OF_STEEL records: written tracks in many languages, among them Hebrew, which
+ * YouTube calls iw, and one auto-generated track.
+ */
+internal const val DEFAULT_SUBTITLES_VIDEO_ID = "R6MlUcmOul8"
 
 /** NASA's channel, which has a Live tab. The saved set UPLOADS_NASA records it. */
 internal const val DEFAULT_CHANNEL_ID = "UCLA_DiR1FfKNvjuUpBHmylQ"

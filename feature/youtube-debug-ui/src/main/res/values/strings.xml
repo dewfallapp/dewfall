@@ -13,6 +13,16 @@
     <string name="youtube_debug_video_details">Video details</string>
     <string name="youtube_debug_latest_uploads">Latest uploads</string>
     <string name="youtube_debug_stream_links">Stream links</string>
+    <string name="youtube_debug_subtitles">Subtitles</string>
+    <string name="youtube_debug_subtitle_tracks">Tracks: %1$d. Written: %2$d. Auto-generated: %3$d.</string>
+    <string name="youtube_debug_track_written">%1$d. %2$s, written</string>
+    <string name="youtube_debug_track_auto">%1$d. %2$s, auto-generated</string>
+    <string name="youtube_debug_read_lines">Read lines</string>
+    <string name="youtube_debug_lines_of">Lines of track %1$d, %2$s</string>
+    <string name="youtube_debug_line_count">Lines: %1$d. First start: %2$s. Latest end: %3$s.</string>
+    <string name="youtube_debug_line_rows">With more than one row: %1$d. Overlapping the next line: %2$d.</string>
+    <string name="youtube_debug_line">%1$s to %2$s: %3$s</string>
+    <string name="youtube_debug_more_lines">More lines, not shown: %1$d</string>
 
     <!-- The labels of the input fields, and the messages under them when the input is wrong. -->
     <string name="youtube_debug_search_text">Search text</string>
