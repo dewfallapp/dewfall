@@ -3,7 +3,7 @@
 ## 1. Decisions the maintainer approved first
 
 - [ ] 1.1 The maintainer approved them on November 19, 2026. Add to the catalog:
-  - Media3 1.11.1, on one version: media3-exoplayer, media3-exoplayer-hls, media3-session, media3-ui-compose and media3-datasource-okhttp
+  - Media3 1.11.1, on one version: media3-exoplayer, media3-exoplayer-hls, media3-session, media3-ui-compose, media3-datasource-okhttp, and media3-common-ktx, which `:feature:player-ui` uses directly for `Player.listen`
   - a dependency constraint that raises Guava to 33.7.2-android
 
   Give each a comment that says what uses it and the approval date. Verify by comparing `./gradlew -q :app:dependencies --configuration releaseRuntimeClasspath` before and after:
@@ -33,7 +33,7 @@
   - a redirect response that is closed
 
   Check that no test name or error message holds a link.
-- [ ] 2.2 Update docs/architecture.md's "Network access": googlevideo.com as a host the app contacts while playing, MediaRequests' rules with their sources, NewPipe's DASH main path and the fallback that MediaRequests follows, the User-Agent's Localization, the slower start, and ExoPlayer's platform diagnostics turned off. Update "Stream links" for MediaRequests. Verify that the text agrees with the code.
+- [ ] 2.2 Update docs/architecture.md's "Network access", saying when each fact about NewPipe v0.29.3 and Media3 1.11.1 was checked: googlevideo.com as a host the app contacts while playing, MediaRequests' rules with their sources, NewPipe's DASH main path and the fallback that MediaRequests follows, the User-Agent's Localization, the slower start, and ExoPlayer's platform diagnostics turned off. Update "Stream links" for MediaRequests. Verify that the text agrees with the code.
 
 ## 3. The stream links repository and the format choice
 
@@ -62,7 +62,8 @@
 
   Verify with unit tests:
   - 403 and 410 refresh once, and a second refusal stands
-  - MediaRequestRefused maps to YOUTUBE, even inside Media3's network error
+  - MediaRequestRefused maps to YOUTUBE, inside the exact chain OkHttpDataSource builds: HttpDataSourceException, IOException, ExecutionException, MediaRequestRefused
+  - the shared failure shown once, with one "Try again" for both, as a pure function in `:feature:player-logic`
   - each PlaybackException code and YouTubeError maps to the category in design.md
 - [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. It has:
   - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and the empty two-argument `onUpdateNotification`
@@ -72,7 +73,8 @@
   - the service publishing its session to PlaybackSessions
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
   - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
-  - the LoadErrorHandlingPolicy that doesn't retry 403 or 410
+  - the LoadErrorHandlingPolicy that doesn't retry 403, 410 or MediaRequestRefused
+  - `onStartCommand` returning START_NOT_STICKY, and `onDestroy` releasing the session and the player and clearing PlaybackSessions and PlaybackItems
   - the one refresh, which goes back to the live edge for a live stream, and the live TrackSelectionOverride
   - PlaybackItems' entry removed when its item is replaced, cleared or stopped
   - one WARN log line for each failure, with the category as a state field and the error code as a count field
@@ -87,16 +89,18 @@
   - "Live" for live streams
   - the loading indicator
   - the failure Banner with the words from design.md, and "Try again" where it applies
-  - `rememberPlaybackStatus` in `:core:playback`, for loading and live
+  - `rememberPlaybackStatus` in `:feature:player-ui`, for loading and live
 
   Opt in to `@UnstableApi` file by file. All strings go in resources, with a content description on every icon and on the seek bar. Verify with previews in light, dark, a font scale of 2 and a tablet-sized window, for playing, paused, live, loading and two failures, with a fake Player.
 - [ ] 5.2 Wire PlayerRoute to PlaybackConnection:
   - start on the entry's first opening, saving the playback ID
-  - after process death, show the video paused and fetch nothing until the user presses play
+  - save the position in the route's saved state on ON_STOP
+  - when the session is gone, after process death or after Android stopped the service, show the video paused at the saved position and fetch nothing until the user presses play
+  - give every new playback ID, from the first start, a play after the session was gone, and "Try again", to both the saved state and PlayerViewModel
   - pause on ON_STOP, unless the activity is changing configurations
   - give PlayerViewModel, which gets PlaybackConnection in its constructor, the entry's playback ID, and have its `onCleared` clear the items only if the current item is that playback ID
 
-  PlayerState doesn't change. Add `startAction` to `:feature:player-logic`. Verify with unit tests of `startAction` for each case and of the clear decision, including a second video that started during the first one's exit, through a fake connection.
+  PlayerState doesn't change. Add `startAction` to `:feature:player-logic`. Verify with unit tests of `startAction` for each case, of closing after "Try again" stopping the sound, and of the clear decision, including a second video that started during the first one's exit, through a fake connection.
 
 ## 6. Docs
 
@@ -131,7 +135,8 @@
   - On a real phone, because an emulator can't do either: unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause.
   - See no notification while playing.
   - Play, go home, and send `adb shell input keyevent KEYCODE_MEDIA_PLAY`: no sound. Then end the process with `adb shell am kill io.github.dewfallapp` and send the key again: the app doesn't start, and nothing crashes. Do both on Android 10 and on the newest Android.
-  - Check that `adb shell dumpsys media_session` shows no video ID, title or link.
+  - Check that `adb shell dumpsys media_session` shows no video ID, title or link, both while playing and after a playback failure, whose message the platform session copies.
+  - Play, go home, wait longer than Android's background window, or force it with `adb shell am make-uid-idle io.github.dewfallapp` if this Android has it, then come back: paused at the same position, and play goes on from it.
   - Check that `adb logcat` shows no link, ID or title, and no line from Media3's own tags. Lines from Android's media codecs, such as MediaCodec or CCodec, come from the platform, not from Media3.
 
 ## Workflow follow-up

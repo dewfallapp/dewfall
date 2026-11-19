@@ -126,7 +126,9 @@ PlaybackService overrides the two-argument `onUpdateNotification(session, startI
 - PlaybackConnection starts PlaybackService with `startService`, which the app may do while a screen is visible.
 - The service publishes its MediaSession to PlaybackSessions, a singleton inside the process.
 - PlaybackConnection builds its MediaController from that session's token.
-- The service runs until the process ends, or until it stops itself. Then PlaybackConnection starts it again on the next prepare.
+- The service runs until the process ends, until it stops itself, or until Android stops it. Android stops an app's started services a few minutes after the app leaves the screen, as if they had stopped themselves, unless something binds to them ([background service limits](https://developer.android.com/about/versions/oreo/background#services)), and nothing does here.
+- When it stops, its `onDestroy` releases the session and the player, clears PlaybackSessions and PlaybackItems, and then calls super. Its `onStartCommand` returns START_NOT_STICKY, so Android never restarts an empty service after killing the process. MediaSessionService returns START_STICKY on every path at 1.11.1.
+- PlaybackConnection listens for its controller's disconnection, drops the controller, and starts the service again on the next prepare.
 
 ### No platform diagnostics
 
@@ -142,15 +144,17 @@ The player follows Android's [audio focus guidance](https://developer.android.co
 
 Play, pause, seek, the playback "Try again", the first start and pressing play after process death go from the UI straight to the player through PlaybackConnection, not through PlayerIntent. The screen reads the playback state through the MediaController's state holders, at the rate the visible controls need, never in PlayerState. ADR 0002 already keeps playback state out of screen state. Sending every tap through an intent would only forward it, with no state change for the reducer. The maintainer approved a dated "Changed in #42" note in ADR 0002 for this on November 20, 2026. docs/architecture.md's MVI contract, at its intents and its playback state rule, says the same.
 
-PlayerRoute reaches PlaybackConnection through PlayerViewModel, which gets it in its constructor and exposes it to the route as a plain property, not as state. The start decision is a pure function in `:feature:player-logic`, `startAction(started, playbackIdKnown)`, which returns PLAY, WAIT_FOR_PLAY or NOTHING. The route keeps its two inputs in rememberSaveable and PlaybackItems, and its tests cover each case.
+PlayerRoute reaches PlaybackConnection through PlayerViewModel, which gets it in its constructor and exposes it to the route as a plain property, not as state. The start decision is a pure function in `:feature:player-logic`, `startAction(started, playbackIdKnown)`, which returns PLAY, WAIT_FOR_PLAY or NOTHING. The route keeps its inputs in rememberSaveable and PlaybackItems, and its tests cover each case.
+
+**Every new playback ID** goes to both the route's saved state and PlayerViewModel, so `onCleared` always knows the current one. That covers the first start, pressing play after the session was gone, and the playback "Try again". A refresh of expired links keeps the same ID, so PlaybackItems keeps its entry.
 
 ### Starting, pausing and stopping
 
 PlaybackConnection is a Hilt singleton. The first time a screen asks, it starts the service and builds one MediaController for the application's context from the session's token. It keeps the controller while the session lives, so a configuration change finds it as it was. The video screen's route:
 
 - **Starts playback** the first time its back stack entry opens: `prepare(videoId, play = true)`. A rememberSaveable flag marks it as started, and it saves the playback ID too.
-- **After process death** the flag comes back, but PlaybackItems is empty. So the route shows the video area paused and sends nothing until the user presses play, which prepares a new playback ID and plays. No links are fetched and no video is buffered before that.
-- **Pauses** in the entry's ON_STOP, unless the activity is only being recreated for a configuration change, which `Activity.isChangingConfigurations` says. It doesn't resume on ON_START, so coming back leaves the video paused.
+- **Pauses** in the entry's ON_STOP, unless the activity is only being recreated for a configuration change, which `Activity.isChangingConfigurations` says. It saves the position in the route's saved state at the same time. It doesn't resume on ON_START, so coming back leaves the video paused.
+- **When the session is gone,** because Android stopped the service in the background or ended the process, the saved flag comes back but PlaybackItems is empty. So the route shows the video area paused at the saved position, and sends nothing until the user presses play. Play prepares a new playback ID from that position and plays. No links are fetched and no video is buffered before that. The position is a number of milliseconds, not user data.
 - **Stops** when the entry's PlayerViewModel is cleared. PlayerViewModel, still an MviViewModel, gets PlaybackConnection in its constructor and keeps the entry's playback ID, which the route gives it. Its `onCleared` asks PlaybackConnection to stop. Navigation 3 clears it only after the entry has left the back stack and its exit animation, so a video opened meanwhile could already be playing. So PlaybackConnection clears the player's items only if the current item's `mediaId` is that playback ID.
 
 ### Choosing the formats
@@ -170,7 +174,7 @@ FormatChoice is a pure function in `:core:model`, next to StreamLinks, as TimeAg
   1. Take the formats of the ORIGINAL track. If no format has a track, take them all. If no track is ORIGINAL, take the track of the first audio format in YouTube's order.
   2. Among the decodable ones, take the highest bitrate on an unmetered network and the lowest on a metered one.
 - **Both at once.** A chosen video format with `includesAudio` plays on its own.
-- **Live.** StreamLinks has no live flag, so links with no formats and an HLS manifest count as live, and play the manifest through `@LiveMediaCalls`. A video that isn't live but has only a manifest plays the same way. When ExoPlayer knows the manifest's variants, the service applies a TrackSelectionOverride to the video group with every variant whose shorter side is within the limit, and ExoPlayer adapts among them. If none is within the limit, it overrides with the variant with the smallest shorter side. The same shorter-side rule in FormatChoice picks the variants, so it has its own tests, such as a 1920x1080 variant within 1080 and outside 480.
+- **Live.** StreamLinks has no live flag, so links with no formats and an HLS manifest count as live, and play the manifest through `@LiveMediaCalls`. A video that isn't live but has only a manifest plays the same way. That uses a request shape NewPipe doesn't: NewPipe fetches such a manifest with YoutubeHttpDataSource's POST requests without `rn`. When ExoPlayer knows the manifest's variants, the service applies a TrackSelectionOverride to the video group with every variant whose shorter side is within the limit, and ExoPlayer adapts among them. If none is within the limit, it overrides with the variant with the smallest shorter side. The same shorter-side rule in FormatChoice picks the variants, so it has its own tests, such as a 1920x1080 variant within 1080 and outside 480.
 
 The service supplies the two Android parts:
 
@@ -187,7 +191,7 @@ Alternative: let ExoPlayer choose among every format. Rejected, because progress
 The service's player listener handles a refused link once per failure. The limit resets once the refreshed item plays again, so a second expiry hours later refreshes too, while two refusals in a row stop:
 
 - **A refused link.** On HttpDataSource.InvalidResponseCodeException with 403 or 410, it fetches new links, swaps the item for the new one, seeks to the old position, and plays if it was playing. A live stream goes back to its live edge instead. If the new links fail too, the error stands.
-- **No retries of 403 or 410.** A LoadErrorHandlingPolicy of `:core:playback`'s own doesn't retry them, so the refresh happens at once. Other errors keep DefaultLoadErrorHandlingPolicy's retries.
+- **No retries of 403, 410 or a refused request.** A LoadErrorHandlingPolicy of `:core:playback`'s own retries none of them: 403 and 410, so the refresh happens at once, and MediaRequestRefused, so a refused request is never sent again. Other errors keep DefaultLoadErrorHandlingPolicy's retries.
 - **The screen's error category.** PlaybackConnection maps the player's PlaybackException, and a failed resolution, to a PlaybackFailure, as its own stream. The mapping is a pure function with its own tests:
   - NETWORK: an IO network error, or a resolution that failed with NETWORK
   - YOUTUBE: MediaRequestRefused, BLOCKED or BROKEN, or a refused link after the refresh
@@ -196,8 +200,11 @@ The service's player listener handles a refused link once per failure. The limit
   - OTHER: anything else
 
   MediaRequestRefused is recognised by its class first, because Media3 reports any IOException from a data source as a network error.
+  - At 1.11.1, OkHttpDataSource sends each call with `enqueue` and waits on a SettableFuture, then wraps a failure as `new IOException(executionException)` ([OkHttpDataSource at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/datasource_okhttp/src/main/java/androidx/media3/datasource/okhttp/OkHttpDataSource.java)).
+  - So the mapping walks the cause chain, HttpDataSourceException, then IOException, then ExecutionException, then MediaRequestRefused, and its test builds that exact chain.
+  - MediaRequests' interceptors throw only IOException, so nothing else escapes on OkHttp's own threads.
 - **What the screen says.** The same words as the details' failures, plus "This video can't play on this phone." for NOT_DECODABLE and "This video stopped playing." for OTHER, words the maintainer approved with this change. "Try again" shows for NETWORK, YOUTUBE and OTHER, and prepares the video again, playing from the last position.
-- **When both fail.** The details' failure shows in the details' place, and the playback failure in the video area, each with its own "Try again". When both fail with the same per-video category, such as PRIVATE, the video area shows no second message, so the screen says it once.
+- **When both fail.** The details' failure shows in the details' place, and the playback failure in the video area, each with its own "Try again". When both fail with the same category, such as NETWORK or PRIVATE, the video area shows no second message, so the screen says it once, and that message's "Try again" retries both. The rule is a pure function in `:feature:player-logic` with its own tests.
 - **Logs.** Media3's own logging is off: `androidx.media3.common.util.Log.setLogLevel(Log.LOG_LEVEL_OFF)`.
   - It is set in PlaybackConnection's constructor and in PlaybackService's `onCreate`, before either makes its first Media3 call.
   - It is off because Media3's error lines append each throwable's message ([Log.java at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/common/src/main/java/androidx/media3/common/util/Log.java), `getThrowableString`), and messages can name the host or carry a link.
@@ -215,7 +222,7 @@ It reads the player through media3-ui-compose's state holders:
 - `rememberProgressStateWithTickInterval` for the times, ticking once a second
 - `rememberProgressStateWithTickCount`, with as many ticks as the seek bar has pixels, for the seek bar
 
-Two more readings of the player come from `:core:playback`'s own small state holder, `rememberPlaybackStatus(player)`, which listens with media3-common-ktx's `Player.listen`:
+Two more readings of the player come from a small state holder in `:feature:player-ui`, `rememberPlaybackStatus(player)`, which listens with media3-common-ktx's `Player.listen`. It stays there until #44 needs to share it, so `:core:playback` has no Compose:
 - **loading:** the player's state is BUFFERING
 - **live:** `isCurrentMediaItemLive`
 

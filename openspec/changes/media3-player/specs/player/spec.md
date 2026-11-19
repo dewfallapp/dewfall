@@ -18,7 +18,7 @@ The video screen SHALL show the video in a 16:9 area above the title, with a pla
 - **THEN** the video pauses, and the button offers to play
 
 ### Requirement: Opening a video starts playing it
-Opening a video SHALL start playing it from the start, without a tap. A video screen that comes back after the system ended the app's process SHALL wait for the user to press play.
+Opening a video SHALL start playing it from the start, without a tap. A video screen that comes back after the system ended the app's process, or stopped its player in the background, SHALL wait for the user to press play, at the position where it paused.
 
 #### Scenario: Opening a video
 - **WHEN** the user opens a video from search
@@ -26,7 +26,7 @@ Opening a video SHALL start playing it from the start, without a tap. A video sc
 
 #### Scenario: Playback after process death
 - **WHEN** the system ended the app's process while it showed a video, and the user returns to it
-- **THEN** the video waits at the start for the user to press play, and no stream links are fetched for it until then
+- **THEN** the video waits at the position where it paused for the user to press play, and no stream links are fetched for it until then
 
 ### Requirement: Quality follows the network
 On a metered network the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered one, at most 1080 pixels, with the highest. Within the limit it SHALL prefer formats the phone decodes in hardware, then the largest. It SHALL take only formats the phone can decode, the smallest one when none is within the limit, and SHALL keep its choice until playback starts again.
@@ -42,6 +42,14 @@ On a metered network the player SHALL stream a picture whose shorter side is at 
 #### Scenario: A portrait video
 - **WHEN** a portrait video with formats up to 2160x3840 starts playing on Wi-Fi
 - **THEN** the player streams a 1080x1920 format
+
+#### Scenario: Audio on mobile data
+- **WHEN** a video with dubbed and original audio tracks starts playing on mobile data
+- **THEN** the player streams the original track at its lowest bitrate
+
+#### Scenario: Audio on Wi-Fi
+- **WHEN** the same video starts playing on Wi-Fi
+- **THEN** the player streams the original track at its highest bitrate
 
 #### Scenario: Hardware before size
 - **WHEN** on Wi-Fi a video's 1080p format decodes only in software and its 720p format in hardware
@@ -99,6 +107,10 @@ Closing the video screen SHALL stop playback. Leaving the app, such as with the 
 - **WHEN** a video plays and the user goes to the home screen
 - **THEN** the sound stops, and when the user comes back the video is paused at the same position
 
+#### Scenario: Coming back much later
+- **WHEN** a video plays, the user goes to the home screen, and comes back after Android has stopped the player in the background
+- **THEN** the video is paused at the same position, and plays on from it when the user presses play
+
 #### Scenario: Resizing the window
 - **WHEN** a video plays in split screen and the user resizes the window
 - **THEN** it keeps playing without a pause
@@ -154,7 +166,7 @@ After the system ends the app's process in the background while the video screen
 
 #### Scenario: Coming back after process death
 - **WHEN** the system ended the app's process while it showed a video, and the user returns to it
-- **THEN** the screen says that the same video is loading, then shows its details, and the video waits at the start for the user to press play
+- **THEN** the screen says that the same video is loading, then shows its details, and the video waits at the position where it paused for the user to press play
 
 ### Requirement: Video details stay private
 The app SHALL never log the video's ID, title, channel name or description, and SHALL send them nowhere but YouTube. The only copies kept outside the screen SHALL be the video's ID in the state Android saves for a process that it ends in the background, and, in memory while its playback lasts, the playing video's ID and stream links in the playback service, which it SHALL drop when that playback is replaced or stops. The media session SHALL name the video only by a random playback ID.
@@ -162,3 +174,14 @@ The app SHALL never log the video's ID, title, channel name or description, and 
 #### Scenario: Logs after opening a video
 - **WHEN** the user opens a video, once with details showing and once with the network off
 - **THEN** the app's log lines hold no ID, title, channel name or description, and the failure's line names only the call and its category
+
+### Requirement: The video screen loads the video's details
+When the video screen opens, it SHALL ask YouTube for that video's details once, and show that it is loading until the answer arrives. A configuration change SHALL NOT ask again.
+
+#### Scenario: Opening a video
+- **WHEN** the user opens a video
+- **THEN** the screen says that the video is loading, and the app asks YouTube for that video's details once
+
+#### Scenario: Turning a tablet while the details show
+- **WHEN** the screen shows a video's details on a tablet and the user turns it
+- **THEN** the same details show, and the app asks YouTube for neither the details nor the stream links again
