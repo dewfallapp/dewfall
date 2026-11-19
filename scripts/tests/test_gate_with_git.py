@@ -183,6 +183,59 @@ class GateWithGitTest(unittest.TestCase):
         self.assertEqual(1, code)
         self.assertIn("FAIL nothing uncommitted", output)
 
+    def test_a_detached_head_exempts_no_renovate_commit_unless_the_branch_is_named(self):
+        self.repository.write("gradle/libs.versions.toml", "[versions]\n")
+        self.repository.commit("build: update a library", name="renovate[bot]", email="bot@example.com")
+        self.repository.run_git("push", "--quiet", "origin", "work")
+        self.repository.run_git("checkout", "--quiet", "--detach")
+
+        code, output = self.run_gate()
+        self.assertEqual(1, code)
+        self.assertIn("AUTHOR_NOT_LOCAL_IDENTITY", output)
+
+        named = io.StringIO()
+        with contextlib.redirect_stdout(named):
+            code = pre_push_gate.main(
+                ["--no-build", "--remote-branch", "origin/work"], own_tests=False
+            )
+        self.assertEqual(3, code)
+        self.assertNotIn("AUTHOR_NOT_LOCAL_IDENTITY", named.getvalue())
+
+        with_equals = io.StringIO()
+        with contextlib.redirect_stdout(with_equals):
+            code = pre_push_gate.main(["--no-build", "--remote-branch=origin/work"], own_tests=False)
+        self.assertEqual(3, code)
+        self.assertNotIn("AUTHOR_NOT_LOCAL_IDENTITY", with_equals.getvalue())
+
+    def test_a_local_branch_named_like_the_remote_one_exempts_nothing(self):
+        self.repository.write("gradle/libs.versions.toml", "[versions]\n")
+        self.repository.commit("build: update a library", name="renovate[bot]", email="bot@example.com")
+        self.repository.run_git("branch", "origin/unpushed")
+        self.repository.run_git("checkout", "--quiet", "--detach")
+
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = pre_push_gate.main(
+                ["--no-build", "--remote-branch", "origin/unpushed"], own_tests=False
+            )
+
+        self.assertEqual(1, code)
+        self.assertIn("AUTHOR_NOT_LOCAL_IDENTITY", output.getvalue())
+
+    def test_the_remote_branch_must_be_under_origin(self):
+        for arguments in (
+            ["--remote-branch", "HEAD"],
+            ["--remote-branch=main"],
+            ["--remote-branch", "origin/"],
+            ["--remote-branch"],
+        ):
+            with self.subTest(arguments=arguments):
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    code = pre_push_gate.main(["--no-build"] + arguments, own_tests=False)
+                self.assertEqual(2, code)
+                self.assertIn("--remote-branch must name a branch under origin/", output.getvalue())
+
     def test_the_gate_has_nothing_to_check_without_new_commits(self):
         self.repository.run_git("checkout", "--quiet", "main")
 
