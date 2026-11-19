@@ -26,10 +26,10 @@ Opening a video SHALL start playing it from the start, without a tap. A video sc
 
 #### Scenario: Coming back after process death
 - **WHEN** the system ended the app's process while it showed a video, and the user returns to it
-- **THEN** the video waits at the start for the user to press play, and nothing is fetched for it until then
+- **THEN** the video waits at the start for the user to press play, and no stream links are fetched for it until then
 
 ### Requirement: Quality follows the network
-When playback starts on a metered network, such as mobile data, the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered network, such as Wi-Fi, it SHALL stream the largest picture up to 1080 pixels on its shorter side that the phone can decode, with the highest audio bitrate. It SHALL choose only formats the phone can decode, and SHALL keep its choice until playback starts again.
+On a metered network, such as mobile data, the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered one, such as Wi-Fi, it SHALL stream the largest picture up to 1080 pixels on its shorter side, with the highest audio bitrate. It SHALL take only formats the phone can decode, the smallest one when none is within the limit, and SHALL keep its choice until playback starts again.
 
 #### Scenario: Mobile data
 - **WHEN** a video with formats up to 2160p starts playing on mobile data
@@ -42,6 +42,10 @@ When playback starts on a metered network, such as mobile data, the player SHALL
 #### Scenario: A portrait video
 - **WHEN** a portrait video with formats up to 2160x3840 starts playing on Wi-Fi
 - **THEN** the player streams a 1080x1920 format
+
+#### Scenario: Nothing within the limit
+- **WHEN** a video's only decodable formats are 720p and 1080p, and it starts playing on mobile data
+- **THEN** the player streams the 720p format, the smallest it can decode
 
 #### Scenario: A format the phone can't decode
 - **WHEN** the best format at the limit uses a codec the phone can't decode
@@ -114,7 +118,7 @@ Until background play exists, the app SHALL NOT show a media notification, and S
 - **THEN** no notification about it shows
 
 ### Requirement: Playback stays private
-The player SHALL fetch video only through the YouTube layer, which SHALL send its requests only over HTTPS to googlevideo.com and its subdomains, and SHALL never follow a redirect to another host. The app SHALL never log a stream link, a video's ID or its title, and Media3 SHALL write nothing to the log. Android's media session SHALL hold no video ID, title or link.
+The player SHALL fetch video only through the YouTube layer, which SHALL send its requests only over HTTPS to googlevideo.com and its subdomains, and SHALL never follow a redirect to another host. The app SHALL never log a stream link, a video's ID or its title, and Media3 SHALL write nothing to the log. Android's media session SHALL hold no video ID, title or link, and the player SHALL send no playback diagnostics to Android's media metrics.
 
 #### Scenario: Logs while playing
 - **WHEN** the user plays a video, once to the end and once with the network turned off while it plays

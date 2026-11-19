@@ -19,7 +19,7 @@
   - for both: an OkHttpClient with no redirects of its own, only HTTPS to googlevideo.com and its subdomains, at most 20 checked redirects, 307 and 308 keeping the method and body while 301 to 303 become a GET with no body, each redirect's response closed, and `Accept-Language: en-GB`
   - MediaRequestRefused for anything they won't send
 
-  Make OkHttp an api dependency of `:core:youtube`, and provide MediaRequests through `:core:data`. Verify with `./gradlew :core:youtube:test`. Tests drive the interceptors through a fake chain:
+  Make OkHttp an api dependency of `:core:youtube`. In `:core:data`, which keeps `:core:youtube` as an implementation dependency, add the `@ProgressiveMediaCalls` provider, unscoped, and the `@LiveMediaCalls` provider of OkHttp's Call.Factory. Verify with `./gradlew :core:youtube:test`. Tests drive the interceptors through a fake chain:
   - an allowed visionOS link
   - http
   - another host
@@ -28,11 +28,11 @@
   - a 302 and a 307 after a POST
   - a progressive link of another client
   - `rn` numbering from 0 for each factory, and a URL that already has `rn`
-  - a live manifest link with the saved set VIDEO_BIG_BUCK_BUNNY's path form and no `c` key, sent as a GET
+  - a made-up live manifest link in the path form of the saved set VIDEO_BIG_BUCK_BUNNY's `hlsManifestUrl`, with no `c` key, sent as a GET
   - a redirect response that is closed
 
   Check that no test name or error message holds a link.
-- [ ] 2.2 Update docs/architecture.md's "Network access": googlevideo.com as a host the app contacts while playing, MediaRequests' rules with their sources, the User-Agent's Localization, and the slower start. Update "Stream links" for MediaRequests. Verify that the text agrees with the code.
+- [ ] 2.2 Update docs/architecture.md's "Network access": googlevideo.com as a host the app contacts while playing, MediaRequests' rules with their sources, NewPipe's DASH main path and the fallback that MediaRequests follows, the User-Agent's Localization, the slower start, and ExoPlayer's platform diagnostics turned off. Update "Stream links" for MediaRequests. Verify that the text agrees with the code.
 
 ## 3. The stream links repository and the format choice
 
@@ -63,11 +63,13 @@
   - MediaRequestRefused maps to YOUTUBE, even inside Media3's network error
   - each PlaybackException code and YouTubeError maps to the category in design.md
 - [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. It has:
-  - the MediaSessionService with one ExoPlayer, Media3's logging turned off in `onCreate`, and the empty `onUpdateNotification`
+  - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and the empty `onUpdateNotification`
+  - a coroutine scope on an injected dispatcher, and PlaybackLog, injected into a field, which takes the Logger in its constructor
   - the audio attributes with audio focus, and pausing when the output becomes noisy
   - `onConnect` accepting only the app's own package
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
-  - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over MediaRequests
+  - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
+  - the HLS manifest when no progressive format decodes, before NO_DECODABLE_FORMAT
   - the LoadErrorHandlingPolicy that doesn't retry 403 or 410
   - the one refresh, and the live TrackSelectionOverride
   - PlaybackItems' entry removed when its item is replaced, cleared or stopped
@@ -89,7 +91,7 @@
   - start on the entry's first opening, saving the playback ID
   - after process death, show the video paused and fetch nothing until the user presses play
   - pause on ON_STOP, unless the activity is changing configurations
-  - clear the items when the entry's ViewModel is cleared, only if the current item is this entry's playback ID
+  - give PlayerViewModel, which gets PlaybackConnection in its constructor, the entry's playback ID, and have its `onCleared` clear the items only if the current item is that playback ID
 
   PlayerState doesn't change. Verify with unit tests of the start decision and the clear decision, including a second video that started during the first one's exit, through a fake connection.
 
@@ -98,14 +100,14 @@
 - [ ] 6.1 Update the docs this change makes stale, and verify that each line below now matches the code:
   - AGENTS.md: the Modules rule's list of modules.
   - docs/architecture.md:
-    - the module table and graph with `:core:playback`, and `:core:youtube`'s row with MediaRequests and OkHttp as an api dependency
+    - the module table and graph with `:core:playback`, its edge to `:core:data` and none to `:core:youtube`, `:core:data`'s row with the two Call.Factory providers, and `:core:youtube`'s row with MediaRequests and OkHttp as an api dependency
     - `:core:model`'s row with FormatChoice
     - "The player" section from design.md
     - "Reading from YouTube" with the third repository
     - the sentences on where Compose and Hilt are set up
     - "Other libraries' own logs"
   - ADR 0007, ADR 0008 and ADR 0009: the dated notes from design.md, citing the maintainer's approval.
-  - AGENTS.md's rule on the YouTube layer's functions: MediaRequests as its one exception.
+  - AGENTS.md's rule on the YouTube layer's functions: MediaRequests as its one exception. Its rule that every request names the device's country: the subtitle download and MediaRequests name none, as ADR 0009's notes say.
   - openspec/config.yaml's list of core modules.
 
 ## 7. Checks
@@ -127,4 +129,4 @@
 
 ## Workflow follow-up
 
-- Archive the change with /opsx:archive as the last commit of the feature's pull request, then run the reviewer again on that commit.
+- Archive the change with /opsx:archive as the last commit of the feature's pull request, then run the reviewer again on that commit. Update the living player spec's Purpose, which says later changes add playback, in the same commit.
