@@ -4,10 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,7 +19,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,13 +27,12 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
+import io.github.dewfallapp.core.designsystem.component.Banner
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.feature.youtubesearch.logic.ResultsArea
@@ -48,9 +43,6 @@ import kotlin.time.Instant
 
 /** The round badge behind a message's glyph, as in the "Search YouTube" frames. */
 private val MessageBadgeSize = 64.dp
-
-/** The glyph in a banner, 20dp, as the design system's Banner says. */
-private val BannerGlyphSize = 20.dp
 
 /** What the area under the search field shows, from [results]. */
 @Composable
@@ -145,10 +137,8 @@ private fun Message(title: String, body: String, modifier: Modifier = Modifier) 
 
 /**
  * A failed search, in the design system's neutral Banner: the error glyph, the message, and "Try
- * again". Only the glyph is in the error color, because a failure isn't the user's fault. A screen
- * reader reads it when it appears.
+ * again". Only the glyph is in the error color, because a failure isn't the user's fault.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun FailureBanner(
     error: YouTubeError,
@@ -156,37 +146,15 @@ private fun FailureBanner(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        Column(
-            modifier =
-                Modifier.padding(horizontal = DewfallSpacing.margin)
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    .padding(DewfallSpacing.md)
-                    .semantics { liveRegion = LiveRegionMode.Polite },
-            verticalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm)) {
-                Icon(
-                    painter = painterResource(DesignR.drawable.ic_error),
-                    contentDescription = stringResource(R.string.youtube_search_failed_icon),
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(BannerGlyphSize),
-                )
-                Text(
-                    text = stringResource(failureText(error)),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onTryAgain) {
-                    Text(stringResource(R.string.youtube_search_try_again))
-                }
-            }
-        }
+        Banner(
+            message = stringResource(failureText(error)),
+            glyph = painterResource(DesignR.drawable.ic_error),
+            glyphDescription = stringResource(R.string.youtube_search_failed_icon),
+            glyphTint = MaterialTheme.colorScheme.error,
+            actionLabel = stringResource(R.string.youtube_search_try_again),
+            onAction = onTryAgain,
+            modifier = Modifier.padding(horizontal = DewfallSpacing.margin),
+        )
     }
 }
 
