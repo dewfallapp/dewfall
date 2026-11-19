@@ -1,7 +1,5 @@
-package io.github.dewfallapp.feature.youtubesearch.logic
+package io.github.dewfallapp.core.model
 
-import io.github.dewfallapp.core.model.PublishedTime
-import io.github.dewfallapp.core.model.VideoKind
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -10,7 +8,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 private val LONDON = ZoneId.of("Europe/London")
@@ -40,30 +37,6 @@ private fun youTubeTime(amount: Long, unit: ChronoUnit, now: LocalDateTime): Pub
 }
 
 private fun exact(at: LocalDateTime) = PublishedTime(instant(at), isApproximate = false)
-
-class LengthLabelTest {
-    @Test
-    fun `lengths drop seconds above a minute`() {
-        assertEquals(LengthLabel.HoursAndMinutes(1, 6), lengthLabel(66.minutes, VideoKind.VIDEO))
-        assertEquals(
-            LengthLabel.HoursAndMinutes(1, 0),
-            lengthLabel(60.minutes + 59.seconds, VideoKind.VIDEO),
-        )
-        assertEquals(LengthLabel.Minutes(59), lengthLabel(59.minutes + 59.seconds, VideoKind.VIDEO))
-        assertEquals(LengthLabel.Minutes(1), lengthLabel(60.seconds, VideoKind.VIDEO))
-        assertEquals(LengthLabel.Seconds(59), lengthLabel(59.seconds, VideoKind.VIDEO))
-        assertEquals(LengthLabel.Seconds(45), lengthLabel(45.seconds, VideoKind.VIDEO))
-        assertEquals(LengthLabel.HoursAndMinutes(12, 14), lengthLabel(734.minutes, VideoKind.VIDEO))
-    }
-
-    @Test
-    fun `live and upcoming videos show their kind, and an unknown length shows nothing`() {
-        assertEquals(LengthLabel.Live, lengthLabel(null, VideoKind.LIVE))
-        assertEquals(LengthLabel.Live, lengthLabel(3.hours, VideoKind.LIVE))
-        assertEquals(LengthLabel.Upcoming, lengthLabel(null, VideoKind.UPCOMING))
-        assertNull(lengthLabel(null, VideoKind.VIDEO))
-    }
-}
 
 class TimeAgoTest {
     /** A Monday in March 2027, a year that isn't a leap year. */
@@ -184,5 +157,23 @@ class TimeAgoTest {
         val now = LocalDateTime.of(2027, 3, 29, 0, 30)
 
         assertEquals(TimeAgo.Yesterday, ago(youTubeTime(1, ChronoUnit.DAYS, now), now))
+    }
+
+    @Test
+    fun `an estimated time on today's date reads Today`() {
+        val startOfToday =
+            PublishedTime(instant(march.truncatedTo(ChronoUnit.DAYS)), isApproximate = true)
+
+        assertEquals(TimeAgo.Today, ago(startOfToday))
+    }
+
+    @Test
+    fun `an exact time a day or more ago on today's date reads Today, when the clocks went back`() {
+        // The clocks in London go back on October 31, 2027, so that day has 25 hours. Read at
+        // 23:45, a time 24 and a half hours earlier is 00:15 on the same date.
+        val now = LocalDateTime.of(2027, 10, 31, 23, 45)
+        val published = instant(now) - 24.hours - 30.minutes
+
+        assertEquals(TimeAgo.Today, ago(PublishedTime(published, isApproximate = false), now))
     }
 }

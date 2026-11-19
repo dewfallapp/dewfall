@@ -3,8 +3,8 @@ package io.github.dewfallapp.feature.youtubesearch.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import io.github.dewfallapp.core.model.TimeAgo
 import io.github.dewfallapp.feature.youtubesearch.logic.LengthLabel
-import io.github.dewfallapp.feature.youtubesearch.logic.TimeAgo
 
 /** The length tag's text, such as "1h 06m", "54m", "45s", "Live" or "Upcoming". */
 @Composable
@@ -66,12 +66,13 @@ internal fun spokenLength(label: LengthLabel): String =
         LengthLabel.Upcoming -> stringResource(R.string.youtube_search_upcoming)
     }
 
-/** The time ago as a row shows it, such as "7h ago", "Yesterday" or "3 weeks ago". */
+/** The time ago as a row shows it, such as "7h ago", "Today", "Yesterday" or "3 weeks ago". */
 @Composable
 internal fun timeAgoText(timeAgo: TimeAgo): String =
     when (timeAgo) {
         is TimeAgo.Minutes -> stringResource(R.string.youtube_search_minutes_ago, timeAgo.count)
         is TimeAgo.Hours -> stringResource(R.string.youtube_search_hours_ago, timeAgo.count)
+        TimeAgo.Today -> stringResource(R.string.youtube_search_today)
         TimeAgo.Yesterday -> stringResource(R.string.youtube_search_yesterday)
         is TimeAgo.Days -> plural(R.plurals.youtube_search_days_ago, timeAgo.count)
         is TimeAgo.Weeks -> plural(R.plurals.youtube_search_weeks_ago, timeAgo.count)

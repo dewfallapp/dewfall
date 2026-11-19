@@ -22,9 +22,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
+import io.github.dewfallapp.core.model.timeAgo
 import io.github.dewfallapp.feature.youtubesearch.logic.VideoRow
 import io.github.dewfallapp.feature.youtubesearch.logic.lengthLabel
-import io.github.dewfallapp.feature.youtubesearch.logic.timeAgo
 import java.time.ZoneId
 import kotlin.time.Instant
 

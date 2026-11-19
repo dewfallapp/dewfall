@@ -18,19 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
+import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.feature.youtubesearch.logic.YouTubeSearchIntent
 import io.github.dewfallapp.feature.youtubesearch.logic.YouTubeSearchState
 import java.time.ZoneId
 import kotlin.time.Instant
-
-/**
- * The widest the screen's content gets. Wider windows, such as tablets, unfolded foldables and
- * split screen, center a column of this width, so lines stay readable. A phone in portrait is
- * narrower. See docs/design/brief.md.
- */
-internal val ReadableWidth = 640.dp
 
 /**
  * The Search YouTube screen: its title, the search field, and what the search found. It is
