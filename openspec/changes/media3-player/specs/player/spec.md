@@ -24,7 +24,7 @@ Opening a video SHALL start playing it from the start, without a tap. A video sc
 - **WHEN** the user opens a video from search
 - **THEN** the video starts playing from the start
 
-#### Scenario: Coming back after process death
+#### Scenario: Playback after process death
 - **WHEN** the system ended the app's process while it showed a video, and the user returns to it
 - **THEN** the video waits at the start for the user to press play, and no stream links are fetched for it until then
 

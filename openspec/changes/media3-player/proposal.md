@@ -38,10 +38,21 @@ None.
 - Logs: Media3's own logging is turned off, because its error messages can name the host or carry a link. The service logs a playback failure through the Logger with its category and Media3's error code only, as ADR 0007 asks.
 - Start time: opening a video now sends the video details call and the stream links call, one after the other, so the picture starts after both.
 - Dependencies, which the maintainer approved on November 19, 2026, with this change, as the "The maintainer's answers" section of pull request #180's description records, all under the Apache License 2.0. Media3 1.11.1 was released on September 10, 2026:
-  - `androidx.media3:media3-exoplayer`, `media3-exoplayer-hls`, `media3-session`, `media3-ui-compose` and `media3-datasource-okhttp` 1.11.1, and the Media3 modules they bring, such as media3-common and media3-common-ktx.
-  - Guava, which media3-common brings at 33.3.1-android, with the small artifacts Guava itself brings: failureaccess, listenablefuture and jspecify, all under the Apache License 2.0. Task 1.1 lists each with its version.
-  - Guava 33.3.1-android has a high-severity advisory, GHSA-xxph-c9ww-hj94, so a dependency constraint raises Guava to 33.7.2-android, released on September 29, 2026, which fixes it.
-  - The AndroidX libraries they bring at versions the app doesn't have yet, such as androidx.media 1.7.0 and lifecycle-service. Task 1.1 lists each one with its date.
+  - **Media3 1.11.1, released September 10, 2026:** `androidx.media3:media3-exoplayer`, `media3-exoplayer-hls`, `media3-session`, `media3-ui-compose` and `media3-datasource-okhttp`, and the Media3 modules they bring: media3-common, media3-common-ktx, media3-container, media3-database, media3-datasource, media3-decoder and media3-extractor.
+  - **Guava:** media3-common brings Guava 33.3.1-android, which has a high-severity advisory, GHSA-xxph-c9ww-hj94. A dependency constraint raises it to 33.7.2-android, released on September 29, 2026, which fixes it.
+  - **What Guava brings:**
+    - failureaccess 1.0.3, released on March 19, 2025
+    - listenablefuture raised from 1.0 to 9999.0-empty-to-avoid-conflict-with-guava, an empty artifact
+    - jspecify raised from 1.0.0 to 1.0.1, released on July 29, 2026
+
+    media3-common excludes Guava's annotation artifacts, such as error_prone_annotations and j2objc-annotations, so they don't ship.
+  - **AndroidX:**
+    - androidx.media 1.7.0, released on November 29, 2023
+    - lifecycle-service, at the app's Lifecycle version, 2.11.0, released on June 17, 2026
+    - exifinterface 1.3.6, released on February 3, 2023
+    - concurrent-futures raised from 1.1.0 to 1.2.0, released on June 12, 2024
+
+  This is the release runtime classpath that Gradle resolved on November 20, 2026, with the five Media3 libraries and the Guava constraint added. Task 1.1 checks it again when they go into the catalog.
   - media3-datasource-okhttp asks for OkHttp 4.12.0. The app already ships OkHttp 5.5.0 through the YouTube layer, and Gradle keeps 5.5.0.
 - Manifest: Media3 adds the ACCESS_NETWORK_STATE and WAKE_LOCK permissions. media3-session's exported BluetoothValidationActivity is removed, because there is no Bluetooth control yet. The service itself isn't exported until #43 decides which other apps may control playback.
 - Docs: docs/architecture.md's "The player" and "Network access" sections, the module table and graph, AGENTS.md's module list, openspec/config.yaml's list of core modules, and dated notes in ADR 0007 on Media3's logs, and in ADR 0008 and ADR 0009 on MediaRequests: its IOException calls, its client for googlevideo.com, its redirects and its language. AGENTS.md's rule on the layer's functions names MediaRequests as its exception. The maintainer approved the notes on November 20, 2026.

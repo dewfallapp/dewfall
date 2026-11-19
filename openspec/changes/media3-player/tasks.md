@@ -40,7 +40,8 @@
 - [ ] 3.2 Add FormatChoice to `:core:model`, as design.md describes. Verify with `./gradlew :core:model:test`, with made-up StreamLinks:
   - the largest decodable format within 480 and within 1080
   - a portrait video
-  - hardware over software at the same size, and the lowest bitrate at the same size
+  - a hardware format chosen over a larger software one within the limit, and the lowest bitrate at the same size
+  - a format with no codec, which counts as not decodable
   - a phone that can't decode the largest codec
   - no format within the limit, and no decodable format
   - a format with no size
@@ -69,9 +70,8 @@
   - `onConnect` accepting only the app's own package
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
   - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
-  - the HLS manifest when no progressive format decodes, before NO_DECODABLE_FORMAT
   - the LoadErrorHandlingPolicy that doesn't retry 403 or 410
-  - the one refresh, and the live TrackSelectionOverride
+  - the one refresh, which goes back to the live edge for a live stream, and the live TrackSelectionOverride
   - PlaybackItems' entry removed when its item is replaced, cleared or stopped
   - one WARN log line for each failure, with the category as a state field and the error code as a count field
   - the unexported manifest entry with its intent filter, and the removed BluetoothValidationActivity
@@ -85,6 +85,7 @@
   - "Live" for live streams
   - the loading indicator
   - the failure Banner with the words from design.md, and "Try again" where it applies
+  - `rememberPlaybackStatus` in `:core:playback`, for loading and live
 
   Opt in to `@UnstableApi` file by file. All strings go in resources, with a content description on every icon and on the seek bar. Verify with previews in light, dark, a font scale of 2 and a tablet-sized window, for playing, paused, live, loading and two failures, with a fake Player.
 - [ ] 5.2 Wire PlayerRoute to PlaybackConnection:
@@ -106,7 +107,8 @@
     - "Reading from YouTube" with the third repository
     - the sentences on where Compose and Hilt are set up
     - "Other libraries' own logs"
-  - ADR 0007, ADR 0008 and ADR 0009: the dated notes from design.md, citing the maintainer's approval.
+  - ADR 0007, ADR 0008 and ADR 0009: the dated notes from design.md, citing the maintainer's approval, each saying why MediaRequests is an exception rather than a new decision.
+  - AGENTS.md's rule that the player exposes playback state as its own Flow: through its MediaController, which screens read with media3-ui-compose's state holders or as Flows, at the rate the visible UI needs, never in screen state.
   - AGENTS.md's rule on the YouTube layer's functions: MediaRequests as its one exception. Its rule that every request names the device's country: the subtitle download and MediaRequests name none, as ADR 0009's notes say.
   - openspec/config.yaml's list of core modules.
 
@@ -125,7 +127,7 @@
   - Start music in another app while a video plays, and see the video pause. Unplug headphones, or turn off a Bluetooth headset, while it plays, and see it pause.
   - See no notification while playing.
   - Check that `adb shell dumpsys media_session` shows no video ID, title or link.
-  - Check that `adb logcat` shows no link, ID or title, and no line from Media3.
+  - Check that `adb logcat` shows no link, ID or title, and no line from Media3's own tags. Lines from Android's media codecs, such as MediaCodec or CCodec, come from the platform, not from Media3.
 
 ## Workflow follow-up
 

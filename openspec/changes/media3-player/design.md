@@ -23,7 +23,7 @@ See proposal.md for why. The pieces this change builds on:
     - `/videoplayback` URLs without an `rn` parameter get one that numbers the data source's requests from 0.
     - The User-Agent is the visionOS one for a visionOS link, which `isVisionOsStreamingUrl` recognises by its `c=VISIONOS`.
     - There is no Accept-Language, and at most 20 redirects are followed.
-  - **Live HLS** ([PlaybackResolver](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/resolver/PlaybackResolver.java), `buildLiveMediaSource`): Media3's DefaultHttpDataSource sends plain GET requests with NewPipe's own User-Agent. A live manifest link has no `c` parameter. The saved set VIDEO_BIG_BUCK_BUNNY's `hlsManifestUrl` is in path form with no `c` key.
+  - **Live HLS** ([PlaybackResolver](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/resolver/PlaybackResolver.java), `buildLiveMediaSource`): Media3's DefaultHttpDataSource sends plain GET requests with NewPipe's own User-Agent. The only saved manifest link, the saved set VIDEO_BIG_BUCK_BUNNY's `hlsManifestUrl`, belongs to a video that isn't live, and is in path form with no `c` key. No saved set holds a live stream's links, so the plan takes a live manifest link to have the same form, and the hand check of a live stream tests it.
 - ADR 0002 keeps playback state out of screen state: the player lives in a MediaSessionService and exposes its state as its own stream, updated only as often as the visible UI needs.
 - The maintainer decided on November 19, 2026:
   - at most 480p on metered networks, and the best up to 1080p on unmetered ones, with no setting yet
@@ -66,7 +66,7 @@ See proposal.md for why. The pieces this change builds on:
 - **Both.**
   - They send only HTTPS requests to googlevideo.com and its subdomains.
   - The client follows no redirects itself. The interceptor follows at most 20, the same as NewPipe's, and checks each Location's host before sending it.
-  - As OkHttp and HttpURLConnection do, a 307 or 308 keeps the method and the body, and 301, 302 and 303 become a GET with no body.
+  - It copies OkHttp's own redirect rule ([RetryAndFollowUpInterceptor at parent-5.5.0](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt), `buildRedirectRequest`): a 307 or 308 keeps the method and the body, and 301, 302 and 303 become a GET with no body.
   - It closes each redirect's response, as the daily check's FirstBytes does, so OkHttp never warns about a leaked body, a warning that names the host.
   - They send `Accept-Language: en-GB` with no country, as ADR 0009's new note records. The bytes have no text, so the language changes nothing in them, and the links already carry the country of the call that made them.
 - **Refusals.** A refused request fails with MediaRequestRefused, a new IOException in `:core:model` whose message is constant text. The player maps it to YOUTUBE, BROKEN's words, so the screen says that YouTube isn't loading right now. Its reason is an enum: another host, http, too many redirects, or an unknown client.
@@ -140,11 +140,13 @@ FormatChoice is a pure function in `:core:model`, next to StreamLinks, as TimeAg
 
 - **The limit.** The shorter side of the picture is at most 480 pixels on a metered network and at most 1080 on an unmetered one. That keeps portrait videos at the same quality as landscape ones: a 1080x1920 video counts as 1080p. A format with no size counts as larger than any limit.
 - **Video.**
-  1. Among decodable video formats within the limit, take the largest shorter side.
-  2. Among those, prefer a format decoded in hardware over one decoded in software, which saves battery.
+  1. Among decodable video formats within the limit, prefer those decoded in hardware, if any, because software decoding of VP9 or AV1 at 1080p can stutter and drain the battery on weaker phones.
+  2. Among those, take the largest shorter side.
   3. Then take the lowest bitrate.
   4. If no format is within the limit, take the decodable one with the smallest shorter side.
-  5. If none is decodable and the links have an HLS manifest, play the manifest, as for a live stream. Otherwise fail with NO_DECODABLE_FORMAT.
+  5. If none is decodable, fail with NO_DECODABLE_FORMAT. A video that isn't live doesn't fall back to its HLS manifest, because NewPipe fetches that manifest in a third request shape, which the plan doesn't add.
+
+  A format with no codec counts as not decodable, because the check can't build a Format for it.
 - **Audio.**
   1. Take the formats of the ORIGINAL track. If no format has a track, take them all. If no track is ORIGINAL, take the track of the first audio format in YouTube's order.
   2. Among the decodable ones, take the highest bitrate on an unmetered network and the lowest on a metered one.
@@ -165,7 +167,7 @@ Alternative: let ExoPlayer choose among every format. Rejected, because progress
 
 The service's player listener handles a source error once per item:
 
-- **A refused link.** On HttpDataSource.InvalidResponseCodeException with 403 or 410, it fetches new links, swaps the item for the new one, seeks to the old position, and plays if it was playing. If the new links fail too, the error stands.
+- **A refused link.** On HttpDataSource.InvalidResponseCodeException with 403 or 410, it fetches new links, swaps the item for the new one, seeks to the old position, and plays if it was playing. A live stream goes back to its live edge instead. If the new links fail too, the error stands.
 - **No retries of 403 or 410.** A LoadErrorHandlingPolicy of `:core:playback`'s own doesn't retry them, so the refresh happens at once. Other errors keep DefaultLoadErrorHandlingPolicy's retries.
 - **The screen's error category.** PlaybackConnection maps the player's PlaybackException, and a failed resolution, to a PlaybackFailure, as its own stream. The mapping is a pure function with its own tests:
   - NETWORK: an IO network error, or a resolution that failed with NETWORK
@@ -194,7 +196,17 @@ It reads the player through media3-ui-compose's state holders:
 - `rememberProgressStateWithTickInterval` for the times, ticking once a second
 - `rememberProgressStateWithTickCount`, with as many ticks as the seek bar has pixels, for the seek bar
 
+Two more readings of the player come from `:core:playback`'s own small state holder, `rememberPlaybackStatus(player)`, which listens with media3-common-ktx's `Player.listen`:
+- **loading:** the player's state is BUFFERING
+- **live:** `isCurrentMediaItemLive`
+
+A failure comes from PlaybackConnection's PlaybackFailure Flow.
+
 So the position updates only as often as the visible controls need, as ADR 0002 asks, and none of it enters PlayerState. The state holders are `@UnstableApi`, so `:feature:player-ui` opts in, file by file. The seek bar is Material 3's Slider. Live streams show "Live" in place of the seek bar and the times. Loading shows a progress indicator over the box, and a failure shows the Banner in the box's place.
+
+**The playback state rule.** AGENTS.md says the player "exposes playback state as its own Flow". The screen reads the player through its MediaController and these state holders, which Media3's Compose guidance provides, and only failures come as a Flow. So the change refines the rule, as AGENTS.md allows in the same pull request: the player exposes its state through its MediaController, which screens read with media3-ui-compose's state holders, or as Flows, at the rate the visible UI needs, and never in screen state. docs/architecture.md's "The player" says the same.
+
+**What the platform session shows.** Android's media session still shows the duration, the position and whether it plays to apps with notification access and to Bluetooth devices. It never shows the ID, a title or a link.
 
 ### Hosts and docs
 
