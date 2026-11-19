@@ -1,0 +1,47 @@
+<resources>
+    <!-- The video screen. See openspec/specs/player/spec.md. -->
+    <!-- The close button's content description. #44 makes it minimize the player instead. -->
+    <string name="player_close">Close video</string>
+    <string name="player_loading">Loading video</string>
+
+    <!-- The line under the title. -->
+    <string name="player_live_now">Live now</string>
+    <string name="player_published_today">Published today</string>
+    <string name="player_published_yesterday">Published yesterday</string>
+    <plurals name="player_published_minutes_ago">
+        <item quantity="one">Published %d minute ago</item>
+        <item quantity="other">Published %d minutes ago</item>
+    </plurals>
+    <plurals name="player_published_hours_ago">
+        <item quantity="one">Published %d hour ago</item>
+        <item quantity="other">Published %d hours ago</item>
+    </plurals>
+    <plurals name="player_published_days_ago">
+        <item quantity="one">Published %d day ago</item>
+        <item quantity="other">Published %d days ago</item>
+    </plurals>
+    <plurals name="player_published_weeks_ago">
+        <item quantity="one">Published %d week ago</item>
+        <item quantity="other">Published %d weeks ago</item>
+    </plurals>
+    <plurals name="player_published_months_ago">
+        <item quantity="one">Published %d month ago</item>
+        <item quantity="other">Published %d months ago</item>
+    </plurals>
+    <plurals name="player_published_years_ago">
+        <item quantity="one">Published %d year ago</item>
+        <item quantity="other">Published %d years ago</item>
+    </plurals>
+
+    <!-- The content description of the error glyph in a failure's banner. -->
+    <string name="player_failed_icon">Couldn\'t load the video</string>
+    <string name="player_failed_network">YouTube can\'t be reached. Check your connection.</string>
+    <string name="player_failed_youtube">YouTube isn\'t loading right now.</string>
+    <string name="player_failed_private">This video is private.</string>
+    <string name="player_failed_age_restricted">This video is age-restricted. YouTube shows it only to signed-in adults, and Dewfall doesn\'t use accounts.</string>
+    <string name="player_failed_country">This video isn\'t available in your country.</string>
+    <string name="player_failed_members_or_paid">This video is only for the channel\'s members, or has to be bought.</string>
+    <string name="player_failed_channel_closed">This video\'s channel was closed.</string>
+    <string name="player_failed_unavailable">This video isn\'t available. YouTube didn\'t say why. It may have been removed, be age-restricted, or not have started yet.</string>
+    <string name="player_try_again">Try again</string>
+</resources>

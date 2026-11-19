@@ -44,6 +44,10 @@ include(":core:mvi")
 
 include(":core:youtube")
 
+include(":feature:player-logic")
+
+include(":feature:player-ui")
+
 include(":feature:youtube-debug-logic")
 
 include(":feature:youtube-debug-ui")
