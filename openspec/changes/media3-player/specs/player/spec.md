@@ -7,7 +7,15 @@ The video screen SHALL show the video in a 16:9 area above the title, with a pla
 
 #### Scenario: Playing
 - **WHEN** a video plays
-- **THEN** its picture fills the 16:9 area, the button offers to pause, and the times read like "18:24 / 1:14:02"
+- **THEN** its picture fits the 16:9 area, the button offers to pause, the times read like "18:24 / 1:14:02", and the screen stays on
+
+#### Scenario: Watching past the screen timeout
+- **WHEN** a video plays longer than the phone's screen timeout without a touch
+- **THEN** the screen stays on and the video keeps playing
+
+#### Scenario: Paused
+- **WHEN** the video is paused
+- **THEN** the screen may turn off after the phone's timeout
 
 #### Scenario: Seeking
 - **WHEN** the user drags the seek bar to the middle of a video
@@ -29,7 +37,7 @@ Opening a video SHALL start playing it from the start, or a live stream from its
 - **THEN** the video waits at the position where it paused for the user to press play, and no stream links are fetched for it until then
 
 ### Requirement: Quality follows the network
-On a metered network the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered one, at most 1080 pixels, with the highest. Within the limit it SHALL prefer formats the phone decodes in hardware, then the largest. It SHALL take only formats the phone can decode, the smallest one when none is within the limit, and SHALL keep its choice until playback starts again.
+On a metered network the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered one, at most 1080 pixels, with the highest. Within the limit it SHALL prefer formats the phone decodes in hardware, then the largest. It SHALL take only formats the phone can decode, the smallest one when none is within the limit, and fail as not decodable when no video or no audio format decodes, and SHALL keep its choice until playback starts again.
 
 #### Scenario: Mobile data
 - **WHEN** a video with formats up to 2160p starts playing on mobile data

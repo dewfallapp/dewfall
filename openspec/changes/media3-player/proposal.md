@@ -19,6 +19,8 @@ Phase 4's goal is that a user can search for any video and watch it. Since [#41]
 - **The player's network requests go through the YouTube layer.** The player fetches the video from googlevideo.com, YouTube's video host, which no app code has contacted before. The YouTube layer makes those requests for it, as AGENTS.md's product rules ask: it sends only HTTPS requests to googlevideo.com and its subdomains, checks every redirect's host before following it, and shapes each request as NewPipe's own player does on its fallback path, except that it also asks for en-GB, as ADR 0009 asks of every request: a progressive file with the User-Agent of the YouTube client that made the link, and a live stream with plain requests.
 - **A third repository.** `:core:data` gains a stream links repository that the service calls.
 
+The maintainer approved this final version on November 20, 2026, with the three changes since the first approval: what other apps see, coming back at the paused position, and buttons that do nothing until #43. Pull request #180's description records it.
+
 ## Capabilities
 
 ### New Capabilities

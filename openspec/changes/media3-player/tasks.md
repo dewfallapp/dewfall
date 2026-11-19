@@ -70,6 +70,7 @@
   - a coroutine scope on an injected dispatcher, and PlaybackLog, injected into a field, which takes the Logger in its constructor
   - the audio attributes with audio focus, and pausing when the output becomes noisy
   - `onConnect` accepting only the app's own package, and `onMediaButtonEvent` returning true for every event
+  - the ForwardingSimpleBasePlayer that gives the session a cleaned error with the same code, a constant message and no cause, with a unit test of the cleaning
   - the service calling `addSession` in `onCreate` and publishing its session, and any resolution failure, to PlaybackSessions
   - `onSetMediaItems` resolving a playback ID with a SettableFuture
   - the MediaSource.Factory for merging, progressive and HLS sources from the tag, with OkHttpDataSource over a new `@ProgressiveMediaCalls` factory for each progressive source and the `@LiveMediaCalls` factory for HLS
@@ -89,6 +90,7 @@
   - "Live" for live streams
   - the loading indicator
   - the failure Banner with the words from design.md, and "Try again" where it applies
+  - `Modifier.keepScreenOn()` while the player plays, the shutter in `surfaceContainerHighest`, and no artwork
   - `rememberPlaybackStatus` in `:feature:player-ui`, for loading and live
 
   Opt in to `@UnstableApi` file by file. All strings go in resources, with a content description on every icon and on the seek bar. Verify with previews in light, dark, a font scale of 2 and a tablet-sized window, for playing, paused, live, loading and two failures, with a fake Player.
@@ -115,6 +117,7 @@
     - "Other libraries' own logs"
   - ADR 0002, ADR 0007, ADR 0008 and ADR 0009: the dated notes from design.md. Those on ADR 0002, ADR 0008 and ADR 0009 cite the maintainer's approval of November 20, 2026, and each says why it is an exception rather than a new decision. ADR 0007's carries out its own line on Media3's logs.
   - docs/architecture.md's MVI contract: the intents row and the playback state rule, as ADR 0002's note says.
+  - AGENTS.md's MVI rule, worded like ADR 0002's note: player commands from the video screen go to the player through PlaybackConnection, not through intents, and the screen reads playback state through the player's state holders.
   - AGENTS.md's rule that the player exposes playback state as its own Flow: through its MediaController, which screens read with media3-ui-compose's state holders or as Flows, at the rate the visible UI needs, never in screen state.
   - AGENTS.md's rule on the YouTube layer's functions: MediaRequests as its one exception. Its rule that every request names the device's country: the subtitle download and MediaRequests name none, as ADR 0009's notes say.
   - openspec/config.yaml's list of core modules.
@@ -132,7 +135,9 @@
   - Resize a split screen window, or change the theme, while it plays, and see it keep playing.
   - End the process in the background, and come back to a video that waits for play.
   - Start music in another app while a video plays, and see the video pause.
-  - On a real phone, because an emulator can't do either: unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause.
+  - On a real phone, because an emulator can't do these: unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause. Press a Bluetooth headset's play button with the app in the background, and hear nothing.
+  - Watch a video past the screen timeout without touching the screen, and see it keep playing.
+  - Run `./gradlew :core:youtube:liveYouTubeCheck` by hand, because the stream links call changes and the runners skip that call.
   - See no notification while playing.
   - Play, go home, and send `adb shell input keyevent KEYCODE_MEDIA_PLAY`: no sound. Then end the process with `adb shell am kill io.github.dewfallapp` and send the key again: the app doesn't start, and nothing crashes. Do both on Android 10 and on the newest Android.
   - Check that `adb shell dumpsys media_session` shows no video ID, title or link, both while playing and after a playback failure, whose message the platform session copies.
