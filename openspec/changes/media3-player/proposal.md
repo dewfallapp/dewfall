@@ -21,7 +21,7 @@ Phase 4's goal is that a user can search for any video and watch it. Since [#41]
 
 The maintainer approved this final version on November 20, 2026, with the three changes since the first approval: what other apps see, coming back at the paused position, and buttons that do nothing until #43. Pull request #180's description records it.
 
-Later on November 20, 2026, the maintainer also approved four small behaviours added since: a video's end offers a replay from the start; a headset's play button does nothing while the app is in the background, until #43; a decoder failure during playback says "This video can't play on this phone." with no "Try again"; and a network that is only temporarily unmetered counts as metered. Pull request #180's description records it. Issue #181 tracks the cost of fetching the video's page twice.
+Later on November 20, 2026, the maintainer also approved four small behaviours added since: a video's end offers a replay from the start; a headset's play button does nothing while the app is in the background, until #43; a decoder failure during playback says "This video can't play on this phone." with no "Try again"; and a network that is only temporarily unmetered counts as metered. Pull request #180's description records it. Issue #181 tracks the cost of fetching the video's page twice. After the emulator checks, the maintainer decided the same day that a decoder that fails to start says "This video stopped playing." with "Try again", because trying again can help.
 
 ## Capabilities
 

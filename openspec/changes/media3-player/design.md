@@ -111,7 +111,7 @@ The session's ExoPlayer has a MediaSource.Factory of `:core:playback`'s own, whi
 
 The callback returns a Guava SettableFuture, which Guava already brings, completed from a coroutine in the service's scope, so no kotlinx-coroutines-guava is needed. The scope uses a dispatcher that Hilt injects, as AGENTS.md asks, so tests can replace it.
 
-**How long the copies last.** PlaybackItems holds a playback ID only while its item is the player's: it removes the entry when the item is replaced, cleared or stopped. The service keeps only the current item's stream links, in its tag. So, in memory, the process holds the ID and the links of one video at a time, while it plays or is paused, and nothing after the screen closes.
+**How long the copies last.** PlaybackItems holds a playback ID only while its item is the player's: it removes the entry when the item is replaced, cleared or stopped, when its resolution fails, and when its screen stops it before its item ever became the player's. The service keeps only the current item's stream links, in its tag. So, in memory, the process holds the ID and the links of one video at a time, while it plays or is paused, and nothing after the screen closes.
 
 - **Why an opaque ID.** The platform session copies the `mediaId`, and other apps can read it, so a video ID there would leave the app. The playback ID says nothing about the video, no item has a title, and no stream link is ever an item's URI.
 - **The service manages the session.** PlaybackService calls `addSession` for its session in `onCreate`, because the controller connects with the session's own token and so never calls `onGetSession`. With the session added, MediaSessionService connects its media notification controller, runs the session's lifecycle, and calls `onUpdateNotification`, as the next paragraphs assume.
@@ -222,7 +222,7 @@ The mapping is a pure function with its own tests:
   - NETWORK: an IO network error, or a resolution that failed with NETWORK
   - YOUTUBE: MediaRequestRefused, BLOCKED or BROKEN, or a refused link after the refresh
   - UNAVAILABLE and the other per-video categories from the resolution
-  - NOT_DECODABLE: the phone decodes no format, or a decoder fails at play time with ERROR_CODE_DECODER_INIT_FAILED, DECODER_QUERY_FAILED, DECODING_FAILED, DECODING_FORMAT_EXCEEDS_CAPABILITIES or DECODING_FORMAT_UNSUPPORTED, so "Try again" doesn't retry the same format. ERROR_CODE_DECODING_RESOURCES_RECLAIMED, when the system took the decoder back, is OTHER, whose "Try again" can help
+  - NOT_DECODABLE: the phone decodes no format, or a decoder fails at play time with ERROR_CODE_DECODER_QUERY_FAILED, DECODING_FAILED, DECODING_FORMAT_EXCEEDS_CAPABILITIES or DECODING_FORMAT_UNSUPPORTED, so "Try again" doesn't retry the same format. ERROR_CODE_DECODER_INIT_FAILED, when a decoder fails to start, such as while another app holds it, and ERROR_CODE_DECODING_RESOURCES_RECLAIMED, when the system took the decoder back, are OTHER, whose "Try again" can help. The maintainer decided the first on November 20, 2026, after the emulator checks showed a decoder that failed to start under load
   - OTHER: anything else
 
   MediaRequestRefused is recognised by its class first, because Media3 reports any IOException from a data source as a network error.

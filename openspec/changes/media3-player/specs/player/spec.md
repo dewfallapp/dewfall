@@ -90,7 +90,7 @@ When YouTube refuses a stream link, the player SHALL fetch new links once and go
 - **THEN** the player fetches new links and plays on from where it paused
 
 ### Requirement: A playback failure says why
-When a video can't play, the video area SHALL say why in words, and SHALL offer "Try again" when trying again can help: when YouTube can't be reached, refuses to answer, can't be read, the network failed while playing, or playback stopped for another reason. When the phone can decode none of the video's formats, it SHALL say so with no "Try again". The details below SHALL stay.
+When a video can't play, the video area SHALL say why in words, and SHALL offer "Try again" when trying again can help: when YouTube can't be reached, refuses to answer, can't be read, the network failed while playing, or playback stopped for another reason. When the phone can decode none of the video's formats, or its decoder fails while decoding, it SHALL say so with no "Try again". The details below SHALL stay.
 
 #### Scenario: No connection while playing
 - **WHEN** the network goes away and the player runs out of data
@@ -103,6 +103,10 @@ When a video can't play, the video area SHALL say why in words, and SHALL offer 
 #### Scenario: No format the phone can decode
 - **WHEN** the phone can decode none of the video's formats
 - **THEN** the video area says that this video can't play on this phone, with no "Try again"
+
+#### Scenario: A decoder that fails to start
+- **WHEN** the phone's decoder for the chosen format fails to start, such as while another app holds it
+- **THEN** the video area says that the video stopped playing, with "Try again"
 
 #### Scenario: Details and playback both fail
 - **WHEN** the network is off as the user opens a video

@@ -2,7 +2,7 @@
 
 ## 1. Decisions the maintainer approved first
 
-- [ ] 1.1 The maintainer approved them on November 19, 2026. Add to the catalog:
+- [x] 1.1 The maintainer approved them on November 19, 2026. Add to the catalog:
   - Media3 1.11.1, on one version: media3-exoplayer, media3-exoplayer-hls, media3-session, media3-ui-compose, media3-datasource-okhttp, and media3-common-ktx, which `:feature:player-ui` uses directly for `Player.listen`
   - a dependency constraint that raises Guava to 33.7.2-android
 
@@ -13,7 +13,7 @@
 
 ## 2. The YouTube layer's media requests
 
-- [ ] 2.1 Add MediaRequestRefused to `:core:model`: an IOException with constant text and an enum reason. Then add MediaRequests to `:core:youtube`, as design.md describes:
+- [x] 2.1 Add MediaRequestRefused to `:core:model`: an IOException with constant text and an enum reason. Then add MediaRequests to `:core:youtube`, as design.md describes:
   - `progressive()`, a new Call.Factory for each progressive source: a POST with `x\0`, the Range header kept, `TE: trailers`, `rn` counting from 0, and the visionOS User-Agent from the original link, kept across redirects
   - the User-Agent read inside the stream links call, which holds the Mutex, and kept for MediaRequests, and MediaRequests' own check of the `c` parameter, so it calls no NewPipeExtractor code
   - `live()`, the Call.Factory for HLS: plain GET requests with NewPipeDownloader's own User-Agent and no client check
@@ -34,12 +34,12 @@
   - a redirect response that is closed
 
   Check that no test name or error message holds a link.
-- [ ] 2.2 Update docs/architecture.md's "Network access", saying when each fact about NewPipe v0.29.3 and Media3 1.11.1 was checked: googlevideo.com as a host the app contacts while playing, MediaRequests' rules with their sources, NewPipe's DASH main path and the fallback that MediaRequests follows, the User-Agent's Localization, the slower start, and ExoPlayer's platform diagnostics turned off. Update "Stream links" for MediaRequests. Verify that the text agrees with the code.
+- [x] 2.2 Update docs/architecture.md's "Network access", saying when each fact about NewPipe v0.29.3 and Media3 1.11.1 was checked: googlevideo.com as a host the app contacts while playing, MediaRequests' rules with their sources, NewPipe's DASH main path and the fallback that MediaRequests follows, the User-Agent's Localization, the slower start, and ExoPlayer's platform diagnostics turned off. Update "Stream links" for MediaRequests. Verify that the text agrees with the code.
 
 ## 3. The stream links repository and the format choice
 
-- [ ] 3.1 Add the `StreamLinksRepository` interface to `:core:data`, with an implementation that calls `StreamLinksRemoteDataSource` and returns its result unchanged, and its Hilt binding. Verify with a unit test against a fake data source, and `./gradlew :core:data:testDebugUnitTest`.
-- [ ] 3.2 Add FormatChoice to `:core:model`, as design.md describes. Verify with `./gradlew :core:model:test`, with made-up StreamLinks:
+- [x] 3.1 Add the `StreamLinksRepository` interface to `:core:data`, with an implementation that calls `StreamLinksRemoteDataSource` and returns its result unchanged, and its Hilt binding. Verify with a unit test against a fake data source, and `./gradlew :core:data:testDebugUnitTest`.
+- [x] 3.2 Add FormatChoice to `:core:model`, as design.md describes. Verify with `./gradlew :core:model:test`, with made-up StreamLinks:
   - the largest decodable format within 480 and within 1080
   - a portrait video
   - a hardware format chosen over a larger software one within the limit, and the lowest bitrate at the same size
@@ -55,7 +55,7 @@
 
 ## 4. The playback module
 
-- [ ] 4.1 Add `:core:playback`, an Android library with Hilt:
+- [x] 4.1 Add `:core:playback`, an Android library with Hilt:
   - PlaybackItems
   - the decodable check with MediaCodecUtil and MediaCodecInfo
   - the metered check
@@ -71,7 +71,7 @@
   - the refresh steps over a fake RefreshTarget: their order, the old position for a video and the live edge for a live stream, play only if it was playing, and no second refresh after a second refusal
 
   All of these take plain inputs or a fake RefreshTarget, as design.md's "How the playback tests run" says, so they run on the JVM without Robolectric.
-- [ ] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. Before the UI work in task 5, play a video an hour or longer at 1080p for several minutes on an emulator, through a temporary debug call, and seek near its end, to check MediaRequests' request shape early. Remove the debug call afterwards. It has:
+- [x] 4.2 Add PlaybackService. Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes, and that the merged manifest matches task 1.1. Before the UI work in task 5, play a video an hour or longer at 1080p for several minutes on an emulator, through a temporary debug call, and seek near its end, to check MediaRequests' request shape early. Remove the debug call afterwards. It has:
   - the MediaSessionService with one ExoPlayer built with `setUsePlatformDiagnostics(false)`, Media3's logging turned off in `onCreate`, and `onUpdateNotificationAsync` returning an immediate future without calling super
   - a coroutine scope on an injected dispatcher, and PlaybackLog, injected into a field, which takes the Logger in its constructor
   - the audio attributes with audio focus, and pausing when the output becomes noisy
@@ -86,11 +86,11 @@
   - PlaybackItems' entry removed when its item is replaced, cleared or stopped
   - one WARN log line for each failure, with the category as a state field and the error code as a count field
   - the unexported manifest entry with no intent filter, and the removed BluetoothValidationActivity
-- [ ] 4.3 Add PlaybackConnection: the Hilt singleton that turns Media3's logging off in its constructor, starts PlaybackService, builds one MediaController for the application's context from the session's token in PlaybackSessions, starts the service again after it stopped, prepares a VideoId under a new playback ID, and exposes the PlaybackFailure stream. Verify with unit tests, through fakes, of the service's log line's fields and of PlaybackItems dropping an entry when its item is replaced or stopped.
+- [x] 4.3 Add PlaybackConnection: the Hilt singleton that turns Media3's logging off in its constructor, starts PlaybackService, builds one MediaController for the application's context from the session's token in PlaybackSessions, starts the service again after it stopped, prepares a VideoId under a new playback ID, and exposes the PlaybackFailure stream. Verify with unit tests, through fakes, of the service's log line's fields and of PlaybackItems dropping an entry when its item is replaced or stopped.
 
 ## 5. The video screen
 
-- [ ] 5.1 Add VideoArea to `:feature:player-ui`:
+- [x] 5.1 Add VideoArea to `:feature:player-ui`:
   - the 16:9 ContentFrame with its rounded corner overlay
   - the play and pause button, the seek bar with tick count, and the times with a one-second tick
   - "Live" for live streams
@@ -100,7 +100,7 @@
   - `rememberPlaybackStatus` in `:feature:player-ui`, for loading and live
 
   Opt in to `@UnstableApi` file by file. All strings go in resources, with a content description on every icon and on the seek bar. Verify with previews in light, dark, a font scale of 2 and a tablet-sized window, for playing, paused, live, loading and two failures, with a fake Player.
-- [ ] 5.2 Wire PlayerRoute to PlaybackConnection:
+- [x] 5.2 Wire PlayerRoute to PlaybackConnection:
   - start on the entry's first opening, saving the playback ID
   - save the position in the route's saved state on ON_STOP
   - when the session is gone, after process death or after Android stopped the service, show the video paused at the saved position and fetch nothing until the user presses play
@@ -112,7 +112,7 @@
 
 ## 6. Docs
 
-- [ ] 6.1 Update the docs this change makes stale, and verify that each line below now matches the code:
+- [x] 6.1 Update the docs this change makes stale, and verify that each line below now matches the code:
   - AGENTS.md: the Modules rule's list of modules.
   - docs/architecture.md:
     - the module table and graph with `:core:playback`, its edge to `:core:data` and none to `:core:youtube`, `:core:data`'s row with the two Call.Factory providers, and `:core:youtube`'s row with MediaRequests and OkHttp as an api dependency
@@ -132,8 +132,8 @@
 
 ## 7. Checks
 
-- [ ] 7.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. Verify that it passes. Then rerun task 1.1's checks on the final release and debug runtime classpaths, after tasks 4 and 5 declare the libraries: every new or changed artifact, its license, release date and advisories, and the merged release manifest. Ask the maintainer about any artifact that proposal.md doesn't name.
-- [ ] 7.2 Check by hand on an emulator with Android 10, and with the newest Android installed:
+- [x] 7.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. Verify that it passes. Then rerun task 1.1's checks on the final release and debug runtime classpaths, after tasks 4 and 5 declare the libraries: every new or changed artifact, its license, release date and advisories, and the merged release manifest. Ask the maintainer about any artifact that proposal.md doesn't name.
+- [x] 7.2 Check by hand on an emulator with Android 10, and with the newest Android installed:
   - Open a video and see it start playing, with sound and picture together. Seek, pause and play.
   - Play a short video to its end, see the button offer to play it again, and replay it from the start.
   - Play a video an hour or longer for several minutes at 1080p, and seek near its end.
@@ -144,7 +144,7 @@
   - Resize a split screen window, or change the theme, while it plays, and see it keep playing.
   - End the process in the background, and come back to a video that waits for play.
   - Start music in another app while a video plays, and see the video pause.
-  - On a real phone, because an emulator can't do these: unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause. Press a Bluetooth headset's play button with the app in the background, and hear nothing.
+  - On a real phone, because an emulator can't do these: unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause. Press a Bluetooth headset's play button with the app in the background, and hear nothing. The maintainer asked on November 20, 2026, to track these two on #46.
   - Watch a video past the screen timeout without touching the screen, and see it keep playing.
   - Run `./gradlew :core:youtube:liveYouTubeCheck` by hand, because the stream links call changes and the runners skip that call, and record in the pull request that it passed.
   - See no notification while playing.

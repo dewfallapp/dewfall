@@ -23,6 +23,7 @@ graph TD
     logging[":core:logging<br/>Kotlin/JVM"]
     model[":core:model<br/>Kotlin/JVM"]
     mvi[":core:mvi<br/>Kotlin/JVM"]
+    playback[":core:playback<br/>Android library"]
     searchUi[":feature:youtube-search-ui<br/>Android library"]
     searchLogic[":feature:youtube-search-logic<br/>Kotlin/JVM"]
     playerUi[":feature:player-ui<br/>Android library"]
@@ -42,6 +43,9 @@ graph TD
     database --> model
     youtube -->|api| model
     youtube -->|api| logging
+    playback --> data
+    playback -->|api| model
+    playback --> logging
     app --> searchUi
     searchUi --> searchLogic
     searchUi --> data
@@ -56,6 +60,7 @@ graph TD
     playerUi --> designsystem
     playerUi --> model
     playerUi --> mvi
+    playerUi --> playback
     playerLogic -->|api| mvi
     playerLogic -->|api| model
     app -->|debug only| debugUi
@@ -86,15 +91,16 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
 | `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class, the app's only activity, and the navigation between screens, which opens on Search YouTube. See [Navigation](#navigation). It also holds the logcat writer and the Hilt module that provides the logger. See [Logging](#logging). | `:core:data`, `:core:designsystem`, `:core:logging`, and each feature's `-ui` module, today `:feature:youtube-search-ui` and `:feature:player-ui`. In debug builds only, `:feature:youtube-debug-ui`. Navigation 3 and kotlinx-serialization-core, for the back stack. |
-| `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError, and TimeAgo, which counts how long ago a PublishedTime was, the way YouTube writes it, for screens to turn into text. See [The YouTube layer](#the-youtube-layer). | Nothing |
+| `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError, TimeAgo, which counts how long ago a PublishedTime was, the way YouTube writes it, for screens to turn into text, and the player's FormatChoice, PlaybackFailure and MediaRequestRefused. See [The YouTube layer](#the-youtube-layer) and [The player](#the-player). | Nothing |
 | `:core:logging` | core/logging/ | Kotlin/JVM | io.github.dewfallapp.core.logging | The Logger that every module logs through, its levels and fields, and the error summary that leaves out messages. See [Logging](#logging). | Nothing |
 | `:core:mvi` | core/mvi/ | Kotlin/JVM | io.github.dewfallapp.core.mvi | The MVI base: MviState, MviIntent, MviEffect, the Reducer, and MviViewModel, the base class of every screen's ViewModel. See [The MVI contract](#the-mvi-contract). | Nothing. It uses Lifecycle's ViewModel and kotlinx.coroutines. |
-| `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation. NewPipeYouTube, its one public class, implements all five. It also holds the HTTP code that NewPipeExtractor sends its requests through, and the code that runs each call. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md) and [The YouTube layer](#the-youtube-layer). | `:core:model`, `:core:logging` and kotlinx.coroutines, all three as api dependencies, because the interfaces return the models, and NewPipeYouTube's constructor takes a Logger and a CoroutineDispatcher |
+| `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation. NewPipeYouTube, one of its two public classes, implements all five. The other, MediaRequests, makes the player's OkHttp clients for googlevideo.com. It also holds the HTTP code that NewPipeExtractor sends its requests through, and the code that runs each call. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md) and [The YouTube layer](#the-youtube-layer). | `:core:model`, `:core:logging`, kotlinx.coroutines and OkHttp, all four as api dependencies, because the interfaces return the models, NewPipeYouTube's constructor takes a Logger and a CoroutineDispatcher, and MediaRequests returns OkHttp's Call.Factory |
 | `:core:database` | core/database/ | Android library | io.github.dewfallapp.core.database | The Room database: entities, DAOs, migrations and the exported schemas | `:core:model` |
-| `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer. Today it holds YouTubeSearchRepository, which the Search YouTube screen uses, VideoDetailsRepository, which the video screen uses, and YouTubeModule, the Hilt module that provides the YouTube layer. See [How Hilt provides the layer](#how-hilt-provides-the-layer) and [Reading from YouTube](#reading-from-youtube). | `:core:model`, `:core:database`, `:core:youtube` |
-| `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). It also holds the shared icons, today the search, close, error and keyboard_arrow_down glyphs from Material Symbols Rounded, under the Apache License 2.0, ReadableWidth, the widest a screen's column gets, and the first shared component, Banner. | Nothing. It exposes Material 3 as an api dependency. |
+| `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer. Today it holds YouTubeSearchRepository, which the Search YouTube screen uses, VideoDetailsRepository, which the video screen uses, StreamLinksRepository, which the player uses, and YouTubeModule, the Hilt module that provides the YouTube layer, and the player's two OkHttp Call.Factory providers, marked `@ProgressiveMediaCalls` and `@LiveMediaCalls`. See [How Hilt provides the layer](#how-hilt-provides-the-layer) and [Reading from YouTube](#reading-from-youtube). | `:core:model`, `:core:database`, `:core:youtube` |
+| `:core:playback` | core/playback/ | Android library | io.github.dewfallapp.core.playback | The player: PlaybackService, the media session service with one ExoPlayer, and PlaybackConnection, which hands screens its MediaController, with the format choice's Android parts, the media sources and the error mapping. See [The player](#the-player). | `:core:model` as an api dependency, `:core:data`, `:core:logging`, Media3 with media3-session as an api dependency, because the connection exposes Media3's Player, and OkHttp |
+| `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). It also holds the shared icons, today the search, close, error, keyboard_arrow_down, play_arrow and filled pause glyphs from Material Symbols Rounded, under the Apache License 2.0, ReadableWidth, the widest a screen's column gets, and the first shared component, Banner. | Nothing. It exposes Material 3 as an api dependency. |
 
-`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds the search and video details repositories and the Hilt module that provides the YouTube layer. A module that logs depends on `:core:logging`. Today `:app` and `:core:youtube` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements all five of the YouTube layer's interfaces. Compose is set up in `:app`, `:core:designsystem` and every feature's `-ui` module. Hilt is set up in `:app`, `:core:data` and every feature's `-ui` module.
+`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds the search, video details and stream links repositories and the Hilt module that provides the YouTube layer. `:core:playback` holds the player. A module that logs depends on `:core:logging`. Today `:app`, `:core:youtube` and `:core:playback` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements all five of the YouTube layer's interfaces. Compose is set up in `:app`, `:core:designsystem` and every feature's `-ui` module. Hilt is set up in `:app`, `:core:data`, `:core:playback` and every feature's `-ui` module.
 
 `:lint-rules` is a build tool, not part of the app. It holds Dewfall's own lint checks, which lint runs on every module of the app. No module's code depends on it, and nothing from it ships. See [Dewfall's lint checks](#dewfalls-lint-checks).
 
@@ -124,10 +130,10 @@ The video screen, which opens from a search result, is the second. Its pair:
 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
-| `:feature:player-logic` | feature/player-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.player.logic | PlayerState, PlayerIntent, the reducer, the channel's initial, which errors offer "Try again", and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
-| `:feature:player-ui` | feature/player-ui/ | Android library | io.github.dewfallapp.feature.player.ui | PlayerRoute, the Compose screen and its previews, PlayerViewModel and its tests, and string resources | `:feature:player-logic`, `:core:data`, `:core:designsystem`, `:core:model`, `:core:mvi` |
+| `:feature:player-logic` | feature/player-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.player.logic | PlayerState, PlayerIntent, the reducer, the channel's initial, which errors offer "Try again", the start decision, the shared failure rule, the playback times' text, and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
+| `:feature:player-ui` | feature/player-ui/ | Android library | io.github.dewfallapp.feature.player.ui | PlayerRoute, the Compose screen and its previews, the video area and its playback status, PlayerViewModel and its tests, and string resources | `:feature:player-logic`, `:core:data`, `:core:designsystem`, `:core:model`, `:core:mvi`, `:core:playback`, media3-ui-compose and media3-common-ktx |
 
-The modules are named player, because #42 to #44 add playback to the same screen. The service that plays media won't depend on any screen, so it will go in a core module of its own.
+The modules are named player, because #42 to #44 add playback to the same screen. The service that plays media doesn't depend on any screen, so it lives in a core module of its own, `:core:playback`. See [The player](#the-player).
 
 The YouTube layer's debug screen has a pair of its own, which `:app` adds to debug builds only. [The YouTube layer's debug screen](#the-youtube-layers-debug-screen) explains it.
 
@@ -244,7 +250,7 @@ AGENTS.md says the app's network calls go only to YouTube, through the YouTube l
 | Subtitle tracks | The same as video details | Five, as for video details, because NewPipeExtractor reads the tracks from the same page. Two for a video that YouTube says can't be played. |
 | Subtitle lines | www.youtube.com, at /api/timedtext | One: the track's link |
 
-NewPipeExtractor asks for a new visitor ID for each player request and keeps none. The first call in each process also fetches www.youtube.com/sw.js_data, to read the version of YouTube's web client, or YouTube's search page if that fails ([getClientVersion](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L566-L591)). A stream link that needs decoding makes NewPipeExtractor fetch YouTube's player code from www.youtube.com, once per process. No link of the visionOS client needed it in the check, because none had the `n` parameter or a cipher. The stream links and HLS manifests that the layer returns point to googlevideo.com, which the player and downloads contact. The tasks that add the player, downloads and image loading list the hosts they contact. The YouTube layer's debug screen, in debug builds only, calls the same functions, so it sends the same requests and nothing else.
+NewPipeExtractor asks for a new visitor ID for each player request and keeps none. The first call in each process also fetches www.youtube.com/sw.js_data, to read the version of YouTube's web client, or YouTube's search page if that fails ([getClientVersion](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeParsingHelper.java#L566-L591)). A stream link that needs decoding makes NewPipeExtractor fetch YouTube's player code from www.youtube.com, once per process. No link of the visionOS client needed it in the check, because none had the `n` parameter or a cipher. The stream links and HLS manifests that the layer returns point to googlevideo.com, which the player and downloads contact. The player's requests are below. The tasks that add downloads and image loading list the hosts they contact. The YouTube layer's debug screen, in debug builds only, calls the same functions, so it sends the same requests and nothing else.
 
 **The daily check.** The live check of the YouTube layer runs in the daily workflow and by hand, never in the app ([testing.md](testing.md#the-daily-youtube-check)). It sends the layer's requests through NewPipeDownloader, so the allow list above applies to them. It also asks two of Big Buck Bunny's stream links, an audio-only and a video-only one, for their first KiB, with GET requests and a Range header. So it is the only code today that fetches bytes from googlevideo.com: two small requests a run, plus any retry or redirect, and never from a phone. They go through an OkHttp client of the check's own, which sends only HTTPS requests to googlevideo.com and its subdomains. The client follows no redirects itself. The check follows at most three, and checks each one's host before it sends anything. The layer's allow list doesn't change.
 
@@ -255,9 +261,21 @@ Each request sends the User-Agent that NewPipe v0.29.3's player, which uses NewP
 | VISIONOS | getVisionOsUserAgent, the one that the visionOS client's player request sends |
 | Any other | None. The check fails with LINK_NOT_PLAYABLE without sending anything. |
 
-StreamLinks carries no headers, so this table binds only the check. Phase 4's player plan decides what the player sends, for the NewPipeExtractor version it uses. In a run by hand on November 18, 2026, with NewPipeExtractor v0.27.1, both links were made for the visionOS client, and both answered 206 with the format's length.
+StreamLinks carries no headers, so this table binds only the check. The player's requests follow the rules below. In a run by hand on November 18, 2026, with NewPipeExtractor v0.27.1, both links were made for the visionOS client, and both answered 206 with the format's length.
 
 From GitHub's runners, YouTube blocks the player requests of video details and stream links. On November 18, 2026, with NewPipeExtractor v0.27.1, it answered the visionOS client's player request on some runners with its "confirm you're not a bot" status, which NewPipeExtractor throws as SignInConfirmNotBotException, and on others with HTTP 403 and Google's block page, an HTML page, which NewPipeDownloader throws as ReCaptchaException. The layer returns BLOCKED for both. Search and channel pages worked. Phones on home or mobile networks don't use data-center addresses, so the block affects CI only. The daily workflow skips blocked calls, and a run by hand, which skips nothing, checks them ([testing.md](testing.md#youtube-blocks-the-runners-video-calls)).
+
+**The player.** While a video plays, the app fetches its bytes from googlevideo.com. Every such request goes through MediaRequests, the YouTube layer's second client, which `:core:data` hands the player as OkHttp's Call.Factory. Its rules follow NewPipe v0.29.3's player, which uses NewPipeExtractor v0.27.1, checked on November 19 and 20, 2026:
+
+- **Hosts.** Only HTTPS requests to googlevideo.com and its subdomains. Its OkHttpClient follows no redirects. MediaRequests follows at most 20, the same as NewPipe's, checks each Location's host before it sends anything, and closes each redirect's response. A 307 or 308 keeps the method and the body, and 300 to 303 become a GET with no body, as OkHttp's own rule does ([RetryAndFollowUpInterceptor at parent-5.5.0](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt)). Anything else fails with MediaRequestRefused, an IOException with constant text, before it is sent. The client keeps no cookies and no cache.
+- **Progressive formats.** NewPipe's main path plays each format through a DASH manifest that NewPipeExtractor builds. Only when it can't build one does it fall back to a progressive source through [YoutubeHttpDataSource](https://github.com/TeamNewPipe/NewPipe/blob/v0.29.3/app/src/main/java/org/schabi/newpipe/player/datasource/YoutubeHttpDataSource.java). Dewfall follows that fallback, which needs no DASH library: each request is a POST with the body `x\0` and `TE: trailers`, keeps Media3's Range header, gets an `rn` parameter that numbers each source's requests from 0, and sends the visionOS client's User-Agent. Only a link whose `c` parameter is `VISIONOS` gets it, and it stays across redirects. Any other link fails without a request.
+- **The User-Agent.** The stream links call, which holds the layer's Mutex, reads it from NewPipeExtractor's `getVisionOsUserAgent` with the layer's Localization, en-GB, and keeps it for MediaRequests, so no NewPipeExtractor code runs on Media3's loader threads. NewPipe passes no Localization, which falls back to the same en-GB, so the string is the same.
+- **Live streams.** HLS requests stay plain GET requests with NewPipeDownloader's own User-Agent, as NewPipe sends them for live streams.
+- **Language.** Every request sends `Accept-Language: en-GB` and no country, as ADR 0009's note of November 20, 2026 says. The bytes hold no text, and the links already carry the country of the call that made them.
+
+A 1080p run of a 2 h 31 min video on November 20, 2026, with a seek near its end, played through these rules. Opening a video now sends the video details call and the stream links call, five requests each, one after the other behind the layer's Mutex, so the picture starts after both. #181 tracks sharing one call between them.
+
+**Media3's platform diagnostics.** ExoPlayer would send each video's length, codecs, sizes, bitrates and errors to Android's media metrics, which Google may collect. The player turns that off, as [The player](#the-player) says.
 
 **The INTERNET permission and OkHttp's initializer.** `:app`'s manifest declares the INTERNET permission. The Android build of OkHttp merges the same permission into the app's manifest, and adds [PlatformInitializer](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/androidMain/kotlin/okhttp3/internal/platform/PlatformInitializer.kt) to App Startup's InitializationProvider. It runs at startup, makes no network call, and only stores the app's Context, from which OkHttp reads its public suffix list in the APK's assets ([AssetPublicSuffixList](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/androidMain/kotlin/okhttp3/internal/publicsuffix/AssetPublicSuffixList.kt)). So the app keeps it.
 
@@ -342,7 +360,7 @@ The splitting is a function that unit tests call directly, because android.util.
 
 - **NewPipeExtractor's logger.** NewPipeExtractor has its own hook, ExtractorLogger, which stays silent until an app sets a logger. Dewfall never sets it, because half of its calls log user data, such as URLs and titles. A lint check flags any use of ExtractorLogger and any class that implements NewPipeExtractor's Logger.
 - **Uncaught exceptions.** Android's RuntimeInit installs a pre-handler in every app process that writes an uncaught exception's full stack trace, messages included, to logcat's crash buffer. Apps can replace the default handler, but not the pre-handler ([RuntimeInit.java](https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/com/android/internal/os/RuntimeInit.java#240)). This gap is permanent. Catching exceptions at module edges narrows it. See [Error handling](#error-handling).
-- **Other libraries' own logs.** Media3 logs errors by default ([Debug logging](https://developer.android.com/media/media3/exoplayer/debug-logging)), and WorkManager has its own minimum logging level ([custom configuration](https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration)). The tasks that add them check them against ADR 0007.
+- **Other libraries' own logs.** Media3 logs errors by default ([Debug logging](https://developer.android.com/media/media3/exoplayer/debug-logging)), and its lines append each throwable's message, which can name a host or carry a link. So the player turns Media3's logging off before its first Media3 call, as [The player](#the-player) says, and ADR 0007's note records. WorkManager has its own minimum logging level ([custom configuration](https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration)). The task that adds it checks it against ADR 0007.
 - **OkHttp's logs.** On Android, OkHttp writes its own lines to logcat, under the tag OkHttp. One of them warns that a response body was never closed, and names the host ([RealConnectionPool](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnectionPool.kt#L310)). Another reports an IOException that leaves a response callback, with the request's host ([RealCall](https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt#L588)). NewPipeDownloader closes every answer and catches every exception in its callback, so it causes neither.
 - **Calls that skip the logger.** Lint flags them: android.util.Log outside LogcatWriter, console output outside ConsoleLogWriter, and other logging APIs, such as java.util.logging. The two writers are where lines leave the logger. See [Dewfall's lint checks](#dewfalls-lint-checks).
 
@@ -424,7 +442,7 @@ YouTube serves most of a video's sound and picture as separate formats. Each for
 
 A format's codec, length in bytes, bitrate, width, height or frame rate is null when NewPipeExtractor doesn't know it.
 
-The links stop working after some time. NewPipeExtractor doesn't say when, so the layer reads it from the links themselves: the `expire` query parameter of each format's link, and the `/expire/` path segment of the HLS manifest's link. `expiresAt` is the earliest of them, or null when no link has one. Callers fetch new links just before playing or downloading, and again when a link stops working. StreamLinks has no DASH manifest, because NewPipeExtractor v0.27.0 stopped giving one.
+The links stop working after some time. NewPipeExtractor doesn't say when, so the layer reads it from the links themselves: the `expire` query parameter of each format's link, and the `/expire/` path segment of the HLS manifest's link. `expiresAt` is the earliest of them, or null when no link has one. Callers fetch new links just before playing or downloading, and again when a link stops working. The player fetches the bytes through MediaRequests, as [Network access](#network-access) describes. StreamLinks has no DASH manifest, because NewPipeExtractor v0.27.0 stopped giving one.
 
 A video with no format that plays as a single file and no HLS manifest fails with BROKEN. NewPipeExtractor leaves out a format whose link it can't decode, without an error, so an empty answer is the only sign that it couldn't read the links.
 
@@ -517,10 +535,11 @@ The first call in each process also fetches www.youtube.com/sw.js_data, as [Netw
 
 ### How Hilt provides the layer
 
-NewPipeYouTube in `:core:youtube` is the layer's one public class. It builds the HTTP client, NewPipeDownloader and NewPipeCalls, and implements the five interfaces by delegating to one internal class for each. YouTubeModule in `:core:data` is the Hilt module that provides it:
+NewPipeYouTube in `:core:youtube` is one of the layer's two public classes. It builds the HTTP client, NewPipeDownloader and NewPipeCalls, and implements the five interfaces by delegating to one internal class for each. It also builds the other public class, MediaRequests, the player's client for googlevideo.com. YouTubeModule in `:core:data` is the Hilt module that provides them:
 
 - One NewPipeYouTube for the whole app, in SingletonComponent with @Singleton, built with the app's Logger and Dispatchers.IO. Hilt's bindings are unscoped unless they name a scope ([Component scopes](https://developer.android.com/training/dependency-injection/hilt-android#component-scopes)). NewPipeExtractor's setup is global, so one instance keeps one downloader and one HTTP client for the whole app.
 - Each of the five interfaces, bound to that instance with @Binds ([Inject interface instances with @Binds](https://developer.android.com/training/dependency-injection/hilt-android#inject-interfaces)).
+- The player's two OkHttp Call.Factory providers, from that instance's MediaRequests. `@ProgressiveMediaCalls` isn't scoped, so each `Provider.get()` makes a new factory, whose requests number from 0. `@LiveMediaCalls` is a singleton. They expose only OkHttp's type, so `:core:playback` never sees `:core:youtube`.
 
 Hilt builds NewPipeYouTube the first time something asks for one of the interfaces, not when the app starts. Repositories in `:core:data` take the interfaces they need in their constructors. Feature modules don't depend on `:core:youtube`, so they reach YouTube only through those repositories. The one exception is the debug screen, which calls the layer's functions themselves. See [The YouTube layer's debug screen](#the-youtube-layers-debug-screen).
 
@@ -605,7 +624,7 @@ adb shell am start -n io.github.dewfallapp/io.github.dewfallapp.feature.youtubed
 
 ### Reading from YouTube
 
-This is how a screen reads from YouTube, through a repository in `:core:data`. The Search YouTube screen with YouTubeSearchRepository, and the video screen with VideoDetailsRepository, do it. Feature modules can't see `:core:youtube`, because `:core:data` depends on it as an implementation dependency. Feature modules see the models, `YouTubeResult` and `YouTubeError`, because those live in `:core:model`. The debug screen is the one feature module that sees `:core:youtube` too.
+This is how a screen reads from YouTube, through a repository in `:core:data`. The Search YouTube screen with YouTubeSearchRepository, the video screen with VideoDetailsRepository, and the player with StreamLinksRepository, do it. The player isn't a ViewModel, so step 1 runs in PlaybackService's scope instead, and step 3 turns the result into the item to play. Feature modules can't see `:core:youtube`, because `:core:data` depends on it as an implementation dependency. Feature modules see the models, `YouTubeResult` and `YouTubeError`, because those live in `:core:model`. The debug screen is the one feature module that sees `:core:youtube` too.
 
 ```mermaid
 sequenceDiagram
@@ -622,7 +641,7 @@ sequenceDiagram
 ```
 
 1. The ViewModel's runSideEffects calls the repository from viewModelScope. The call is main-safe, so the ViewModel doesn't switch threads.
-2. The repository calls the YouTube layer, and returns its result, or a result of its own built from it. YouTubeSearchRepository and VideoDetailsRepository return the layer's result unchanged. Each is an interface, so a ViewModel's tests fake it without seeing `:core:youtube`.
+2. The repository calls the YouTube layer, and returns its result, or a result of its own built from it. YouTubeSearchRepository, VideoDetailsRepository and StreamLinksRepository return the layer's result unchanged. Each is an interface, so a ViewModel's tests fake it without seeing `:core:youtube`.
 3. The ViewModel dispatches the result as an intent, such as SearchFinished. The reducer turns a Success into content and a Failure into an error state.
 
 The rest of this section, such as how data moves through the database and background jobs, comes with Phase 5.
@@ -636,7 +655,7 @@ Every screen uses MVI, as [ADR 0002](adr/0002-mvi-with-playback-state-outside.md
 | Type | What it is |
 |---|---|
 | MviState | A screen's state. One immutable class per screen, usually a data class with val properties and read-only collections. After the initial state, only the screen's reducer makes new ones. |
-| MviIntent | Something that happens to the screen: what the user does, or the result of work the ViewModel ran. A screen's intents form a sealed interface. Results are named in the past tense, such as Loaded. |
+| MviIntent | Something that happens to the screen: what the user does, or the result of work the ViewModel ran. A screen's intents form a sealed interface. Results are named in the past tense, such as Loaded. Player commands, such as play, pause and seek, aren't intents: they go straight to the player. See [The player](#the-player). |
 | MviEffect | A one-time instruction to the UI that starts in the ViewModel, such as a message after a load, or a screen that opens only after work finishes. A screen's effects form a sealed interface. |
 | Reducer | A pure function from the old state and an intent to a Next: the new state and any effects, in order. It runs no coroutines, I/O, clock, randomness or shared mutable state. |
 | PendingEffect | An effect that the UI hasn't handled yet, with an id that is unique within its ViewModel. |
@@ -721,7 +740,7 @@ A screen calls it with `viewModel.pendingEffects.collectAsStateWithLifecycle().v
 - MviViewModel takes no dispatcher. viewModelScope runs on Dispatchers.Main.immediate, and tests replace Main with Dispatchers.setMain, as Google's [coroutine testing guide](https://developer.android.com/kotlin/coroutines/test#setting-main-dispatcher) does.
 - Code that moves work to another thread, such as a repository, receives a CoroutineDispatcher in its constructor, so a test can pass a TestDispatcher. Its suspend functions are safe to call from the main thread, so the ViewModel calls them from viewModelScope without switching threads ([coroutines best practices](https://developer.android.com/kotlin/coroutines/coroutines-best-practices)).
 - The reducer never runs side effects. Only runSideEffects starts work.
-- Playback state never goes into screen state. A screen that shows playback reads two sources: its own state, and the player's playback stream. See [ADR 0002](adr/0002-mvi-with-playback-state-outside.md).
+- Playback state never goes into screen state. A screen that shows playback reads two sources: its own state, and the player, through its MediaController, with media3-ui-compose's state holders or as Flows, at the rate the visible UI needs. Player commands go straight to the player, not through intents. See [ADR 0002](adr/0002-mvi-with-playback-state-outside.md) and its note of November 20, 2026.
 
 ### Why the ViewModel base is in a plain Kotlin/JVM module
 
@@ -775,7 +794,96 @@ The other previews are SurfaceColorsPreview, AccentColorsDynamicPreview, Surface
 
 ## The player
 
-TODO
+Videos play in `:core:playback`, an Android library that no screen owns, so #43's background play and #44's mini player reuse it. It depends on `:core:data`, for the stream links and the YouTube layer's media requests, and on `:core:model` and `:core:logging`, never on `:core:youtube`. The facts about Media3 below were checked on November 19 and 20, 2026, in Media3 1.11.1, the version the app uses, in its source at tag 1.11.1 and in its compiled classes.
+
+```mermaid
+sequenceDiagram
+    participant Route as PlayerRoute
+    participant Conn as PlaybackConnection
+    participant Svc as PlaybackService
+    participant Repo as StreamLinksRepository
+    participant MR as MediaRequests
+    Route->>Conn: prepare(videoId)
+    Conn->>Svc: startService, then a MediaController on the session's token
+    Conn->>Svc: setMediaItem(playback ID only)
+    Svc->>Repo: streamLinks(videoId)
+    Repo-->>Svc: StreamLinks
+    Svc->>Svc: chooseFormats, then the item with the chosen links
+    Svc->>MR: the video's bytes, through OkHttpDataSource
+    Route->>Conn: player, read with media3-ui-compose's state holders
+```
+
+### The service and the connection
+
+- **PlaybackService** is a MediaSessionService with one ExoPlayer. It adds its session with `addSession` in `onCreate`, and publishes it to PlaybackSessions, a singleton inside the process. It posts no notification until #43: `onUpdateNotificationAsync` returns an immediate future without calling super, so it never runs in the foreground. Its manifest entry isn't exported and has no intent filter, so no other app can bind to it, and on Android 10 and 11 Media3 gives the platform session no media button PendingIntent that would start it as a foreground service after the process ends ([MediaSessionLegacyStub at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/MediaSessionLegacyStub.java)). Media3 registers a runtime media button receiver instead, which dies with the process. The manifest also removes media3-session's BluetoothValidationActivity, because there is no Bluetooth control until #43.
+- **PlaybackConnection** is how screens reach the player. Its one implementation starts the service with `startService` while a screen is visible, and builds one MediaController for the application's context from the session's own token, because a SessionToken that names the service needs the intent filter ([SessionToken.java at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/session/src/main/java/androidx/media3/session/SessionToken.java)). It keeps the controller while the session lives, so a configuration change finds it as it was.
+- **When the service stops.** Android stops an app's started services a few minutes after the app leaves the screen, unless something binds to them ([background service limits](https://developer.android.com/about/versions/oreo/background#services)). Then `onDestroy` releases the session and the player and clears PlaybackSessions and PlaybackItems. `onStartCommand` returns START_NOT_STICKY, so Android never restarts an empty service. The connection drops its controller when it disconnects, and the next `prepare` starts the service again.
+- **Who may connect.** The session's `onConnectAsync` accepts only controllers from the app's own package. Its `onMediaButtonEvent` returns true for every event, which stops Media3 from handling it, so headset and Bluetooth buttons do nothing until #43.
+
+### Opaque playback IDs
+
+Media3 copies an item's `mediaId` into Android's media session, which apps with notification access and Bluetooth devices can read. So the session never names the video:
+
+1. `prepare(videoId)` keeps the VideoId in PlaybackItems under a new playback ID, a random UUID's text, and sets an item with only that ID.
+2. The session's `onSetMediaItems` looks the VideoId up, fetches the stream links through StreamLinksRepository, chooses the formats, and returns an item with the same ID, the placeholder URI `dewfall-playback:<playback ID>`, and the chosen links in its tag. A video that can't play leaves the player empty, and its failure goes to the connection.
+3. The session's player is SessionPlayer, a ForwardingSimpleBasePlayer around the ExoPlayer. It shows the session each item reduced to its playback ID, with no link, no metadata and no manifest, and every error with the same code, a constant message and no cause. ExoPlayer's renderer errors append the format's codec, size, bitrate and language to their message ([ExoPlaybackException at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/ExoPlaybackException.java)), and Media3 copies the message into the platform session.
+
+So other apps see that a video plays, its length and its position, never its ID, title or link. PlaybackItems drops an entry when another item takes its place, when the items are cleared, when its playback can't start, and when its screen stops it, even if its item never became the player's. So in memory the process holds the ID and the links of one video at a time, and none after the screen closes.
+
+### Choosing the formats
+
+FormatChoice, in `:core:model`, is a pure function, so its tests run on the JVM:
+
+- **The limit.** The shorter side of the picture is at most 480 pixels on a metered network and 1080 on an unmetered one, so a portrait video gets the same quality. NetworkCheck reads NET_CAPABILITY_NOT_METERED of the active network when playback starts. A network that is only temporarily not metered, or none, counts as metered. A refresh of expired links chooses again from the new links with the same limit, so the quality doesn't change within one playback.
+- **Video.** Among the formats within the limit that the phone decodes, those decoded in hardware first, then the largest shorter side, then the lowest bitrate. With none within the limit, the decodable one with the smallest shorter side. A format with no codec counts as not decodable.
+- **Audio.** The original track, or every format when none has a track, or else the first track. The lowest bitrate on a metered network, the highest otherwise.
+- **The phone's decoders.** Decoders makes the same check as ExoPlayer's renderers, so the choice and the renderer agree: the codec's sample MIME type, `MediaCodecUtil.getDecoderInfos`, and `MediaCodecInfo.isFormatSupported` with the format's codec, size and frame rate. `hardwareAccelerated` says whether a supporting decoder works in hardware.
+- **Live.** Links with no formats and an HLS manifest count as live. When ExoPlayer knows the manifest's variants, the service limits the video group with a TrackSelectionOverride to the variants within the limit, or the smallest one, and ExoPlayer adapts among them.
+
+### Media sources
+
+PlaybackSources is the ExoPlayer's MediaSource.Factory. It reads the item's tag:
+
+- A video format and an audio format become a `MergingMediaSource(adjustPeriodTimeOffsets = true, clipDurations = true, ...)` of two ProgressiveMediaSources, as Media3's [media sources guide](https://developer.android.com/media/media3/exoplayer/media-sources) advises.
+- A format with sound and picture becomes one ProgressiveMediaSource, and a live stream an HlsMediaSource.
+- Each progressive source gets a new `@ProgressiveMediaCalls` Call.Factory from `:core:data`, so each numbers its requests from 0, and HLS gets the `@LiveMediaCalls` one. Both come from the YouTube layer's MediaRequests, as [Network access](#network-access) describes. OkHttpDataSource takes the Call.Factory.
+- An item without the tag fails with MediaRequestRefused, without a request, and never falls back to a default HTTP data source.
+
+### Errors
+
+- **Expired links.** On HTTP 403 or 410, the service fetches new links once, puts the new item in place of the old one, goes back to the old position, or a live stream's live edge, and plays if it was playing. The refresh steps run over RefreshTarget, a small interface, so a JVM test checks them with a fake. The limit resets once the item is ready again, so a second refusal in a row stands.
+- **Retries.** PlaybackLoadErrorPolicy retries neither 403, 410 nor a MediaRequestRefused, so the refresh starts at once and a refused request is never sent again. Other errors keep DefaultLoadErrorHandlingPolicy's retries.
+- **Categories.** PlaybackFailure, in `:core:model`, names why a video can't play. The service maps the real PlaybackException, which only it sees, and a failed resolution maps the YouTubeError. MediaRequestRefused counts as YOUTUBE wherever it is in the cause chain, because OkHttpDataSource wraps it as an IOException around an ExecutionException ([OkHttpDataSource at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/datasource_okhttp/src/main/java/androidx/media3/datasource/okhttp/OkHttpDataSource.java)), and Media3 reports any IOException from a data source as a network error. A network that failed or timed out is NETWORK, a decoder that can't decode the format or fails while decoding is NOT_DECODABLE, and anything else is OTHER, including a decoder that fails to start, such as while another app holds it, or that the system took back. Each decision is a pure function of plain inputs, with its own tests.
+- **The screen.** The video area shows the failure in the details' words, plus "This video can't play on this phone." for NOT_DECODABLE and "This video stopped playing." for OTHER. "Try again" shows for NETWORK, YOUTUBE and OTHER, and prepares the video again from the last position. When the details failed with the same category, the video area shows no second message, and the details' "Try again" retries both.
+- **Logs.** Media3's own logging is off, set with `Log.setLogLevel(Log.LOG_LEVEL_OFF)` in PlaybackService's `onCreate` and PlaybackConnection's constructor, before either makes another Media3 call, because Media3's error lines append each throwable's message ([Log.java at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/common/src/main/java/androidx/media3/common/util/Log.java)). PlaybackLog writes one WARN line for each failure, with the category as a state field and Media3's error code as a count field.
+
+### Sound and the screen
+
+- The player follows Android's [audio focus guidance](https://developer.android.com/media/optimize/audio-focus): it plays with USAGE_MEDIA and AUDIO_CONTENT_TYPE_MOVIE and handles audio focus, so a call or another app's sound pauses it or lowers it, and unplugging headphones pauses it.
+- ExoPlayer is built with `setUsePlatformDiagnostics(false)`, so it sends nothing to Android's media metrics, which Google may collect ([ExoPlayer.Builder.setUsePlatformDiagnostics](https://developer.android.com/reference/androidx/media3/exoplayer/ExoPlayer.Builder#setUsePlatformDiagnostics(boolean))).
+
+### The video area
+
+The video screen's VideoArea, in `:feature:player-ui`, sits above the details, as the "Player" frames show:
+
+- The picture is media3-ui-compose's ContentFrame on a SurfaceView, in a 16:9 box that takes at most 45% of the window's height. Compose's clip doesn't round a SurfaceView, so the box draws its rounded corners over it in the screen's background role, `surface`. The shutter before the first frame is `surfaceContainerHighest`, not ContentFrame's black.
+- `Modifier.keepScreenOn()` applies while the player plays, so the screen doesn't time out and stop the activity, which would pause the video.
+- The seek bar ticks as many times as it has pixels, with `rememberProgressStateWithTickCount`, and the times tick once a second, with `rememberProgressStateWithTickInterval`. The play and pause button uses `rememberPlayPauseButtonState`. At a video's end it offers to play it again from the start. A live stream says "Live" in place of the seek bar and the times.
+- `rememberPlaybackStatus`, in the same module, listens with media3-common-ktx's `Player.listen` for loading, live and the end. It stays there until #44 needs to share it, so `:core:playback` has no Compose.
+
+**Starting, pausing and stopping.** PlayerRoute keeps three things in its saved state: whether playback started, the playback ID, and the position. Each start saves the position it starts from, and ON_STOP saves the player's position, unless the player is idle after a failure, when its position may not be where the video was. The pure function `startAction` in `:feature:player-logic` decides from them:
+
+- The first opening plays from the start, or a live stream from its live edge.
+- After a configuration change, the playback goes on.
+- After the system ended the process, or stopped the service, the playback ID is unknown, so the screen waits at the saved position with the play button and no picture, and fetches nothing until the user presses play.
+
+ON_STOP pauses through the connection, unless the activity is only changing configurations, and a start that still waits for the connection then starts paused. "Try again", and play after the session was gone, go on from the player's position, or the saved one when the player has no item. PlayerViewModel keeps the latest playback ID, from the first start, a play after the session was gone, or "Try again", and its `onCleared` asks the connection to stop. Navigation 3 clears it only after the screen's exit animation, so the connection stops only if the player's item is still that ID.
+
+**Player commands skip intents.** Play, pause, seek and the playback starts go from the UI straight to the player, not through PlayerIntent, and the screen reads the playback state through the controller's state holders, never in PlayerState. A tap would only pass through the reducer unchanged. [ADR 0002](adr/0002-mvi-with-playback-state-outside.md)'s note of November 20, 2026 records it.
+
+### How the playback tests run
+
+`:core:playback`'s unit tests run on the JVM against AGP's stub android.jar, with no Robolectric. Media3's PlaybackException, HttpDataSourceException, MediaItem with a URI and LoadEventInfo call Android code that the stub throws on. So each decision is a pure function of plain inputs, and a thin adapter turns Media3's objects into them: the failure category, the cause-chain walk, the retry decision, the session's error, the source plan, the stop rule and the metered rule. The refresh steps run over a fake RefreshTarget. The adapters only read fields and build Media3 objects, and the hand checks in [testing.md](testing.md#checking-the-player-by-hand) run them.
 
 ## Downloads and cleanup
 
@@ -812,7 +920,7 @@ When reading a subtitle track's lines fails with UNAVAILABLE, the track's link n
 
 A video that never existed is UNAVAILABLE, as [ADR 0008](adr/0008-youtube-layer-contract.md) promises, and the saved set VIDEO_NEVER_EXISTED tests it (#155). With NewPipeExtractor v0.26.5 it was BROKEN, because YouTube answered the Android client's player request with an empty object. An age-restricted video is UNAVAILABLE too, not AGE_RESTRICTED, until NewPipeExtractor recognises the visionOS client's wording, as [Mapping NewPipeExtractor's exceptions](#mapping-newpipeextractors-exceptions) says.
 
-The design's two error states for the inbox are "Inbox, offline" and "Inbox, YouTube not loading" ([screens.md](design/screens.md#empty-error-and-offline-states)). Only Android code can tell whether the phone has a connection, so the code that shows an error checks the connection when it gets NETWORK. Search YouTube doesn't check: both cases ask the same of the user, to check the connection and try again, and there are no downloads to point to. The first screen whose message depends on the connection adds the check, and the ACCESS_NETWORK_STATE permission it needs, and decides where it lives.
+The design's two error states for the inbox are "Inbox, offline" and "Inbox, YouTube not loading" ([screens.md](design/screens.md#empty-error-and-offline-states)). Only Android code can tell whether the phone has a connection, so the code that shows an error checks the connection when it gets NETWORK. Search YouTube doesn't check: both cases ask the same of the user, to check the connection and try again, and there are no downloads to point to. The first screen whose message depends on the connection adds the check and decides where it lives. The ACCESS_NETWORK_STATE permission it needs is already in the manifest: Media3 and the player's metered check brought it with #42.
 
 An error reaches a screen this way, as [Reading from YouTube](#reading-from-youtube) shows:
 
