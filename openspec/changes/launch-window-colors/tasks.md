@@ -12,7 +12,7 @@
 
 ## 3. Checks
 
-- [ ] 3.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug --continue -Pandroid.builder.sdkDownload=false`. Verify that all tasks pass and no files in `core/database/schemas/` change.
+- [x] 3.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug --continue -Pandroid.builder.sdkDownload=false`. Verify that all tasks pass and no files in `core/database/schemas/` change.
 - [ ] 3.2 Check by hand on an Android 10 (API 29) emulator and an Android 12+ emulator (Android 14+, e.g. Android 16 API 36, plus Android 12/13 if an image is installed):
   - Cold-start Dewfall in light and dark mode on Android 10 with both gesture navigation and **3-button navigation**: verify the launch window background (`#F5FBF2` / `#101411`), status bar color and icons, readable light navigation bar icons on the black bar before `enableEdgeToEdge()`, Recents background, and transition to Search YouTube.
   - Cold-start Dewfall in light and dark mode on Android 12+ with both gesture navigation and **3-button navigation**, across two contrasting wallpapers: verify the splash screen background and transition match Compose's dynamic `surface`, check the navigation bar color and icon contrast during launch (add `android:windowLightNavigationBar="true"` only for light mode on API 34+, with dark mode kept `false`, if an API 34+ 3-button check shows a light bar with unreadable light icons), check Recents, and verify multi-window resizing in split screen.

@@ -42,7 +42,7 @@ None.
 - No changes to `:core:playback`, `:feature:player-logic`, `:feature:player-ui`, `:core:youtube`, or any feature module.
 - Dependencies: none.
 - Network, logging, and privacy: no network calls, no new permissions, no new logging, and no user data stored or exposed (ADR 0007).
-- Docs: `docs/architecture.md` ("The theme" section), ADR 0004 (dated note adding `app-launch`), `openspec/config.yaml`, and `docs/roadmap.md` (Phase 0 living-spec area list).
+- Docs: `AGENTS.md` (the color rule names the launch window theme as its one exception, because the theme copies two hex values from `tokens.json`), `docs/architecture.md` ("The theme" section), ADR 0004 (dated note adding `app-launch`), `openspec/config.yaml`, and `docs/roadmap.md` (Phase 0 living-spec area list).
 
 ## Decisions approved by the maintainer
 

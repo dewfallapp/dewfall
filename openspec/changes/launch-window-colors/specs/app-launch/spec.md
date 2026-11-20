@@ -18,7 +18,7 @@ On Android 10 and 11, where dynamic color is not available, the launch window ba
 - **THEN** the launch window before the first frame uses `#101411`
 
 ### Requirement: Launch window follows dynamic color on Android 12 and later
-On Android 12 and later, the launch window background before the first frame SHALL follow the device's dynamic color palette in light and dark mode. On Android 14 and later it SHALL match the system dynamic `surface` color exactly; on Android 12 and 13 it SHALL use the closest platform dynamic neutral-variant tone.
+On Android 12 and later, the launch window background before the first frame SHALL follow the device's dynamic color palette in light and dark mode. On Android 14 and later it SHALL match the system dynamic `surface` color exactly. On Android 12 and 13 it SHALL use the closest platform dynamic neutral-variant tone.
 
 #### Scenario: Opening in light mode on Android 14 or later
 - **WHEN** the user launches the app in light mode on Android 14 or later
