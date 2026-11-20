@@ -45,8 +45,8 @@ internal fun isRefusedLink(httpStatus: Int?): Boolean = httpStatus in REFUSED_LI
 
 /**
  * The category of a playback error with Media3's [errorCode], the HTTP status that the request got,
- * if any, and whether the YouTube layer [refused] to send it. A refused request comes first,
- * because Media3 reports any IOException from a data source as a network error.
+ * if any, and whether it was [refused] before it was sent. A refused request comes first, because
+ * Media3 reports any IOException from a data source as a network error.
  */
 internal fun failureOf(errorCode: Int, httpStatus: Int?, refused: Boolean): PlaybackFailure =
     when {
@@ -57,7 +57,7 @@ internal fun failureOf(errorCode: Int, httpStatus: Int?, refused: Boolean): Play
     }
 
 /**
- * Whether a load that failed with [httpStatus], or that the YouTube layer [refused], is tried
+ * Whether a load that failed with [httpStatus], or that was [refused] before it was sent, is tried
  * again. A refused link isn't, so new links are fetched at once, and a refused request is never
  * sent again.
  */
@@ -79,7 +79,10 @@ internal fun httpStatusOf(error: Throwable): Int? =
         .firstOrNull()
         ?.responseCode
 
-/** Whether the YouTube layer refused a request somewhere in [error]'s cause chain. */
+/**
+ * Whether the YouTube layer, or the player for an item without links, refused a request somewhere
+ * in [error]'s cause chain.
+ */
 internal fun refusedInChain(error: Throwable): Boolean =
     causeChain(error).any { it is MediaRequestRefused }
 

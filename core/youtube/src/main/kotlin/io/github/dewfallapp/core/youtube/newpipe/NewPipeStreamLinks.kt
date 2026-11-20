@@ -21,7 +21,7 @@ internal class NoStreamLinksException : Exception("YouTube's answer has no link 
 internal class NewPipeStreamLinks(
     private val calls: NewPipeCalls,
     logger: Logger,
-    private val userAgents: MediaUserAgents = MediaUserAgents(),
+    private val userAgents: MediaUserAgents,
 ) : StreamLinksRemoteDataSource {
     private val log = logger.withTag(LOG_AREA)
 

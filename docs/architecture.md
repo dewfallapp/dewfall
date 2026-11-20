@@ -847,7 +847,7 @@ PlaybackSources is the ExoPlayer's MediaSource.Factory. It reads the item's tag:
 - A video format and an audio format become a `MergingMediaSource(adjustPeriodTimeOffsets = true, clipDurations = true, ...)` of two ProgressiveMediaSources, as Media3's [media sources guide](https://developer.android.com/media/media3/exoplayer/media-sources) advises.
 - A format with sound and picture becomes one ProgressiveMediaSource, and a live stream an HlsMediaSource.
 - Each progressive source gets a new `@ProgressiveMediaCalls` Call.Factory from `:core:data`, so each numbers its requests from 0, and HLS gets the `@LiveMediaCalls` one. Both come from the YouTube layer's MediaRequests, as [Network access](#network-access) describes. OkHttpDataSource takes the Call.Factory.
-- An item without the tag fails with MediaRequestRefused, without a request, and never falls back to a default HTTP data source.
+- An item without the tag fails with MediaRequestRefused, whose reason is NO_LINKS, without a request, and never falls back to a default HTTP data source.
 
 ### Errors
 
@@ -860,6 +860,7 @@ PlaybackSources is the ExoPlayer's MediaSource.Factory. It reads the item's tag:
 ### Sound and the screen
 
 - The player follows Android's [audio focus guidance](https://developer.android.com/media/optimize/audio-focus): it plays with USAGE_MEDIA and AUDIO_CONTENT_TYPE_MOVIE and handles audio focus, so a call or another app's sound pauses it or lowers it, and unplugging headphones pauses it.
+- media3-exoplayer merges the WAKE_LOCK permission into the manifest ([its manifest at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/exoplayer/src/main/AndroidManifest.xml)). Android doesn't ask the user about it, because its protection level is normal ([Manifest.permission.WAKE_LOCK](https://developer.android.com/reference/android/Manifest.permission#WAKE_LOCK)). The player sets no wake mode, and then ExoPlayer picks WAKE_MODE_LOCAL while all its stuck-playback checks are on, as they are by default ([ExoPlayerImpl at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/ExoPlayerImpl.java), checked in its compiled classes on November 20, 2026). So the player holds a partial wake lock while it plays or buffers with play on. Leaving the app pauses it, so the lock ends with the playback.
 - ExoPlayer is built with `setUsePlatformDiagnostics(false)`, so it sends nothing to Android's media metrics, which Google may collect ([ExoPlayer.Builder.setUsePlatformDiagnostics](https://developer.android.com/reference/androidx/media3/exoplayer/ExoPlayer.Builder#setUsePlatformDiagnostics(boolean))).
 
 ### The video area
