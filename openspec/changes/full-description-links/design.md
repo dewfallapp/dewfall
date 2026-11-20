@@ -93,9 +93,9 @@ A style run that starts inside a link and ends after it splits the style instead
 
 Nothing is stored yet, so there is nothing to migrate. Reverting the commit brings back the shortened text.
 
-## Questions for the maintainer
+## The maintainer's answers
 
-Each has a recommendation. The specs and tasks follow the recommendations.
+The maintainer answered both questions on November 21, 2026, after the maintainer subagent's first plan check, and chose the recommendation each time: "In place" and "Only shortened ones". They also approved this change as it stood at commit f48d81d. The pull request's description quotes the answers. The questions were:
 
 1. **Where does the whole address go?** In place of the shortened text, or next to it? Recommendation: in place. YouTube's text is only the start of the same address, so nothing is lost, and copying the link copies an address that opens the page. A very long address takes several lines.
 2. **Which links change?** Only a link whose text is the start of its address followed by "...", or every link whose text looks like an address? Recommendation: only the shortened ones. A link shown whole stays exactly as YouTube shows it, and the rules can't turn a timestamp, a hashtag or a name into an address.
