@@ -65,6 +65,11 @@
       "description": "Renovate writes the new checksum before it runs the wrapper task, so the checksum changes even when the task fails.",
       "matchManagers": ["gradle-wrapper"],
       "prBodyNotes": ["If gradle-wrapper.jar, gradlew and gradlew.bat didn't change, run ./gradlew wrapper on this branch and push any changes it makes."]
+    },
+    {
+      "description": "JitPack lists many NewPipeExtractor versions both with and without their v. Gradle versioning ranks any version that starts with a number above one that starts with a letter, so Renovate offered 0.26.5 over v0.27.1 (#189). Only v-tagged versions with two or more numbers count, such as v0.9 or v0.27.1. The catalog uses that form.",
+      "matchPackageNames": ["com.github.TeamNewPipe:NewPipeExtractor"],
+      "allowedVersions": "/^v\\d+(\\.\\d+)+$/"
     }
   ],
   "customManagers": [
