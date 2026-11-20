@@ -2,6 +2,7 @@ package io.github.dewfallapp.core.youtube.newpipe.saved
 
 import io.github.dewfallapp.core.model.StreamLinks
 import io.github.dewfallapp.core.model.VideoId
+import io.github.dewfallapp.core.youtube.newpipe.REQUEST_LOCALIZATION
 import io.github.dewfallapp.core.youtube.newpipe.recordingLogger
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,6 +13,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 
 /** The domain of the links that play or download a video. */
 private const val GOOGLEVIDEO_DOMAIN = ".googlevideo.com"
@@ -42,6 +44,17 @@ class StreamLinksReplayTest {
         assertNotNull(picture.height)
         assertEquals(VideoId(BIG_BUCK_BUNNY_ID), links.videoId)
         assertEquals(emptyList(), lines)
+    }
+
+    @Test
+    fun `the call keeps the visionOS User-Agent for the media requests`() = runTest {
+        val userAgent =
+            savedYouTube().call {
+                streamLinks(VideoId(BIG_BUCK_BUNNY_ID))
+                mediaUserAgents.visionOs()
+            }
+
+        assertEquals(YoutubeParsingHelper.getVisionOsUserAgent(REQUEST_LOCALIZATION), userAgent)
     }
 
     @Test

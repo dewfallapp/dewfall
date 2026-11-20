@@ -10,6 +10,7 @@ import io.github.dewfallapp.core.youtube.SearchRemoteDataSource
 import io.github.dewfallapp.core.youtube.StreamLinksRemoteDataSource
 import io.github.dewfallapp.core.youtube.SubtitlesRemoteDataSource
 import io.github.dewfallapp.core.youtube.VideoDetailsRemoteDataSource
+import io.github.dewfallapp.core.youtube.newpipe.MediaUserAgents
 import io.github.dewfallapp.core.youtube.newpipe.NewPipeCalls
 import io.github.dewfallapp.core.youtube.newpipe.NewPipeChannelUploads
 import io.github.dewfallapp.core.youtube.newpipe.NewPipeSearch
@@ -22,11 +23,16 @@ import io.github.dewfallapp.core.youtube.newpipe.NewPipeVideoDetails
  * NewPipeYouTube builds its own NewPipeCalls with the app's HTTP client, so the recorder and the
  * tests build this one over a client of their own.
  */
-internal class YouTubeLayer(calls: NewPipeCalls, logger: Logger) :
+internal class YouTubeLayer(
+    calls: NewPipeCalls,
+    logger: Logger,
+    /** The User-Agents that the stream links call keeps for MediaRequests. */
+    val mediaUserAgents: MediaUserAgents = MediaUserAgents(),
+) :
     SearchRemoteDataSource by NewPipeSearch(calls, logger),
     VideoDetailsRemoteDataSource by NewPipeVideoDetails(calls, logger),
     ChannelUploadsRemoteDataSource by NewPipeChannelUploads(calls, logger),
-    StreamLinksRemoteDataSource by NewPipeStreamLinks(calls, logger),
+    StreamLinksRemoteDataSource by NewPipeStreamLinks(calls, logger, mediaUserAgents),
     SubtitlesRemoteDataSource by NewPipeSubtitles(calls, logger) {
     /**
      * The subtitle tracks of the video with [videoId], then the lines of the tracks that [pick]

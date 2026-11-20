@@ -44,4 +44,20 @@
     <string name="player_failed_channel_closed">This video\'s channel was closed.</string>
     <string name="player_failed_unavailable">This video isn\'t available. YouTube didn\'t say why. It may have been removed, be age-restricted, or not have started yet.</string>
     <string name="player_try_again">Try again</string>
+
+    <!-- The video area. -->
+    <string name="player_video_play">Play</string>
+    <string name="player_video_pause">Pause</string>
+    <!-- The play button's content description at the end of a video, which plays it from the start. -->
+    <string name="player_video_play_again">Play again</string>
+    <!-- The seek bar's content description. -->
+    <string name="player_video_position">Playback position</string>
+    <!-- The position and the length, such as "18:24 / 1:14:02". -->
+    <string name="player_video_times">%1$s / %2$s</string>
+    <!-- In place of the seek bar and the times while a live stream plays. -->
+    <string name="player_video_live">Live</string>
+    <!-- The content description of the error glyph in a playback failure's banner. -->
+    <string name="player_video_failed_icon">Couldn\'t play the video</string>
+    <string name="player_failed_not_decodable">This video can\'t play on this phone.</string>
+    <string name="player_failed_stopped">This video stopped playing.</string>
 </resources>

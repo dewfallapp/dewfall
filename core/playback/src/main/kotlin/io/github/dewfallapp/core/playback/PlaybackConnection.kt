@@ -1,0 +1,68 @@
+package io.github.dewfallapp.core.playback
+
+import androidx.media3.common.C
+import androidx.media3.common.Player
+import io.github.dewfallapp.core.model.PlaybackFailure
+import io.github.dewfallapp.core.model.VideoId
+import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * How screens reach the player in PlaybackService. Screens read the playback state through
+ * [player], with media3-ui-compose's state holders or as Flows, never in screen state, and send
+ * play, pause and seek straight to it. See docs/architecture.md#the-player.
+ */
+interface PlaybackConnection {
+    /** The player while the connection to the service's session is up, or null. */
+    val player: StateFlow<Player?>
+
+    /** Why the current playback failed, or null while it hasn't. */
+    val failure: StateFlow<PlaybackFailure?>
+
+    /**
+     * Plays [videoId] under a new playback ID, which it returns, from [startPositionMs], or from
+     * the start or the live edge for C.TIME_UNSET, and starts playing if [play].
+     */
+    fun prepare(videoId: VideoId, play: Boolean, startPositionMs: Long = C.TIME_UNSET): String
+
+    /** Whether [playbackId] still has its video, which it doesn't after the session was gone. */
+    fun isKnown(playbackId: String): Boolean
+
+    /**
+     * Pauses [playbackId], if it is the player's item, or keeps it from playing if it still waits
+     * for the connection, so leaving the screen never leaves it playing.
+     */
+    fun pause(playbackId: String)
+
+    /**
+     * Stops playback and clears the player's items, if the player's current item is still
+     * [playbackId], as [stopsPlayback] decides. A video opened since keeps playing. The ID's video
+     * is dropped either way.
+     */
+    fun stop(playbackId: String)
+}
+
+/** What pausing a playback ID acts on. */
+internal data class PauseDecision(
+    /** The start that waits for the connection is that ID's, so it won't play. */
+    val waitingStart: Boolean,
+    /** The player's item is that ID's, so the player pauses. */
+    val player: Boolean,
+)
+
+/**
+ * What pausing [playbackId] acts on, with [waitingId] the ID of a start that still waits for the
+ * connection, and [currentItemId] the player's item. It never pauses another screen's video.
+ */
+internal fun pauseDecision(
+    waitingId: String?,
+    currentItemId: String?,
+    playbackId: String,
+): PauseDecision =
+    PauseDecision(waitingStart = waitingId == playbackId, player = currentItemId == playbackId)
+
+/**
+ * Whether stopping [playbackId] stops the player, whose current item is [currentItemId]: only when
+ * it is still that item. A screen's ViewModel is cleared after its exit animation, so a video
+ * opened meanwhile can already be playing.
+ */
+fun stopsPlayback(currentItemId: String?, playbackId: String): Boolean = currentItemId == playbackId

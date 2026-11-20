@@ -583,6 +583,23 @@ apkanalyzer manifest print app/build/outputs/apk/release/app-release-unsigned.ap
 
 Both print 0. For app/build/outputs/apk/debug/app-debug.apk, the first prints several hundred and the second prints 1, which shows that the commands find the screen where it is. The release workflow on version tags should run the same two commands, and fail if either finds the screen. A comment on #78, the task that adds the workflow, asks for this.
 
+## Checking the player by hand
+
+The player's unit tests cover its decisions, as [The player](architecture.md#how-the-playback-tests-run) describes. The code that turns Media3's objects into those decisions, the service, the session and the screen run only on a device. So a change to `:core:playback` or the video area gets these checks, on an emulator with Android 10 and one with the newest Android, unless a check says it needs a real phone. Install a debug build with `./gradlew :app:installDebug`, and open videos from Search YouTube.
+
+- **Playing.** Open a video and see it start, with sound and picture together. Seek, pause and play. Play a short video to its end, see the button offer to play it again, and replay it from the start.
+- **A long video.** Play a video an hour or longer for several minutes at 1080p, and seek near its end. This checks MediaRequests' request shape, which no unit test reaches.
+- **Live.** Open a live stream and see "Live".
+- **Networks.** Play once on Wi-Fi and once on mobile data only, after `adb shell svc wifi disable`, and turn Wi-Fi back on with `adb shell svc wifi enable`. Turn the network off while playing, see the failure, then "Try again" with it on.
+- **Leaving.** Close the screen and hear the sound stop. Go home and come back to a paused video. Resize a split screen window, or change the theme, while it plays, and see it keep playing.
+- **Coming back.** End the process in the background with `adb shell am kill io.github.dewfallapp`, and come back to a video that waits for play at the same position. Play, go home, wait longer than Android's background window, or force it with `adb shell am make-uid-idle io.github.dewfallapp` where this Android has it, then come back: paused at the same position, and play goes on from it.
+- **Sound.** Start music in another app while a video plays, and see the video pause. On a real phone, unplug headphones, or turn off a Bluetooth headset, while a video plays, and see it pause.
+- **The screen.** Watch a video past the screen timeout without touching the screen, and see it keep playing.
+- **Buttons.** Play, go home, and send `adb shell input keyevent KEYCODE_MEDIA_PLAY`: no sound. Then end the process and send the key again: the app doesn't start, and nothing crashes. On a real phone, press a Bluetooth headset's play button with the app in the background, and hear nothing.
+- **What other apps see.** See no notification while playing. Check that `adb shell dumpsys media_session` shows no video ID, title or link, while playing and after a playback failure.
+- **The log.** Check that `adb logcat` shows no link, ID or title, and no line from Media3's own tags. Lines from Android's media codecs, such as MediaCodec or CCodec, and from the system's MediaSessionService, come from the platform, not from Media3.
+- **The live check.** Run `./gradlew :core:youtube:liveYouTubeCheck` by hand when the stream links call changes, because the runners skip that call.
+
 ## The pre-push gate
 
 scripts/pre_push_gate.py checks every commit that a push would send, before the push. Run it from the repository's folder:

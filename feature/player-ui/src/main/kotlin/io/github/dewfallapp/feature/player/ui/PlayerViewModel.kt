@@ -6,12 +6,15 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.dewfallapp.core.data.video.VideoDetailsRepository
+import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.mvi.MviViewModel
+import io.github.dewfallapp.core.playback.PlaybackConnection
 import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.PlayerReducer
 import io.github.dewfallapp.feature.player.logic.PlayerState
+import io.github.dewfallapp.feature.player.logic.sharesFailure
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -27,7 +30,9 @@ internal class PlayerArgs(val videoId: VideoId)
  * and a request starts only when the reducer made a new one, so "Try again" with nothing to try
  * sends nothing. Leaving the screen cancels the running request.
  *
- * It takes no dispatcher, because the repository's call is main-safe.
+ * It takes no dispatcher, because the repository's call is main-safe. It also holds the screen's
+ * PlaybackConnection and the playback ID of its latest start, and stops that playback when it is
+ * cleared. Player commands skip intents, as ADR 0002's note says.
  */
 @HiltViewModel(assistedFactory = PlayerViewModel.Factory::class)
 internal class PlayerViewModel
@@ -35,6 +40,8 @@ internal class PlayerViewModel
 constructor(
     @Assisted private val args: PlayerArgs,
     private val repository: VideoDetailsRepository,
+    /** The player, which the route reads and sends play, pause and seek to, never through state. */
+    internal val playback: PlaybackConnection,
 ) : MviViewModel<PlayerState, PlayerIntent, Nothing>(PlayerState(), PlayerReducer) {
 
     /** The running request. Only the main thread touches it. */
@@ -42,6 +49,9 @@ constructor(
 
     /** The number of the latest request that a call started for. */
     private var startedNumber = 0L
+
+    /** The playback ID of this screen's latest start. Only the main thread touches it. */
+    private var playbackId: String? = null
 
     init {
         dispatch(PlayerIntent.Load)
@@ -65,6 +75,36 @@ constructor(
             val result = repository.videoDetails(args.videoId)
             dispatch(PlayerIntent.DetailsFinished(number, result))
         }
+    }
+
+    /**
+     * Starts playing the video from [positionMs], or from the start or live edge for C.TIME_UNSET,
+     * under a new playback ID. It returns the ID for the route's saved state, and keeps it, so
+     * leaving the screen stops that playback.
+     */
+    internal fun startPlayback(positionMs: Long): String {
+        val id = playback.prepare(args.videoId, play = true, startPositionMs = positionMs)
+        playbackId = id
+        return id
+    }
+
+    /**
+     * "Try again" in the details' place. When playback failed the same way, the video area shows no
+     * second message, so this retries playback too, from [positionMs], and returns its new playback
+     * ID. Otherwise it returns null.
+     */
+    internal fun tryAgainDetails(playbackFailure: PlaybackFailure?, positionMs: Long): String? {
+        val shared = sharesFailure(state.value.details, playbackFailure)
+        dispatch(PlayerIntent.TryAgain)
+        return if (shared) startPlayback(positionMs) else null
+    }
+
+    /**
+     * Stops this screen's playback, unless another video started meanwhile. Navigation 3 clears the
+     * ViewModel only after the screen's exit animation.
+     */
+    override fun onCleared() {
+        playbackId?.let(playback::stop)
     }
 
     /** Makes the ViewModel for the video in [PlayerArgs]. Hilt implements it. */

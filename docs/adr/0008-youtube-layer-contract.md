@@ -88,6 +88,8 @@ Note, November 19, 2026: #148 also returns UNAVAILABLE when YouTube refuses the 
 
 Note, November 18, 2026: #37 adds the one exception that the maintainer allowed. `:feature:youtube-debug-ui`, the YouTube layer's debug screen, which only debug builds contain, depends on `:core:youtube` directly, because its job is to call the layer's functions themselves. It is the only feature module that may. Every real feature still reaches YouTube only through repositories in `:core:data`, so this decision stands. See [The YouTube layer's debug screen](../architecture.md#the-youtube-layers-debug-screen).
 
+Note, November 20, 2026: #42 adds MediaRequests, which the maintainer approved that day. It is part of the layer, but not one of its data source functions: it makes the player's OkHttp clients for googlevideo.com, and Media3's data sources drive their calls on Media3's loader threads. So its calls throw IOException, MediaRequestRefused included, as an OkHttp Call does, and return no YouTubeResult. It is an exception to the result rule, not a new decision, because Media3's data source contract expects an IOException, and the player maps it to a category itself. MediaRequestRefused, an IOException in `:core:model`, has constant text. See [The player](../architecture.md#the-player).
+
 ## Consequences
 
 - A caller handles success and failure in one `when`. Where it switches on `YouTubeError` with an exhaustive `when`, a new category stops the build until that place decides what the category means.

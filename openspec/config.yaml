@@ -24,8 +24,9 @@ context: |
   Architecture constraints:
   - Kotlin, Jetpack Compose, Material 3, Hilt, Room, WorkManager and Media3.
     Package name: io.github.dewfallapp.
-  - Core modules: :core:model, :core:mvi and :core:youtube are plain Kotlin/JVM.
-    :core:data, :core:database and :core:designsystem are Android libraries.
+  - Core modules: :core:logging, :core:model, :core:mvi and :core:youtube are
+    plain Kotlin/JVM. :core:data, :core:database, :core:designsystem and
+    :core:playback are Android libraries.
     Shared UI goes in :core:designsystem, or in :core:ui once it needs domain
     models, as docs/architecture.md describes.
   - Each feature has two modules: :feature:<name>-logic, plain Kotlin/JVM, with

@@ -8,6 +8,8 @@ Changed in #136: the reducer can return effects, intents include work results, a
 
 Changed in #41, which the maintainer approved on November 19, 2026: an action that starts in the UI, changes no state and needs no business logic, such as opening or closing a screen, goes straight to the app's navigation, with no intent or effect. The UI calls the action its caller gave it, as Android's [UI events guidance](https://developer.android.com/topic/architecture/ui-layer/events) describes. Effects stay for instructions that start in the ViewModel.
 
+Changed in #42, which the maintainer approved on November 20, 2026: the video screen's player commands go straight to the player through PlaybackConnection, not through intents. They are play, pause, seek, the playback "Try again", the first start, and play after the session was gone. The screen reads playback state through the MediaController with media3-ui-compose's state holders, at the rate the visible controls need, never in screen state. This is an exception to the intent rule, not a new decision: this ADR already keeps playback state out of screen state, and an intent for each tap would only pass through the reducer unchanged. See [The player](../architecture.md#the-player).
+
 ## Context
 
 Every screen needs a clear way to hold its state and handle what the user does. Screen logic should be easy to test without a phone.

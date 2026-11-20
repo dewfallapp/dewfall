@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.TimeAgo
 import io.github.dewfallapp.core.model.YouTubeError
 
@@ -37,4 +38,23 @@ internal fun failureText(error: YouTubeError): Int =
         YouTubeError.MEMBERS_OR_PAID -> R.string.player_failed_members_or_paid
         YouTubeError.CHANNEL_CLOSED -> R.string.player_failed_channel_closed
         YouTubeError.UNAVAILABLE -> R.string.player_failed_unavailable
+    }
+
+/**
+ * What a playback failure with [failure] says. The categories that the details share use the
+ * details' words, so a failure reads the same in both places.
+ */
+@StringRes
+internal fun playbackFailureText(failure: PlaybackFailure): Int =
+    when (failure) {
+        PlaybackFailure.NETWORK -> R.string.player_failed_network
+        PlaybackFailure.YOUTUBE -> R.string.player_failed_youtube
+        PlaybackFailure.PRIVATE -> R.string.player_failed_private
+        PlaybackFailure.AGE_RESTRICTED -> R.string.player_failed_age_restricted
+        PlaybackFailure.COUNTRY_BLOCKED -> R.string.player_failed_country
+        PlaybackFailure.MEMBERS_OR_PAID -> R.string.player_failed_members_or_paid
+        PlaybackFailure.CHANNEL_CLOSED -> R.string.player_failed_channel_closed
+        PlaybackFailure.UNAVAILABLE -> R.string.player_failed_unavailable
+        PlaybackFailure.NOT_DECODABLE -> R.string.player_failed_not_decodable
+        PlaybackFailure.OTHER -> R.string.player_failed_stopped
     }
