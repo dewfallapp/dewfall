@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoId
+import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -121,6 +122,10 @@ constructor(
             try {
                 future.get()
             } catch (error: ExecutionException) {
+                failToConnect(error)
+                null
+            } catch (error: CancellationException) {
+                // Nothing cancels the future today. If something does, it counts as a failure.
                 failToConnect(error)
                 null
             }

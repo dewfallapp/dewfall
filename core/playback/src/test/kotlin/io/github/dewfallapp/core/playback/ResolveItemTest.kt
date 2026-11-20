@@ -69,7 +69,7 @@ class ResolveItemTest {
     }
 
     @Test
-    fun `stopping a playback drops its ID even if its item never became the player's`() {
+    fun `removing a playback ID drops it even if its item never became the player's`() {
         val waiting = items.add(VIDEO)
         val playing = items.add(VideoId("YE7VzlLtp-4"))
         items.currentChanged(playing)

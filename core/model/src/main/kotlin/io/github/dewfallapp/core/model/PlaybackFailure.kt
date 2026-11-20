@@ -11,7 +11,7 @@ enum class PlaybackFailure {
 
     /**
      * YouTube refused to answer or can't be read, a link was refused even after new links, or the
-     * YouTube layer refused a request.
+     * YouTube layer, or the player for an item without links, refused a request.
      */
     YOUTUBE,
     PRIVATE,

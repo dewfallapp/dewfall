@@ -64,8 +64,8 @@ internal fun sourcePlan(tag: Any?): SourcePlan =
     }
 
 /**
- * Doesn't retry a refused link, so new links are fetched at once, or a request that the YouTube
- * layer refused, so it is never sent again. Other errors keep the default retries.
+ * Doesn't retry a refused link, so new links are fetched at once, or a request that was refused
+ * before it was sent, so it is never sent again. Other errors keep the default retries.
  */
 internal class PlaybackLoadErrorPolicy : DefaultLoadErrorHandlingPolicy() {
     override fun getRetryDelayMsFor(loadErrorInfo: LoadErrorHandlingPolicy.LoadErrorInfo): Long {
@@ -149,7 +149,7 @@ private class RefusingDataSource : DataSource {
     override fun addTransferListener(transferListener: TransferListener) = Unit
 
     override fun open(dataSpec: DataSpec): Long =
-        throw MediaRequestRefused(MediaRequestRefused.Reason.NOT_HTTPS)
+        throw MediaRequestRefused(MediaRequestRefused.Reason.NO_LINKS)
 
     override fun read(buffer: ByteArray, offset: Int, length: Int): Int = C.RESULT_END_OF_INPUT
 
