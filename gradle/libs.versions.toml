@@ -17,7 +17,7 @@ animalsniffer = "2.0.1"
 # Android API signatures for Animal Sniffer. build-logic adds the artifact, whose name holds
 # the API level, so it has no library entry. A custom manager in renovate.json updates it, so keep
 # this line's format, and change the API level there when minSdk changes.
-gummyBears = "0.15.0"
+gummyBears = "0.16.0"
 composeBom = "2026.09.00"
 activityCompose = "1.13.0"
 startup = "1.2.0"
