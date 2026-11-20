@@ -15,6 +15,26 @@ private const val ESCAPED_LESS_THAN = "&lt;"
 /** NewPipeExtractor keeps a run of spaces as a space followed by no-break spaces. */
 private const val NO_BREAK_SPACE = '\u00A0'
 
+/** How YouTube ends the text of a link that it shortened: three full stops, or an ellipsis. */
+private val SHORTENED_ENDINGS = listOf("...", "\u2026")
+
+/** How the text of a link that YouTube shortened starts. */
+private val ADDRESS_STARTS = listOf("http://", "https://")
+
+/**
+ * The Unicode categories that no address that opens a page holds: spaces of any kind, line and
+ * paragraph separators, control characters, and format characters, which are invisible or reorder
+ * the text around them.
+ */
+private val CATEGORIES_NOT_IN_ADDRESSES =
+    setOf(
+        Character.SPACE_SEPARATOR,
+        Character.LINE_SEPARATOR,
+        Character.PARAGRAPH_SEPARATOR,
+        Character.CONTROL,
+        Character.FORMAT,
+    )
+
 /** This description as plain text. */
 internal fun Description.toPlainText(): String =
     when (type) {
@@ -26,7 +46,8 @@ internal fun Description.toPlainText(): String =
 
 /**
  * The text of [html], a description that NewPipeExtractor wrote as HTML. A line break becomes a
- * newline, and a link keeps only its text.
+ * newline, and a link keeps its text, unless YouTube shortened it: then the link shows its whole
+ * address, as [wholeAddress] decides.
  *
  * NewPipeExtractor writes some descriptions without escaping their text, so a `<` that doesn't
  * start one of its own tags is read as text. Text that looks exactly like one of those tags, such
@@ -34,5 +55,35 @@ internal fun Description.toPlainText(): String =
  */
 internal fun htmlDescriptionToText(html: String): String {
     val escaped = STRAY_LESS_THAN.replace(html, ESCAPED_LESS_THAN)
-    return Jsoup.parseBodyFragment(escaped).body().wholeText().replace(NO_BREAK_SPACE, ' ')
+    val body = Jsoup.parseBodyFragment(escaped).body()
+    for (link in body.select("a[href]")) {
+        val address = wholeAddress(link.wholeText(), link.attr("href"))
+        if (address != null) link.text(address)
+    }
+    return body.wholeText().replace(NO_BREAK_SPACE, ' ')
+}
+
+/**
+ * The whole address of a link whose [text] YouTube shortened, which is the link's [address], or
+ * null when the text isn't a shortened form of that address.
+ *
+ * YouTube ends the text of a long link with "...", after the start of the address. NewPipeExtractor
+ * puts the whole address in the link, from YouTube's redirect link. The text counts as shortened
+ * only when it starts with `http://` or `https://`, so a title that ends with "..." stays, and when
+ * the address is longer and starts with the text before the "...", so the two are the same address.
+ * An address with a space, a line break, or a control or format character is refused, because it
+ * wouldn't open a page, or it could read differently on screen from the one the user copies.
+ */
+private fun wholeAddress(text: String, address: String): String? {
+    val ending = SHORTENED_ENDINGS.firstOrNull { text.endsWith(it) } ?: return null
+    val shown = text.removeSuffix(ending)
+    val isShortenedAddress =
+        ADDRESS_STARTS.any { shown.startsWith(it) } &&
+            address.length > shown.length &&
+            address.startsWith(shown)
+    val opensAPage =
+        address.codePoints().noneMatch {
+            Character.getType(it).toByte() in CATEGORIES_NOT_IN_ADDRESSES
+        }
+    return address.takeIf { isShortenedAddress && opensAPage }
 }
