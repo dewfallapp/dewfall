@@ -12,9 +12,10 @@ import io.github.dewfallapp.core.playback.SessionActivity
 /**
  * Provides the [SessionActivity] that opens the app from the media notification. Its intent names
  * MainActivity with the launcher's action, category and new-task flag, so it brings the app's task
- * to the front as it was, as the launcher does. Debug builds have a second launcher activity, the
- * YouTube layer's debug screen, so the package's launch intent wouldn't do. See
- * docs/architecture.md#the-player.
+ * to the front as it was, as the launcher does. The single-top flag reuses the activity on top of
+ * the task even when the task began with another intent, which would otherwise put a second
+ * MainActivity on top. Debug builds have a second launcher activity, the YouTube layer's debug
+ * screen, so the package's launch intent wouldn't do. See docs/architecture.md#the-player.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -25,7 +26,7 @@ object PlaybackModule {
             Intent(context, MainActivity::class.java)
                 .setAction(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LAUNCHER)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         PendingIntent.getActivity(
             context,
             /* requestCode= */ 0,
