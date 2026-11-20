@@ -114,7 +114,7 @@ class DescriptionTextTest {
     }
 
     @Test
-    fun `a shortened link keeps its text when its address has a space or invisible character`() {
+    fun `an address with a space, control or format character keeps the shortened text`() {
         // A space, a no-break space, a line feed, the bell, a right-to-left override, a zero-width
         // space, and a tag character above U+FFFF, which Kotlin holds as two Chars.
         val characters = listOf(" ", "&nbsp;", "&#10;", "&#7;", "&#x202E;", "&#x200B;", "&#xE0041;")
