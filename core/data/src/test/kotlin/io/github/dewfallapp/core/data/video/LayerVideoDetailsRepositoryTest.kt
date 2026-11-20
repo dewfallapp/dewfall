@@ -21,7 +21,7 @@ class LayerVideoDetailsRepositoryTest {
             VideoDetailsRemoteDataSource { videoId ->
                 asked += videoId
                 answer
-            }
+            },
         )
 
     @Test
@@ -39,7 +39,7 @@ class LayerVideoDetailsRepositoryTest {
                     published = null,
                     thumbnails = emptyList(),
                     isLive = false,
-                )
+                ),
             )
 
         val result = repository(answer).videoDetails(VIDEO)

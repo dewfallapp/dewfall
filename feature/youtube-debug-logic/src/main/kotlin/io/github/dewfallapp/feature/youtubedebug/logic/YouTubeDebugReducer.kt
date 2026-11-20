@@ -32,7 +32,7 @@ object YouTubeDebugReducer : Reducer<YouTubeDebugState, YouTubeDebugIntent, Noth
                 is YouTubeDebugIntent.SearchFinished -> {
                     state.copy(
                         search =
-                            state.search.finished(intent.query, intent.result) { it.toSummary() }
+                            state.search.finished(intent.query, intent.result) { it.toSummary() },
                     )
                 }
                 is YouTubeDebugIntent.VideoDetailsFinished -> {
@@ -40,7 +40,7 @@ object YouTubeDebugReducer : Reducer<YouTubeDebugState, YouTubeDebugIntent, Noth
                         videoDetails =
                             state.videoDetails.finished(intent.videoId, intent.result) {
                                 it.toSummary()
-                            }
+                            },
                     )
                 }
                 is YouTubeDebugIntent.LatestUploadsFinished -> {
@@ -48,7 +48,7 @@ object YouTubeDebugReducer : Reducer<YouTubeDebugState, YouTubeDebugIntent, Noth
                         latestUploads =
                             state.latestUploads.finished(intent.channelId, intent.result) {
                                 it.toSummary(askedFor = intent.channelId)
-                            }
+                            },
                     )
                 }
                 is YouTubeDebugIntent.StreamLinksFinished -> {
@@ -56,7 +56,7 @@ object YouTubeDebugReducer : Reducer<YouTubeDebugState, YouTubeDebugIntent, Noth
                         streamLinks =
                             state.streamLinks.finished(intent.videoId, intent.result) {
                                 it.toSummary()
-                            }
+                            },
                     )
                 }
                 is YouTubeDebugIntent.SubtitleTracksFinished -> {
@@ -64,7 +64,7 @@ object YouTubeDebugReducer : Reducer<YouTubeDebugState, YouTubeDebugIntent, Noth
                         subtitleTracks =
                             state.subtitleTracks.finished(intent.videoId, intent.result) {
                                 it.toSummary(intent.videoId)
-                            }
+                            },
                     )
                 }
                 is YouTubeDebugIntent.ReadLines -> state.readingLines(intent.number)
@@ -72,7 +72,7 @@ object YouTubeDebugReducer : Reducer<YouTubeDebugState, YouTubeDebugIntent, Noth
                     state.copy(subtitleLines = state.subtitleLines.cancelled())
                 }
                 is YouTubeDebugIntent.SubtitleLinesFinished -> state.linesFinished(intent)
-            }
+            },
         )
 }
 
@@ -88,7 +88,7 @@ private fun YouTubeDebugState.readingLines(number: Int): YouTubeDebugState {
 
 /** Shows the lines in [intent], if they are of the track that is being read. */
 private fun YouTubeDebugState.linesFinished(
-    intent: YouTubeDebugIntent.SubtitleLinesFinished
+    intent: YouTubeDebugIntent.SubtitleLinesFinished,
 ): YouTubeDebugState {
     val track = listing?.tracks?.firstOrNull { it.number == intent.pick.number }
     if (subtitleLines != CallStatus.Running(intent.pick) || track == null) return this
@@ -97,7 +97,7 @@ private fun YouTubeDebugState.linesFinished(
             when (val result = intent.result) {
                 is YouTubeResult.Success -> CallStatus.Succeeded(result.value.toSummary(track))
                 is YouTubeResult.Failure -> CallStatus.Failed(result.error)
-            }
+            },
     )
 }
 
@@ -142,7 +142,7 @@ private fun parseChannelId(input: String): ChannelId? = ChannelId.parseOrNull(in
 private fun <R, S> Section<R, S>.started(parse: (String) -> R?): Section<R, S> {
     val request = parse(input)
     return copy(
-        status = if (request == null) CallStatus.InvalidInput else CallStatus.Running(request)
+        status = if (request == null) CallStatus.InvalidInput else CallStatus.Running(request),
     )
 }
 
@@ -166,6 +166,6 @@ private fun <R, T, S> Section<R, S>.finished(
             when (result) {
                 is YouTubeResult.Success -> CallStatus.Succeeded(summarize(result.value))
                 is YouTubeResult.Failure -> CallStatus.Failed(result.error)
-            }
+            },
     )
 }

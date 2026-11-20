@@ -31,10 +31,10 @@ class PlaybackTest {
     @Test
     fun `BROKEN and BLOCKED details share YOUTUBE's words`() {
         assertTrue(
-            sharesFailure(DetailsArea.Failed(1, YouTubeError.BROKEN), PlaybackFailure.YOUTUBE)
+            sharesFailure(DetailsArea.Failed(1, YouTubeError.BROKEN), PlaybackFailure.YOUTUBE),
         )
         assertTrue(
-            sharesFailure(DetailsArea.Failed(1, YouTubeError.BLOCKED), PlaybackFailure.YOUTUBE)
+            sharesFailure(DetailsArea.Failed(1, YouTubeError.BLOCKED), PlaybackFailure.YOUTUBE),
         )
     }
 

@@ -120,7 +120,7 @@ class YouTubeSearchReducerTest {
                     YouTubeSearchIntent.SearchFinished(
                         sourdough,
                         found(video("bbbbbbbbbbb", VideoKind.SHORT)),
-                    )
+                    ),
                 )
                 .results,
         )
@@ -226,7 +226,7 @@ class YouTubeSearchReducerTest {
         val loading = YouTubeSearchState().after(YouTubeSearchIntent.Submit("sourdough"))
         val found =
             loading.after(
-                YouTubeSearchIntent.SearchFinished(sourdough, found(video("aaaaaaaaaaa")))
+                YouTubeSearchIntent.SearchFinished(sourdough, found(video("aaaaaaaaaaa"))),
             )
 
         for (state in listOf(YouTubeSearchState(), loading, found)) {

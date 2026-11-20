@@ -34,7 +34,7 @@ class ConsoleOutputDetectorTest {
                     kotlin.io.println()
                     ~~~~~~~~~~~~~~~~~~~
                 3 errors
-                """
+                """,
             )
     }
 
@@ -62,7 +62,7 @@ class ConsoleOutputDetectorTest {
                     say("Loaded")
                     ~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -88,7 +88,7 @@ class ConsoleOutputDetectorTest {
                     titles.forEach(::println)
                                    ~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -125,7 +125,7 @@ class ConsoleOutputDetectorTest {
                     val stream = System.err
                                         ~~~
                 3 errors
-                """
+                """,
             )
     }
 
@@ -165,7 +165,7 @@ class ConsoleOutputDetectorTest {
                     error.printStackTrace(PrintWriter(text))
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 3 errors
-                """
+                """,
             )
     }
 
@@ -223,7 +223,7 @@ class ConsoleOutputDetectorTest {
                         error.printStackTrace()
                         ~~~~~~~~~~~~~~~~~~~~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -268,7 +268,7 @@ class ConsoleOutputDetectorTest {
                         Thread.dumpStack()
                         ~~~~~~~~~~~~~~~~~~
                 3 errors
-                """
+                """,
             )
     }
 
@@ -282,7 +282,7 @@ class ConsoleOutputDetectorTest {
                         System.out.println(level + " " + tag + " " + text)
                                ~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -310,7 +310,7 @@ class ConsoleOutputDetectorTest {
                         System.out.println(text)
                                ~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -351,7 +351,7 @@ class ConsoleOutputDetectorTest {
                     System.out.println("Two")
                            ~~~
                 4 errors
-                """
+                """,
             )
     }
 

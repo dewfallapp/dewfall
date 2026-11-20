@@ -96,7 +96,7 @@ class LiveCheckOutputTest {
         val shape =
             Regex(
                 "(INFO|WARN|ERROR) Dewfall\\.LiveCheck [A-Z][A-Za-z' ]*?" +
-                    "( [a-z][A-Za-z]*=([A-Z0-9_]+|PT[0-9.]+S|[0-9]+|true|false))*"
+                    "( [a-z][A-Za-z]*=([A-Z0-9_]+|PT[0-9.]+S|[0-9]+|true|false))*",
             )
         assertTrue(lines.isNotEmpty())
         for (line in lines) {

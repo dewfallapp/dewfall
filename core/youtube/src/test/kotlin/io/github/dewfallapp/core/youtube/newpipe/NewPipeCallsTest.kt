@@ -313,7 +313,7 @@ class NewPipeCallsTest {
             assertEquals(YouTubeResult.Failure(YouTubeError.NETWORK), result)
             assertEquals(
                 listOf(
-                    "WARN Dewfall.YouTube YouTube call failed call=SUBTITLE_LINES error=NETWORK"
+                    "WARN Dewfall.YouTube YouTube call failed call=SUBTITLE_LINES error=NETWORK",
                 ),
                 lines,
             )

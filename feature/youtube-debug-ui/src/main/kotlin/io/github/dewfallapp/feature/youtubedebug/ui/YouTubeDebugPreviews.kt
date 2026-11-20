@@ -123,7 +123,7 @@ private fun previewStreamLinks(): StreamLinksSummary =
                     contentLength = 12_000_000,
                     trackKind = AudioTrackKind.ORIGINAL,
                     trackLanguageTag = "en",
-                )
+                ),
             ),
         videoFormats =
             listOf(
@@ -137,7 +137,7 @@ private fun previewStreamLinks(): StreamLinksSummary =
                     bitrate = null,
                     contentLength = null,
                     includesAudio = false,
-                )
+                ),
             ),
         videoFormatsWithSound = 0,
         formatsPerMimeType = mapOf("audio/mp4" to 1, "video/mp4" to 1),

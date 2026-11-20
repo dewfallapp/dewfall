@@ -59,7 +59,7 @@ class TtmlLinesTest {
                 ttml(
                     p("00:00:01.200", "00:00:03.360", "All right, so here we are"),
                     p("00:00:05.318", "00:00:07.974", "the cool thing"),
-                )
+                ),
             )
 
         assertEquals(
@@ -145,7 +145,7 @@ class TtmlLinesTest {
                     p("00:00:02.000", "00:00:03.000", " <br/> "),
                     p("00:00:03.000", "00:00:04.000", "<span> </span>"),
                     p("00:00:04.000", "00:00:05.000", "kept"),
-                )
+                ),
             )
 
         assertEquals(listOf("kept"), texts)
@@ -160,7 +160,7 @@ class TtmlLinesTest {
                     p("00:00:01", "00:00:02.5", "a"),
                     p("01:02:03.04", "12:00:00.000", "b"),
                     p("100:00:00.000", "100:00:01.001", "c"),
-                )
+                ),
             )
 
         assertEquals(
@@ -185,14 +185,14 @@ class TtmlLinesTest {
                     p("00:61:00.000", "01:02:00.000", "61 minutes"),
                     p("00:00:01.0000", "00:00:02.000", "four digits of a second"),
                     p("00:00:01.000", "00:00:02.000", "kept"),
-                )
+                ),
             )
 
         assertEquals(listOf("kept"), texts)
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=SUBTITLE_LINES " +
-                    "dropped=6 parseErrors=0"
+                    "dropped=6 parseErrors=0",
             ),
             warnings(),
         )
@@ -206,7 +206,7 @@ class TtmlLinesTest {
                     p("00:00:02.000", "00:00:02.000", "no length"),
                     p("00:00:03.000", "00:00:02.000", "backwards"),
                     p("00:00:04.000", "00:00:05.000", "kept"),
-                )
+                ),
             )
 
         assertEquals(listOf("kept"), texts)
@@ -222,7 +222,7 @@ class TtmlLinesTest {
                     p("00:00:01.000", "00:00:02.000", "first"),
                     p("00:00:03.000", "00:00:04.000", "second, a"),
                     p("00:00:03.000", "00:00:05.000", "second, b"),
-                )
+                ),
             )
 
         assertEquals(listOf("first", "second, a", "second, b", "third"), texts)

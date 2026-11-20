@@ -57,7 +57,7 @@ class NewPipeStreamLinksTest {
                     bitrate = 130_000,
                     contentLength = 4_000_000,
                     track = null,
-                )
+                ),
             ),
             links.audioFormats,
         )
@@ -104,7 +104,7 @@ class NewPipeStreamLinksTest {
                         audioStream(link("otf"), isUrl = false),
                         audioStream(link("kept")),
                     )
-                }
+                },
             )
 
         val links = streamLinksOf(VideoId(VIDEO_A), page, skipped)
@@ -124,9 +124,9 @@ class NewPipeStreamLinksTest {
                             link("a"),
                             contentLength = ItagItem.CONTENT_LENGTH_UNKNOWN,
                             codec = "",
-                        )
+                        ),
                     )
-                }
+                },
             )
 
         val format = streamLinksOf(VideoId(VIDEO_A), page, skipped).audioFormats.single()
@@ -149,7 +149,7 @@ class NewPipeStreamLinksTest {
                             width = 0,
                             height = 0,
                             frameRate = ItagItem.FPS_NOT_APPLICABLE_OR_UNKNOWN,
-                        )
+                        ),
                     )
                 },
             )
@@ -174,7 +174,7 @@ class NewPipeStreamLinksTest {
                         audioStream(link("no type"), withMediaType = false),
                         audioStream(link("kept")),
                     )
-                }
+                },
             )
 
         val links = streamLinksOf(VideoId(VIDEO_A), page, skipped)
@@ -184,7 +184,7 @@ class NewPipeStreamLinksTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=STREAM_LINKS dropped=2 " +
-                    "parseErrors=0"
+                    "parseErrors=0",
             ),
             lines,
         )
@@ -270,7 +270,7 @@ class NewPipeStreamLinksTest {
     fun `no format that plays and no HLS manifest fails`() {
         val page =
             FakeStreamPage(
-                audioStreams = { listOf(audioStream(link("a"), delivery = DeliveryMethod.DASH)) }
+                audioStreams = { listOf(audioStream(link("a"), delivery = DeliveryMethod.DASH)) },
             )
 
         assertFailsWith<NoStreamLinksException> { streamLinksOf(VideoId(VIDEO_A), page, skipped) }
@@ -291,7 +291,7 @@ class NewPipeStreamLinksTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=STREAM_LINKS dropped=0 " +
-                    "parseErrors=1"
+                    "parseErrors=1",
             ),
             lines,
         )

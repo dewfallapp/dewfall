@@ -21,7 +21,7 @@ private val VISITOR_DATA =
         .encodeToString(
             byteArrayOf(0x0a, VISITOR_ID.length.toByte()) +
                 VISITOR_ID.toByteArray() +
-                byteArrayOf(0x28, 0x01)
+                byteArrayOf(0x28, 0x01),
         )
         .plus("%3D%3D")
 
@@ -55,7 +55,7 @@ class SwJsDataMaskingTest {
             SavedExchange(
                 SavedRequest("GET", SW_JS_DATA_URL, emptyList(), body = null),
                 SavedResponse(200, listOf(Header(CONTENT_TYPE, "application/json")), SW_JS_DATA),
-            )
+            ),
         )
 
     @Test

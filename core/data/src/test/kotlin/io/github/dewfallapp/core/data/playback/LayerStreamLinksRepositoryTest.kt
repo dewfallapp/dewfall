@@ -20,7 +20,7 @@ class LayerStreamLinksRepositoryTest {
             StreamLinksRemoteDataSource { videoId ->
                 asked += videoId
                 answer
-            }
+            },
         )
 
     @Test
@@ -33,7 +33,7 @@ class LayerStreamLinksRepositoryTest {
                     videoFormats = emptyList(),
                     hlsManifestUrl = null,
                     expiresAt = null,
-                )
+                ),
             )
 
         val result = repository(answer).streamLinks(VIDEO)

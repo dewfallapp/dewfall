@@ -28,7 +28,7 @@ private val VIEWER_MEMBER = Regex("""^(?:comment|teaser|liveChat)""", RegexOptio
  */
 private val EXPERIMENT_FLAGS =
     Regex(
-        """"(?:EXPERIMENT_FLAGS|EXPERIMENTS_FORCED_FLAGS|experiments|experimentFlags)"\s*:\s*\{"""
+        """"(?:EXPERIMENT_FLAGS|EXPERIMENTS_FORCED_FLAGS|experiments|experimentFlags)"\s*:\s*\{""",
     )
 
 /**

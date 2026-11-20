@@ -18,8 +18,8 @@ end_of_line = crlf
 [*.{yml,yaml}]
 indent_size = 2
 
-# Copied from ktfmt 0.64, docs/editorconfig/.editorconfig-kotlinlang (Apache License 2.0):
-# https://github.com/Kotlin/ktfmt/blob/v0.64/docs/editorconfig/.editorconfig-kotlinlang
+# Copied from ktfmt 0.65, docs/editorconfig/.editorconfig-kotlinlang (Apache License 2.0):
+# https://github.com/Kotlin/ktfmt/blob/v0.65/docs/editorconfig/.editorconfig-kotlinlang
 [{*.kt,*.kts}]
 indent_style = space
 insert_final_newline = true

@@ -28,7 +28,7 @@ class AndroidLogDetectorTest {
                     Log.d("Repository", "Loaded")
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -54,7 +54,7 @@ class AndroidLogDetectorTest {
                     android.util.Log.w("Repository", "Slow")
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -82,7 +82,7 @@ class AndroidLogDetectorTest {
                     Logcat.e("Repository", "Failed")
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -108,7 +108,7 @@ class AndroidLogDetectorTest {
                 val printLine: (Int, String, String) -> Int = Log::println
                                                               ~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -142,7 +142,7 @@ class AndroidLogDetectorTest {
                         Log.getStackTraceString(error)
                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -172,7 +172,7 @@ class AndroidLogDetectorTest {
                         Log.i("RepositoryTest", "Started")
                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -207,7 +207,7 @@ class AndroidLogDetectorTest {
                         Log.w(tag, text)
                         ~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -224,7 +224,7 @@ class AndroidLogDetectorTest {
                         lines.forEach { Log.println(Log.WARN, tag, it) }
                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -254,7 +254,7 @@ class AndroidLogDetectorTest {
                     Log.d("Dewfall", "Written")
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -284,7 +284,7 @@ class AndroidLogDetectorTest {
                         Log.d("Dewfall", text)
                         ~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -358,7 +358,7 @@ class AndroidLogDetectorTest {
                     Log.d("Repository", "Three")
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 6 errors
-                """
+                """,
             )
     }
 

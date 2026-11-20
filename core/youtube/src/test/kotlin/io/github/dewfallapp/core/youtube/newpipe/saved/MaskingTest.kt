@@ -35,7 +35,7 @@ private val VISITOR_DATA =
         .encodeToString(
             byteArrayOf(0x0a, VISITOR_ID.length.toByte()) +
                 VISITOR_ID.toByteArray() +
-                byteArrayOf(0x28, 0x01)
+                byteArrayOf(0x28, 0x01),
         )
         .plus("%3D%3D")
 
@@ -134,8 +134,8 @@ class MaskingTest {
             listOf(
                 exchange(
                     responseBody =
-                        """{"visitorData":"${MASKED_VISITOR_DATA}1","x":"$unknownToken"}"""
-                )
+                        """{"visitorData":"${MASKED_VISITOR_DATA}1","x":"$unknownToken"}""",
+                ),
             )
 
         assertEquals(
@@ -159,7 +159,7 @@ class MaskingTest {
                             ),
                         ),
                     responseBody = """{"cookie":"$COOKIE"}""",
-                )
+                ),
             )
 
         val masked = mask(recording)
@@ -363,7 +363,7 @@ class MaskingTest {
                         """{"url":"https://x.googlevideo.com/videoplayback?ip=$IPV4",""" +
                             """"v6":"https://x.googlevideo.com/videoplayback?ip=$IPV6_ENCODED",""" +
                             """"visitorData":"$VISITOR_DATA","gl":"ZZ"}""",
-                )
+                ),
             )
         val masked = mask(recording).exchanges
         val hiding =
@@ -390,8 +390,8 @@ class MaskingTest {
                 exchange(
                     responseBody =
                         """{"a":"https://x.googlevideo.com/videoplayback?ip=$IPV4",""" +
-                            """"b":"https://x.googlevideo.com/videoplayback?ip=$IPV6_ENCODED"}"""
-                )
+                            """"b":"https://x.googlevideo.com/videoplayback?ip=$IPV6_ENCODED"}""",
+                ),
             )
         val masked = mask(recording).exchanges
         val asNumber = IPV4.split('.').fold(0L) { value, octet -> value * 256 + octet.toLong() }
@@ -420,7 +420,7 @@ class MaskingTest {
                 exchange(url = SW_JS_DATA_URL, responseBody = """)]}'[[["en","ZZ"]]]"""),
                 exchange(
                     responseBody =
-                        """{"countryCode":"ZZ","availableCountries":["GB","ZZ"],"region":"FR"}"""
+                        """{"countryCode":"ZZ","availableCountries":["GB","ZZ"],"region":"FR"}""",
                 ),
             )
 
@@ -451,7 +451,7 @@ class MaskingTest {
                     byteArrayOf(0x0a, VISITOR_ID.length.toByte()) +
                         VISITOR_ID.toByteArray() +
                         byteArrayOf(0x32, 0x04, 0x0a, 0x02) +
-                        "ZZ".toByteArray()
+                        "ZZ".toByteArray(),
                 )
 
         val real =
@@ -555,8 +555,8 @@ class MaskingTest {
             listOf(
                 exchange(
                     responseBody =
-                        """{"comments":[$comment],"note":"@alpha.tv and @al_b, thanks @al."}"""
-                )
+                        """{"comments":[$comment],"note":"@alpha.tv and @al_b, thanks @al."}""",
+                ),
             )
 
         val masked = mask(recording).exchanges.single().response.body

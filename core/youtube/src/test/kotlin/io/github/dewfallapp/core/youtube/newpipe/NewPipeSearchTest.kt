@@ -68,7 +68,7 @@ class NewPipeSearchTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=SEARCH dropped=2 " +
-                    "parseErrors=2"
+                    "parseErrors=2",
             ),
             lines,
         )

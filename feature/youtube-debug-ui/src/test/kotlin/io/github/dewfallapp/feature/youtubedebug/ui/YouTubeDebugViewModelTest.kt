@@ -158,7 +158,7 @@ class YouTubeDebugViewModelTest {
                         cancelled += query
                         throw e
                     }
-                }
+                },
             )
 
         viewModel.dispatch(Run(DebugCall.SEARCH))
@@ -194,7 +194,7 @@ class YouTubeDebugViewModelTest {
                             cancelledCalls += call
                             throw e
                         }
-                    }
+                    },
                 )
 
             viewModel.dispatch(Run(DebugCall.SEARCH))

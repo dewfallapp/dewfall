@@ -23,7 +23,7 @@ object YouTubeSearchReducer : Reducer<YouTubeSearchState, YouTubeSearchIntent, N
                 YouTubeSearchIntent.Clear -> state.copy(results = ResultsArea.Idle)
                 YouTubeSearchIntent.TryAgain -> state.triedAgain()
                 is YouTubeSearchIntent.SearchFinished -> state.finished(intent)
-            }
+            },
         )
 }
 
@@ -42,7 +42,7 @@ private fun YouTubeSearchState.triedAgain(): YouTubeSearchState {
 
 /** Shows the answer in [intent], if it is for the search that is running. */
 private fun YouTubeSearchState.finished(
-    intent: YouTubeSearchIntent.SearchFinished
+    intent: YouTubeSearchIntent.SearchFinished,
 ): YouTubeSearchState {
     if (results != ResultsArea.Loading(intent.request)) return this
     val area =

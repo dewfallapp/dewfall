@@ -17,7 +17,7 @@ object PlayerReducer : Reducer<PlayerState, PlayerIntent, Nothing> {
                 PlayerIntent.Load -> state.loaded()
                 PlayerIntent.TryAgain -> state.triedAgain()
                 is PlayerIntent.DetailsFinished -> state.finished(intent)
-            }
+            },
         )
 }
 

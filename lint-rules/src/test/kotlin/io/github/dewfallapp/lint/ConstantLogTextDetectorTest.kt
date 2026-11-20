@@ -76,7 +76,7 @@ class ConstantLogTextDetectorTest {
                     log.info(Messages.changeable)
                              ~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -138,7 +138,7 @@ class ConstantLogTextDetectorTest {
                     log.info("Loaded ＄{AREA.length}")
                              ~~~~~~~~~~~~~~~~~~~~~~~
                 3 errors
-                """
+                """,
             )
     }
 
@@ -194,7 +194,7 @@ class ConstantLogTextDetectorTest {
                     log.info("Loaded " + name)
                              ~~~~~~~~~~~~~~~~
                 7 errors
-                """
+                """,
             )
     }
 
@@ -227,7 +227,7 @@ class ConstantLogTextDetectorTest {
                     logger.withTag(area).info("Loaded", LogField.count(name, count))
                                                                        ~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -269,7 +269,7 @@ class ConstantLogTextDetectorTest {
                     ResultField.count(name, count),
                                       ~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -298,7 +298,7 @@ class ConstantLogTextDetectorTest {
                     log.info(message)
                              ~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -331,7 +331,7 @@ class ConstantLogTextDetectorTest {
                     val tagged: (String) -> Logger = log::withTag
                                                      ~~~~~~~~~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -363,7 +363,7 @@ class ConstantLogTextDetectorTest {
                         log.info("Loaded ＄count")
                                  ~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -398,7 +398,7 @@ class ConstantLogTextDetectorTest {
                     log.info("Loaded ＄count")
                              ~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -442,7 +442,7 @@ class ConstantLogTextDetectorTest {
                     log.info("Loaded ＄count")
                              ~~~~~~~~~~~~~~~
                 4 errors
-                """
+                """,
             )
     }
 

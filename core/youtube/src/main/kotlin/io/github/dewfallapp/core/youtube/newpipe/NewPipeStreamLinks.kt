@@ -33,7 +33,7 @@ internal class NewPipeStreamLinks(
             // Read here, while the call holds the Mutex, so MediaRequests calls no
             // NewPipeExtractor code on the player's threads. See ADR 0009.
             userAgents.rememberVisionOs(
-                YoutubeParsingHelper.getVisionOsUserAgent(settings.localization)
+                YoutubeParsingHelper.getVisionOsUserAgent(settings.localization),
             )
             skipped.warnIfAny(log)
             links

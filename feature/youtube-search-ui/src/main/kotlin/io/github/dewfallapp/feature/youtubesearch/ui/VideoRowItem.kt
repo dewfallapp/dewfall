@@ -56,7 +56,7 @@ internal fun VideoRowItem(
     Row(
         modifier =
             modifier.fillMaxWidth().padding(DewfallSpacing.sm).semantics(
-                mergeDescendants = true
+                mergeDescendants = true,
             ) {},
         horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.md),
     ) {
@@ -94,7 +94,7 @@ private fun Thumbnail(row: VideoRow, modifier: Modifier = Modifier) {
                     Modifier.padding(DewfallSpacing.xs)
                         .clip(MaterialTheme.shapes.extraSmall)
                         .background(
-                            MaterialTheme.colorScheme.surface.copy(alpha = DURATION_SCRIM_ALPHA)
+                            MaterialTheme.colorScheme.surface.copy(alpha = DURATION_SCRIM_ALPHA),
                         )
                         .padding(horizontal = DewfallSpacing.xs)
                         .semantics { contentDescription = spoken },

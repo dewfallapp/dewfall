@@ -21,7 +21,7 @@ class DetektConventionPlugin : Plugin<Project> {
 
             extensions.configure<DetektExtension> {
                 config.setFrom(
-                    isolated.rootProject.projectDirectory.file("config/detekt/detekt.yml")
+                    isolated.rootProject.projectDirectory.file("config/detekt/detekt.yml"),
                 )
                 // Every rule that the file doesn't list keeps its default.
                 buildUponDefaultConfig = true

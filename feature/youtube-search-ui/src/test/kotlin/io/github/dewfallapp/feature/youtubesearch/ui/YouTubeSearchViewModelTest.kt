@@ -44,9 +44,9 @@ private fun found(id: String) =
                         published = null,
                         thumbnails = emptyList(),
                         kind = VideoKind.VIDEO,
-                    )
+                    ),
                 ),
-        )
+        ),
     )
 
 /** One search the fake repository got. It waits until the test completes its answer. */

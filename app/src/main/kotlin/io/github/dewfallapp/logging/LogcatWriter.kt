@@ -41,7 +41,7 @@ private const val LINE_BREAK_BYTES = 1
  */
 internal class LogcatWriter(
     // Tests pass their own, because android.util.Log has no working code in local unit tests.
-    private val printLine: (priority: Int, tag: String, text: String) -> Unit = Log::println
+    private val printLine: (priority: Int, tag: String, text: String) -> Unit = Log::println,
 ) : LogWriter {
     override fun write(level: LogLevel, tag: String, text: String) {
         val priority = level.toLogcatPriority()

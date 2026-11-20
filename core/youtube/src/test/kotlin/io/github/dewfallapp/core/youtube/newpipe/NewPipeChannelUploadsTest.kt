@@ -94,7 +94,7 @@ class NewPipeChannelUploadsTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=LATEST_UPLOADS dropped=2 " +
-                    "parseErrors=0"
+                    "parseErrors=0",
             ),
             lines,
         )
@@ -122,7 +122,7 @@ class NewPipeChannelUploadsTest {
         val tabs =
             listOf(
                 YoutubeChannelTabLinkHandlerFactory.getInstance()
-                    .fromQuery(CHANNEL_A, listOf(ChannelTabs.VIDEOS), "")
+                    .fromQuery(CHANNEL_A, listOf(ChannelTabs.VIDEOS), ""),
             )
 
         val extractors = uploadTabExtractors(tabs, RequestSettings(ContentCountry("FR")))
@@ -154,7 +154,7 @@ class NewPipeChannelUploadsTest {
         val tabs =
             listOf(
                 YoutubeChannelTabLinkHandlerFactory.getInstance()
-                    .fromQuery(CHANNEL_A, listOf(ChannelTabs.VIDEOS), "")
+                    .fromQuery(CHANNEL_A, listOf(ChannelTabs.VIDEOS), ""),
             )
 
         val extractor = uploadTabExtractors(tabs, RequestSettings(ContentCountry("FR"))).single()
@@ -194,7 +194,7 @@ class NewPipeChannelUploadsTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=LATEST_UPLOADS dropped=0 " +
-                    "parseErrors=1"
+                    "parseErrors=1",
             ),
             lines,
         )

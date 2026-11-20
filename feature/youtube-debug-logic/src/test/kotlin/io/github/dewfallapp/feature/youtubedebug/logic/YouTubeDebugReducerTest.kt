@@ -293,7 +293,7 @@ class YouTubeDebugReducerTest {
 
         val state =
             rerun.after(
-                StreamLinksFinished(VideoId("aqz-KE-bpKQ"), YouTubeResult.Success(streamLinks()))
+                StreamLinksFinished(VideoId("aqz-KE-bpKQ"), YouTubeResult.Success(streamLinks())),
             )
 
         assertEquals(rerun, state)

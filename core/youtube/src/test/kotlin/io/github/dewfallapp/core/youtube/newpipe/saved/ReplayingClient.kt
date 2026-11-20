@@ -96,7 +96,7 @@ internal class ReplayingClient(private val set: SavedSet, private val content: S
             appendLine(
                 "No saved YouTube response matches request $number of the saved set ${set.name}, " +
                     "recorded with NewPipeExtractor ${content.newPipeExtractorVersion} on " +
-                    "${content.recordedOn}. This build uses NewPipeExtractor $buildVersion."
+                    "${content.recordedOn}. This build uses NewPipeExtractor $buildVersion.",
             )
             appendLine("  ${request.method} ${request.url}")
             if (closest == null) {
@@ -108,7 +108,7 @@ internal class ReplayingClient(private val set: SavedSet, private val content: S
             appendLine(
                 "If NewPipeExtractor changed its requests, record the set again with " +
                     "./gradlew :core:youtube:recordYouTubeResponses. " +
-                    "See docs/testing.md#saved-youtube-responses."
+                    "See docs/testing.md#saved-youtube-responses.",
             )
         }
     }

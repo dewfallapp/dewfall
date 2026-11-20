@@ -39,14 +39,14 @@ class VideoDetailsReplayTest {
         assertTrue(
             details.description.startsWith(
                 "UHD High Frame rate version of the iconic short film by Blender, Big Buck " +
-                    "Bunny. More info:  https://"
+                    "Bunny. More info:  https://",
             ),
             details.description,
         )
         assertTrue(
             details.description.contains(
                 "\n\nLearn more about this UHD high frame-rate version at: " +
-                    "http://bbb3d.renderfarming.net"
+                    "http://bbb3d.renderfarming.net",
             ),
             details.description,
         )

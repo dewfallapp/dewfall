@@ -134,7 +134,7 @@ private val CHARACTER_REFERENCE = Regex("""&(?:#\d+|#x[0-9A-Fa-f]+|[A-Za-z]+);""
 
 /** The ending of a call that succeeded, for the `got` and `expected` fields of a result. */
 private enum class CallSucceeded {
-    SUCCESS
+    SUCCESS,
 }
 
 /**
