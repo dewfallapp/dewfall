@@ -2,7 +2,7 @@
 
 ## 1. Before building
 
-- [ ] 1.1 Record the maintainer's answers to the questions in "The maintainer's answers" in the pull request's description: what the notification shows, what leaving the app does, which buttons and apps control playback, and the two foreground service permissions with the Wi-Fi lock. If an answer differs from proposal.md and design.md, change the plan, run the maintainer subagent's plan check again, and build only after "Verdict: Build". Verify that the description quotes each answer with its date.
+- [x] 1.1 Record the maintainer's answers to the questions in "The maintainer's answers" in the pull request's description: what the notification shows, what leaving the app does, which buttons and apps control playback, and the two foreground service permissions with the Wi-Fi lock. If an answer differs from proposal.md and design.md, change the plan, run the maintainer subagent's plan check again, and build only after "Verdict: Build". Verify that the description quotes each answer with its date.
 
 ## 2. The playback service
 
@@ -10,15 +10,15 @@
 - [ ] 2.2 In PlaybackService, as design.md describes:
   - drop the `onUpdateNotificationAsync` and `onMediaButtonEvent` overrides
   - set DefaultMediaNotificationProvider with the channel ID `playback`
-  - give the session an immutable PendingIntent for the app's launch intent with `setSessionActivity`
+  - give the session the PendingIntent from a small `:core:playback` interface, which task 4.1 binds in `:app`, with `setSessionActivity`
   - build the ExoPlayer with `setWakeMode(C.WAKE_MODE_NETWORK)`
   - override `onTaskRemoved` to call `pauseAllPlayersAndStopSelf()`
   - set a `MediaSessionService.Listener` whose `onForegroundServiceStartNotAllowedException` pauses the player
   - clear PlaybackSessions' failure in `onPlayerErrorChanged(null)`
 
   Verify that `./gradlew :core:playback:assembleDebug lint detekt` passes.
-- [ ] 2.3 Add the controller rule: a pure function from whether the controller's package is the app's own and whether `isTrusted` is true, to OWN, TRUSTED or REJECTED, and the list of Media3 command constants a TRUSTED controller gets. `onConnectAsync` accepts OWN with the default commands, TRUSTED with only those commands and no session commands, and rejects the rest. Verify with unit tests: each pair of inputs, and a TRUSTED list that holds play and pause, seeking within the item, stop and the three read commands, and no command that sets items, tracks or volume.
-- [ ] 2.4 Make SessionPlayer remove the six skip and seek-step commands that design.md lists, from a pure function's list of constants, and give the session's error the message from a new `:core:playback` string resource, "This video stopped playing.". Verify with unit tests of the list and of the cleaned error with a given message, and update the existing cleaned-error test.
+- [ ] 2.3 Add the controller rule: a pure function from whether the controller is the media notification controller, whether its package is the app's own, and whether `isTrusted` is true, to MEDIA_NOTIFICATION, OWN, TRUSTED or REJECTED, and the list of playback command constants that design.md lists. `onConnectAsync` accepts MEDIA_NOTIFICATION and TRUSTED with only those commands and no session commands, OWN with the default commands, and rejects the rest. Verify with unit tests: each combination of inputs, the media notification controller sorted first although its package is the app's own, and a playback list that holds play and pause, prepare, stop, seeking within the item and the three read commands, and no command that sets items, tracks, speed or volume, skips, or seeks by steps.
+- [ ] 2.4 Make SessionPlayer remove the four skip commands that design.md lists, from a pure function's list of constants, keeping seek back and seek forward, and give the session's error the message from a new `:core:playback` string resource, "This video stopped playing.". Verify with unit tests of the list, and of the cleaned error with a given message. Update the existing cleaned-error test, keeping its checks of a constant message, the same code and no cause.
 - [ ] 2.5 Add the title and channel name: `PlaybackConnection.describe(playbackId, title, channelName)`, kept in PlaybackItems with the playback ID's entry and dropped with it, and SessionPlayer's current MediaMetadata with only `title` and `artist` from the current item's description, rebuilt when a description arrives. Verify with unit tests of PlaybackItems: a description kept, replaced, and dropped when its item is replaced, removed or cleared, and none for an unknown ID.
 - [ ] 2.6 Add `PlaybackConnection.setAppVisible(visible)`, kept in PlaybackSessions, and PlaybackService turning the video track off with `setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)` while the app can't be seen, building on the player's current track selection parameters. Verify with `./gradlew :core:playback:testDebugUnitTest` and the hand checks in task 5.2.
 - [ ] 2.7 Update docs/architecture.md's "The player": the notification and the foreground service, who may control playback, the buttons, the intent filter checked again, BluetoothValidationActivity, the wake mode, the picture rule, stopping, and failures in the background, each Media3 and Android fact with its source and the date it was checked. Verify that the text agrees with the code.
@@ -26,14 +26,14 @@
 ## 3. The video screen
 
 - [ ] 3.1 Add `leaveAction(changingConfigurations, played)` to `:feature:player-logic`, returning PAUSE, KEEP_PLAYING or NOTHING. Verify with `./gradlew :feature:player-logic:test`: a configuration change, a playback that played, and one that hasn't.
-- [ ] 3.2 In PlayerRoute, replace PauseOnStop with SaveOnStop as design.md describes: save the position as today, keep the playback ID that has played in the saved state, pause through the connection only when `leaveAction` says PAUSE, and save the position whenever this screen's item pauses or ends. Verify with the hand checks in task 5.2.
+- [ ] 3.2 In PlayerRoute, replace PauseOnStop with SaveAndPauseOnStop as design.md describes: save the position as today, keep the playback ID that has played in the saved state, pause through the connection only when `leaveAction` says PAUSE, and save the position whenever this screen's item pauses or ends. Verify with the hand checks in task 5.2.
 - [ ] 3.3 In PlayerViewModel, call `describe` when the details show and a playback ID is known: after the details load, and after each new start while they show. Verify with `./gradlew :feature:player-ui:testDebugUnitTest`, with the fake connection recording the calls: details before the start, the start before the details, a "Try again" start with a new ID, and failed details, which describe nothing.
 - [ ] 3.4 Update docs/architecture.md's "Starting, pausing and stopping" for leaving, the played ID and the saved positions. Verify that the text agrees with the code.
 
 ## 4. The app
 
-- [ ] 4.1 Make `:app` depend on `:core:playback`, inject PlaybackConnection into MainActivity, and call `setAppVisible(true)` in `onStart` and `setAppVisible(false)` in `onStop` unless `isChangingConfigurations`. Add the edge to docs/architecture.md's module graph and module table. Verify with `./gradlew :app:assembleDebug` and the hand checks in task 5.2.
-- [ ] 4.2 Add to PRIVACY.md that while a video plays, Android shows its title and channel name in the media notification and on the lock screen, and shares them with Bluetooth devices the user connects and apps the user gave notification access. Verify that it matches the maintainer's answer.
+- [ ] 4.1 Make `:app` depend on `:core:playback`, inject PlaybackConnection into MainActivity, and call `setAppVisible(true)` in `onStart` and `setAppVisible(false)` in `onStop` unless `isChangingConfigurations`. Bind task 2.2's interface in a Hilt module of `:app`, with an immutable PendingIntent whose intent names MainActivity with the launcher's action and category and FLAG_ACTIVITY_NEW_TASK. Add the edge to docs/architecture.md's module graph and module table. Verify with `./gradlew :app:assembleDebug` and the hand checks in task 5.2, in a debug build, which has the debug screen's second launcher activity.
+- [ ] 4.2 Add to PRIVACY.md that while a video plays, Android shows its title and channel name in the media notification and on the lock screen, and shares them with Bluetooth devices the user connects and apps the user gave notification access. Add the same exception, with the maintainer's approval date, to AGENTS.md's product rule "User data stays on the device". Verify that both match the maintainer's answer.
 
 ## 5. Checks
 
@@ -44,7 +44,8 @@
   - Go home while a 1080p video plays, and compare the received bytes in `adb shell cat /proc/net/dev` over one minute with the app visible and with it in the background: far fewer in the background. Come back: the picture shows again at the current position.
   - Open a video and go home before it starts: no sound, and coming back it waits for play.
   - Tap the notification: Dewfall opens as it was. Remove Dewfall from the recent apps while it plays: the sound stops and the notification goes away. Close the video screen: the same.
-  - Send `adb shell input keyevent` with KEYCODE_MEDIA_PAUSE, KEYCODE_MEDIA_PLAY and KEYCODE_HEADSETHOOK in the background: they pause and play. KEYCODE_MEDIA_NEXT and KEYCODE_MEDIA_PREVIOUS: nothing changes.
+  - Send `adb shell input keyevent` with KEYCODE_MEDIA_PAUSE, KEYCODE_MEDIA_PLAY and KEYCODE_HEADSETHOOK in the background: they pause and play. KEYCODE_MEDIA_NEXT, KEYCODE_MEDIA_PREVIOUS, KEYCODE_MEDIA_FAST_FORWARD and KEYCODE_MEDIA_REWIND: nothing changes.
+  - On Android 10, the notification shows only play and pause. On Android 17, the media player in the notification shade plays, pauses and seeks with its seek bar, and shows no previous or next button.
   - On Android 17, with `adb shell cmd audio set-enable-hardening throw`, play in the background for a minute: the sound goes on and nothing crashes. Turn it off with `adb shell cmd audio set-enable-hardening disable`.
   - Play, go home, let it play a minute, and pause from the notification. Wait over 10 minutes, so the service leaves the foreground, then stop it with `adb shell am make-uid-idle io.github.dewfallapp` where this Android has it. Come back: the video waits at the paused position. Go home again, end the process with `adb shell am kill io.github.dewfallapp`, and send KEYCODE_MEDIA_PLAY: the app doesn't start, and nothing crashes. Come back: the video waits at the position it had when you left the app.
   - Turn the network off while playing in the background, turn it on, and press play in the notification: it plays on from the same position, and the video screen shows no failure.

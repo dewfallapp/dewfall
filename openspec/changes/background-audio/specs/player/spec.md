@@ -22,11 +22,15 @@ Leaving the app while a video plays, such as with the home gesture or by switchi
 - **THEN** it keeps playing without a pause
 
 ### Requirement: The picture turns off while the app can't be seen
-While no Dewfall screen can be seen, the player SHALL fetch and decode only a video's sound, not its picture. When the app shows again, the picture SHALL come back at the current position, after a short load that may pause the sound. A live stream SHALL decode no picture in the background, but SHALL keep fetching it, because each of its segments carries both.
+While no Dewfall screen can be seen, the player SHALL decode no picture, and SHALL NOT fetch a picture that comes in its own file. When the app shows again, the picture SHALL come back at the current position, after a short load that may pause the sound. A file that holds both sound and picture, and a live stream, whose segments hold both, still load the picture's bytes with the sound.
 
 #### Scenario: Data in the background
-- **WHEN** a video plays at 1080p and the user goes to the home screen
+- **WHEN** a video whose sound and picture come in separate files plays at 1080p, and the user goes to the home screen
 - **THEN** the player fetches only the sound until the user comes back
+
+#### Scenario: A live stream in the background
+- **WHEN** a live stream plays and the user goes to the home screen
+- **THEN** the sound goes on, and no picture is decoded until the user comes back
 
 #### Scenario: Coming back
 - **WHEN** the user comes back to a video that played on in the background
@@ -85,8 +89,12 @@ While Dewfall's player runs, the play and pause buttons of a headset, a Bluetoot
 - **THEN** the video pauses, and a second press plays it on
 
 #### Scenario: Next and previous
-- **WHEN** a video plays and a Bluetooth device's next or previous button is pressed
+- **WHEN** a video plays and a Bluetooth device's next, previous, fast forward or rewind button is pressed
 - **THEN** the video plays on at its position
+
+#### Scenario: The notification's buttons
+- **WHEN** a video plays on Android 10, 11 or 12
+- **THEN** the notification shows a pause button and no previous or next button
 
 #### Scenario: A headset's button after the process ended
 - **WHEN** the system ended the app's process in the background, and a headset's play button is pressed
