@@ -119,6 +119,8 @@ Why each attribute is included or omitted (checked November 21, 2026 in public A
     - `app/src/main/AndroidManifest.xml` applies `android:theme="@style/Theme.Dewfall"` on `<application>` and does not override it on `MainActivity`.
     - `values-night/themes.xml` does not define `Theme.Dewfall` (so Android's `night` qualifier never shadows `values-v31/themes.xml` in dark mode).
     - No theme XML under `app/src/main/res/` sets deprecated `android:statusBarColor` or `android:navigationBarColor`, and no theme XML for API 29–33 (`values/`, `values-night/`, `values-v31/`) sets `android:windowLightNavigationBar` (guarding against dark icons on Android 10–13's black navigation bar).
+    - All six folders define `launch_surface`, so no light or dark variant falls back to another folder's color.
+    - `Base.Theme.Dewfall` in `values/` and `values-night/` sets `android:colorBackground` and `android:colorPrimaryDark` to `@color/launch_surface`, and `android:windowLightStatusBar` to `true` and `false`. `Theme.Dewfall` in `values/` only inherits it, and `Theme.Dewfall` in `values-v31/` sets `android:windowSplashScreenBackground` to `@color/launch_surface`.
   - Does not duplicate the `@android:color/system_*` names from `values-v31/` and `values-v34/` as tautological string assertions; Android Lint and AAPT verify that those resource references resolve and respect API levels (`NewApi` / `UnusedAttribute`).
 - **Android Lint and build checks:** `./gradlew spotlessCheck detekt lint test assembleDebug --continue -Pandroid.builder.sdkDownload=false` checks resource resolution, API qualifiers, formatting, and all unit tests.
 - **Hand checks on emulators:**

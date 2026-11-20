@@ -22,7 +22,7 @@ Today `:app`'s window theme in `app/src/main/res/values/themes.xml` and `values-
   - Holding the splash screen open while loading data (`setKeepOnScreenCondition`) or custom exit animations. Nothing runs at app startup today.
   - Backporting an icon splash screen to Android 10 and 11.
 - **Automated token and theme checks:**
-  - Unit tests in `:app` (`LaunchThemeTest`) check the static light and dark launch surface XML colors against `docs/design/claude-design/design-system/tokens.json`, verify `AndroidManifest.xml` applies `@style/Theme.Dewfall`, verify `values-night/themes.xml` does not define `Theme.Dewfall` (so it never shadows `values-v31/themes.xml`), and verify no theme XML sets deprecated system bar attributes or `android:windowLightNavigationBar` through API 33.
+  - Unit tests in `:app` (`LaunchThemeTest`) check the static light and dark launch surface XML colors against `docs/design/claude-design/design-system/tokens.json`, verify `AndroidManifest.xml` applies `@style/Theme.Dewfall`, verify `values-night/themes.xml` does not define `Theme.Dewfall` (so it never shadows `values-v31/themes.xml`), verify that all six folders define `launch_surface` and that each theme sets the launch surface, splash screen background and status bar icon items, and verify no theme XML sets deprecated system bar attributes or `android:windowLightNavigationBar` through API 33.
 
 ## Capabilities
 

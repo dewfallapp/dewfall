@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Android 12+ launch theme. Inherits light or dark Base.Theme.Dewfall and sets the
+        platform splash screen background to the dynamic launch_surface color.
+    -->
+    <style name="Theme.Dewfall" parent="Base.Theme.Dewfall">
+        <item name="android:windowSplashScreenBackground">@color/launch_surface</item>
+    </style>
+</resources>

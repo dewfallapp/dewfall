@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Closest platform dynamic light surface on Android 12 and 13 (tone 99 in system_neutral2;
+        Material 3 1.4.0's dynamicLightColorScheme computes tone 98 from system_neutral2_600).
+    -->
+    <color name="launch_surface">@android:color/system_neutral2_10</color>
+</resources>
