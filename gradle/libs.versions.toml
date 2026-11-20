@@ -44,7 +44,7 @@ junit4 = "4.13.2"
 kotlinxSerialization = "1.11.0"
 # NewPipeExtractor's releases are only on JitPack, so settings.gradle.kts adds JitPack for
 # TeamNewPipe's group alone. See docs/architecture.md#build-settings.
-newpipeExtractor = "v0.27.1"
+newpipeExtractor = "0.26.5"
 okhttp = "5.5.0"
 # The YouTube layer turns video descriptions, which NewPipeExtractor gives as HTML, into plain
 # text with jsoup. NewPipeExtractor already ships it, so this is at least the version that
