@@ -12,7 +12,7 @@ The screen SHALL show the video's whole description as plain text, with its line
 - **THEN** they can select it and copy it
 
 #### Scenario: A shortened link
-- **WHEN** YouTube shortens the text of a long link in the description to the start of its address, such as "https://studio.blender.org/projects/b...", and the whole address holds no space, line break or invisible character
+- **WHEN** YouTube shortens the text of a long link in the description to the start of its address, such as "https://studio.blender.org/projects/b...", and the whole address holds no space, line break, control character or format character
 - **THEN** the screen shows the link's whole address in place of the shortened text, wrapping onto the next lines when it is wider than the screen, and copying it copies the whole address
 
 #### Scenario: A link that isn't a shortened address
@@ -27,8 +27,8 @@ The screen SHALL show the video's whole description as plain text, with its line
 - **WHEN** a link's address doesn't start with the text before its "...", or is no longer than that text
 - **THEN** the screen shows the shortened text
 
-#### Scenario: An address with a space or an invisible character
-- **WHEN** a shortened link's whole address holds a space, a line break or an invisible character, such as a zero-width space or a right-to-left mark
+#### Scenario: An address with a space, a control character or a format character
+- **WHEN** a shortened link's whole address holds a space, a line break, a control character, or a format character, which is invisible or reorders the text, such as a zero-width space or a right-to-left mark
 - **THEN** the screen shows the shortened text
 
 #### Scenario: A link that bold text splits
