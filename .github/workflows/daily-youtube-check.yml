@@ -32,7 +32,7 @@ jobs:
     # Not "Checks": the main ruleset requires the pull request workflow's check by that name.
     name: YouTube check
     # Pinned, as in the pull request workflow.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     outputs:
       results: ${{ steps.results.outputs.results }}
@@ -115,7 +115,7 @@ jobs:
     needs: check
     # Runs when the check failed too, and reports a check that wrote no results.
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     # Only this job can write issues. It checks out no code and runs only gh and jq.
     permissions:
