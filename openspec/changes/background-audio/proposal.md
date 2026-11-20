@@ -14,7 +14,7 @@ Phase 4 is done when "you can search for a video and watch it, and audio keeps p
 - **Other apps.** Android's system UI, the Bluetooth service and apps the user gave notification access may play, pause, seek and stop. No other app may connect, and none may change what plays.
 - **A foreground service.** Android stops background playback that doesn't run in a foreground service of the type mediaPlayback, and Android 17 silences it ([background audio hardening](https://developer.android.com/about/versions/17/changes/bg-audio)). Media3 runs the service in the foreground while a video plays, and for 10 minutes after it pauses.
 - **The screen off.** The player holds a wake lock and a Wi-Fi lock while it plays, so streaming goes on with the screen off.
-- **What stays.** The media session still never names the video's ID or a link. After Android ends the process, a headset button still doesn't start the app, and playback still can't resume from the system's media controls.
+- **What stays.** The media session still never names the video's ID or a link. After Android ends the process, a headset button still doesn't start the app, a notification left behind goes away when tapped, without playing or crashing, and playback still can't resume from the system's media controls.
 
 ## Capabilities
 

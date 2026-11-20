@@ -77,6 +77,10 @@ While a video plays, and while it is paused until Android stops the player, the 
 - **WHEN** a video stays paused in the background for more than 10 minutes
 - **THEN** the user can dismiss the notification, which stops playback, and Android may remove it
 
+#### Scenario: A notification left by an ended process
+- **WHEN** the system ended the app's process while a paused video's notification still showed, and the user taps its play button
+- **THEN** nothing plays, nothing crashes, and the notification goes away
+
 #### Scenario: A failure in the background
 - **WHEN** a video plays in the background and the player runs out of data because the network went away
 - **THEN** the notification stays with a play button, which tries again from the same position, and once the video plays again the video screen shows it playing, with no failure
@@ -95,6 +99,10 @@ While Dewfall's player runs, the play and pause buttons of a headset, a Bluetoot
 #### Scenario: The notification's buttons
 - **WHEN** a video plays on Android 10, 11 or 12
 - **THEN** the notification shows a pause button and no previous or next button
+
+#### Scenario: A headset's button after Android stopped the player
+- **WHEN** a video was paused in the background, Android stopped the player while the process lived on, and a headset's play button is pressed
+- **THEN** nothing plays
 
 #### Scenario: A headset's button after the process ended
 - **WHEN** the system ended the app's process in the background, and a headset's play button is pressed
@@ -132,7 +140,7 @@ After the system ends the app's process in the background while the video screen
 - **THEN** the screen says that the same video is loading, then shows its details, and the video waits for the user to press play at the position it had when the user last left the app
 
 ### Requirement: Video details stay private
-The app SHALL never log the video's ID, title, channel name or description. It SHALL send them nowhere but YouTube, except the title and channel name, which it SHALL give only to Android's media session, for the media notification, while the video's playback lasts. The only copies kept outside the screen SHALL be the video's ID and its paused position, also user data, in the state Android saves for a process that it ends in the background, and, in memory while its playback lasts, the playing video's ID, title, channel name and stream links in the playback service, which it SHALL drop when that playback is replaced or stops. The media session SHALL name the video only by a random playback ID.
+The app SHALL never log the video's ID, title, channel name or description. It SHALL send them nowhere but YouTube, except the title and channel name, which it SHALL give only to Android's media session, for the media notification, while the video's playback lasts. The only copies kept outside the screen SHALL be the video's ID and its paused position, also user data, in the state Android saves for a process that it ends in the background, and, in memory while its playback lasts, the playing video's ID, title, channel name and stream links in the playback service, which it SHALL drop when that playback is replaced or stops. The media session SHALL identify the video only by a random playback ID, and SHALL hold no video ID.
 
 #### Scenario: Logs after opening a video
 - **WHEN** the user opens a video, once with details showing and once with the network off
