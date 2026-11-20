@@ -15,3 +15,4 @@
 ## Workflow follow-up
 
 - Archive the change with /opsx:archive as the last commit of the pull request, after #43's change in pull request #198 is archived and merged, so the `player` living spec syncs cleanly. Rebase onto main first, then run the reviewer again on the archive commit.
+  - On November 21, 2026, the maintainer moved #179 first, after hearing that #198 changes neither "The video screen shows the full description" nor docs/architecture.md's "Descriptions" section. The change was archived before #198's, after a rebase onto main 57f6d32, and the reviewer ran again on the archive commit.

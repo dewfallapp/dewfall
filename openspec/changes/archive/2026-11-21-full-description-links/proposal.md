@@ -4,7 +4,7 @@
 
 The video screen shows a video's description as text that the user can select and copy, but YouTube shortens the text of a long link and ends it with "...". Copying such a link copies the shortened text, which doesn't open the page. On November 19, 2026, the description of NASA's "We Are NASA" showed `https://images.nasa.gov/details/NHQ_2...`. This is issue [#179](https://github.com/dewfallapp/dewfall/issues/179), which the check of the video screen, [#41](https://github.com/dewfallapp/dewfall/issues/41), found.
 
-YouTube's answer holds the whole address, and NewPipeExtractor already gives it to the YouTube layer in each link's `href`. The layer keeps only a link's text, so it drops the address.
+YouTube's answer holds the whole address, as the saved set VIDEO_BIG_BUCK_BUNNY, recorded on November 18, 2026, shows, and NewPipeExtractor v0.27.1 already gives it to the YouTube layer in each link's `href`, as design.md shows from its sources. The layer keeps only a link's text, so it drops the address.
 
 ## What Changes
 
@@ -29,4 +29,4 @@ None.
 - `:core:youtube`: the function that turns NewPipeExtractor's description HTML into plain text, with its unit tests, and the replay test of the saved set VIDEO_BIG_BUCK_BUNNY, whose description has a shortened link. The saved responses stay as they are. They already hold the whole address, because the masking keeps the `q` parameter of YouTube's redirect links, as docs/testing.md says.
 - docs/architecture.md: the "Descriptions" section says how the layer treats links.
 - No new dependency, request, permission or log line. The description stays user data, as ADR 0007 defines it, and is never logged.
-- Other work in flight: [#43](https://github.com/dewfallapp/dewfall/issues/43)'s change, in pull request #198, also changes the `player` spec and docs/architecture.md, but neither the description requirement nor the "Descriptions" section. This change archives after #43's, so the living spec syncs cleanly.
+- Other work in flight: [#43](https://github.com/dewfallapp/dewfall/issues/43)'s change, in pull request #198, also changes the `player` spec and docs/architecture.md, but neither the description requirement nor the "Descriptions" section. This change was planned to archive after #43's, so the living spec would sync cleanly. It archived first instead, as tasks.md's dated note under the workflow follow-up says.

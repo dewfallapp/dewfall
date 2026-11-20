@@ -75,7 +75,7 @@ NewPipeExtractor's `runsToHtml` ([lines 145-223](https://github.com/TeamNewPipe/
 <b>See <a href="https://example.com/a/long">https:</a></b><a href="https://example.com/a/long">//example.com/a/lo...</a>
 ```
 
-A style run that starts inside a link and ends after it splits the style instead, and the link stays whole. Both shapes come from running v0.27.1's `attributedDescriptionToHtml` on made-up attributed descriptions with jshell on November 21, 2026. In the split shape, the first piece doesn't end with "..." and the second doesn't start with `http`, so both keep their text. Joining them would need NewPipeExtractor's run logic in the layer. The saved set's style runs give a link its color without a tag, so bold or italic text across a link's start is rare.
+A style run that starts inside a link and ends after it splits the style instead, and the link stays whole. Both shapes come from running v0.27.1's `attributedDescriptionToHtml` on made-up attributed descriptions with jshell on November 21, 2026. In the split shape, the first piece doesn't end with "..." and the second doesn't start with `http`, so both keep their text. Joining them would need NewPipeExtractor's run logic in the layer. In the saved set VIDEO_BIG_BUCK_BUNNY, recorded on November 18, 2026, the style runs give a link its color without a tag, so the case doesn't come up there.
 
 ### Tests
 
@@ -95,7 +95,7 @@ Nothing is stored yet, so there is nothing to migrate. Reverting the commit brin
 
 ## The maintainer's answers
 
-The maintainer answered both questions on November 21, 2026, after the maintainer subagent's first plan check, and chose the recommendation each time: "In place" and "Only shortened ones". They also approved this change as it stood at commit f48d81d. The pull request's description quotes the answers. The questions were:
+The maintainer answered both questions on November 21, 2026, after the maintainer subagent's first plan check, and chose the recommendation each time: "In place" and "Only shortened ones". They also approved this change as it stood at commit f48d81d, which became 9485126, with the same content, when the branch was rebased onto main 57f6d32 before the archive. The pull request's description quotes the answers. The questions were:
 
 1. **Where does the whole address go?** In place of the shortened text, or next to it? Recommendation: in place. YouTube's text is only the start of the same address, so nothing is lost, and copying the link copies an address that opens the page. A very long address takes several lines.
 2. **Which links change?** Only a link whose text is the start of its address followed by "...", or every link whose text looks like an address? Recommendation: only the shortened ones. A link shown whole stays exactly as YouTube shows it, and the rules can't turn a timestamp, a hashtag or a name into an address.
