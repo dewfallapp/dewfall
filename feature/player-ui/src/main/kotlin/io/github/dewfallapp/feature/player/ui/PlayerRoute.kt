@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -28,6 +29,7 @@ import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.StartAction
+import io.github.dewfallapp.feature.player.logic.pausesOnLeave
 import io.github.dewfallapp.feature.player.logic.startAction
 import io.github.dewfallapp.feature.player.logic.videoAreaFailure
 import java.time.ZoneId
@@ -38,9 +40,10 @@ import kotlin.time.Clock
  * taps the close button. The app's navigation gives each screen its own ViewModelStoreOwner, so
  * each video gets its own ViewModel. See openspec/specs/player/spec.md.
  *
- * Playback starts the first time the screen opens. Leaving the app pauses it, and closing the
- * screen stops it, through the ViewModel. When the screen comes back after the system ended the
- * process or stopped the player, it waits at the saved position for the user to press play.
+ * Playback starts the first time the screen opens. Leaving the app keeps it playing in the
+ * background, unless it hasn't played yet, and closing the screen stops it, through the ViewModel.
+ * When the screen comes back after the system ended the process or stopped the player, it waits at
+ * the saved position for the user to press play.
  */
 @Composable
 fun PlayerRoute(videoId: VideoId, onClose: () -> Unit, modifier: Modifier = Modifier) {
@@ -62,6 +65,8 @@ internal fun PlayerContent(
     var started by rememberSaveable { mutableStateOf(false) }
     var playbackId by rememberSaveable { mutableStateOf<String?>(null) }
     var savedPositionMs by rememberSaveable { mutableLongStateOf(C.TIME_UNSET) }
+    // The playback ID that has played, so leaving the app keeps it playing.
+    var playedId by rememberSaveable { mutableStateOf<String?>(null) }
     // Read again when the player connects or goes, because the session's end clears the IDs.
     val known = remember(player, playbackId) { playbackId?.let(playback::isKnown) == true }
 
@@ -80,7 +85,14 @@ internal fun PlayerContent(
     LaunchedEffect(Unit) {
         if (startAction(started, known) == StartAction.PLAY) start(C.TIME_UNSET)
     }
-    PauseOnStop(player, playbackId, onSave = { savedPositionMs = it }, onPause = playback::pause)
+    LeavingRules(
+        player = player,
+        playbackId = playbackId,
+        playedId = playedId,
+        onPlaying = { playedId = it },
+        onSave = { savedPositionMs = it },
+        onPause = playback::pause,
+    )
     // Try again, or play after the session was gone, goes on from the last position.
     val retryPositionMs = {
         player?.takeIf { it.currentMediaItem?.mediaId == playbackId }?.let(::resumePosition)
@@ -125,16 +137,82 @@ internal fun PlayerContent(
 }
 
 /**
- * When the screen stops, hands [onSave] the position to keep in the saved state, and [onPause] this
- * screen's playback ID, unless the activity is only changing configurations. The connection pauses
- * a start that still waits for the player too. An idle player failed or never loaded, so its
- * position may not be where the video was: the position its playback started from stays saved
- * instead.
+ * What leaving the app does with this screen's playback, [playbackId]: [FollowPlayback] keeps the
+ * position and which ID has played, [playedId], up to date, and [SaveAndPauseOnStop] acts when the
+ * screen stops.
  */
 @Composable
-private fun PauseOnStop(
+private fun LeavingRules(
     player: Player?,
     playbackId: String?,
+    playedId: String?,
+    onPlaying: (String) -> Unit,
+    onSave: (Long) -> Unit,
+    onPause: (String) -> Unit,
+) {
+    FollowPlayback(player, playbackId, onPlaying = onPlaying, onSave = onSave)
+    SaveAndPauseOnStop(
+        player,
+        playbackId,
+        played = playbackId != null && playedId == playbackId,
+        onSave = onSave,
+        onPause = onPause,
+    )
+}
+
+/**
+ * While the screen exists, even with the app in the background, tells [onPlaying] the playback ID
+ * once its item plays, and hands [onSave] the position whenever this screen's item pauses or ends.
+ * So when Android stops a player that paused in the background, the screen waits at the position
+ * where it paused. Like ON_STOP, it never saves from an idle player, whose position after a failure
+ * may not be where the video was.
+ */
+@Composable
+private fun FollowPlayback(
+    player: Player?,
+    playbackId: String?,
+    onPlaying: (String) -> Unit,
+    onSave: (Long) -> Unit,
+) {
+    val played by rememberUpdatedState(onPlaying)
+    val save by rememberUpdatedState(onSave)
+    DisposableEffect(player, playbackId) {
+        if (player == null || playbackId == null) return@DisposableEffect onDispose {}
+        fun follow() {
+            if (player.currentMediaItem?.mediaId != playbackId) return
+            if (player.isPlaying) played(playbackId)
+            val state = player.playbackState
+            if (
+                state != Player.STATE_IDLE && (!player.playWhenReady || state == Player.STATE_ENDED)
+            ) {
+                save(resumePosition(player))
+            }
+        }
+        val listener =
+            object : Player.Listener {
+                override fun onEvents(player: Player, events: Player.Events) {
+                    follow()
+                }
+            }
+        follow()
+        player.addListener(listener)
+        onDispose { player.removeListener(listener) }
+    }
+}
+
+/**
+ * When the screen stops, unless the activity is only changing configurations, hands [onSave] the
+ * position to keep in the saved state, and [onPause] this screen's playback ID if it hasn't
+ * [played] yet, as [pausesOnLeave] decides. A video that has played keeps playing in the
+ * background. The connection pauses a start that still waits for the player too. An idle player
+ * failed or never loaded, so its position may not be where the video was: the position its playback
+ * started from stays saved instead.
+ */
+@Composable
+private fun SaveAndPauseOnStop(
+    player: Player?,
+    playbackId: String?,
+    played: Boolean,
     onSave: (Long) -> Unit,
     onPause: (String) -> Unit,
 ) {
@@ -142,11 +220,12 @@ private fun PauseOnStop(
     val save by rememberUpdatedState(onSave)
     val pause by rememberUpdatedState(onPause)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        val changing = activity?.isChangingConfigurations == true
         val current = player?.takeIf { it.currentMediaItem?.mediaId == playbackId }
-        if (current != null && current.playbackState != Player.STATE_IDLE) {
+        if (!changing && current != null && current.playbackState != Player.STATE_IDLE) {
             save(resumePosition(current))
         }
-        if (playbackId != null && activity?.isChangingConfigurations != true) pause(playbackId)
+        if (playbackId != null && pausesOnLeave(changing, played)) pause(playbackId)
     }
 }
 

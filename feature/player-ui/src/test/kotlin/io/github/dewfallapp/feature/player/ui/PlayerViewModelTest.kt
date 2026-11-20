@@ -235,4 +235,45 @@ class PlayerViewModelTest {
         assertNull(retried)
         assertEquals(1, connection.prepared.size)
     }
+
+    @Test
+    fun `details that arrive after the start describe that playback`() = runTest {
+        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        viewModel.startPlayback(C.TIME_UNSET)
+        assertTrue(connection.descriptions.isEmpty())
+
+        repository.calls.single().answer.complete(YouTubeResult.Success(DETAILS))
+
+        assertEquals(listOf(Triple("playback 1", "A title", "A channel")), connection.descriptions)
+    }
+
+    @Test
+    fun `a start after the details describes the new playback at once`() = runTest {
+        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        repository.calls.single().answer.complete(YouTubeResult.Success(DETAILS))
+        assertTrue(connection.descriptions.isEmpty())
+
+        viewModel.startPlayback(C.TIME_UNSET)
+        // A playback "Try again" makes a new playback ID, which gets the description too.
+        viewModel.startPlayback(positionMs = 5_000)
+
+        assertEquals(
+            listOf(
+                Triple("playback 1", "A title", "A channel"),
+                Triple("playback 2", "A title", "A channel"),
+            ),
+            connection.descriptions,
+        )
+    }
+
+    @Test
+    fun `details that failed describe nothing`() = runTest {
+        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        viewModel.startPlayback(C.TIME_UNSET)
+
+        repository.calls.single().answer.complete(YouTubeResult.Failure(YouTubeError.NETWORK))
+        viewModel.startPlayback(C.TIME_UNSET)
+
+        assertTrue(connection.descriptions.isEmpty())
+    }
 }
