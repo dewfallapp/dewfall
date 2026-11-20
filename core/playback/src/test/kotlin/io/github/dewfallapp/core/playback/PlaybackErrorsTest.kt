@@ -18,7 +18,9 @@ class PlaybackErrorsTest {
         // OkHttpDataSource at 1.11.1 wraps a failed call as new IOException(executionException).
         val chain =
             IOException(
-                ExecutionException(MediaRequestRefused(MediaRequestRefused.Reason.HOST_NOT_ALLOWED))
+                ExecutionException(
+                    MediaRequestRefused(MediaRequestRefused.Reason.HOST_NOT_ALLOWED),
+                ),
             )
 
         assertTrue(refusedInChain(chain))

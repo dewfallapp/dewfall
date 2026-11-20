@@ -159,7 +159,7 @@ private fun SwatchTile(swatch: Swatch, modifier: Modifier = Modifier) {
     val edge = swatch.border?.let { Modifier.border(OutlineWidth, it(colors), shape) } ?: Modifier
     Column(
         modifier =
-            modifier.background(swatch.fill(colors), shape).then(edge).padding(DewfallSpacing.sm)
+            modifier.background(swatch.fill(colors), shape).then(edge).padding(DewfallSpacing.sm),
     ) {
         Text(
             text = swatch.name,
@@ -274,7 +274,10 @@ private fun ShapeScalePreview() {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box(
                                 Modifier.size(ShapeSize)
-                                    .background(MaterialTheme.colorScheme.secondaryContainer, shape)
+                                    .background(
+                                        MaterialTheme.colorScheme.secondaryContainer,
+                                        shape,
+                                    ),
                             )
                             Text(text = name, style = MaterialTheme.typography.labelMedium)
                         }

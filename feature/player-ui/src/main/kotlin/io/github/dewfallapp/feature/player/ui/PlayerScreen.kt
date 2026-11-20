@@ -125,7 +125,7 @@ private fun Loading(modifier: Modifier = Modifier) {
             modifier =
                 Modifier.padding(top = DewfallSpacing.xl).semantics {
                     contentDescription = description
-                }
+                },
         )
     }
 }

@@ -91,7 +91,7 @@ class NewPipeDownloaderTest {
                         .newBuilder()
                         .header("X-Answer", "yes")
                         .build()
-                }
+                },
             )
 
         val response = downloader.execute(Request.newBuilder().get(SEARCH_URL).build())
@@ -120,7 +120,7 @@ class NewPipeDownloaderTest {
                         .newBuilder()
                         .header("Location", "https://www.google.com/sorry/index?continue=x")
                         .build()
-                }
+                },
             )
 
         assertFailsWith<ReCaptchaException> {
@@ -134,7 +134,7 @@ class NewPipeDownloaderTest {
             NewPipeDownloader(
                 clientAnswering {
                     answer(it, code = 403, body = BLOCK_PAGE, contentType = "text/html")
-                }
+                },
             )
 
         assertFailsWith<ReCaptchaException> {
@@ -153,7 +153,7 @@ class NewPipeDownloaderTest {
                         body = BLOCK_PAGE,
                         contentType = "text/html; charset=utf-8",
                     )
-                }
+                },
             )
 
         val thrown =
@@ -176,7 +176,7 @@ class NewPipeDownloaderTest {
             NewPipeDownloader(
                 clientAnswering {
                     answer(it, code = 403, body = body, contentType = "application/json")
-                }
+                },
             )
 
         val response = downloader.execute(Request.newBuilder().get(SEARCH_URL).build())
@@ -189,7 +189,7 @@ class NewPipeDownloaderTest {
     fun `HTTP 200 with an HTML body comes back as it is`() {
         val downloader =
             NewPipeDownloader(
-                clientAnswering { answer(it, body = BLOCK_PAGE, contentType = "text/html") }
+                clientAnswering { answer(it, body = BLOCK_PAGE, contentType = "text/html") },
             )
 
         val response = downloader.execute(Request.newBuilder().get(SEARCH_URL).build())
@@ -207,7 +207,7 @@ class NewPipeDownloaderTest {
                         .newBuilder()
                         .header("Location", "https://www.youtube.com/sorry/")
                         .build()
-                }
+                },
             )
 
         val response = downloader.execute(Request.newBuilder().get(SEARCH_URL).build())

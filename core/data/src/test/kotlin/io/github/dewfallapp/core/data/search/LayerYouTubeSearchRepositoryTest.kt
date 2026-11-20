@@ -17,7 +17,7 @@ class LayerYouTubeSearchRepositoryTest {
             SearchRemoteDataSource { query ->
                 queries += query
                 answer
-            }
+            },
         )
 
     @Test

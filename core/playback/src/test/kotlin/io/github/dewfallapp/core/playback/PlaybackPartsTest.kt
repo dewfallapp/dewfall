@@ -87,7 +87,7 @@ class PlaybackPartsTest {
                 Logger(
                     { level, tag, text -> lines += "$level $tag $text" },
                     minLevel = LogLevel.DEBUG,
-                )
+                ),
             )
 
         log.failed(PlaybackFailure.NETWORK, errorCode = 2001)

@@ -35,7 +35,7 @@ class ExtractorLoggerDetectorTest {
                     org.schabi.newpipe.extractor.utils.ExtractorLogger.setLogger(logger)
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -65,7 +65,7 @@ class ExtractorLoggerDetectorTest {
                     NewPipeLog.setLogger(logger)
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -93,7 +93,7 @@ class ExtractorLoggerDetectorTest {
                 val install: (Logger) -> Unit = ExtractorLogger::setLogger
                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -124,7 +124,7 @@ class ExtractorLoggerDetectorTest {
                         ExtractorLogger.setLogger(null)
                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 1 error
-                """
+                """,
             )
     }
 
@@ -172,7 +172,7 @@ class ExtractorLoggerDetectorTest {
                     ExtractorLogger.w("Tag", "Unset, so it writes nothing")
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 4 errors
-                """
+                """,
             )
     }
 
@@ -244,7 +244,7 @@ class ExtractorLoggerDetectorTest {
                     ExtractorLogger.setLogger(logger)
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 4 errors
-                """
+                """,
             )
     }
 

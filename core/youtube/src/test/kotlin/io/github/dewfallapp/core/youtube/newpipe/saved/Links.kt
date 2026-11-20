@@ -16,7 +16,7 @@ internal val KEPT_STREAM_LINK_PARAMETERS: Map<String, String> =
         "expire" to
             "When the link stops working. Dewfall's expiryOf in FormatMapping.kt reads it from " +
                 "a format's link, and from the path of an HLS manifest's link, and " +
-                "StreamLinksReplayTest checks it."
+                "StreamLinksReplayTest checks it.",
     )
 
 /** The parameters of a link through YouTube's redirect that a saved set keeps, with the reason. */
@@ -26,7 +26,7 @@ internal val KEPT_REDIRECT_LINK_PARAMETERS: Map<String, String> =
             "The page that a link in a description goes to. NewPipeExtractor reads it to write " +
                 "the description " +
                 "($NEWPIPE_EXTRACTOR_SOURCE/YoutubeParsingHelper.java#L692-L717), and " +
-                "VideoDetailsReplayTest checks the description."
+                "VideoDetailsReplayTest checks the description.",
     )
 
 /**

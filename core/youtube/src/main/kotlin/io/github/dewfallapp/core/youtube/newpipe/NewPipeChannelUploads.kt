@@ -38,8 +38,8 @@ internal class NewPipeChannelUploads(private val calls: NewPipeCalls, logger: Lo
             val channelExtractor =
                 settings.applyTo(
                     service.getChannelExtractor(
-                        service.channelLHFactory.fromId("$CHANNEL_PATH/${channelId.value}")
-                    )
+                        service.channelLHFactory.fromId("$CHANNEL_PATH/${channelId.value}"),
+                    ),
                 )
             channelExtractor.fetchPage()
             val skipped = SkippedParts(YouTubeCall.LATEST_UPLOADS)

@@ -83,7 +83,7 @@ class LiveCheckTest {
             fetched,
         )
         assertTrue(
-            "INFO Dewfall.LiveCheck Live check result kind=SEARCH_NASA verdict=PASSED" in lines
+            "INFO Dewfall.LiveCheck Live check result kind=SEARCH_NASA verdict=PASSED" in lines,
         )
     }
 
@@ -101,7 +101,7 @@ class LiveCheckTest {
         assertEquals(emptyList(), fetched)
         assertTrue(
             "WARN Dewfall.LiveCheck Live check result kind=VIDEO_BIG_BUCK_BUNNY verdict=SKIPPED " +
-                "reason=RUNNER_BLOCKED" in lines
+                "reason=RUNNER_BLOCKED" in lines,
         )
         assertTrue("INFO Dewfall.LiveCheck Live check started skipUnreachable=true" in lines)
         assertEquals(0, exitCodeOf(results))
@@ -136,7 +136,7 @@ class LiveCheckTest {
                 results.dropLast(1).all {
                     it.reason == UncheckedBecause.RUNNER_BLOCKED ||
                         it.reason == UncheckedBecause.NETWORK
-                }
+                },
             )
             // Nothing was skipped, so NOTHING_CHECKED has nothing to report.
             assertEquals("NOTHING_CHECKED PASSED", results.last().line)
@@ -195,7 +195,7 @@ class LiveCheckTest {
                             } else {
                                 outcome
                             }
-                        }
+                        },
                     )
                     .run()
 
@@ -204,7 +204,7 @@ class LiveCheckTest {
             assertTrue(currentTime - start >= 30.seconds.inWholeMilliseconds)
             assertTrue(
                 "WARN Dewfall.LiveCheck Live check makes a call again after NETWORK " +
-                    "kind=SEARCH_NASA" in lines
+                    "kind=SEARCH_NASA" in lines,
             )
         }
 
@@ -236,7 +236,7 @@ class LiveCheckTest {
                 liveCheck(
                         replacing(SavedSet.VIDEO_BIG_BUCK_BUNNY) {
                             failure(YouTubeError.UNAVAILABLE, STOPPED_VIDEO_REQUESTS)
-                        }
+                        },
                     )
                     .run()
 
@@ -248,7 +248,7 @@ class LiveCheckTest {
             assertTrue(
                 "ERROR Dewfall.LiveCheck Live check result kind=VIDEO_BIG_BUCK_BUNNY " +
                     "verdict=FAILED reason=UNEXPECTED_RESULT expected=SUCCESS got=UNAVAILABLE" in
-                    lines
+                    lines,
             )
         }
 
@@ -264,7 +264,7 @@ class LiveCheckTest {
                             SavedSet.CHANNEL_DELETED -> success(Unit, outcome.requests)
                             else -> outcome
                         }
-                    }
+                    },
                 )
                 .run()
 
@@ -283,7 +283,7 @@ class LiveCheckTest {
             liveCheck(
                     replacing(SavedSet.UPLOADS_NASA) {
                         CallOutcome(it.result, it.requests, warnings = 1, Duration.ZERO)
-                    }
+                    },
                 )
                 .run()
 
@@ -302,7 +302,7 @@ class LiveCheckTest {
                             it.result.valueOrFail(),
                             listOf(Endpoint.SW_JS_DATA, Endpoint.BROWSE),
                         )
-                    }
+                    },
                 )
                 .run()
 
@@ -328,7 +328,7 @@ class LiveCheckTest {
                     replayCaller { _, outcome ->
                         val requests = outcome.requests.filter { it != Endpoint.SW_JS_DATA }
                         CallOutcome(outcome.result, requests, outcome.warnings, outcome.duration)
-                    }
+                    },
                 )
                 .run()
 
@@ -390,7 +390,7 @@ class LiveCheckTest {
                             (outcome.result as YouTubeResult.Success).value as VideoSubtitles
                         val added = subtitles.tracks.first().copy(languageTag = "fr")
                         success(subtitles.copy(tracks = subtitles.tracks + added), outcome.requests)
-                    }
+                    },
                 )
                 .run()
 
@@ -447,7 +447,7 @@ class LiveCheckTest {
                     tracks =
                         subtitles.tracks.map { track ->
                             if (track.languageTag == "he") track.copy(languageTag = "iw") else track
-                        }
+                        },
                 )
             }
             assertWrongContent(SavedSet.SUBTITLES_TEARS_OF_STEEL, "MISSING_TRACK") {
@@ -456,7 +456,7 @@ class LiveCheckTest {
             assertWrongContent(SavedSet.SUBTITLES_TEARS_OF_STEEL, "TOO_FEW_TRACKS") {
                 val subtitles = it as VideoSubtitles
                 subtitles.copy(
-                    tracks = subtitles.tracks.filter { track -> track.languageTag in KEPT }
+                    tracks = subtitles.tracks.filter { track -> track.languageTag in KEPT },
                 )
             }
             assertWrongContent(SavedSet.SUBTITLES_TEARS_OF_STEEL, "TOO_FEW_LINES") {
@@ -478,7 +478,7 @@ class LiveCheckTest {
                             subtitles.copy(tracks = subtitles.tracks + regional),
                             outcome.requests,
                         )
-                    }
+                    },
                 )
                 .run()
 
@@ -517,7 +517,7 @@ class LiveCheckTest {
                 videoFormats =
                     links.videoFormats.map {
                         it.copy(url = it.url.replace("googlevideo.com", "example.com"))
-                    }
+                    },
             )
         }
         assertEquals(emptyList(), fetched)
@@ -665,7 +665,7 @@ class LiveCheckTest {
  * with WarningCounter, as the live run does.
  */
 private fun TestScope.replayCaller(
-    change: (LiveCall, CallOutcome) -> CallOutcome = { _, outcome -> outcome }
+    change: (LiveCall, CallOutcome) -> CallOutcome = { _, outcome -> outcome },
 ): LayerCaller = LayerCaller { liveCall ->
     val warnings = WarningCounter { _, _, _ -> }
     val youTube =
@@ -715,7 +715,7 @@ private fun VideoSubtitles.changeLines(
         read =
             read.map {
                 if (it.track.languageTag == languageTag) it.copy(lines = change(it.lines)) else it
-            }
+            },
     )
 
 /** A call that succeeded with [value] after [requests]. */

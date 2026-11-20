@@ -42,7 +42,7 @@ class ReplayingClientTest {
                             listOf(Header(CONTENT_TYPE, "application/json")),
                             ANSWER,
                         ),
-                    )
+                    ),
                 ),
         )
 

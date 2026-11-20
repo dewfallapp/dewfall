@@ -80,7 +80,7 @@ class ErrorMappingTest {
     fun `the first cause that names a category decides`() {
         val error =
             ExtractionException(
-                ParsingException("Wrapped", IOException("Lost", ReCaptchaException("Captcha", "")))
+                ParsingException("Wrapped", IOException("Lost", ReCaptchaException("Captcha", ""))),
             )
 
         assertEquals(YouTubeError.NETWORK, youTubeErrorOf(error))

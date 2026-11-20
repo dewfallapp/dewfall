@@ -21,7 +21,7 @@ class DescriptionTextTest {
         assertEquals(
             "See example.com/page now",
             htmlDescriptionToText(
-                """See <a href="https://example.com/page">example.com/page</a> now"""
+                """See <a href="https://example.com/page">example.com/page</a> now""",
             ),
         )
     }

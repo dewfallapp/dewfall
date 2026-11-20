@@ -20,7 +20,7 @@ class SkippedPartsTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=VIDEO_DETAILS dropped=0 " +
-                    "parseErrors=1"
+                    "parseErrors=1",
             ),
             lines,
         )
@@ -62,7 +62,7 @@ class SkippedPartsTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=LATEST_UPLOADS dropped=2 " +
-                    "parseErrors=4"
+                    "parseErrors=4",
             ),
             lines,
         )

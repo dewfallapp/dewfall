@@ -26,7 +26,7 @@ internal object DewfallBuild {
 internal fun Project.requireAndroidPlugin(pluginId: String) {
     check(
         pluginManager.hasPlugin("com.android.application") ||
-            pluginManager.hasPlugin("com.android.library")
+            pluginManager.hasPlugin("com.android.library"),
     ) {
         "$pluginId needs an Android module. Apply dewfall.android.application or " +
             "dewfall.android.library before it in $path."

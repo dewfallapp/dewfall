@@ -110,7 +110,7 @@ class NewPipeVideoDetailsTest {
         assertEquals(
             listOf(
                 "WARN Dewfall.YouTube YouTube answer read in part call=VIDEO_DETAILS dropped=0 " +
-                    "parseErrors=2"
+                    "parseErrors=2",
             ),
             lines,
         )

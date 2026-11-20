@@ -94,12 +94,12 @@ constructor(
 
     /** There is no DRM, so this keeps none. */
     override fun setDrmSessionManagerProvider(
-        drmSessionManagerProvider: DrmSessionManagerProvider
+        drmSessionManagerProvider: DrmSessionManagerProvider,
     ): MediaSource.Factory = this
 
     /** The sources always use [PlaybackLoadErrorPolicy], so this keeps none. */
     override fun setLoadErrorHandlingPolicy(
-        loadErrorHandlingPolicy: LoadErrorHandlingPolicy
+        loadErrorHandlingPolicy: LoadErrorHandlingPolicy,
     ): MediaSource.Factory = this
 
     override fun getSupportedTypes(): IntArray =

@@ -120,7 +120,7 @@ class SubtitlesSectionTest {
         assertEquals(
             cancelled,
             cancelled.after(
-                YouTubeDebugIntent.SubtitleLinesFinished(TrackPick(TEARS_OF_STEEL, 2), answer)
+                YouTubeDebugIntent.SubtitleLinesFinished(TrackPick(TEARS_OF_STEEL, 2), answer),
             ),
         )
     }

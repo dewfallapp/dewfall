@@ -42,7 +42,7 @@ class OtherLoggerDetectorTest {
                     LogManager.getLogManager().reset()
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 5 errors
-                """
+                """,
             )
     }
 
@@ -72,7 +72,7 @@ class OtherLoggerDetectorTest {
                 fun handlers() = listOf(ConsoleHandler(), FileHandler("repository.log"))
                                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -109,7 +109,7 @@ class OtherLoggerDetectorTest {
                     EventLog.writeEvent(EventLog.getTagCode("loaded"), "Loaded")
                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 3 errors
-                """
+                """,
             )
     }
 
@@ -138,7 +138,7 @@ class OtherLoggerDetectorTest {
                     System.getLogger("Repository").log(System.Logger.Level.INFO, "Loaded")
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -169,7 +169,7 @@ class OtherLoggerDetectorTest {
                         java.util.logging.Logger.getLogger("RepositoryTest").severe("Failed")
                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 2 errors
-                """
+                """,
             )
     }
 
@@ -235,7 +235,7 @@ class OtherLoggerDetectorTest {
                     java.util.logging.Logger.getGlobal()
                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 4 errors
-                """
+                """,
             )
     }
 }

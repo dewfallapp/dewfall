@@ -143,7 +143,8 @@ internal fun formatSavedSet(set: SavedSet, content: SavedSetContent): Map<String
     val index = StringBuilder()
     index.appendLine("$COMMENT Saved YouTube responses for the set ${set.name}.")
     index.appendLine(
-        "$COMMENT Written by ./gradlew :core:youtube:recordYouTubeResponses. Don't edit it by hand."
+        "$COMMENT Written by ./gradlew :core:youtube:recordYouTubeResponses. " +
+            "Don't edit it by hand.",
     )
     index.appendLine("$COMMENT Signed out, asking for the country GB and the language en-GB.")
     index.appendLine("$RECORDED_ON${content.recordedOn}")

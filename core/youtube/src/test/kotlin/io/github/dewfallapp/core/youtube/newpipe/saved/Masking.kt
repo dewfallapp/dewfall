@@ -272,7 +272,7 @@ private val RULES =
         Rule(
             MaskedValue.EVENT_ID,
             Regex(
-                """"(?:responseId|trackingParams|clickTrackingParams|trackingParam)":"([^"]*)""""
+                """"(?:responseId|trackingParams|clickTrackingParams|trackingParam)":"([^"]*)"""",
             ),
             MASKED_EVENT_ID,
         ),
@@ -351,7 +351,7 @@ private val IPV6_LITERAL =
     Regex(
         """(?i)(?<![0-9a-f:%])""" +
             """((?:[0-9a-f]{1,4}(?::|%3a|%253a)){2,7}(?::|%3a|%253a)?[0-9a-f]{0,4})""" +
-            """(?![0-9a-f:%])"""
+            """(?![0-9a-f:%])""",
     )
 
 /**
@@ -863,7 +863,7 @@ private fun mappedIpv6(address: String): String? =
     if (isIpv4(address)) {
         val hex = ipv4Value(address).toString(HEX_RADIX).padStart(IPV4_HEX_DIGITS, '0')
         expandedIpv6(
-            "$IPV4_MAPPED_PREFIX${hex.take(IPV6_GROUP_DIGITS)}:${hex.drop(IPV6_GROUP_DIGITS)}"
+            "$IPV4_MAPPED_PREFIX${hex.take(IPV6_GROUP_DIGITS)}:${hex.drop(IPV6_GROUP_DIGITS)}",
         )
     } else {
         null

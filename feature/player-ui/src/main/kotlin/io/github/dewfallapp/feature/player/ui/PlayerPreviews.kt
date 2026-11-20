@@ -71,14 +71,14 @@ private class PreviewPlayer(
                         .setDurationUs(if (live) C.TIME_UNSET else PREVIEW_DURATION_US)
                         .setIsDynamic(live)
                         .setLiveConfiguration(if (live) MediaItem.LiveConfiguration.UNSET else null)
-                        .build()
-                )
+                        .build(),
+                ),
             )
             .setContentPositionMs(
                 when (playbackState) {
                     Player.STATE_ENDED -> PREVIEW_DURATION_US / MICROS_PER_MILLI
                     else -> PREVIEW_POSITION_MS
-                }
+                },
             )
             .build()
 
@@ -183,8 +183,8 @@ private fun LiveWithNoDescriptionPreview() {
                         channelInitial = "K",
                         description = "",
                         isLive = true,
-                    )
-                )
+                    ),
+                ),
             ),
         video = { VideoAreaContent.Playing(PreviewPlayer(playing = true, live = true)) },
     )

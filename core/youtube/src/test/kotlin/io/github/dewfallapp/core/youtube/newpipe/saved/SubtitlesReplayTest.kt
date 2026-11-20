@@ -200,7 +200,7 @@ class SubtitlesReplayTest {
             assertEquals(YouTubeResult.Failure(error), result, set.name)
             assertEquals(
                 listOf(
-                    "WARN Dewfall.YouTube YouTube call failed call=SUBTITLE_TRACKS error=$error"
+                    "WARN Dewfall.YouTube YouTube call failed call=SUBTITLE_TRACKS error=$error",
                 ),
                 lines,
                 set.name,

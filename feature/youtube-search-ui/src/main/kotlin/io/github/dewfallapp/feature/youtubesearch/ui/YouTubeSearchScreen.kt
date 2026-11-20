@@ -57,7 +57,7 @@ internal fun YouTubeSearchScreen(
                             start = DewfallSpacing.margin,
                             end = DewfallSpacing.margin,
                             top = DewfallSpacing.md,
-                        )
+                        ),
                 )
                 SearchField(
                     textFieldState = textFieldState,

@@ -220,7 +220,7 @@ class PlaybackService : MediaSessionService() {
                     MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller).build()
                 } else {
                     MediaSession.ConnectionResult.reject()
-                }
+                },
             )
 
         /** Headset and Bluetooth buttons do nothing until #43. */
