@@ -88,11 +88,11 @@ So the platform session holds the playback ID, the title and the channel name, a
 
 ### Who may control playback
 
-`onConnectAsync` sorts controllers into four kinds, with a pure function of three inputs: whether `session.isMediaNotificationController(controller)`, whether the package is the app's own, and `isTrusted`.
+`onConnectAsync` sorts controllers into four kinds, with a pure function of four inputs: whether `session.isMediaNotificationController(controller)`, whether the package is the app's own, whether the controller is a legacy one, and `isTrusted`.
 
 - **The media notification controller**, Media3's own controller from the app's package. It gets the playback commands below and no session commands. Media3 sends media buttons as this controller, answers the system UI's connection with its commands, and advertises them in the platform session. So the system UI, the notification's buttons, headset and Bluetooth buttons, and every app that reads the platform session get only these.
 - **The app's other controllers**: the screens' MediaController. It keeps the default commands, which the screens need to set items.
-- **Trusted controllers from other packages**: the Bluetooth service and apps with notification access, which go through `onConnectAsync`. They get the same playback commands and no session commands.
+- **Trusted controllers**: the Bluetooth service and apps with notification access, which go through `onConnectAsync`, and a legacy controller from the app's own package. Before its media notification controller connects, Media3 sends a media button through the platform session, as the app's own legacy controller (MediaSessionImpl, `onMediaButtonEvent`, and MediaSessionLegacyStub's runtime MediaButtonReceiver). Added after the plan check's last round, so those buttons can't skip or seek by steps either. They get the same playback commands and no session commands.
 - **Any other controller** is rejected, as today.
 
 The playback commands are COMMAND_PLAY_PAUSE, COMMAND_PREPARE, which some controllers send before play, though play itself prepares an idle player through Media3's `Util.handlePlayButtonAction` ([Util](https://github.com/androidx/media/blob/1.11.1/libraries/common/src/main/java/androidx/media3/common/util/Util.java)), COMMAND_STOP, which the notification's dismissal sends, COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM, for the seek bar of Android 13's media controls, and the read commands COMMAND_GET_CURRENT_MEDIA_ITEM, COMMAND_GET_TIMELINE, which the notification needs to know there is an item, and COMMAND_GET_METADATA. So none of them can set an item, change tracks, the speed or the volume, skip or seek by steps.
