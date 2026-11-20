@@ -54,6 +54,25 @@ class VideoDetailsReplayTest {
     }
 
     @Test
+    fun `a video's description shows a shortened link's whole address`() = runTest {
+        val details = savedYouTube().call { videoDetails(VideoId(BIG_BUCK_BUNNY_ID)) }.valueOrFail()
+
+        // YouTube shows the first link as "https://studio.blender.org/projects/b...".
+        assertTrue(
+            details.description.contains(
+                "More info:  https://studio.blender.org/projects/big-buck-bunny/\n\n",
+            ),
+            details.description,
+        )
+        // The second link is shown whole, so it keeps its text, without the slash that its
+        // address adds.
+        assertTrue(
+            details.description.endsWith("http://bbb3d.renderfarming.net"),
+            details.description,
+        )
+    }
+
+    @Test
     fun `a video's details take five requests`() = runTest {
         val youTube = savedYouTube()
 
