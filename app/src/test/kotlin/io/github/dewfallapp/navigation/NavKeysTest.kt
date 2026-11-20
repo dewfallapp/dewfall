@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlinx.serialization.json.Json
 
@@ -48,11 +49,18 @@ class NavKeysTest {
     fun `restoring a saved key checks the video ID`() {
         val saved = """{"videoId":"not an ID","entryId":"x"}"""
 
-        // VideoId's constructor refuses the text, and its message doesn't repeat it.
         val error =
             assertFailsWith<IllegalArgumentException> {
                 Json.decodeFromString(PlayerKey.serializer(), saved)
             }
-        assertFalse("not an ID" in error.message.orEmpty())
+        // VideoId's constructor refuses the text, and its message doesn't repeat it. From
+        // kotlinx.serialization 1.12.0, Json wraps every exception thrown while decoding in a
+        // JsonDecodingException whose message holds the input. So the test checks the exception
+        // that VideoId threw, at the end of the cause chain. Json is only a test dependency: the
+        // app restores keys through Navigation 3's rememberSerializable and SavedState.
+        val refused = generateSequence<Throwable>(error) { it.cause }.last()
+        assertIs<IllegalArgumentException>(refused)
+        assertEquals("Not a YouTube video ID", refused.message)
+        assertFalse("not an ID" in refused.message.orEmpty())
     }
 }
