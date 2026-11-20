@@ -117,7 +117,7 @@ On Android 10 to 12 the notification's buttons are PendingIntents to the service
 
 **The fix.**
 - The session gets a new random ID in each process, with `MediaSession.Builder.setId`, a random UUID's text. So an intent from an earlier process names a URI that matches no session.
-- `onStartCommand` then asks `onGetSession` with a media button caller. PlaybackService's `onGetSession` returns null for every caller, because Dewfall's controllers connect with the session's own token and never call it. Its two other callers are bindings, `onBind`'s legacy browser path and MediaSessionServiceStub's `connect`, and both need a binding intent with the service's action, which only the intent filter would offer other apps (MediaSessionService).
+- `onStartCommand` then asks `onGetSession` with a media button caller, which `onGetSession` recognises by its connection hint `MediaSessionService.CONNECTION_HINT_KEY_CONTROLLER_INFO_TYPE`, set to `Intent.ACTION_MEDIA_BUTTON` (MediaSessionService, `createFallbackMediaButtonCaller`). PlaybackService's `onGetSession` returns null for every caller, because Dewfall's controllers connect with the session's own token and never call it. Its two other callers are bindings, `onBind`'s legacy browser path and MediaSessionServiceStub's `connect`, and both need a binding intent with the service's action, which only the intent filter would offer other apps (MediaSessionService).
 - With no session, Media3 calls `stopSelfSafely` on a service that hasn't processed its first start intent: it posts a hidden shutdown notification, calls `startForeground` with it, removes it and stops the service (MediaSessionService, `onStartCommand` and `stopSelfSafely`). So nothing crashes and nothing plays.
 - Before returning null to a media button caller, `onGetSession` cancels the media notification's ID when its own player has no item. Then this process shows no notification of its own, so one with that ID can only be left from an ended process, and the stale notification goes away. A notification of this process with an item would have replaced the stale one, buttons and all, under the same ID.
 
@@ -135,7 +135,7 @@ The player sets `setWakeMode(C.WAKE_MODE_NETWORK)`. Every video streams today, a
 
 ### The picture in the background
 
-While no Dewfall screen can be seen, the player turns the video track off with `setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)`, so no picture is decoded. When the sound and the picture come in separate files, as FormatChoice usually picks them, the video-only file isn't fetched either. A `Combined` format, one file with both, and a live stream's HLS segments, which carry both, can't drop the picture's bytes, so they keep loading.
+While no Dewfall screen can be seen, the player turns the video track off with `setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, true)`, so no picture is decoded. When the sound and the picture come in separate files, as FormatChoice usually picks them, the video-only file isn't fetched either. A `Combined` format, one file with both, and a live stream's HLS segments, which carry both, can't drop the picture's bytes, so they keep loading. For a live stream, HlsSampleStreamWrapper keeps the chunk source's last variant selection when the video group is turned off and the muxed audio stays on ([HlsSampleStreamWrapper at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/exoplayer_hls/src/main/java/androidx/media3/exoplayer/hls/HlsSampleStreamWrapper.java), `selectTracks`). That selection holds only the variants that the live override allowed, within the picture limit, so the background keeps loading segments within the limit. A hand check on mobile data covers it.
 
 - **Who knows.** MainActivity, which is Hilt's entry point, calls `PlaybackConnection.setAppVisible(true)` in `onStart`, and `setAppVisible(false)` in `onStop` unless `isChangingConfigurations`. The connection keeps it in PlaybackSessions, and PlaybackService applies it to its own ExoPlayer, building on its current track selection parameters, so the live stream's variant override stays. A configuration change keeps the picture.
 - **Why `:app`.** Whether the app can be seen doesn't depend on which screen shows, so #44's mini and fullscreen players follow the same rule. `:app` depends on `:core:playback` for the interface.
@@ -151,7 +151,7 @@ PlayerRoute's `PauseOnStop` becomes `SaveAndPauseOnStop`. In ON_STOP, unless the
 
 Media3 starts the foreground service as soon as the player buffers with play on, while the user still sees the app. A video that hasn't started yet would try to start it from the background, which Android 12 and later refuse. As a safety net, PlaybackService's `MediaSessionService.Listener` pauses the player in `onForegroundServiceStartNotAllowedException`.
 
-**Positions.** The route also saves the position whenever this screen's item pauses or ends, through a Player listener, while the screen exists. So when Android stops the paused player in the background, coming back waits at the position where it paused, not where the user left the app. Android writes the saved state only when the activity stops, so after the process ends the screen comes back at the position it had when the user last left the app. #50's stored resume positions will fix that.
+**Positions.** The route also saves the position whenever this screen's item pauses or ends, through a Player listener, while the screen exists. It follows the ON_STOP rule, so it never saves from an idle player, whose position after a failure may not be where the video was. So when Android stops the paused player in the background, coming back waits at the position where it paused, not where the user left the app. Android writes the saved state only when the activity stops, so after the process ends the screen comes back at the position it had when the user last left the app. #50's stored resume positions will fix that.
 
 ### Stopping
 
@@ -203,7 +203,7 @@ The adapters, the service and the notification run only on a device, so docs/tes
 - [The position after process death] → It is where the user last left the app, not where the video paused in the background, until #50.
 - [The notification shows inside the app too] → Media3 shows it whenever the player plays. Hiding it would need a notification of Dewfall's own, which Android 13 ignores.
 - [The Wi-Fi lock costs battery] → Only while playing, and the screen is off then.
-- [More `@UnstableApi`] → `isTrusted`, `pauseAllPlayersAndStopSelf`, the service listener and DefaultMediaNotificationProvider's builder are unstable APIs. They opt in file by file, as #42's code does, and Media3 updates run the hand checks.
+- [More `@UnstableApi`] → `isTrusted`, `pauseAllPlayersAndStopSelf`, the service listener, `CONNECTION_HINT_KEY_CONTROLLER_INFO_TYPE` and DefaultMediaNotificationProvider's builder are unstable APIs. They opt in file by file, as #42's code does, and Media3 updates run the hand checks.
 - [Media3's small icon] → Until #120, the notification's icon is Media3's generic play icon, not Dewfall's.
 
 ## Migration Plan
