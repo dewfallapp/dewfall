@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 /**
- * Lint's libraries add 23 to AGP's major version, so AGP 9.4.1 comes with lint 32.4.1:
+ * Lint's libraries add 23 to AGP's major version, so AGP 9.5.1 comes with lint 32.5.1:
  * https://github.com/googlesamples/android-custom-lint-rules/blob/5751b4f0b7d6c5af67b990e7e06571179baa1e07/README.md#lint-version
  */
 private const val LINT_MAJOR_VERSION_OFFSET = 23
@@ -56,7 +56,7 @@ class LintRulesConventionPlugin : Plugin<Project> {
                 compilerOptions {
                     configureDewfallKotlin()
                     // Lint runs the checks on its own Kotlin standard library, 2.2.10 for lint
-                    // 32.4.1, so the checks may only call the standard library of Kotlin 2.2.
+                    // 32.5.1, so the checks may only call the standard library of Kotlin 2.2.
                     apiVersion = KotlinVersion.KOTLIN_2_2
                 }
             }
