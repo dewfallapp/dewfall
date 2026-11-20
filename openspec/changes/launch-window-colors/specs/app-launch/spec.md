@@ -47,24 +47,24 @@ On Android 12 and later, the system splash screen background SHALL match the lau
 - **WHEN** the user cold-starts the app in dark mode on Android 12 or later
 - **THEN** the system splash screen fills its background with the dark dynamic surface color and transitions into the first screen without flashing platform grey
 
-### Requirement: Launch window status bar and system bar icons match the theme
-Before the app draws its first frame, the launch window SHALL request dark status bar and navigation bar icons in light mode and light icons in dark mode. On Android 10 and 11, the launch window's status bar background SHALL match Dewfall's `surface` color instead of the platform's default grey or black.
+### Requirement: Launch window status bar matches the theme on Android 10 and 11
+Before the app draws its first frame on Android 10 and 11, the launch window's status bar background SHALL match Dewfall's `surface` color instead of the platform's default grey or black, with dark status bar icons in light mode and light status bar icons in dark mode. The launch window SHALL NOT request dark navigation bar icons over a black navigation bar.
 
-#### Scenario: Launch window bar contrast in light mode
+#### Scenario: Launch window bar contrast in light mode on Android 10 or 11
 - **WHEN** the user launches the app in light mode on Android 10 or 11
-- **THEN** the launch window shows dark status bar icons on `#F5FBF2` instead of light icons on grey
+- **THEN** the launch window shows dark status bar icons on `#F5FBF2`, and navigation bar icons stay light on the platform's black navigation bar until edge-to-edge takes over
 
-#### Scenario: Launch window bar contrast in dark mode
+#### Scenario: Launch window bar contrast in dark mode on Android 10 or 11
 - **WHEN** the user launches the app in dark mode on Android 10 or 11
 - **THEN** the launch window shows light status bar icons on `#101411`
 
 ### Requirement: Window fallback and task background match the launch surface
-The application window theme's background color SHALL match the launch surface color across all supported Android versions and light, dark, and dynamic themes, so multi-window resizing, Recents, and every activity inheriting the application theme share the same surface color.
+The application window theme's background color SHALL match the launch surface color across all supported Android versions and light, dark, and dynamic themes, so multi-window resizing and Recents use the same surface color instead of platform grey.
 
 #### Scenario: Resizing in multi-window
 - **WHEN** the user resizes the app window in split screen or freeform mode
 - **THEN** any unfilled window area behind the resizing surface shows the theme's surface color instead of platform grey
 
-#### Scenario: Launching another activity that inherits the application theme
-- **WHEN** a debug user launches the YouTube debug screen
-- **THEN** its launch window uses the same light, dark, or dynamic surface color as the main app
+#### Scenario: Viewing the app in Recents
+- **WHEN** the user views or reopens the app from Recents
+- **THEN** the task's background color matches the light, dark, or dynamic surface color instead of platform grey
