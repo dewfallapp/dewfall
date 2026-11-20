@@ -12,6 +12,15 @@ dependencies {
     // types are part of this module's API.
     api(libs.androidx.compose.material3)
 
+    constraints {
+        // Compose brings Lifecycle 2.9.4, whose lint checks call a Kotlin API that AGP 9.5's lint
+        // no longer has, so lint fails with ObsoleteLintCustomCheck. This raises Lifecycle to the
+        // catalog's version, which the app ships anyway. Lifecycle keeps all its artifacts on one
+        // version, so one constraint moves them all. Remove it once Compose brings Lifecycle 2.10.0
+        // or later on its own. See docs/architecture.md#formatting-and-lint.
+        implementation(libs.androidx.lifecycle.runtime.compose)
+    }
+
     testImplementation(libs.kotlinx.serialization.json)
 }
 
