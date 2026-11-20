@@ -2,8 +2,11 @@
 
 package io.github.dewfallapp.core.playback
 
+import android.app.NotificationManager
 import android.content.Intent
+import android.os.Build
 import androidx.annotation.OptIn
+import androidx.annotation.RequiresApi
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -15,8 +18,10 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommands
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
@@ -25,17 +30,21 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.liveVariantsWithin
 import io.github.dewfallapp.core.model.pictureLimit
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
+/** The notification channel of the media notification. Media3 names it "Now playing". */
+private const val NOTIFICATION_CHANNEL_ID = "playback"
+
 /**
- * The media session service that plays videos: one ExoPlayer, which no screen owns, so later
- * changes can play in the background and in a mini player. It posts no notification and never runs
- * in the foreground until #43. PlaybackConnection starts it and connects to its session. See
- * docs/architecture.md#the-player.
+ * The media session service that plays videos: one ExoPlayer, which no screen owns, so it plays on
+ * in the background, and #44's mini player can reuse it. Media3 posts its media notification and
+ * runs the service in the foreground while a video plays, and for 10 minutes after it pauses.
+ * PlaybackConnection starts it and connects to its session. See docs/architecture.md#the-player.
  */
 @AndroidEntryPoint
 class PlaybackService : MediaSessionService() {
@@ -46,10 +55,12 @@ class PlaybackService : MediaSessionService() {
     @Inject internal lateinit var sources: PlaybackSources
     @Inject internal lateinit var network: NetworkCheck
     @Inject internal lateinit var dispatchers: PlaybackDispatchers
+    @Inject internal lateinit var sessionActivity: SessionActivity
 
     private lateinit var scope: CoroutineScope
     private lateinit var player: ExoPlayer
     private lateinit var session: MediaSession
+    private lateinit var sessionPlayer: SessionPlayer
     private val refreshLimit = RefreshLimit()
     private var currentPlaybackId: String? = null
 
@@ -70,15 +81,50 @@ class PlaybackService : MediaSessionService() {
                 .setUsePlatformDiagnostics(false)
                 .setAudioAttributes(audio, /* handleAudioFocus= */ true)
                 .setHandleAudioBecomingNoisy(true)
+                // Locks the CPU and Wi-Fi awake while it plays, so streaming goes on with the
+                // screen off.
+                .setWakeMode(C.WAKE_MODE_NETWORK)
                 .build()
         player.addListener(PlayerEvents())
+        sessionPlayer = SessionPlayer(player, items, getString(R.string.playback_session_error))
+        setMediaNotificationProvider(
+            DefaultMediaNotificationProvider.Builder(this)
+                .setChannelId(NOTIFICATION_CHANNEL_ID)
+                .build(),
+        )
+        setListener(ServiceListener())
         session =
-            MediaSession.Builder(this, SessionPlayer(player)).setCallback(SessionCallback()).build()
+            MediaSession.Builder(this, sessionPlayer)
+                // A new ID in each process, so a notification's button that an ended process left
+                // behind names no session. See docs/architecture.md#the-player.
+                .setId(UUID.randomUUID().toString())
+                .setSessionActivity(sessionActivity.pendingIntent(this))
+                .setCallback(SessionCallback())
+                .build()
         addSession(session)
         sessions.publish(session)
+        scope.launch { sessions.appVisible.collect(::showPicture) }
+        scope.launch { items.described.collect { sessionPlayer.descriptionsChanged() } }
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession = session
+    /**
+     * Returns no session to any caller. Dewfall's controllers connect with the session's own token
+     * and never ask. A media button from a notification that an ended process left behind asks, and
+     * then Media3 stops the service safely, and the leftover notification goes, so nothing plays
+     * and nothing crashes.
+     */
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
+        val isMediaButton =
+            controllerInfo.connectionHints.getString(
+                MediaSessionService.CONNECTION_HINT_KEY_CONTROLLER_INFO_TYPE,
+            ) == Intent.ACTION_MEDIA_BUTTON
+        val hasItem = player.currentMediaItem != null
+        if (cancelsLeftoverNotification(isMediaButton, hasItem)) {
+            getSystemService(NotificationManager::class.java)
+                ?.cancel(DefaultMediaNotificationProvider.DEFAULT_NOTIFICATION_ID)
+        }
+        return null
+    }
 
     /** Android never restarts the service after ending the process, because it would be empty. */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -86,13 +132,13 @@ class PlaybackService : MediaSessionService() {
         return START_NOT_STICKY
     }
 
-    /** No notification until #43, so the service never runs in the foreground. */
-    override fun onUpdateNotificationAsync(
-        session: MediaSession,
-        startInForegroundRequired: Boolean,
-    ): ListenableFuture<Void?> = Futures.immediateVoidFuture()
+    /** Removing the app from the recent apps stops playback, even while it plays. */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        pauseAllPlayersAndStopSelf()
+    }
 
     override fun onDestroy() {
+        clearListener()
         sessions.publish(null)
         session.release()
         player.release()
@@ -152,6 +198,19 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    /**
+     * Turns the video track off while no screen of the app can be seen, so the player decodes no
+     * picture, and fetches none that comes in its own file, and on again when one can. It builds on
+     * the current parameters, so a live stream's variant override stays.
+     */
+    private fun showPicture(visible: Boolean) {
+        val parameters = player.trackSelectionParameters
+        val disabled = C.TRACK_TYPE_VIDEO in parameters.disabledTrackTypes
+        if (disabled != visible) return
+        player.trackSelectionParameters =
+            parameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_VIDEO, !visible).build()
+    }
+
     private fun currentItemChanged() {
         val playbackId = player.currentMediaItem?.mediaId
         if (playbackId != currentPlaybackId) refreshLimit.reset()
@@ -174,6 +233,11 @@ class PlaybackService : MediaSessionService() {
 
         override fun onTracksChanged(tracks: Tracks) {
             limitLiveVariants(tracks)
+        }
+
+        /** A player that plays again, such as after play in the notification, has no failure. */
+        override fun onPlayerErrorChanged(error: PlaybackException?) {
+            if (error == null) sessions.clearFailure()
         }
 
         override fun onPlayerError(error: PlaybackException) {
@@ -209,26 +273,55 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    /** Pauses a player whose foreground start Android refused, so it never plays unseen. */
+    private inner class ServiceListener : MediaSessionService.Listener {
+        @RequiresApi(Build.VERSION_CODES.S)
+        override fun onForegroundServiceStartNotAllowedException() {
+            player.pause()
+        }
+    }
+
     private inner class SessionCallback : MediaSession.Callback {
-        /** Only the app's own controllers may connect. */
+        private val playbackCommands =
+            Player.Commands.Builder().addAll(*PLAYBACK_COMMANDS.toIntArray()).build()
+
+        /**
+         * The screens' own controller keeps the default commands. Media3's media notification
+         * controller, whose commands the system UI, the notification's and media buttons and
+         * Android's media session use, and trusted controllers get only the playback commands.
+         * Other apps are refused. See docs/architecture.md#the-player.
+         */
         override fun onConnectAsync(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
-        ): ListenableFuture<MediaSession.ConnectionResult> =
-            Futures.immediateFuture(
-                if (controller.packageName == packageName) {
-                    MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller).build()
-                } else {
-                    MediaSession.ConnectionResult.reject()
-                },
-            )
-
-        /** Headset and Bluetooth buttons do nothing until #43. */
-        override fun onMediaButtonEvent(
-            session: MediaSession,
-            controllerInfo: MediaSession.ControllerInfo,
-            intent: Intent,
-        ): Boolean = true
+        ): ListenableFuture<MediaSession.ConnectionResult> {
+            val kind =
+                controllerKind(
+                    isMediaNotificationController =
+                        session.isMediaNotificationController(controller),
+                    isOwnPackage = controller.packageName == packageName,
+                    isLegacy =
+                        controller.controllerVersion ==
+                            MediaSession.ControllerInfo.LEGACY_CONTROLLER_VERSION,
+                    isTrusted = controller.isTrusted,
+                )
+            val result =
+                when (kind) {
+                    ControllerKind.OWN -> {
+                        MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
+                            .build()
+                    }
+                    ControllerKind.MEDIA_NOTIFICATION,
+                    ControllerKind.TRUSTED -> {
+                        MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
+                            .setAvailablePlayerCommands(playbackCommands)
+                            .setAvailableSessionCommands(SessionCommands.EMPTY)
+                            .build()
+                    }
+                    ControllerKind.REJECTED -> MediaSession.ConnectionResult.reject()
+                }
+            return Futures.immediateFuture(result)
+        }
 
         /**
          * Resolves the item's playback ID into the item that plays it. A video that can't play

@@ -5,17 +5,29 @@
     <!-- The metered check reads the active network's capabilities. Media3 asks for it too. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!--
+        Playback runs in a foreground service of the type mediaPlayback while a video plays, so the
+        sound goes on in the background. Both are normal permissions, so Android doesn't ask the
+        user. See docs/architecture.md#the-player.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
     <application>
         <!--
-            Not exported, with no intent filter, so no other app can bind to it and Media3 gives the
-            platform session no media button PendingIntent that would start it as a foreground
-            service. See docs/architecture.md#the-player.
+            Not exported, with no intent filter, so no other app can bind to it, and Media3 gives the
+            platform session no media button PendingIntent on Android 10 and 11 that would start it
+            as a foreground service after the process ends. See docs/architecture.md#the-player.
         -->
         <service
             android:name=".PlaybackService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
-        <!-- There is no Bluetooth control until #43. -->
+        <!--
+            Media3 adds it so that Bluetooth recognizes AVRCP browsable media services on Android 16
+            and 17. Dewfall has no browsable library.
+        -->
         <activity
             android:name="androidx.media3.session.BluetoothValidationActivity"
             tools:node="remove" />

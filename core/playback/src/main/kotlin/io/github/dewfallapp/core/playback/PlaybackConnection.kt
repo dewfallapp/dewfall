@@ -1,5 +1,7 @@
 package io.github.dewfallapp.core.playback
 
+import android.app.PendingIntent
+import android.content.Context
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import io.github.dewfallapp.core.model.PlaybackFailure
@@ -39,6 +41,28 @@ interface PlaybackConnection {
      * is dropped either way.
      */
     fun stop(playbackId: String)
+
+    /**
+     * Gives [playbackId] the video's [title] and [channelName], which the media notification and
+     * Android's media session show while that playback lasts. Nothing happens once the ID has no
+     * video.
+     */
+    fun describe(playbackId: String, title: String, channelName: String)
+
+    /**
+     * Tells the player whether one of the app's screens can be seen. While none can, the player
+     * shows no picture, so it decodes none, and fetches none that comes in its own file.
+     */
+    fun setAppVisible(visible: Boolean)
+}
+
+/**
+ * Opens the app from the media notification. `:app` binds it, so this module doesn't name the app's
+ * activity.
+ */
+fun interface SessionActivity {
+    /** The immutable PendingIntent that brings the app's task to the front, as it was. */
+    fun pendingIntent(context: Context): PendingIntent
 }
 
 /** What pausing a playback ID acts on. */

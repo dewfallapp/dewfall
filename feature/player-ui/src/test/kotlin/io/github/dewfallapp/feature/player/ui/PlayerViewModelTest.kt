@@ -73,6 +73,7 @@ private class FakeRepository : VideoDetailsRepository {
 private class FakeConnection : PlaybackConnection {
     val prepared = mutableListOf<Pair<VideoId, Long>>()
     val stopRequests = mutableListOf<String>()
+    val descriptions = mutableListOf<Triple<String, String, String>>()
     var currentItemId: String? = null
     var playing = false
 
@@ -100,6 +101,12 @@ private class FakeConnection : PlaybackConnection {
             currentItemId = null
         }
     }
+
+    override fun describe(playbackId: String, title: String, channelName: String) {
+        descriptions += Triple(playbackId, title, channelName)
+    }
+
+    override fun setAppVisible(visible: Boolean) = Unit
 }
 
 /** A store that holds [viewModel], so the test can clear it as navigation does. */

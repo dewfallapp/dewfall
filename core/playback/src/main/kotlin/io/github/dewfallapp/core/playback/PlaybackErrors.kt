@@ -37,9 +37,6 @@ private val DECODER_CODES =
 /** How deep the cause-chain walk goes, so a chain with a loop ends. */
 private const val MAX_CAUSE_DEPTH = 16
 
-/** The message of every error that the media session sees: constant text, with no user data. */
-internal const val CLEANED_ERROR_MESSAGE = "Playback failed"
-
 /** Whether YouTube refused a stream link with [httpStatus], which new links can fix. */
 internal fun isRefusedLink(httpStatus: Int?): Boolean = httpStatus in REFUSED_LINK_STATUSES
 
@@ -91,9 +88,10 @@ internal data class CleanedError(val message: String, val errorCode: Int)
 
 /**
  * The error that the media session sees in place of one with [errorCode], or null when there is no
- * error: the same code, with [CLEANED_ERROR_MESSAGE] and no cause. Media3 copies the message into
- * Android's media session, and ExoPlayer's messages can name the format's codec, size and language.
+ * error: the same code, with [message] and no cause. [message] is constant text from the app's
+ * resources, because car displays and watches may show it. Media3 copies the message into Android's
+ * media session, and ExoPlayer's messages can name the format's codec, size and language.
  */
-internal fun cleanedError(errorCode: Int?): CleanedError? = errorCode?.let {
-    CleanedError(CLEANED_ERROR_MESSAGE, it)
+internal fun cleanedError(errorCode: Int?, message: String): CleanedError? = errorCode?.let {
+    CleanedError(message, it)
 }

@@ -14,22 +14,45 @@ import androidx.media3.exoplayer.source.ForwardingTimeline
 
 /**
  * The player that the media session sees, around the service's ExoPlayer. Media3 copies the
- * session's error message and items into Android's media session, which other apps can read. So
- * this shows the session only the playback ID of each item, with no link and no metadata, and an
- * error with the same code, a constant message and no cause. See docs/architecture.md#the-player.
+ * session's error message, items and metadata into Android's media session, which other apps and
+ * Bluetooth devices can read. So this shows the session each item as its playback ID only, with no
+ * link, the current item's title and channel name from [items] and no other metadata, and an error
+ * with the same code, [errorMessage] and no cause. It offers no skip commands. See
+ * docs/architecture.md#the-player.
  */
-internal class SessionPlayer(player: Player) : ForwardingSimpleBasePlayer(player) {
+internal class SessionPlayer(
+    player: Player,
+    private val items: PlaybackItems,
+    private val errorMessage: String,
+) : ForwardingSimpleBasePlayer(player) {
     override fun getState(): State {
         val state = super.getState()
-        val cleaned = cleanedError(state.playerError?.errorCode)
+        val cleaned = cleanedError(state.playerError?.errorCode, errorMessage)
+        val description = player.currentMediaItem?.mediaId?.let(items::description)
         return state
             .buildUpon()
+            .setAvailableCommands(
+                state.availableCommands.buildUpon().removeAll(*SKIP_COMMANDS.toIntArray()).build(),
+            )
             .setPlayerError(cleaned?.let { PlaybackException(it.message, null, it.errorCode) })
-            .setPlaylist(IdOnlyTimeline(state.timeline), state.currentTracks, MediaMetadata.EMPTY)
+            .setPlaylist(
+                IdOnlyTimeline(state.timeline),
+                state.currentTracks,
+                description?.let(::metadataOf) ?: MediaMetadata.EMPTY,
+            )
             .setPlaylistMetadata(MediaMetadata.EMPTY)
             .build()
     }
+
+    /** Builds the state again, after a playback got its title and channel name. */
+    fun descriptionsChanged() {
+        invalidateState()
+    }
 }
+
+/** The metadata that the session and the notification show: only the title and the channel. */
+private fun metadataOf(description: PlaybackDescription): MediaMetadata =
+    MediaMetadata.Builder().setTitle(description.title).setArtist(description.channelName).build()
 
 /** [timeline] with each window's item reduced to its playback ID, and no manifest. */
 private class IdOnlyTimeline(timeline: Timeline) : ForwardingTimeline(timeline) {

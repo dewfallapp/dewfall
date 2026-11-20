@@ -10,19 +10,27 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * What PlaybackService shares with PlaybackConnection inside the process: its media session, whose
- * token the connection's controller connects with, and the current playback failure, which only the
- * service sees in full.
+ * token the connection's controller connects with, the current playback failure, which only the
+ * service sees in full, and whether the app can be seen, which decides whether the player shows the
+ * picture.
  */
 @Singleton
 internal class PlaybackSessions @Inject constructor() {
     private val session = MutableStateFlow<MediaSession?>(null)
     private val failureState = MutableStateFlow<PlaybackFailure?>(null)
+    private val visibleState = MutableStateFlow(true)
 
     /** The service's session while it runs, or null. */
     val current: StateFlow<MediaSession?> = session.asStateFlow()
 
     /** Why the current playback failed, or null while it hasn't. */
     val failure: StateFlow<PlaybackFailure?> = failureState.asStateFlow()
+
+    /**
+     * Whether one of the app's screens can be seen. It starts true, because the service starts only
+     * while a screen shows.
+     */
+    val appVisible: StateFlow<Boolean> = visibleState.asStateFlow()
 
     fun publish(session: MediaSession?) {
         this.session.value = session
@@ -34,5 +42,9 @@ internal class PlaybackSessions @Inject constructor() {
 
     fun clearFailure() {
         failureState.value = null
+    }
+
+    fun setAppVisible(visible: Boolean) {
+        visibleState.value = visible
     }
 }
