@@ -56,9 +56,9 @@ Alternatives:
 A link's text becomes its address only when all of these hold:
 
 1. Its text ends with three full stops, `...`, or with the ellipsis character, `…`. The saved set and the NASA video in the issue show three full stops. The ellipsis character costs nothing to accept, because the next rules still apply.
-2. Its text before them starts with `http://` or `https://`, in any case. A name or a title that ends with "...", such as a video's title in a link to it, isn't an address.
+2. Its text before them starts with `http://` or `https://`, in lowercase. A name or a title that ends with "...", such as a video's title in a link to it, isn't an address.
 3. The address starts with the text before them, exactly, and is longer. So the text is the start of this very address, and the address adds to it. When YouTube or NewPipeExtractor writes the address differently, such as another host, `youtu.be` against `www.youtube.com`, or a character decoded differently, the link keeps its shortened text, as it does today.
-4. The address has no whitespace and no control character. NewPipeExtractor decodes `q` with `URLDecoder`, which turns a `+` into a space. Such an address would not open the page, and a line break in it would break the description's lines.
+4. The address has no space of any kind, no line break, no control character and no format character, Unicode's categories Zs, Zl, Zp, Cc and Cf. NewPipeExtractor decodes `q` with `URLDecoder`, which turns a `+` into a space, so such an address would not open the page, and a line break in it would break the description's lines. A format character, such as the right-to-left override U+202E or a zero-width space, is invisible or reorders the text, so the address on screen could read differently from the one the user copies.
 
 A link that fails any of them keeps its text. In the saved set, the first link changes and the second, shown whole, keeps its text, without the `/` that its address adds.
 
@@ -69,11 +69,17 @@ Alternatives:
 
 ### A link split into pieces keeps its shortened text
 
-When one of YouTube's style runs, such as bold text, starts or ends inside a link, NewPipeExtractor closes the link and opens it again, so one link becomes two `<a>` elements with the same `href`. Neither piece's text is the start of the address followed by "...", so both keep their text. Joining them would need NewPipeExtractor's run logic in the layer. YouTube shows links in their own color, and the saved set's style runs give a link its color without a tag, so this case is rare.
+NewPipeExtractor's `runsToHtml` ([lines 145-223](https://github.com/TeamNewPipe/NewPipeExtractor/blob/v0.27.1/extractor/src/main/java/org/schabi/newpipe/extractor/services/youtube/YoutubeDescriptionHelper.java#L145-L223)) keeps its tags nested. When a style run, such as bold text, opens before a link and ends inside it, it closes the link, closes the style, and opens the link again, so one link becomes two `<a>` elements with the same `href`:
+
+```
+<b>See <a href="https://example.com/a/long">https:</a></b><a href="https://example.com/a/long">//example.com/a/lo...</a>
+```
+
+A style run that starts inside a link and ends after it splits the style instead, and the link stays whole. Both shapes come from running v0.27.1's `attributedDescriptionToHtml` on made-up attributed descriptions with jshell on November 21, 2026. In the split shape, the first piece doesn't end with "..." and the second doesn't start with `http`, so both keep their text. Joining them would need NewPipeExtractor's run logic in the layer. The saved set's style runs give a link its color without a tag, so bold or italic text across a link's start is rare.
 
 ### Tests
 
-- Unit tests of `htmlDescriptionToText` in DescriptionTextTest cover each rule above, from HTML strings written like NewPipeExtractor's: a shortened link with `...` and with `…`; a link shown whole, which keeps its text; a timestamp and a hashtag, whose addresses don't start with their text; a title that ends with "..."; an address that doesn't start with the text; an address with a space; text that is only `https://...` with a longer address; an `&amp;` in the address; a link inside bold text; and a link split into two pieces. The existing tests stay as they are.
+- Unit tests of `htmlDescriptionToText` in DescriptionTextTest cover each rule above, from HTML strings written like NewPipeExtractor's: a shortened link with `...` and with `…`; a link shown whole, which keeps its text; a timestamp and a hashtag, whose addresses don't start with their text; a title that ends with "..."; an address that doesn't start with the text; an address with a space; text that is only `https://...` with a longer address, which becomes the address; text that starts with `HTTPS://`, which keeps its text; an address that is the text without its "...", which keeps its text; an address with a no-break space, a line break, a control character, or the format characters U+202E and U+200B, each of which keeps its text; an `&amp;` in the address, which becomes `&`; a link that holds a bold part; a link whose style starts inside it, from the second shape above; and a link split into two pieces, from the first shape above. The existing tests stay as they are, and `a link keeps only its text` is renamed `a link that YouTube didn't shorten keeps its text`, because it no longer holds for every link.
 - VideoDetailsReplayTest checks that the saved set's description holds `https://studio.blender.org/projects/big-buck-bunny/` whole, and still holds `http://bbb3d.renderfarming.net` without a `/` after it.
 - The live YouTube check logs only the description's length and line count, which have no fixed value, so it doesn't change.
 
