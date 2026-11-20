@@ -67,12 +67,12 @@ internal fun htmlDescriptionToText(html: String): String {
  * The whole address of a link whose [text] YouTube shortened, which is the link's [address], or
  * null when the text isn't a shortened form of that address.
  *
- * YouTube ends the text of a long link with "...", after the start of the address. NewPipeExtractor
- * puts the whole address in the link, from YouTube's redirect link. The text counts as shortened
- * only when it starts with `http://` or `https://`, so a title that ends with "..." stays, and when
- * the address is longer and starts with the text before the "...", so the two are the same address.
- * An address with a space, a line break, or a control or format character is refused, because it
- * wouldn't open a page, or it could read differently on screen from the one the user copies.
+ * As docs/architecture.md's "Descriptions" section says, with its sources, YouTube ends the text of
+ * a long link with "...", after the start of the address, and NewPipeExtractor v0.27.1 puts the
+ * whole address in the link, from YouTube's redirect link. The text counts as shortened only when
+ * it starts with `http://` or `https://`, so a title that ends with "..." stays, and when the
+ * address is longer and starts with the text before the "...", so the two are the same address. An
+ * address that [opensAPage] refuses keeps the shortened text.
  */
 private fun wholeAddress(text: String, address: String): String? {
     val ending = SHORTENED_ENDINGS.firstOrNull { text.endsWith(it) } ?: return null
@@ -81,9 +81,12 @@ private fun wholeAddress(text: String, address: String): String? {
         ADDRESS_STARTS.any { shown.startsWith(it) } &&
             address.length > shown.length &&
             address.startsWith(shown)
-    val opensAPage =
-        address.codePoints().noneMatch {
-            Character.getType(it).toByte() in CATEGORIES_NOT_IN_ADDRESSES
-        }
-    return address.takeIf { isShortenedAddress && opensAPage }
+    return address.takeIf { isShortenedAddress && opensAPage(address) }
 }
+
+/**
+ * Whether [address] holds no space, line break, control character or format character. One that
+ * does wouldn't open a page, or it could read differently on screen from the one the user copies.
+ */
+private fun opensAPage(address: String): Boolean =
+    address.codePoints().noneMatch { Character.getType(it).toByte() in CATEGORIES_NOT_IN_ADDRESSES }
