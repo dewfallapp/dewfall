@@ -162,8 +162,8 @@ private fun FullscreenBox(
                 .pointerInput(controls) {
                     awaitPointerEventScope {
                         while (true) {
-                            awaitPointerEvent(PointerEventPass.Initial)
-                            controls.onTouch()
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            controls.onTouch(held = event.changes.any { it.pressed })
                         }
                     }
                 }
@@ -216,8 +216,16 @@ private class ControlsState {
     val visible: Boolean
         get() = controls.visible(playing, screenReader)
 
-    /** A touch anywhere starts the wait again. A tap on the picture also calls [onTap]. */
-    fun onTouch() {
+    /** Whether a finger is down, such as holding the seek bar, so the controls don't hide. */
+    var held by mutableStateOf(false)
+        private set
+
+    /**
+     * A touch anywhere starts the wait again, and [held] says whether a finger stays down. A tap on
+     * the picture also calls [onTap].
+     */
+    fun onTouch(held: Boolean) {
+        this.held = held
         touches++
     }
 
@@ -250,8 +258,15 @@ private fun rememberControlsState(playing: Boolean): ControlsState {
             containsControls = true,
         ) ?: CONTROLS_TIMEOUT_MS
     LaunchedEffect(playing) { state.controls = state.controls.playingChanged() }
-    LaunchedEffect(state.controls, playing, state.screenReader, state.touches, timeoutMs) {
-        if (state.controls.hidesAfterTimeout(playing, state.screenReader)) {
+    LaunchedEffect(
+        state.controls,
+        playing,
+        state.screenReader,
+        state.held,
+        state.touches,
+        timeoutMs,
+    ) {
+        if (state.controls.hidesAfterTimeout(playing, state.screenReader, state.held)) {
             delay(timeoutMs)
             state.controls = state.controls.timedOut()
         }

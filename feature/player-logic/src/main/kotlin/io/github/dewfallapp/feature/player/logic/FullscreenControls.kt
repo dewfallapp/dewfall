@@ -28,9 +28,9 @@ data class FullscreenControls(val shown: Boolean = true) {
     fun timedOut(): FullscreenControls = copy(shown = false)
 
     /**
-     * Whether they hide after the wait: only while they show, the video is [playing], and no
-     * [screenReader] is on.
+     * Whether they hide after the wait: only while they show, the video is [playing], no
+     * [screenReader] is on, and no finger is [held] down, such as on the seek bar.
      */
-    fun hidesAfterTimeout(playing: Boolean, screenReader: Boolean): Boolean =
-        shown && playing && !screenReader
+    fun hidesAfterTimeout(playing: Boolean, screenReader: Boolean, held: Boolean = false): Boolean =
+        shown && playing && !screenReader && !held
 }

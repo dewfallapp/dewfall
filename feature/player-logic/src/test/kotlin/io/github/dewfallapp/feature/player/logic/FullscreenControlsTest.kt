@@ -72,4 +72,10 @@ class FullscreenControlsTest {
         assertFalse(SHOWN.hidesAfterTimeout(playing = true, screenReader = true))
         assertFalse(HIDDEN.hidesAfterTimeout(playing = false, screenReader = true))
     }
+
+    @Test
+    fun `they don't hide while a finger is held down, such as on the seek bar`() {
+        assertFalse(SHOWN.hidesAfterTimeout(playing = true, screenReader = false, held = true))
+        assertTrue(SHOWN.hidesAfterTimeout(playing = true, screenReader = false, held = false))
+    }
 }
