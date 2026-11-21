@@ -22,7 +22,7 @@
   - Android 12L (API 32), light and dark, gesture and 3-button navigation, with the default and an orange palette: the splash screen followed the palette, with `system_neutral2_10` and `system_neutral2_900` as planned, close to Compose's surface but not exact. Default palette: `#FDFBFF` against `#FAF8FF` in light mode, `#1A1B23` against `#11131A` in dark mode. Orange palette: `#FFFBFA` against `#FFF8F5`, and `#241912` against `#1C110A`. The recordings showed a short fade from one to the other and no grey. Recents showed the app's card normally. The status bar icons and navigation buttons on the splash screen were white in both modes, so they were hard to see on the light one. Android 12 and 12L add the splash screen window without reading the theme's bar attributes, so no theme change can fix that. By the same source, `Theme.Material`'s grey splash screen had white icons too, though no build without this change ran on Android 12L. This corrected a claim in design.md, proposal.md and docs/architecture.md that Android 12 picks the icon colors from the splash screen's background. Android 13 does.
   - For comparison, a build without this change showed `Theme.Material`'s grey splash screen on Android 17: `#303030` in dark mode and `#FAFAFA` in light mode.
 - [x] 3.3 Check that `:core:playback`, `:feature:player-logic`, and `:feature:player-ui` have zero changes (`git diff origin/main --stat`).
-- [ ] 3.4 Before each push, run `python3 scripts/pre_push_gate.py` and verify it ends with `PASS: the gate passed.`.
+- [x] 3.4 Before each push, run `python3 scripts/pre_push_gate.py` and verify it ends with `PASS: the gate passed.`.
 
 ## Workflow follow-up
 
