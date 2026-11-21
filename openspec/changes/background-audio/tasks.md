@@ -58,7 +58,7 @@
   - Check that `adb logcat` shows no link, ID or title, and no line from Media3's own tags.
 
   Verify that every check passes, and record the results in the pull request.
-- [ ] 5.3 Change #46's real-phone checks from #42, because buttons now play and pause: a Bluetooth headset's play and pause button with the app in the background pauses and plays, its next button does nothing, and unplugging headphones still pauses. Comment on #120 that the app's icon should also become the notification's small icon. Verify that both comments are posted.
+- [x] 5.3 Change #46's real-phone checks from #42, because buttons now play and pause: a Bluetooth headset's play and pause button with the app in the background pauses and plays, its next button does nothing, and unplugging headphones still pauses. Comment on #120 that the app's icon should also become the notification's small icon. Verify that both comments are posted.
 
 ## Workflow follow-up
 
