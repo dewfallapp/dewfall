@@ -111,7 +111,9 @@ internal fun FullscreenPlayer(
     FullscreenWindow(barsShown = visible)
     val focus = remember { FocusRequester() }
     // Keys reach onPreviewKeyEvent only through a focused node, so fullscreen takes focus.
-    LaunchedEffect(focus) { focus.requestFocus() }
+    LaunchedEffect(focus, controls.screenReader) {
+        if (!controls.screenReader) focus.requestFocus()
+    }
     DewfallTheme(darkTheme = true) {
         // No Surface sits under the overlays, so their text takes the dark scheme's onSurface.
         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
@@ -328,13 +330,16 @@ private fun Overlays(
                     WindowInsets.systemBarsIgnoringVisibility.union(WindowInsets.displayCutout),
                 )
                 .padding(DewfallSpacing.md),
+        verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        // The row is measured before the weighted title, so a long title at a large font never
-        // pushes the controls off: the title scrolls in the space left, and is never cut off.
+        // The title is the only weighted child, so the row is measured first and keeps its space.
+        // The title takes what is left and scrolls there, so it is never cut off, and SpaceBetween
+        // puts the row at the bottom. Without a title, the spacer pushes the row down.
         if (page != null) {
-            TitleBox(page, Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()))
+            TitleBox(page, Modifier.weight(1f, fill = false))
+        } else {
+            Spacer(Modifier.weight(1f))
         }
-        Spacer(Modifier.weight(1f))
         ControlRow(content = content, onPlay = onPlay, onExit = onExit)
     }
 }
@@ -348,7 +353,9 @@ private fun TitleBox(page: VideoPage, modifier: Modifier = Modifier) {
                 .widthIn(max = TitleMaxWidth)
                 .clip(MaterialTheme.shapes.large)
                 .background(overlayColor())
-                .padding(horizontal = DewfallSpacing.md, vertical = DewfallSpacing.sm),
+                .padding(horizontal = DewfallSpacing.md, vertical = DewfallSpacing.sm)
+                // Only the text scrolls, inside the box, so its corners and padding stay whole.
+                .verticalScroll(rememberScrollState()),
     ) {
         Text(
             text = page.title,
