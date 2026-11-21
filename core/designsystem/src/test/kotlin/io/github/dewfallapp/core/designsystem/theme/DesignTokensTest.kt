@@ -28,9 +28,9 @@ import kotlinx.serialization.json.jsonPrimitive
  * the tokens by hand, so a typo, or a token edit that wasn't copied, fails here. Each test also
  * fails when its token group gains or loses a token.
  *
- * The opacity tokens aren't checked, because the theme doesn't set them. Material 3's components
- * already use the same state layer and disabled opacities. docs/architecture.md#the-theme says
- * where scrim-modal and duration-scrim stand.
+ * Of the opacity tokens, only duration-scrim is checked, because DewfallOpacity holds only it.
+ * Material 3's components already use the same state layer and disabled opacities.
+ * docs/architecture.md#the-theme says where scrim-modal stands.
  */
 class DesignTokensTest {
     private val tokens: JsonObject = run {
@@ -123,6 +123,12 @@ class DesignTokensTest {
             val name = token.string("name")
             assertEquals(rem(token.string("value")), spacing.getValue(name), name)
         }
+    }
+
+    @Test
+    fun `duration-scrim matches its opacity token`() {
+        val token = tokens.tokenGroup("opacity").single { it.string("name") == "duration-scrim" }
+        assertEquals(token.string("value").toFloat(), DewfallOpacity.DURATION_SCRIM)
     }
 
     private fun JsonObject.tokenGroup(name: String): List<JsonObject> =
