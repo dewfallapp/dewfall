@@ -26,3 +26,12 @@ fun startAction(started: Boolean, playbackIdKnown: Boolean): StartAction =
         playbackIdKnown -> StartAction.NOTHING
         else -> StartAction.WAIT_FOR_PLAY
     }
+
+/**
+ * Whether leaving the app pauses the video screen's playback: only when the activity isn't just
+ * [changingConfigurations], and the playback hasn't [played] yet. A video that has played keeps
+ * playing in the background. One that hasn't would start the foreground service from the
+ * background, which Android refuses, so it waits, paused, for the user to come back.
+ */
+fun pausesOnLeave(changingConfigurations: Boolean, played: Boolean): Boolean =
+    !changingConfigurations && !played

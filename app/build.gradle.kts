@@ -30,6 +30,8 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:logging"))
+    // MainActivity tells the player whether the app can be seen, and the notification opens it.
+    implementation(project(":core:playback"))
     implementation(project(":feature:player-ui"))
     implementation(project(":feature:youtube-search-ui"))
 

@@ -16,6 +16,8 @@ context: |
   - Network calls go only to YouTube through the YouTube layer, plus optional
     services the user turns on.
   - User data stays on the device. Export and import go to a file the user picks.
+    The one exception, approved on November 21, 2026: a playing or paused video's
+    title and channel name are in Android's media session, for the notification.
   - Never put "YouTube" or YouTube logos in the app's name, icon or
     package name (applicationId).
   - Product behavior, such as the download deletion rules, comes from the specs

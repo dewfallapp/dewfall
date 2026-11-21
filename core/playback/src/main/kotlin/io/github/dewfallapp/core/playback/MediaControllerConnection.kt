@@ -97,6 +97,14 @@ constructor(
         }
     }
 
+    override fun describe(playbackId: String, title: String, channelName: String) {
+        items.describe(playbackId, PlaybackDescription(title, channelName))
+    }
+
+    override fun setAppVisible(visible: Boolean) {
+        sessions.setAppVisible(visible)
+    }
+
     private fun connect() {
         if (connecting != null) return
         try {

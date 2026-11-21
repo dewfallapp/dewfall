@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The message of every playback error in Android's media session, which car displays and
+        watches may show. The same words as the video screen's message for a playback that stopped.
+    -->
+    <string name="playback_session_error">This video stopped playing.</string>
+</resources>

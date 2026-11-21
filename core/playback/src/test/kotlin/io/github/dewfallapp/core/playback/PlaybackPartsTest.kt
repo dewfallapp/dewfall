@@ -72,6 +72,67 @@ class PlaybackPartsTest {
     }
 
     @Test
+    fun `a description goes with its playback's entry`() {
+        val items = PlaybackItems()
+        val first = items.add(VideoId("aqz-KE-bpKQ"))
+        val second = items.add(VideoId("YE7VzlLtp-4"))
+        val before = items.described.value
+
+        items.describe(first, PlaybackDescription("A title", "A channel"))
+        assertEquals(PlaybackDescription("A title", "A channel"), items.description(first))
+        assertEquals(before + 1, items.described.value)
+        assertNull(items.description(second))
+
+        items.describe(first, PlaybackDescription("Another title", "A channel"))
+        assertEquals("Another title", items.description(first)?.title)
+
+        // Replaced by another item.
+        items.currentChanged(first)
+        items.currentChanged(second)
+        assertNull(items.description(first))
+
+        // Removed, and cleared.
+        items.describe(second, PlaybackDescription("A title", "A channel"))
+        items.remove(second)
+        assertNull(items.description(second))
+        val third = items.add(VideoId("dQw4w9WgXcQ"))
+        items.describe(third, PlaybackDescription("A title", "A channel"))
+        items.clear()
+        assertNull(items.description(third))
+    }
+
+    @Test
+    fun `an unknown playback ID gets no description`() {
+        val items = PlaybackItems()
+        val before = items.described.value
+
+        items.describe("unknown", PlaybackDescription("A title", "A channel"))
+
+        assertNull(items.description("unknown"))
+        assertEquals(before, items.described.value)
+    }
+
+    @Test
+    fun `a description's text never shows the title or the channel`() {
+        val text = PlaybackDescription("A title", "A channel").toString()
+
+        assertFalse(text.contains("A title"))
+        assertFalse(text.contains("A channel"))
+    }
+
+    @Test
+    fun `the app counts as visible until a screen says otherwise`() {
+        val sessions = PlaybackSessions()
+        assertTrue(sessions.appVisible.value)
+
+        sessions.setAppVisible(false)
+        assertFalse(sessions.appVisible.value)
+
+        sessions.setAppVisible(true)
+        assertTrue(sessions.appVisible.value)
+    }
+
+    @Test
     fun `only a network that isn't metered counts as unmetered`() {
         assertTrue(isMetered(hasNetwork = false, notMetered = false))
         // A metered network, or one that is only temporarily not metered.

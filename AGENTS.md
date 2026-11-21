@@ -55,7 +55,7 @@ These come from docs/vision.md. Do not break them, and ask before doing anything
 
 - No recommendation feed, accounts, ads, analytics or tracking.
 - No dependency that sends data anywhere the user did not choose. Network calls go to YouTube through the YouTube layer, plus optional services the user turns on, such as SponsorBlock after release.
-- User data stays on the device. Export and import go to a file the user picks.
+- User data stays on the device. Export and import go to a file the user picks. The one exception, which the maintainer approved on November 21, 2026: while a video plays or is paused, its title and channel name are in Android's media session, for the media notification, so the lock screen, Bluetooth devices and apps that may read notifications or control media can read them. PRIVACY.md says so.
 - Never put "YouTube" or YouTube logos in the app's name, icon or package name (applicationId).
 - Product behavior, such as the deletion rules, comes from the specs and ADRs. If a request conflicts with them, stop and ask.
 

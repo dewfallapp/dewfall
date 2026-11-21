@@ -31,7 +31,8 @@ internal class PlayerArgs(val videoId: VideoId)
  * sends nothing. Leaving the screen cancels the running request.
  *
  * It takes no dispatcher, because the repository's call is main-safe. It also holds the screen's
- * PlaybackConnection and the playback ID of its latest start, and stops that playback when it is
+ * PlaybackConnection and the playback ID of its latest start. It gives that playback the video's
+ * title and channel name for the media notification once the details show, and stops it when it is
  * cleared. Player commands skip intents, as ADR 0002's note says.
  */
 @HiltViewModel(assistedFactory = PlayerViewModel.Factory::class)
@@ -61,7 +62,7 @@ constructor(
         when (intent) {
             PlayerIntent.Load,
             PlayerIntent.TryAgain -> startNewRequest()
-            is PlayerIntent.DetailsFinished -> Unit
+            is PlayerIntent.DetailsFinished -> describePlayback()
         }
     }
 
@@ -85,7 +86,18 @@ constructor(
     internal fun startPlayback(positionMs: Long): String {
         val id = playback.prepare(args.videoId, play = true, startPositionMs = positionMs)
         playbackId = id
+        describePlayback()
         return id
+    }
+
+    /**
+     * Gives the latest playback the title and channel name that the media notification shows, once
+     * the details show. The reducer has already run, so the state holds this intent's answer.
+     */
+    private fun describePlayback() {
+        val page = (state.value.details as? DetailsArea.Shown)?.page ?: return
+        val id = playbackId ?: return
+        playback.describe(id, page.title, page.channelName)
     }
 
     /**

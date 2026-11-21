@@ -107,13 +107,20 @@ class PlaybackErrorsTest {
     }
 
     @Test
-    fun `the session's error keeps the code, with constant text`() {
-        val cleaned = cleanedError(PlaybackException.ERROR_CODE_DECODING_FAILED)
+    fun `the session's error keeps the code, with the given constant text and no cause`() {
+        val message = "This video stopped playing."
+        val decoding = cleanedError(PlaybackException.ERROR_CODE_DECODING_FAILED, message)
+        val network =
+            cleanedError(PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED, message)
 
+        assertEquals(CleanedError(message, PlaybackException.ERROR_CODE_DECODING_FAILED), decoding)
+        // The same text for every failure, so it says nothing about the video.
+        assertEquals(message, network?.message)
+        // CleanedError holds only a message and a code, so the session's error has no cause.
         assertEquals(
-            CleanedError("Playback failed", PlaybackException.ERROR_CODE_DECODING_FAILED),
-            cleaned,
+            setOf("message", "errorCode"),
+            CleanedError::class.java.declaredFields.map { it.name }.toSet(),
         )
-        assertNull(cleanedError(null))
+        assertNull(cleanedError(null, message))
     }
 }

@@ -21,6 +21,14 @@ class PlaybackTest {
     }
 
     @Test
+    fun `leaving pauses only a playback that hasn't played, and never on a configuration change`() {
+        assertTrue(pausesOnLeave(changingConfigurations = false, played = false))
+        assertFalse(pausesOnLeave(changingConfigurations = false, played = true))
+        assertFalse(pausesOnLeave(changingConfigurations = true, played = false))
+        assertFalse(pausesOnLeave(changingConfigurations = true, played = true))
+    }
+
+    @Test
     fun `a failure that the details already say shows once`() {
         val details = DetailsArea.Failed(1, YouTubeError.NETWORK)
 
