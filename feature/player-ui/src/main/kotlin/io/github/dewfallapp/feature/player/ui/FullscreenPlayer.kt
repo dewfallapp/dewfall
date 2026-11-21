@@ -10,14 +10,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.union
@@ -26,11 +23,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -52,17 +46,13 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.platform.LocalAccessibilityManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.ContentFrame
-import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
-import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.core.designsystem.theme.DewfallOpacity
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
@@ -93,6 +83,7 @@ private const val SHUTTER_ASPECT_RATIO = 16f / 9f
  * It shows [content] as the video area does: [onPlay] runs when the user presses play while it
  * waits, [onTryAgain] for a failure's "Try again", and [onExit] for the exit button. The back
  * gesture's handler is the caller's, because BackHandler must be called unconditionally.
+ * [dynamicColor] is for previews, which use Dewfall's own palette.
  */
 @Composable
 internal fun FullscreenPlayer(
@@ -102,6 +93,7 @@ internal fun FullscreenPlayer(
     onTryAgain: () -> Unit,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
+    dynamicColor: Boolean = true,
 ) {
     val player = (content as? VideoAreaContent.Playing)?.player
     val status = player?.let { rememberPlaybackStatus(it) }
@@ -114,7 +106,7 @@ internal fun FullscreenPlayer(
     LaunchedEffect(focus, controls.screenReader) {
         if (!controls.screenReader) focus.requestFocus()
     }
-    DewfallTheme(darkTheme = true) {
+    DewfallTheme(darkTheme = true, dynamicColor = dynamicColor) {
         // No Surface sits under the overlays, so their text takes the dark scheme's onSurface.
         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
             FullscreenBox(
@@ -385,88 +377,7 @@ private fun TitleBox(page: VideoPage, modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * The play and pause button, the times, the seek bar and the exit button. A live stream says "Live"
- * in place of the times and the seek bar. A failure keeps only the exit button.
- */
-@Composable
-private fun ControlRow(content: VideoAreaContent, onPlay: () -> Unit, onExit: () -> Unit) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
-                .background(overlayColor())
-                .padding(DewfallSpacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
-    ) {
-        when (content) {
-            is VideoAreaContent.Failed -> Spacer(Modifier.weight(1f))
-            is VideoAreaContent.Waiting -> {
-                PlayPauseButton(showPlay = true, ended = false, enabled = true, onClick = onPlay)
-                content.positionMs?.let {
-                    TimesText(positionMs = it, durationMs = null, Modifier.weight(1f, fill = false))
-                }
-                IdleSeekBar(Modifier.weight(1f))
-            }
-            is VideoAreaContent.Playing -> {
-                val player = content.player
-                if (player == null) {
-                    PlayPauseButton(showPlay = true, ended = false, enabled = false, onClick = {})
-                    IdleSeekBar(Modifier.weight(1f))
-                } else {
-                    PlayingControls(player)
-                }
-            }
-        }
-        IconButton(onClick = onExit) {
-            Icon(
-                painter = painterResource(DesignR.drawable.ic_fullscreen_exit),
-                contentDescription = stringResource(R.string.player_exit_fullscreen),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-/** The button, and the times and the seek bar, or "Live", for a connected [player]. */
-@Composable
-private fun RowScope.PlayingControls(player: Player) {
-    val playPause = rememberPlayPauseButtonState(player)
-    val status = rememberPlaybackStatus(player)
-    PlayPauseButton(
-        showPlay = playPause.showPlay,
-        ended = status.ended,
-        enabled = playPause.isEnabled,
-        onClick = playPause::onClick,
-    )
-    if (status.live) {
-        Text(
-            text = stringResource(R.string.player_video_live),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.weight(1f),
-        )
-    } else {
-        // Weighted like the seek bar, so in a narrow window at a large font the times wrap
-        // instead of taking the exit button's width.
-        Times(player, Modifier.weight(1f, fill = false))
-        SeekBar(player, Modifier.weight(1f))
-    }
-}
-
-/** The seek bar while no player is connected, turned off. */
-@Composable
-private fun IdleSeekBar(modifier: Modifier = Modifier) {
-    val description = stringResource(R.string.player_video_position)
-    Slider(
-        value = 0f,
-        onValueChange = {},
-        enabled = false,
-        modifier = modifier.semantics { contentDescription = description },
-    )
-}
-
 /** `surface` at the design system's duration-scrim opacity, behind text and controls over video. */
 @Composable
-private fun overlayColor() =
+internal fun overlayColor() =
     MaterialTheme.colorScheme.surface.copy(alpha = DewfallOpacity.DURATION_SCRIM)

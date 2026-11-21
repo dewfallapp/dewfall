@@ -250,17 +250,13 @@ internal fun SeekBar(player: Player, modifier: Modifier = Modifier) {
 
 /** The position and the length, such as "18:24 / 1:14:02", ticking once a second. */
 @Composable
-internal fun Times(player: Player, modifier: Modifier = Modifier) {
+internal fun Times(player: Player) {
     val progress = rememberProgressStateWithTickInterval(player, TIMES_TICK_MS)
-    TimesText(
-        positionMs = progress.currentPositionMs,
-        durationMs = progress.durationMs,
-        modifier = modifier,
-    )
+    TimesText(positionMs = progress.currentPositionMs, durationMs = progress.durationMs)
 }
 
 @Composable
-internal fun TimesText(positionMs: Long, durationMs: Long?, modifier: Modifier = Modifier) {
+internal fun TimesText(positionMs: Long, durationMs: Long?) {
     val text =
         if (durationMs == null || durationMs == C.TIME_UNSET) {
             clockText(positionMs)
@@ -271,7 +267,7 @@ internal fun TimesText(positionMs: Long, durationMs: Long?, modifier: Modifier =
                 clockText(durationMs),
             )
         }
-    Text(text = text, style = MaterialTheme.typography.titleSmall, modifier = modifier)
+    Text(text = text, style = MaterialTheme.typography.titleSmall)
 }
 
 /**
