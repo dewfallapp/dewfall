@@ -8,8 +8,9 @@
 #
 # On November 21, 2026, CodeRabbit's plans page said that a public repository with fewer than
 # 10 stars gets reviews only by hand: comment "@coderabbitai review" on the pull request
-# (https://docs.coderabbit.ai/management/plans#rate-limits). The auto_review settings below
-# apply once the repository has 10 stars.
+# (https://docs.coderabbit.ai/management/plans#rate-limits). During the trial that started that
+# day and ends on December 5, 2026, it still reviewed #202's push on its own, at 2 stars. The
+# auto_review settings below apply whenever it reviews on its own.
 
 language: en-US
 tone_instructions: >-
@@ -136,8 +137,8 @@ reviews:
       mode: warning
       requirements: >-
         The title is a conventional commit message. It starts with one of the types feat, fix,
-        docs, test, refactor, build, ci or chore, then an optional scope in parentheses and an
-        optional "!", then a colon and a space.
+        docs, test, refactor, build, ci or chore, then an optional scope of lowercase letters,
+        digits and hyphens in parentheses and an optional "!", then a colon and a space.
     # The reviewer subagent and the maintainer subagent check the description against
     # .github/pull_request_template.md.
     description:
