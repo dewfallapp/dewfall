@@ -75,7 +75,7 @@ Alternatives: a Scaffold's bottom bar in `:app` would need its own inset handlin
 
 ### Refining the architecture rules
 
-Pending the maintainer's answer to question 4. Two rules say less than this change needs:
+The maintainer chose this on November 21, 2026, as question 4's answer. Two rules say less than this change needs:
 
 - AGENTS.md's module rule, and docs/architecture.md's "Feature modules" and "Navigation", say a feature on `:app`'s back stack "exposes one public composable". `:feature:player-ui` would expose two: `PlayerRoute`, its screen, and `MiniPlayer`, a bar that `:app` places outside the back stack. Both take only plain values and actions, so features still never see each other or Navigation 3.
 - AGENTS.md's MVI rule and ADR 0002's note of November 20, 2026 let "the video screen's player commands" go straight to PlaybackConnection. The mini player's play, pause and close are player commands too, from a bar with no screen state, where an intent would pass through a reducer with nothing to change.
@@ -92,7 +92,7 @@ Leaving the app must not start a video that hasn't played, from the video screen
 
 ### The picture while minimized
 
-Pending the maintainer's answer to question 2. PlaybackSessions gains a count of the video screens that hold the picture, and the service shows the picture only while the app can be seen and the count is above zero. PlayerViewModel holds the picture from its creation until `onCleared`, so a configuration change, such as entering fullscreen on a phone, never turns it off, and minimizing turns it off once the exit animation ends. The rule builds on today's: the same track parameter, the same short load when it comes back.
+The maintainer chose this on November 21, 2026, as question 2's answer. PlaybackSessions gains a count of the video screens that hold the picture, and the service shows the picture only while the app can be seen and the count is above zero. PlayerViewModel holds the picture from its creation until `onCleared`, so a configuration change, such as entering fullscreen on a phone, never turns it off, and minimizing turns it off once the exit animation ends. The rule builds on today's: the same track parameter, the same short load when it comes back.
 
 Alternative: count the composed video areas. A configuration change disposes and recomposes them, which would turn the picture off and on during the turn to landscape. Rejected.
 
@@ -128,7 +128,7 @@ After the "Player full screen" frames, inside `DewfallTheme(darkTheme = true)`:
 
 ### Fullscreen controls that hide
 
-Pending the maintainer's answer to question 3. The title and the controls show on entering, and hide `calculateRecommendedTimeoutMillis(3000, containsIcons = true, containsText = true, containsControls = true)` milliseconds after the last touch while the video plays. Every pointer event in fullscreen, seen in the initial pass without consuming it, restarts the timer. A tap on the picture toggles them. They stay while the play button shows, that is while paused, ended or failed, and while it loads. They appear and disappear without animation, because the design system's motion only answers a tap, and the hide answers a timeout.
+The maintainer chose this on November 21, 2026, as question 3's answer. The title and the controls show on entering, and hide `calculateRecommendedTimeoutMillis(3000, containsIcons = true, containsText = true, containsControls = true)` milliseconds after the last touch while the video plays. Every pointer event in fullscreen, seen in the initial pass without consuming it, restarts the timer. A tap on the picture toggles them. They stay while the play button shows, that is while paused, ended or failed, and while it loads. They appear and disappear without animation, because the design system's motion only answers a tap, and the hide answers a timeout.
 
 ### Strings and glyphs
 
@@ -149,6 +149,8 @@ New strings in `:feature:player-ui`: "Minimize player", which replaces "Close vi
 AGENTS.md's module and MVI rules, and a dated note in ADR 0002, as "Refining the architecture rules" says. docs/architecture.md: "Feature modules" and Navigation's public composables and the Column, The theme's darkTheme sentence, `:core:designsystem`'s glyph list and DewfallOpacity, and The player: who owns playback, minimizing and the mini player, the release and leaving rules, the picture rule, fullscreen, and the corrected "Don't keep activities" and `onCleared` sentences. docs/testing.md: the hand checks, and the sentence about "Don't keep activities". The player spec's Purpose drops "Later changes add the mini and fullscreen players". AGENTS.md's "Where things are" names the mini player among feature/'s screens.
 
 ## Questions for the maintainer
+
+The maintainer answered all five on November 21, 2026, each with the recommendation, and approved the change at commit ed5d4c0. "The maintainer's answers" in [pull request #206](https://github.com/dewfallapp/dewfall/pull/206) records them.
 
 Questions 1, 2, 3 and 5 are visible to users and not covered by the roadmap, the brief or the designs. Question 4 widens an ADR's decision, which needs the maintainer's dated approval.
 

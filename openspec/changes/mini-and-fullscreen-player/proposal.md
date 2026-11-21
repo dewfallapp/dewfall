@@ -8,7 +8,7 @@ Phase 4's task list ends the player with "Mini player and fullscreen player" ([r
 
 - **Minimize instead of close.** The video screen's top button becomes "Minimize player", as the "Player" frames' prototype names it. It and the system's back gesture go back to the screen the video was opened from, as that screen was, and leave playback as it is: a playing video plays on, a paused one stays paused.
 - **The mini player.** While the player has a video and the video screen doesn't show, a mini player sits at the bottom of the screen, today Search YouTube, as the "Mini player on the inbox" frames show: a thin progress line, the title and channel name, and a play and pause button. Tapping its title opens the video screen for that video, which goes on playing where it is, without starting again. Phase 5's navigation bar will sit under it.
-- **Stopping.** Closing the video screen no longer stops playback. The user stops it from the mini player, in a way the maintainer chooses (see design.md's "Questions for the maintainer"). Removing Dewfall from the recent apps still stops it, and so does dismissing the paused notification, as today.
+- **Stopping.** Closing the video screen no longer stops playback. The user stops it with the mini player's close button, which the maintainer chose on November 21, 2026. Removing Dewfall from the recent apps still stops it, and so does dismissing the paused notification, as today.
 - **Fullscreen.** A fullscreen button joins the video screen's controls, as the "Player" frames show. Fullscreen uses the dark scheme in light mode too, hides the system bars, turns a phone to landscape, and shows the video in the whole window, with black pillars around it. The title and channel name sit at the top, and the play and pause button, the times, the seek bar and an exit button at the bottom, as the "Player full screen" frames show. The exit button and the back gesture return to the video screen in portrait.
 - **One playback for the whole app.** Leaving the app still pauses a video that hasn't played yet, now for the mini player too, so a video never starts in the background. Opening, from search, the video that the mini player plays goes on with it instead of starting it again.
 
@@ -31,6 +31,6 @@ None.
 - `:app`: shows the mini player under the back stack while no video screen is on top, and opens the video screen from it.
 - `:feature:player-ui` adds activity-compose, for the back gesture in fullscreen and the activity. `:app` already ships it, so the APK gains no library.
 - No new host, no new log line, and nothing new leaves the device.
-- Rules: AGENTS.md's module and MVI rules and ADR 0002 gain the mini player, a second public composable whose player commands skip intents, if the maintainer approves (design.md's question 4).
+- Rules: AGENTS.md's module and MVI rules and ADR 0002 gain the mini player, a second public composable whose player commands skip intents, which the maintainer approved on November 21, 2026 (design.md's question 4).
 - Docs: docs/architecture.md's "Feature modules", "Navigation", "The theme" and "The player", docs/testing.md's hand checks, and the player spec.
 - Screenshot tests of the mini player and the fullscreen player need #45's setup. If #45 merges first, this change adds them. If this change merges first, #45 adds them.
