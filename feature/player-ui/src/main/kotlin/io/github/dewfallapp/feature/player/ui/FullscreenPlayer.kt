@@ -5,6 +5,7 @@ package io.github.dewfallapp.feature.player.ui
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,10 +26,12 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -39,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -102,48 +107,88 @@ internal fun FullscreenPlayer(
     val controls = rememberControlsState(playing)
     val visible = controls.visible
     FullscreenWindow(barsShown = visible)
+    val focus = remember { FocusRequester() }
+    // Keys reach onPreviewKeyEvent only through a focused node, so fullscreen takes focus.
+    LaunchedEffect(focus) { focus.requestFocus() }
     DewfallTheme(darkTheme = true) {
-        Box(
-            modifier =
-                modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.scrim)
-                    .then(if (playing) Modifier.keepScreenOn() else Modifier)
-                    .pointerInput(controls) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                awaitPointerEvent(PointerEventPass.Initial)
-                                controls.onTouch()
-                            }
-                        }
-                    }
-                    .onPreviewKeyEvent {
-                        controls.onKey()
-                        false
-                    },
-        ) {
-            val tapLabel =
-                stringResource(
-                    if (visible) R.string.player_hide_controls else R.string.player_show_controls,
-                )
-            FullscreenPicture(
+        // No Surface sits under the overlays, so their text takes the dark scheme's onSurface.
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+            FullscreenBox(
                 content = content,
+                page = page,
+                controls = controls,
+                playing = playing,
                 loading =
                     status?.loading == true ||
                         (content is VideoAreaContent.Playing && player == null),
+                focus = focus,
+                onPlay = onPlay,
                 onTryAgain = onTryAgain,
-                modifier =
-                    Modifier.fillMaxSize().clickable(
-                        interactionSource = null,
-                        indication = null,
-                        onClickLabel = tapLabel,
-                    ) {
-                        controls.onTap()
-                    },
+                onExit = onExit,
+                modifier = modifier,
             )
-            if (visible) {
-                Overlays(content = content, page = page, onPlay = onPlay, onExit = onExit)
-            }
+        }
+    }
+}
+
+/**
+ * The black window with the picture, the [controls] state's taps, touches and keys, and the
+ * overlays while they show. It takes focus through [focus], so keys reach it.
+ */
+@Composable
+private fun FullscreenBox(
+    content: VideoAreaContent,
+    page: VideoPage?,
+    controls: ControlsState,
+    playing: Boolean,
+    loading: Boolean,
+    focus: FocusRequester,
+    onPlay: () -> Unit,
+    onTryAgain: () -> Unit,
+    onExit: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val visible = controls.visible
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim)
+                .then(if (playing) Modifier.keepScreenOn() else Modifier)
+                .pointerInput(controls) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                            controls.onTouch()
+                        }
+                    }
+                }
+                .onPreviewKeyEvent {
+                    controls.onKey()
+                    false
+                }
+                .focusRequester(focus)
+                .focusable(),
+    ) {
+        val tapLabel =
+            stringResource(
+                if (visible) R.string.player_hide_controls else R.string.player_show_controls,
+            )
+        FullscreenPicture(
+            content = content,
+            loading = loading,
+            onTryAgain = onTryAgain,
+            modifier =
+                Modifier.fillMaxSize().clickable(
+                    interactionSource = null,
+                    indication = null,
+                    onClickLabel = tapLabel,
+                ) {
+                    controls.onTap()
+                },
+        )
+        if (visible) {
+            Overlays(content = content, page = page, onPlay = onPlay, onExit = onExit)
         }
     }
 }
