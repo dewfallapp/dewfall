@@ -1,0 +1,61 @@
+# Tasks
+
+## 1. Before building
+
+- [ ] 1.1 Record the maintainer's answers to design.md's "Questions for the maintainer" in "The maintainer's answers" in the pull request's description, with their date. If an answer differs from the recommendation, change the spec, design.md and these tasks, run the maintainer subagent's plan check again, and build only after "Verdict: Build". Verify that the description quotes each answer and the approval of the change.
+- [ ] 1.2 If #45's screenshot test setup is on main when the build starts, rebase onto it and add task 6.4. If not, say in the pull request that the mini player's and fullscreen's screenshot tests come with #45. Verify that the description says which.
+
+## 2. The playback service and connection
+
+- [ ] 2.1 Add `PlaybackConnection.videoOf(playbackId)`, from PlaybackItems, and `release(playbackId)`, which drops the ID's video only when `releaseDrops(waitingId, currentItemId, playbackId)` says so: neither the player's current item nor the start that waits for the connection. Verify with unit tests of `releaseDrops`: the current item, the waiting start, both null, and another ID.
+- [ ] 2.2 Move the leaving rule into the connection: keep the playback ID that last played from a listener on its controller, and in `setAppVisible(false)` turn off the waiting start's play and pause the current item when `pauseOnHide(waitingId, currentItemId, playedId)` says so. Move `pausesOnLeave`'s test cases from `:feature:player-logic` into `pauseOnHide`'s tests in `:core:playback`, with the same cases, and remove `pausesOnLeave`. Verify with `./gradlew :core:playback:testDebugUnitTest :feature:player-logic:test`.
+- [ ] 2.3 Pending the answer to question 2: add a count of the screens that hold the picture to PlaybackSessions, with `holdPicture()` returning a handle whose `release()` lowers it once, and make PlaybackService show the picture only while the app can be seen and the count is above zero. Verify with unit tests of PlaybackSessions' picture state: the app hidden, no holder, one, two, and a handle released twice.
+- [ ] 2.4 Update docs/architecture.md's "The service and the connection", "In the background" and "Opaque playback IDs" for who owns playback, `release`, the leaving rule, the picture rule and what PlaybackItems holds after the video screen closes. Verify that the text agrees with the code.
+
+## 3. The video screen and minimizing
+
+- [ ] 3.1 In `:feature:player-logic`, add `fullscreen` to PlayerState with EnterFullscreen and ExitFullscreen, and give `startAction` its third input, `playsThisVideo`, and the answer GO_ON. Verify with `./gradlew :feature:player-logic:test`: both intents, that they leave the details alone, and every combination of `startAction`'s inputs.
+- [ ] 3.2 In PlayerViewModel, replace `stop` in `onCleared` with `release`, add `follow(playbackId)`, hold the picture from creation until `onCleared` if task 2.3 applies, and handle the two fullscreen intents through the reducer. Verify with `./gradlew :feature:player-ui:testDebugUnitTest`, with the fake connection recording calls: `onCleared` releases and never stops, a followed ID gets the description once the details show, and the picture is held until the ViewModel is cleared.
+- [ ] 3.3 In PlayerRoute, rename `onClose` to `onMinimize`, name the button "Minimize player", go on with a playback of this video for GO_ON, call `follow` for GO_ON and NOTHING, drop the saved `playedId` and the ON_STOP pause, and keep saving the position. Verify with `./gradlew :feature:player-ui:assembleDebug` and the hand checks in task 6.2.
+- [ ] 3.4 Update docs/architecture.md's "Starting, pausing and stopping" and "Navigation" for minimizing, GO_ON and `follow`. Verify that the text agrees with the code.
+
+## 4. The mini player
+
+- [ ] 4.1 Add `miniPlayerContent(currentItemId, title, channelName, live)` to `:feature:player-logic`, as design.md's "The mini player" describes. Verify with `./gradlew :feature:player-logic:test`: no current item, a title, an empty and a blank title, no channel name, and a live stream.
+- [ ] 4.2 Add the public `MiniPlayer(onOpenVideo, modifier)` to `:feature:player-ui`, drawing what `miniPlayerContent` returns, with the strings "Open video", "Close player" and "Now playing", a Hilt entry point for PlaybackConnection, and previews in light and dark: playing, paused, a long title at font scale 2, and "Now playing". Verify with `./gradlew :feature:player-ui:assembleDebug lint detekt`, and that the previews render.
+- [ ] 4.3 In `:app`, put NavDisplay and the mini player in a Column, with `showsMiniPlayer(backStack)` in BackStack.kt, the measured height consumed from the insets of the box above, and `openVideo` as its action. Pass `close(key)` as the video screen's `onMinimize`. Verify with BackStackTest cases for `showsMiniPlayer`, and the hand checks in task 6.2.
+- [ ] 4.4 Update docs/architecture.md's "Navigation", the `:app` and `:feature:player-ui` rows of the module tables, and add "The mini player" to "The player". Verify that the text agrees with the code.
+- [ ] 4.5 Pending the answer to question 4: update AGENTS.md's module rule, which says a feature exposes one public composable, and its MVI rule, which lets only the video screen's player commands skip intents, docs/architecture.md's "Feature modules" and "Navigation" sentences that say the same, and add a note to ADR 0002, dated and naming the maintainer's approval, as its #41 and #42 notes do. Verify that AGENTS.md, architecture.md and ADR 0002 say the same thing, and that the note quotes the approval's date.
+
+## 5. Fullscreen
+
+- [ ] 5.1 Add the fullscreen and fullscreen_exit glyphs to `:core:designsystem` from Material Symbols Rounded at commit 10ecc14790, with the same header comment as the other glyphs, and `DewfallOpacity.durationScrim`, checked by a new case in DesignTokensTest. Verify with `./gradlew :core:designsystem:testDebugUnitTest`.
+- [ ] 5.2 Add the fullscreen button to the video area's play and pause rows, "Full screen", and FullscreenPlayer with the FullscreenWindow effect and BackHandler, as design.md's "The fullscreen window" and "The fullscreen layout" describe, with "Exit full screen", light bar icons while it shows, and the icons the activity had restored on leaving. `:feature:player-ui` adds activity-compose from the version catalog. Add previews in dark: playing, live, a failure and waiting. Verify with `./gradlew :feature:player-ui:assembleDebug lint detekt`, and that `:app`'s release runtime classpath is unchanged, with `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` before and after.
+- [ ] 5.3 Pending the answer to question 3: hide the title and controls after the recommended timeout while the video plays, as design.md's "Fullscreen controls that hide" describes, with the decision of when they stay in a pure function in `:feature:player-logic` and its tests. Verify with `./gradlew :feature:player-logic:test` and the hand checks in task 6.2.
+- [ ] 5.4 Update docs/architecture.md's "The theme" sentence about darkTheme, the `:core:designsystem` row's glyphs and DewfallOpacity, and add "Fullscreen" to "The player". Verify that the text agrees with the code.
+
+## 6. Checks
+
+- [ ] 6.1 Run every check that the pull request workflow runs: `./gradlew spotlessCheck detekt lint test assembleDebug`. Verify that it passes.
+- [ ] 6.2 Update docs/testing.md's "Checking the player by hand": drop the sentence that "Don't keep activities" stops background play, change "Stopping" to the mini player's close button, and add checks for minimizing, the mini player, fullscreen and the picture while minimized. Run the whole list that a change to the video area asks for on emulators with Android 10 (API 29), Android 12L (API 32) and Android 17 (API 37), one emulator at a time across the sessions, plus a tablet or resizable emulator for fullscreen on a large screen and split screen. The new checks:
+  - Minimize a playing video: Search shows as it was, the mini player shows the title, the channel name and pause, and the sound goes on. Minimize with the back gesture, and with a double tap: the app goes back once.
+  - Minimize a paused video, and one that is still loading. Minimize a video whose details failed: the mini player says "Now playing".
+  - In the mini player, pause, play, let a short video end and play it again, and turn the network off and on, then press play.
+  - Tap the mini player's title: the video screen shows the video at the same position, with no new stream links in the log's call lines. Open the same video from search: the same. Open another video: it starts from the start.
+  - Close the mini player: the sound stops, the notification goes away, and `adb shell dumpsys media_session` shows no title or channel name.
+  - Minimize a playing video, go home, and tap the notification: Search shows with the mini player, playing on, and the picture stays off until the video screen opens. On Android 10, make the back gesture on Search with the mini player, which finishes the root activity there: the sound plays on, and the notification reopens Search with the mini player.
+  - Minimize a video, then go home before it starts: no sound, and coming back the mini player offers play.
+  - While minimized, compare the received bytes of a 1080p video over one minute with the video screen open and minimized: far fewer minimized, if task 2.3 applies. Open it again: the picture shows at the current position.
+  - Scroll the search results to the end with the mini player: the last result is fully above it, at the default and the largest font size, with gesture and three-button navigation. Type in the field: the keyboard covers the mini player, and the results end above the keyboard.
+  - Enter fullscreen on a phone in light mode: landscape, dark colors, no system bars, no pause in the sound. Swipe from an edge: the bars show with light icons over the black window, and hide again. Turn the phone the other way round: it follows when auto-rotate is on. Exit with the button and with the back gesture: portrait, the bars back, still playing.
+  - In fullscreen, the controls hide 3 seconds after the last touch while playing, show on a tap, and stay while paused, if task 5.3 applies. With `adb shell settings put secure accessibility_interactive_ui_timeout_ms 60000` they hide after a minute. Put it back with `adb shell settings delete secure accessibility_interactive_ui_timeout_ms`.
+  - In fullscreen on an emulator with a display cutout: no text, control or picture under it. A live stream says "Live". Turn the network off: the failure shows with "Try again" and the exit button.
+  - Fullscreen on a tablet in portrait and in split screen: the window keeps its shape, with black around the video.
+  - Go home in fullscreen and come back: still fullscreen, still playing. Tap the notification in fullscreen: the same.
+
+  Verify that every check passes, restore each emulator's settings, and record the results in the pull request.
+
+## Workflow follow-up
+
+- Run the reviewer subagent, fix its "Must fix" items, archive the change with /opsx:archive as the last commit, updating the living player spec's Purpose in the same commit, and run the reviewer again.
+- Run `python3 scripts/pre_push_gate.py`, push only after PASS, and mark the pull request ready once CI is green.
