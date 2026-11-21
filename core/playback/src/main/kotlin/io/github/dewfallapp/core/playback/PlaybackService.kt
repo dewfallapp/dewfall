@@ -148,7 +148,13 @@ class PlaybackService : MediaSessionService() {
         super.onDestroy()
     }
 
+    /**
+     * Reports a failure, and turns play off. Media3's notification on Android 10 to 12 shows a play
+     * button for a failed player but sends the play and pause toggle, which pauses a player whose
+     * play is still on, so without this its first tap would do nothing.
+     */
     private fun report(failure: PlaybackFailure, errorCode: Int?) {
+        player.pause()
         log.failed(failure, errorCode)
         sessions.fail(failure)
     }
