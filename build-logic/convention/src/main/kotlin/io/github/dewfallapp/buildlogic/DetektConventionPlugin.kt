@@ -23,6 +23,10 @@ class DetektConventionPlugin : Plugin<Project> {
                 config.setFrom(
                     isolated.rootProject.projectDirectory.file("config/detekt/detekt.yml"),
                 )
+                // detekt's defaults cover src/main and src/test. This adds the emulator tests in
+                // src/androidTest, so they get the same checks.
+                // https://github.com/detekt/detekt/blob/v2.0.0-alpha.6/detekt-gradle-plugin/src/main/kotlin/dev/detekt/gradle/plugin/DetektBasePlugin.kt
+                source.from("src/androidTest/java", "src/androidTest/kotlin")
                 // Every rule that the file doesn't list keeps its default.
                 buildUponDefaultConfig = true
                 // Any finding fails the build, whatever its severity.

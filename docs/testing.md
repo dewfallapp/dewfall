@@ -22,7 +22,7 @@ Unit tests never touch the network.
 
 ### Slow tests
 
-Slow tests are emulator tests of the main flows, such as search then play, and download then play offline.
+Slow tests are emulator tests of the main flows, such as search then play, and download then play offline. See [Emulator tests](#emulator-tests).
 
 ### Benchmarks
 
@@ -42,7 +42,7 @@ The project uses four GitHub Actions workflows, plus Renovate's weekly update pu
 
 Workflow 1 is .github/workflows/pull-request.yml. Today it runs one job, Checks, with the all-checks command from [AGENTS.md](../AGENTS.md#commands): formatting, detekt, Android Lint with the Android API check, unit tests, and a debug build. After the build, it checks that the Room schemas are committed. Screenshot tests join it when the task that adds them is done. Database migration tests need an emulator, so the task that adds them decides which workflow runs them.
 
-- It also runs on every push to main. Those runs fill the Gradle cache, which pull request runs only read. Workflow 2, with the emulator tests and the nightly APK, doesn't exist yet.
+- It also runs on every push to main. Those runs fill the Gradle cache, which pull request runs and the other workflows only read. Workflow 2 runs the emulator tests, as [The emulator tests workflow](#the-emulator-tests-workflow) describes. The nightly APK isn't built yet.
 - It adds `--continue` to the command, so one run reports every failing check.
 - It installs the Android SDK packages the build needs, and turns off AGP's automatic SDK downloads, so a missing package fails the build.
 - After the Gradle command, a step fails when the build changed or added files in core/database/schemas/. It runs even when the Gradle command failed. See [Database migration tests](#database-migration-tests).
@@ -186,7 +186,7 @@ In a public repository, GitHub turns off scheduled workflows when the repository
 
 [Renovate](https://docs.renovatebot.com/) opens a pull request for each dependency update, and workflow 1 tests it like any other pull request. Renovate runs as the Mend Renovate app on Mend's servers, which clone the repository for each run. It reads its settings from renovate.json. Renovate is licensed under AGPL-3.0 and never ships in the app.
 
-- **What it updates.** The plugins and libraries in gradle/libs.versions.toml, the Gradle wrapper, and the actions and the runner image in .github/workflows/. ktfmt and Gummy Bears have no library entry in the catalog, so two custom managers in renovate.json find their versions. The Gummy Bears manager names the artifact for API 29, so change it when minSdk changes. Renovate would also update the JDK version in the workflows' setup-java steps, but the build needs JDK 17, so renovate.json turns that off. Nothing updates the Android SDK packages in the workflow or the Android versions in build-logic. Change these by hand.
+- **What it updates.** The plugins and libraries in gradle/libs.versions.toml, the Gradle wrapper, and the actions and the runner image in .github/workflows/. ktfmt and Gummy Bears have no library entry in the catalog, so two custom managers in renovate.json find their versions. The Gummy Bears manager names the artifact for API 29, so change it when minSdk changes. Renovate would also update the JDK version in the workflows' setup-java steps, but the build needs JDK 17, so renovate.json turns that off. Nothing updates the Android SDK packages in the two workflows that install them, pull-request.yml and emulator-tests.yml, the emulator tests' system images, or the Android versions in build-logic. Change these by hand.
 - **When.** Renovate creates new branches only on Fridays, in the Asia/Dhaka time zone. It still rebases open pull requests on other days.
 - **How many.** At most five of Renovate's pull requests are open at once, with no hourly limit. Updates beyond that wait for the next Friday after a pull request closes. The Dependency Dashboard lists them.
 - **The 14-day wait.** AGENTS.md says to wait 14 days after a release before adopting it, unless the release fixes a security issue. A NewPipeExtractor release that fixes a YouTube breakage waits at least 3 days instead, counted from JitPack's build, under the conditions that AGENTS.md lists. Renovate creates no branch for a release that is less than 14 days old, or that has no release date. The Dependency Dashboard, an issue that Renovate keeps open, lists these updates under "Pending Status Checks".
@@ -534,6 +534,88 @@ Record the sets again:
 - **After any other NewPipeExtractor update,** so that the version the app ships reads the saved answers.
 - **When the live check shows that YouTube changed its answers,** such as with REQUESTS_CHANGED or READ_IN_PART. See [The daily YouTube check](#the-daily-youtube-check).
 
+## Emulator tests
+
+Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there is one, SearchThenPlayTest (#46).
+
+### What search then play checks
+
+SearchThenPlayTest opens the app on Search YouTube, types a search, and presses the keyboard's search action. It taps the video that the search finds, waits until the video screen shows the video's description, and then waits until the video plays past 3 seconds, with its 320x180 picture and no failure. It reads the player through PlaybackConnection, the connection that the screens use, on the main thread. It also checks that AssetMedia answered at least one request for each of the two files, never an exact number, because ExoPlayer's range requests vary.
+
+Everything that it runs is the app's own code, apart from the YouTube layer and the player's media clients: the screens, their ViewModels and reducers, `:app`'s navigation, the repositories in `:core:data`, PlaybackConnection, PlaybackService with its media session, the format choice with the device's own decoders, the media sources, and ExoPlayer decoding H.264 and AAC.
+
+It finds the search field by its role, the screen's only text field, and the video by the test video's own text, and it checks playback through the player, not through the video screen's controls. So a new layout of a screen doesn't break it.
+
+Two settings keep it running on Android 17, as its first runs on November 21, 2026 showed:
+
+- **Espresso 3.7.0.** Compose's test rules in ui-test-junit4 1.12.1 bring Espresso 3.5.0, which calls InputManager.getInstance, a hidden API that Android 17 no longer has. Every test then fails with NoSuchMethodException before it starts. `:app` declares Espresso 3.7.0, the latest stable release, for androidTest.
+- **An UnconfinedTestDispatcher for the Compose rule.** Compose's v2 rule, `androidx.compose.ui.test.junit4.v2.createAndroidComposeRule`, which replaces the deprecated v1 rules ([Migrate to v2 testing APIs](https://developer.android.com/develop/ui/compose/testing/migrate-v2)), queues the composition's effects on a StandardTestDispatcher. In 1.12.1, the test thread runs them. The video area's Media3 state holders then remove their player listeners off the main thread, which MediaController refuses with "MediaController method is called from a wrong thread". Given an UnconfinedTestDispatcher, the rule runs each effect on the thread that resumes it, the main thread, as the v1 rule did. Compose's [Synchronize your tests](https://developer.android.com/develop/ui/compose/testing/synchronization) says main-thread synchronization comes in ui-test-junit4 1.13.0-alpha01, which may make this unnecessary.
+
+Every wait names its timeout: 10 seconds for the search results and the description, and 60 seconds for the playback, which covers the service's start, the links and the first frames on a cold emulator that draws in software. `waitUntil`'s default is 1 second.
+
+It doesn't check:
+
+- the YouTube layer, which the [saved responses](#saved-youtube-responses), the [daily check](#the-daily-youtube-check) and the [debug screen](#checking-the-youtube-layer-on-a-phone) cover;
+- background play, the notification and media buttons, which [Checking the player by hand](#checking-the-player-by-hand) covers.
+
+### The fakes
+
+- **FakeYouTubeModule** replaces YouTubeModule in every emulator test, through Hilt's `@TestInstallIn` ([Hilt testing guide](https://developer.android.com/training/dependency-injection/hilt-testing)). It binds the YouTube layer's five interfaces to fakes that know one made-up video, TestVideo, and the player's two media clients to AssetMedia. Nothing builds NewPipeYouTube, so the tests send nothing to YouTube or googlevideo.com, locally or in CI. The repositories in `:core:data` are the real ones, as in [Fast tests](#fast-tests)' "repositories with fake data sources".
+- **YouTubeModule is public** for this, because `@TestInstallIn` names the module that it replaces, and Kotlin's `internal` would hide it from `:app`'s tests. `:app`'s androidTest depends on `:core:youtube` for the five interfaces only. NewPipeExtractor stays off its compile classpath.
+- **AssetMedia** answers the player's requests from the test APK's assets, as a real server does: 200 with the whole file for a request with no Range header, 206 with the bytes that a Range header asks for, and 416 for a range that starts at or past the end. Its OkHttp interceptor answers every request itself and never calls `chain.proceed`, and any other link fails with an IOException. TestVideo's links use the reserved .invalid domain, which never resolves ([RFC 2606](https://www.rfc-editor.org/rfc/rfc2606#section-2)). It counts the requests for each file, so the test checks that the player read both.
+- **TestVideo** has a video-only and an audio-only format, as most YouTube videos do, so the player merges two files, as it does for real videos.
+- **HiltTestRunner** starts HiltTestApplication in place of DewfallApplication, which has no code of its own. Once DewfallApplication gets some, such as WorkManager's Configuration.Provider, the tests need Hilt's `@CustomTestApplication` instead, or they run without that code. `:app`'s build names it as the test runner, and passes it `disableAnalytics=true`. AndroidX Test's runner has a usage tracker that sends to Google Analytics only when a test turns it on, and that argument keeps it off.
+
+### The media files
+
+app/src/androidTest/assets/media/ holds two files, which only the test APK contains:
+
+- video.mp4: 30 seconds of FFmpeg's testsrc2 pattern, 320x180 at 30 frames a second, H.264 Constrained Baseline, level 3.0, with a key frame every second and no sound.
+- audio.m4a: 30 seconds of a 440 Hz tone, AAC-LC, mono, 44.1 kHz, 48 kbit/s.
+
+Both are plain MP4 files, not fragmented ones, with their index at the front. YouTube's separate formats are often fragmented, but ExoPlayer's progressive source reads both shapes, and the test checks the app's flow, not the container. The clip is 30 seconds long, so it can't end before the test sees it playing past 3 seconds.
+
+FFmpeg generates both from its lavfi sources, so they are Dewfall's own content, under the repository's license. To make them again, run these from the repository's root:
+
+```bash
+ffmpeg -f lavfi -i testsrc2=size=320x180:rate=30:duration=30 -c:v libx264 -profile:v baseline -level 3.0 -pix_fmt yuv420p -g 30 -crf 36 -an -bsf:v filter_units=remove_types=6 -map_metadata -1 -metadata:s:v:0 encoder= -fflags +bitexact -flags:v +bitexact -movflags +faststart app/src/androidTest/assets/media/video.mp4
+```
+
+```bash
+ffmpeg -f lavfi -i sine=frequency=440:sample_rate=44100:duration=30 -c:a aac -b:a 48k -ac 1 -map_metadata -1 -fflags +bitexact -flags:a +bitexact -movflags +faststart app/src/androidTest/assets/media/audio.m4a
+```
+
+x264 writes its version and options into the stream as an SEI message, as the first files made on November 21, 2026 showed. `-bsf:v filter_units=remove_types=6` drops every SEI message, as FFmpeg's docs show for H.264 ([filter_units](https://ffmpeg.org/ffmpeg-bitstream-filters.html#filter_005funits)). `-map_metadata -1`, the empty encoder tag and the bitexact flags keep FFmpeg's name and version out of the container. What is left is each track's handler name, VideoHandler and SoundHandler, and the MP4 brands. On November 21, 2026, FFmpeg 9.0.2 made files of 455,761 and 187,499 bytes, and `strings` found no encoder name in them. Another version may make other bytes, which still play. TestVideo's formats name the codecs `avc1.42C01E` and `mp4a.40.2`, so change them with the files.
+
+### Running them
+
+Connect an emulator or a phone, then run the tests with `ANDROID_SERIAL` set to its serial, from `adb devices`. Without it, the tests run on every device that adb sees, and fail when one of them can't run them. For example:
+
+```bash
+ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest
+```
+
+- It installs the debug app and the test APK, and uninstalls both at the end. So it removes a debug build that was installed before, with its data.
+- AGP turns the device's window animations off for the run, through `animationsDisabled` in `:app`'s build, without changing the device's settings.
+- The report goes to app/build/reports/androidTests/connected/debug/index.html.
+- Run them on Android 10 (API 29) and the newest Android before merging a change to Search YouTube, the video screen, the player or `:app`'s navigation, because the workflow runs them before merging only for the changes that its path filter names. On the Apple silicon Mac, boot the Android 17 emulator with `-feature -HardwareDecoder`, as [Checking the player by hand](#checking-the-player-by-hand) says.
+- Name test methods without spaces, as [Writing tests](#writing-tests) says.
+
+### The emulator tests workflow
+
+Workflow 2 is .github/workflows/emulator-tests.yml. It runs `:app:connectedDebugAndroidTest` on an emulator, once with Android 10 (API 29) and once with Android 17 (API 37), the oldest and newest Android that the app supports.
+
+- **When.** On every push to main, as workflow 2's plan says. Also on pull requests to main that change app/src/androidTest/, the workflow itself, gradle/libs.versions.toml, the Gradle wrapper, gradle.properties, settings.gradle.kts, the root build.gradle.kts, app/build.gradle.kts or build-logic/, so a change to the tests, and Renovate's updates of Compose, Media3, Hilt, AGP, androidx.test and Gradle, run them before merging. Branch protection doesn't require it, so its path filter can't leave a required check pending. GitHub's Actions tab can start it by hand too, but only once the workflow is on main, because workflow_dispatch "will only trigger a workflow run if the workflow file exists on the default branch" ([Events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch)).
+- **What it misses before merging.** The Checks job doesn't compile androidTest. So a pull request that changes only other modules, such as a screen or the player, can break the tests' code or their run, and that shows only on main. Run the tests by hand before merging such a change, as [Running them](#running-them) says.
+- **The emulator.** The images are Google's AOSP images, `system-images;android-29;default;x86_64` and `system-images;android-37.0;default;x86_64`, which have no Google apps. On November 21, 2026, Google's [list](https://dl.google.com/android/repository/sys-img/android/sys-img2-4.xml) had revision 8 of the first and revision 6 of the second. sdkmanager installs the newest emulator and image and can't pin them, so the job's log prints the versions that ran.
+- **KVM.** GitHub's standard Linux runners have had KVM for the emulator since April 2, 2024 ([GitHub's changelog](https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/)), and the job turns it on with the udev rule from that changelog. On November 21, 2026, a standard Linux runner for a public repository had 4 CPUs, 16 GB of RAM and 14 GB of disk ([GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)).
+- **How the emulator runs.** With no window, no snapshot and swiftshader graphics, because the runner has no GPU. With `-feature -HardwareDecoder`, which keeps the emulator from offering its emulated hardware video decoders, so Android decodes in software. The emulator's own lib/advancedFeatures.ini describes the feature. With `-no-metrics`, which keeps the emulator from sending usage data to Google. Before the start, the log shows /dev/kvm, the AVDs that the emulator finds and its acceleration check. avdmanager and the emulator look for AVDs in different folders unless `ANDROID_AVD_HOME` names one, so both steps set it, and the job creates that folder first, because avdmanager uses the variable only when the folder exists. The step fails when the emulator doesn't list the AVD. The boot wait stops early when the emulator's process ends, and prints the end of the emulator's log. After boot, the job unlocks the screen, so the test's activity doesn't start behind the keyguard. API 29 and API 37 run as separate jobs, and one failing doesn't cancel the other.
+- **Permissions.** The token can only read the code. The job writes no issue and no comment, so a failure shows only as a failed run.
+- **Cache.** It reads setup-gradle's cache, which the Checks job on main fills, and never writes it.
+- **Failures.** When it fails or is cancelled, it uploads the test reports, the emulator's logcat and the emulator's own log as an artifact, kept for 7 days. Anyone signed in to GitHub can read them, as with the daily check's logs. The app logs no user data ([ADR 0007](adr/0007-how-the-app-logs.md)), and the tests' data is made up.
+- **Requests.** The tests send nothing to YouTube. The runner downloads the SDK packages and the image from Google, as the Checks job does for the platform and the build tools.
+- **When the job breaks without an app change.** A new emulator or image release can break the job. Compare the versions in the log of the last run that passed with those of the run that failed. Run the tests by hand on a local emulator: if they pass there, the job's emulator flags or image need a change, not the app.
+
 ## Checking the YouTube layer on a phone
 
 The saved responses and the daily check run the YouTube layer on the computer's JVM. The YouTube layer's debug screen runs it inside the app, on a phone or an emulator, with the app's own build: its desugaring, its Hilt setup and its logger. [architecture.md](architecture.md#the-youtube-layers-debug-screen) describes the screen. Only debug builds contain it.
@@ -667,4 +749,4 @@ There are no migration tests yet. The first public release is the first GitHub r
 
 **From the first public release on.** A committed schema file must never change after that, because phones with the release have databases in that shape. The workflow then needs a second check, which fails when a schema file that's on main changes or disappears. Phase 9 adds it (#134).
 
-**Migration tests.** Phase 9 sets them up (#53), so they're ready for the first migration after the first public release. Room's MigrationTestHelper, from androidx.room3:room3-testing, creates a database at an old version from its schema file, runs the migrations, and checks the result against the new schema ([Test migrations](https://developer.android.com/training/data-storage/room/migrating-db-versions#test)). On Android it needs an Instrumentation, so the tests run as androidTest tests on an emulator or a phone. The Room Gradle plugin already adds the schema files to the androidTest assets. Google doesn't recommend Robolectric for Room tests ([Test and debug your database](https://developer.android.com/training/data-storage/room/testing-db)), and tests on the computer's JVM would need a Kotlin Multiplatform JVM target, which ADR 0006 rules out. So #53 also decides which workflow runs an emulator for these tests.
+**Migration tests.** Phase 9 sets them up (#53), so they're ready for the first migration after the first public release. Room's MigrationTestHelper, from androidx.room3:room3-testing, creates a database at an old version from its schema file, runs the migrations, and checks the result against the new schema ([Test migrations](https://developer.android.com/training/data-storage/room/migrating-db-versions#test)). On Android it needs an Instrumentation, so the tests run as androidTest tests on an emulator or a phone. The Room Gradle plugin already adds the schema files to the androidTest assets. Google doesn't recommend Robolectric for Room tests ([Test and debug your database](https://developer.android.com/training/data-storage/room/testing-db)), and tests on the computer's JVM would need a Kotlin Multiplatform JVM target, which ADR 0006 rules out. So #53 also decides which workflow runs an emulator for these tests. Since #46, [the emulator tests workflow](#the-emulator-tests-workflow) runs `:app`'s androidTest tests on emulators, which #53 can build on.
