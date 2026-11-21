@@ -35,6 +35,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /** The notification channel of the media notification. Media3 names it "Now playing". */
@@ -103,7 +105,9 @@ class PlaybackService : MediaSessionService() {
                 .build()
         addSession(session)
         sessions.publish(session)
-        scope.launch { sessions.appVisible.collect(::showPicture) }
+        scope.launch {
+            sessions.picture.map { it.showsPicture }.distinctUntilChanged().collect(::showPicture)
+        }
         scope.launch { items.described.collect { sessionPlayer.descriptionsChanged() } }
     }
 
@@ -174,7 +178,8 @@ class PlaybackService : MediaSessionService() {
             when (val resolution = resolver.resolve(playbackId, videoId, tag.metered)) {
                 is Resolution.Resolved -> {
                     if (player.currentMediaItem?.mediaId == playbackId) {
-                        refresh(PlayerTarget(), resolution.item, point)
+                        val playsNow = resumesAfterRefresh(point.wasPlaying, player.playWhenReady)
+                        refresh(PlayerTarget(), resolution.item, point.copy(wasPlaying = playsNow))
                     }
                 }
                 is Resolution.Failed -> report(resolution.failure, errorCode)
@@ -205,9 +210,10 @@ class PlaybackService : MediaSessionService() {
     }
 
     /**
-     * Turns the video track off while no screen of the app can be seen, so the player decodes no
-     * picture, and fetches none that comes in its own file, and on again when one can. It builds on
-     * the current parameters, so a live stream's variant override stays.
+     * Turns the video track off while no video screen can be seen, because the app is in the
+     * background or the video is minimized, so the player decodes no picture, and fetches none that
+     * comes in its own file, and on again when one can. It builds on the current parameters, so a
+     * live stream's variant override stays.
      */
     private fun showPicture(visible: Boolean) {
         val parameters = player.trackSelectionParameters

@@ -15,9 +15,10 @@ import androidx.media3.common.listen
 import androidx.media3.common.util.UnstableApi
 
 /**
- * What the video area reads from the player beyond its buttons and times: whether it is loading,
- * whether the item is live, and whether it has ended. It updates on the player's events, never in
- * screen state. It lives here until #44 needs to share it, so :core:playback has no Compose.
+ * What the video area and fullscreen read from the player beyond their buttons and times: whether
+ * it is loading, whether the item is live, whether it has ended, and whether it is playing. It
+ * updates on the player's events, never in screen state. The mini player and fullscreen live in
+ * this module too, so it stays here, and :core:playback has no Compose.
  */
 @Stable
 internal class PlaybackStatus {
@@ -33,10 +34,18 @@ internal class PlaybackStatus {
     var ended by mutableStateOf(false)
         private set
 
+    /**
+     * The player is playing: play is on, it has data, and nothing holds it back. It is false while
+     * it waits for data, has ended or failed.
+     */
+    var playing by mutableStateOf(false)
+        private set
+
     fun update(player: Player) {
         loading = player.playbackState == Player.STATE_BUFFERING
         live = player.isCurrentMediaItemLive
         ended = player.playbackState == Player.STATE_ENDED
+        playing = player.isPlaying
     }
 }
 

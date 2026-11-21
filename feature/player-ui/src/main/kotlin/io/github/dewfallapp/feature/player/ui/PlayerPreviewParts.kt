@@ -109,9 +109,15 @@ internal fun PlayerScreenPreview(
             now = previewNow,
             zone = previewZone,
             onIntent = {},
-            onClose = {},
+            onMinimize = {},
             videoArea = { modifier ->
-                VideoArea(content = content, onPlay = {}, onTryAgain = {}, modifier = modifier)
+                VideoArea(
+                    content = content,
+                    onPlay = {},
+                    onTryAgain = {},
+                    onFullscreen = {},
+                    modifier = modifier,
+                )
             },
         )
     }

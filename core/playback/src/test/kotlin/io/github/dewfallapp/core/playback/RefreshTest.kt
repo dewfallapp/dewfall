@@ -75,4 +75,13 @@ class RefreshTest {
         assertFalse(limit.shouldRefresh(404))
         assertFalse(limit.shouldRefresh(null))
     }
+
+    @Test
+    fun `a refresh plays only if play was on at the refusal and is still on`() {
+        assertTrue(resumesAfterRefresh(wasPlaying = true, playsNow = true))
+        // Paused while the new links loaded, such as by leaving the app before it played.
+        assertFalse(resumesAfterRefresh(wasPlaying = true, playsNow = false))
+        assertFalse(resumesAfterRefresh(wasPlaying = false, playsNow = true))
+        assertFalse(resumesAfterRefresh(wasPlaying = false, playsNow = false))
+    }
 }

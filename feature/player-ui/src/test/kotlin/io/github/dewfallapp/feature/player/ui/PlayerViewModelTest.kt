@@ -1,5 +1,6 @@
 package io.github.dewfallapp.feature.player.ui
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.viewmodel.initializer
@@ -13,9 +14,12 @@ import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.YouTubeResult
+import io.github.dewfallapp.core.playback.PictureHold
 import io.github.dewfallapp.core.playback.PlaybackConnection
 import io.github.dewfallapp.core.playback.stopsPlayback
 import io.github.dewfallapp.feature.player.logic.DetailsArea
+import io.github.dewfallapp.feature.player.logic.PlayerIntent.EnterFullscreen
+import io.github.dewfallapp.feature.player.logic.PlayerIntent.ExitFullscreen
 import io.github.dewfallapp.feature.player.logic.PlayerIntent.TryAgain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -68,14 +72,18 @@ private class FakeRepository : VideoDetailsRepository {
 
 /**
  * A connection that records what the ViewModel asks of it. Its player's current item is the latest
- * prepared one, unless a test sets it, and stopping follows the real rule, stopsPlayback.
+ * prepared one, unless a test sets it, and stopping follows the real rule, stopsPlayback. It counts
+ * the picture's holds.
  */
 private class FakeConnection : PlaybackConnection {
     val prepared = mutableListOf<Pair<VideoId, Long>>()
     val stopRequests = mutableListOf<String>()
+    val releaseRequests = mutableListOf<String>()
     val descriptions = mutableListOf<Triple<String, String, String>>()
+    val videos = mutableMapOf<String, VideoId>()
     var currentItemId: String? = null
     var playing = false
+    var pictureHolds = 0
 
     override val player: StateFlow<Player?> = MutableStateFlow(null)
     override val failure: StateFlow<PlaybackFailure?> = MutableStateFlow(null)
@@ -83,16 +91,13 @@ private class FakeConnection : PlaybackConnection {
     override fun prepare(videoId: VideoId, play: Boolean, startPositionMs: Long): String {
         prepared += videoId to startPositionMs
         val id = "playback ${prepared.size}"
+        videos[id] = videoId
         currentItemId = id
         playing = play
         return id
     }
 
-    override fun isKnown(playbackId: String): Boolean = true
-
-    override fun pause(playbackId: String) {
-        if (currentItemId == playbackId) playing = false
-    }
+    override fun videoOf(playbackId: String): VideoId? = videos[playbackId]
 
     override fun stop(playbackId: String) {
         stopRequests += playbackId
@@ -102,11 +107,28 @@ private class FakeConnection : PlaybackConnection {
         }
     }
 
+    override fun release(playbackId: String) {
+        releaseRequests += playbackId
+    }
+
     override fun describe(playbackId: String, title: String, channelName: String) {
         descriptions += Triple(playbackId, title, channelName)
     }
 
-    override fun setAppVisible(visible: Boolean) = Unit
+    override fun holdPicture(): PictureHold {
+        pictureHolds++
+        var released = false
+        return PictureHold {
+            if (!released) {
+                released = true
+                pictureHolds--
+            }
+        }
+    }
+
+    override fun appStarted() = Unit
+
+    override fun appStopped(changingConfigurations: Boolean) = Unit
 }
 
 /** A store that holds [viewModel], so the test can clear it as navigation does. */
@@ -139,9 +161,12 @@ class PlayerViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private fun newViewModel(savedState: SavedStateHandle = SavedStateHandle()) =
+        PlayerViewModel(PlayerArgs(VIDEO), repository, connection, savedState)
+
     @Test
     fun `creating the ViewModel asks once for its video, and the answer shows`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
 
         assertEquals(listOf(VIDEO), repository.calls.map { it.videoId })
         repository.calls.single().answer.complete(YouTubeResult.Success(DETAILS))
@@ -152,7 +177,7 @@ class PlayerViewModelTest {
 
     @Test
     fun `trying again after NETWORK asks once more`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
 
         repository.calls.single().answer.complete(YouTubeResult.Failure(YouTubeError.NETWORK))
         viewModel.dispatch(TryAgain)
@@ -163,7 +188,7 @@ class PlayerViewModelTest {
 
     @Test
     fun `trying again after PRIVATE asks nothing`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
 
         repository.calls.single().answer.complete(YouTubeResult.Failure(YouTubeError.PRIVATE))
         viewModel.dispatch(TryAgain)
@@ -174,7 +199,7 @@ class PlayerViewModelTest {
 
     @Test
     fun `trying again while loading asks nothing`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
 
         viewModel.dispatch(TryAgain)
 
@@ -182,8 +207,8 @@ class PlayerViewModelTest {
     }
 
     @Test
-    fun `closing after Try again stops the newest playback`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+    fun `closing after Try again releases the newest playback, which plays on`() = runTest {
+        val viewModel = newViewModel()
         val store = storeOf(viewModel)
 
         viewModel.startPlayback(C.TIME_UNSET)
@@ -191,13 +216,14 @@ class PlayerViewModelTest {
         store.clear()
 
         assertEquals(listOf(VIDEO to C.TIME_UNSET, VIDEO to 61_000L), connection.prepared)
-        assertEquals(listOf(retried), connection.stopRequests)
-        assertFalse(connection.playing)
+        assertEquals(listOf(retried), connection.releaseRequests)
+        assertTrue(connection.stopRequests.isEmpty())
+        assertTrue(connection.playing)
     }
 
     @Test
     fun `a video that started during the screen's exit keeps playing`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
         val store = storeOf(viewModel)
         viewModel.startPlayback(C.TIME_UNSET)
 
@@ -205,14 +231,61 @@ class PlayerViewModelTest {
         connection.prepare(VideoId("YE7VzlLtp-4"), play = true, startPositionMs = C.TIME_UNSET)
         store.clear()
 
-        assertEquals(listOf("playback 1"), connection.stopRequests)
+        assertEquals(listOf("playback 1"), connection.releaseRequests)
+        assertTrue(connection.stopRequests.isEmpty())
         assertTrue(connection.playing)
         assertEquals("playback 2", connection.currentItemId)
     }
 
     @Test
+    fun `a followed playback gets the description and is released as the screen's own`() = runTest {
+        val viewModel = newViewModel()
+        val store = storeOf(viewModel)
+
+        viewModel.follow("playback from the mini player")
+        repository.calls.single().answer.complete(YouTubeResult.Success(DETAILS))
+        store.clear()
+
+        assertEquals(
+            listOf(Triple("playback from the mini player", "A title", "A channel")),
+            connection.descriptions,
+        )
+        assertEquals(listOf("playback from the mini player"), connection.releaseRequests)
+        assertTrue(connection.prepared.isEmpty())
+    }
+
+    @Test
+    fun `the ViewModel holds the picture until it is cleared`() = runTest {
+        val store = storeOf(newViewModel())
+        assertEquals(1, connection.pictureHolds)
+
+        store.clear()
+
+        assertEquals(0, connection.pictureHolds)
+    }
+
+    @Test
+    fun `fullscreen starts from the saved state and is written back`() = runTest {
+        val savedState = SavedStateHandle(mapOf("fullscreen" to true))
+        val viewModel = newViewModel(savedState)
+        assertTrue(viewModel.state.value.fullscreen)
+
+        viewModel.dispatch(ExitFullscreen)
+        assertEquals(false, savedState["fullscreen"])
+
+        viewModel.dispatch(EnterFullscreen)
+        assertEquals(true, savedState["fullscreen"])
+        assertTrue(viewModel.state.value.fullscreen)
+    }
+
+    @Test
+    fun `a new screen starts out of fullscreen`() = runTest {
+        assertFalse(newViewModel().state.value.fullscreen)
+    }
+
+    @Test
     fun `a failure shared by the details and playback has one Try again for both`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
         viewModel.startPlayback(C.TIME_UNSET)
         repository.calls.single().answer.complete(YouTubeResult.Failure(YouTubeError.NETWORK))
 
@@ -225,7 +298,7 @@ class PlayerViewModelTest {
 
     @Test
     fun `the details' Try again leaves a different playback failure alone`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
         viewModel.startPlayback(C.TIME_UNSET)
         repository.calls.single().answer.complete(YouTubeResult.Failure(YouTubeError.NETWORK))
 
@@ -238,7 +311,7 @@ class PlayerViewModelTest {
 
     @Test
     fun `details that arrive after the start describe that playback`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
         viewModel.startPlayback(C.TIME_UNSET)
         assertTrue(connection.descriptions.isEmpty())
 
@@ -249,7 +322,7 @@ class PlayerViewModelTest {
 
     @Test
     fun `a start after the details describes the new playback at once`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
         repository.calls.single().answer.complete(YouTubeResult.Success(DETAILS))
         assertTrue(connection.descriptions.isEmpty())
 
@@ -268,12 +341,28 @@ class PlayerViewModelTest {
 
     @Test
     fun `details that failed describe nothing`() = runTest {
-        val viewModel = PlayerViewModel(PlayerArgs(VIDEO), repository, connection)
+        val viewModel = newViewModel()
         viewModel.startPlayback(C.TIME_UNSET)
 
         repository.calls.single().answer.complete(YouTubeResult.Failure(YouTubeError.NETWORK))
         viewModel.startPlayback(C.TIME_UNSET)
 
         assertTrue(connection.descriptions.isEmpty())
+    }
+}
+
+class PlaybackOfVideoTest {
+    private val videos = mapOf("first" to VIDEO, "second" to VideoId("YE7VzlLtp-4"))
+
+    @Test
+    fun `the player's item counts only when it plays the screen's video`() {
+        assertEquals("first", playbackOfVideo("first", VIDEO, videos::get))
+        assertNull(playbackOfVideo("second", VIDEO, videos::get))
+    }
+
+    @Test
+    fun `no item, or an item with no video, counts as none`() {
+        assertNull(playbackOfVideo(null, VIDEO, videos::get))
+        assertNull(playbackOfVideo("gone", VIDEO, videos::get))
     }
 }

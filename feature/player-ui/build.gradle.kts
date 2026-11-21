@@ -23,6 +23,9 @@ dependencies {
     // live. See docs/architecture.md#the-player.
     implementation(libs.androidx.media3.ui.compose)
     implementation(libs.androidx.media3.common.ktx)
+    // LocalActivity and BackHandler, for fullscreen's window and back gesture. :app ships the same
+    // version, so the APK gains no library.
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 }
