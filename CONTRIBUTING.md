@@ -17,6 +17,7 @@ Read [docs/vision.md](docs/vision.md). It says what the app is and what it will 
 - Keep each pull request small, with one concern.
 - Fill in the sections of the [pull request template](.github/pull_request_template.md) in the pull request description.
 - A pull request is merged only when every CI check passes.
+- CodeRabbit, an AI code review service, can comment on a pull request. A member of the dewfallapp organization asks for a review by commenting `@coderabbitai review`. Its comments are advice, and it posts no check. Merging still follows the rules above and in AGENTS.md. Its settings are in [.coderabbit.yaml](.coderabbit.yaml).
 - The pull request workflow runs the same checks as `./gradlew spotlessCheck detekt lint test assembleDebug`, the all-checks command in [AGENTS.md](AGENTS.md#commands). Run it before you push. The workflow also fails when the build changed or added Room schema files in core/database/schemas/, so commit the ones the build writes.
 - Run `./gradlew spotlessApply` before you commit, so the Kotlin code and build scripts pass the formatting check.
 

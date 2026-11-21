@@ -45,6 +45,7 @@ This section is updated whenever a phase's milestone closes.
 | .editorconfig | Editor settings, with a Kotlin section that comes close to the formatter |
 | .github/workflows/ | GitHub Actions workflows. pull-request.yml runs the checks on every pull request to main and every push to main. daily-youtube-check.yml runs the live YouTube check every day and reports failures as issues |
 | renovate.json | Renovate's settings for the weekly dependency update pull requests. docs/testing.md explains them |
+| .coderabbit.yaml | CodeRabbit's settings for its AI code reviews of pull requests. Its comments are advice, and CONTRIBUTING.md says how to ask for a review |
 | .claude/ | Claude Code setup: the reviewer and maintainer subagents in agents/, plus the OpenSpec commands and skills. The maintainer subagent critiques plans and checks pull requests on the maintainer's behalf, from its own worktree. Its own commands only read, and it runs a pull request's gate and build, which run that pull request's code |
 
 Some of these are still outlines or empty folders. Later phases fill them in.
