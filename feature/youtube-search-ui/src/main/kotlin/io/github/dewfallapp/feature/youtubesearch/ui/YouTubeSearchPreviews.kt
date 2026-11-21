@@ -1,9 +1,9 @@
 package io.github.dewfallapp.feature.youtubesearch.ui
 
-import android.content.res.Configuration
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalCursorBlinkEnabled
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.VideoId
@@ -19,7 +19,10 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 // Previews with made-up videos, never real ones, and a fixed clock, so they don't change with the
-// date.
+// date. The @PreviewTest wrappers in src/screenshotTest carry their @Preview annotations and
+// render them as screenshot tests. They use Dewfall's own palette, so the images don't depend on a
+// wallpaper, except the dynamic color preview, whose wrappers name a fixed one. See
+// docs/testing.md#screenshot-tests.
 
 private val previewNow = Instant.parse("2027-03-15T10:30:00Z")
 private val previewZone = ZoneId.of("UTC")
@@ -80,63 +83,57 @@ private val previewRows =
     )
 
 @Composable
-private fun Preview(state: YouTubeSearchState, text: String = "") {
-    DewfallTheme {
-        YouTubeSearchScreen(
-            state = state,
-            textFieldState = rememberTextFieldState(text),
-            now = previewNow,
-            zone = previewZone,
-            onIntent = {},
-            onOpenVideo = {},
-        )
+private fun Preview(state: YouTubeSearchState, text: String = "", dynamicColor: Boolean = false) {
+    // The search field takes focus, and its cursor blinks with the clock, so a screenshot would
+    // catch it on or off depending on how long the render took. A steady cursor draws the same
+    // every time.
+    CompositionLocalProvider(LocalCursorBlinkEnabled provides false) {
+        DewfallTheme(dynamicColor = dynamicColor) {
+            YouTubeSearchScreen(
+                state = state,
+                textFieldState = rememberTextFieldState(text),
+                now = previewNow,
+                zone = previewZone,
+                onIntent = {},
+                onOpenVideo = {},
+            )
+        }
     }
 }
 
-@Preview(name = "Light")
-@Preview(
-    name = "Dark",
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
-)
-@Preview(name = "Large font", fontScale = 2f)
-@Preview(name = "Tablet", widthDp = 1280, heightDp = 800)
 @Composable
-private fun ResultsPreview() {
+internal fun ResultsPreview() {
     Preview(YouTubeSearchState(1, ResultsArea.Results(sourdough, previewRows)), text = "sourdough")
 }
 
-@Preview(name = "Light")
-@Preview(
-    name = "Dark",
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
-)
 @Composable
-private fun BeforeTheFirstSearchPreview() {
+internal fun ResultsDynamicPreview() {
+    Preview(
+        YouTubeSearchState(1, ResultsArea.Results(sourdough, previewRows)),
+        text = "sourdough",
+        dynamicColor = true,
+    )
+}
+
+@Composable
+internal fun BeforeTheFirstSearchPreview() {
     Preview(YouTubeSearchState())
 }
 
-@Preview(name = "Light")
-@Preview(name = "Large font", fontScale = 2f)
 @Composable
-private fun NoResultsPreview() {
+internal fun NoResultsPreview() {
     Preview(YouTubeSearchState(1, ResultsArea.NoResults(sourdough)), text = "sourdough")
 }
 
-@Preview(name = "Light")
-@Preview(
-    name = "Dark",
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
-)
 @Composable
-private fun FailedPreview() {
+internal fun FailedPreview() {
     Preview(
         YouTubeSearchState(1, ResultsArea.Failed(sourdough, YouTubeError.NETWORK)),
         text = "sourdough",
     )
 }
 
-@Preview(name = "Light")
 @Composable
-private fun LoadingPreview() {
+internal fun LoadingPreview() {
     Preview(YouTubeSearchState(1, ResultsArea.Loading(sourdough)), text = "sourdough")
 }
