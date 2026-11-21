@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Lets a user open one video, see what it is, and watch it: its title, channel, publish time and description, or why they can't be shown, and the video playing above them, or why it can't play. Later changes add background play, the media notification, and the mini and fullscreen players.
+Lets a user open one video, see what it is, and watch it: its title, channel, publish time and description, or why they can't be shown, and the video playing above them, or why it can't play, and lets the sound play on in the background with a media notification. Later changes add the mini and fullscreen players.
 
 ## Requirements
 
@@ -133,7 +133,7 @@ After the system ends the app's process in the background while the video screen
 
 #### Scenario: Coming back after process death
 - **WHEN** the system ended the app's process while it showed a video, and the user returns to it
-- **THEN** the screen says that the same video is loading, then shows its details, and the video waits at the position where it paused for the user to press play
+- **THEN** the screen says that the same video is loading, then shows its details, and the video waits for the user to press play at the position it had when the user last left the app
 
 ### Requirement: The video screen fits any window
 On a phone the screen SHALL stay in portrait. In any wider window, such as a tablet, an unfolded foldable, landscape on a large screen or split screen, the screen SHALL keep its content in one centered column of readable width, and the background SHALL fill the window. No text or control SHALL sit under the system bars or the display cutout.
@@ -143,11 +143,15 @@ On a phone the screen SHALL stay in portrait. In any wider window, such as a tab
 - **THEN** the details sit in one centered column no wider than the readable width, and nothing is cut off
 
 ### Requirement: Video details stay private
-The app SHALL never log the video's ID, title, channel name or description, and SHALL send them nowhere but YouTube. The only copies kept outside the screen SHALL be the video's ID in the state Android saves for a process that it ends in the background, the video's paused position, also user data, in that same saved state, and, in memory while its playback lasts, the playing video's ID and stream links in the playback service, which it SHALL drop when that playback is replaced or stops. The media session SHALL name the video only by a random playback ID.
+The app SHALL never log the video's ID, title, channel name or description. It SHALL send them nowhere but YouTube, except the title and channel name, which it SHALL give only to Android's media session, for the media notification, while the video's playback lasts. The only copies kept outside the screen SHALL be the video's ID and its paused position, also user data, in the state Android saves for a process that it ends in the background, and, in memory while its playback lasts, the playing video's ID, title, channel name and stream links in the playback service, which it SHALL drop when that playback is replaced or stops. The media session SHALL identify the video only by a random playback ID, and SHALL hold no video ID.
 
 #### Scenario: Logs after opening a video
 - **WHEN** the user opens a video, once with details showing and once with the network off
 - **THEN** the app's log lines hold no ID, title, channel name or description, and the failure's line names only the call and its category
+
+#### Scenario: After closing the video screen
+- **WHEN** the user closes the video screen
+- **THEN** Android's media session no longer holds the video's title or channel name
 
 ### Requirement: The video plays on the video screen
 The video screen SHALL show the video in a 16:9 area above the title, with a play and pause button, a seek bar, and the position and the length. Dragging the seek bar SHALL move playback to that point. While the player waits for data, the area SHALL show that it is loading.
@@ -177,7 +181,7 @@ The video screen SHALL show the video in a 16:9 area above the title, with a pla
 - **THEN** the video pauses, and the button offers to play
 
 ### Requirement: Opening a video starts playing it
-Opening a video SHALL start playing it from the start, or a live stream from its live edge, without a tap. A video screen that comes back after the system ended the app's process, or stopped its player in the background, SHALL wait for the user to press play, at the position where it paused.
+Opening a video SHALL start playing it from the start, or a live stream from its live edge, without a tap. A video screen that comes back after Android stopped its player in the background SHALL wait for the user to press play, at the position where it paused. One that comes back after the system ended the app's process SHALL wait for play at the position the screen saved when the user last left the app.
 
 #### Scenario: Opening a video
 - **WHEN** the user opens a video from search
@@ -185,7 +189,7 @@ Opening a video SHALL start playing it from the start, or a live stream from its
 
 #### Scenario: Playback after process death
 - **WHEN** the system ended the app's process while it showed a video, and the user returns to it
-- **THEN** the video waits at the position where it paused for the user to press play, and no stream links are fetched for it until then
+- **THEN** the video waits at the position it had when the user last left the app, for the user to press play, and no stream links are fetched for it until then
 
 ### Requirement: Quality follows the network
 On a metered network the player SHALL stream a picture whose shorter side is at most 480 pixels, with the lowest audio bitrate. On an unmetered one, at most 1080 pixels, with the highest. Within the limit it SHALL prefer formats the phone decodes in hardware, then the largest. It SHALL take only formats the phone can decode, the smallest one when none is within the limit, and fail as not decodable when no video or no audio format decodes, and SHALL keep its choice until playback starts again.
@@ -259,25 +263,6 @@ When a video can't play, the video area SHALL say why in words, and SHALL offer 
 - **WHEN** the network is off as the user opens a video
 - **THEN** the screen says once that YouTube can't be reached, with one "Try again" that retries both the details and the video
 
-### Requirement: Leaving stops or pauses playback
-Closing the video screen SHALL stop playback. Leaving the app, such as with the home gesture, SHALL pause it, and coming back SHALL leave it paused at the same position. A configuration change, such as a resized window or a theme change, SHALL NOT stop, pause or restart playback.
-
-#### Scenario: Closing the video screen
-- **WHEN** a video plays and the user closes its screen
-- **THEN** the sound stops, and search shows as it was
-
-#### Scenario: Leaving the app
-- **WHEN** a video plays and the user goes to the home screen
-- **THEN** the sound stops, and when the user comes back the video is paused at the same position
-
-#### Scenario: Coming back much later
-- **WHEN** a video plays, the user goes to the home screen, and comes back after Android has stopped the player in the background
-- **THEN** the video is paused at the same position, and plays on from it when the user presses play
-
-#### Scenario: Resizing the window
-- **WHEN** a video plays in split screen and the user resizes the window
-- **THEN** it keeps playing without a pause
-
 ### Requirement: Playback makes way for other sound
 The player SHALL follow Android's audio focus: it SHALL pause or lower its sound when another app takes audio focus, such as for a call or music, and SHALL pause when headphones are unplugged or a Bluetooth headset disconnects.
 
@@ -289,26 +274,8 @@ The player SHALL follow Android's audio focus: it SHALL pause or lower its sound
 - **WHEN** a video plays through headphones and they are unplugged
 - **THEN** the video pauses, and doesn't play through the speaker
 
-### Requirement: Media buttons do nothing yet
-Until background play exists, headset and Bluetooth media buttons SHALL NOT control playback, and SHALL NOT start the app.
-
-#### Scenario: A headset's play button while the app is in the background
-- **WHEN** a video was playing, the user went home, and a headset's play button is pressed
-- **THEN** no sound plays
-
-#### Scenario: A headset's play button after the process ended
-- **WHEN** the system ended the app's process in the background, and a headset's play button is pressed
-- **THEN** the app doesn't start, and nothing crashes
-
-### Requirement: The player shows no notification yet
-Until background play exists, the app SHALL NOT show a media notification, and SHALL NOT run a foreground service.
-
-#### Scenario: Playing with the app open
-- **WHEN** a video plays
-- **THEN** no notification about it shows
-
 ### Requirement: Playback stays private
-The player SHALL fetch video only through the YouTube layer, which SHALL send its requests only over HTTPS to googlevideo.com and its subdomains, and SHALL never follow a redirect to another host. The app SHALL never log a stream link, a video's ID or its title, and Media3 SHALL write nothing to the log. Android's media session SHALL hold no video ID, title or link, and ExoPlayer SHALL report no playback session to Android's media metrics.
+The player SHALL fetch video only through the YouTube layer, which SHALL send its requests only over HTTPS to googlevideo.com and its subdomains, and SHALL never follow a redirect to another host. The app SHALL never log a stream link, a video's ID or its title, and Media3 SHALL write nothing to the log. Android's media session SHALL hold no video ID or link, and no text but the title, the channel name and a constant error. ExoPlayer SHALL report no playback session to Android's media metrics.
 
 #### Scenario: Logs while playing
 - **WHEN** the user plays a video, once to the end and once with the network turned off while it plays
@@ -320,4 +287,125 @@ The player SHALL fetch video only through the YouTube layer, which SHALL send it
 
 #### Scenario: The media session
 - **WHEN** a video plays and another app reads Android's media sessions
-- **THEN** the session's item has a random ID, and no video ID, title or link
+- **THEN** the session's item has a random ID, the video's title and channel name, and no video ID or link
+
+#### Scenario: The media session after a failure
+- **WHEN** a video failed to play and another app reads Android's media sessions
+- **THEN** the session's error message is the same constant text for every failure
+
+### Requirement: The sound plays on in the background
+Leaving the app while a video plays, such as with the home gesture or by switching apps, and turning the screen off, SHALL keep the sound playing. Coming back SHALL show the same video playing at its current position. A configuration change, such as a resized window or a theme change, SHALL NOT stop, pause or restart playback.
+
+#### Scenario: Going home
+- **WHEN** a video plays and the user goes to the home screen
+- **THEN** the sound goes on, and when the user comes back, the video plays on at its current position
+
+#### Scenario: The screen off
+- **WHEN** a video plays and the user turns the screen off for 10 minutes
+- **THEN** the sound goes on the whole time
+
+#### Scenario: Paused in the background, back much later
+- **WHEN** the user paused a video in the background, and Android stopped the player before the user came back
+- **THEN** the video waits at the position where it paused, and plays on from it when the user presses play
+
+#### Scenario: Resizing the window
+- **WHEN** a video plays in split screen and the user resizes the window
+- **THEN** it keeps playing without a pause
+
+### Requirement: The picture turns off while the app can't be seen
+While no Dewfall screen can be seen, the player SHALL decode no picture, and SHALL NOT fetch a picture that comes in its own file. When the app shows again, the picture SHALL come back at the current position, after a short load that may pause the sound. A file that holds both sound and picture, and a live stream, whose segments hold both, still load the picture's bytes with the sound.
+
+#### Scenario: Data in the background
+- **WHEN** a video whose sound and picture come in separate files plays at 1080p, and the user goes to the home screen
+- **THEN** the player fetches only the sound until the user comes back
+
+#### Scenario: A live stream in the background
+- **WHEN** a live stream plays and the user goes to the home screen
+- **THEN** the sound goes on, and no picture is decoded until the user comes back
+
+#### Scenario: Coming back
+- **WHEN** the user comes back to a video that played on in the background
+- **THEN** the picture shows again at the current position
+
+### Requirement: A video that hasn't started waits
+When the user leaves the app after opening a video and before it has started playing, the video SHALL NOT start in the background. Coming back SHALL show it paused, waiting for the user to press play.
+
+#### Scenario: Leaving while the video loads
+- **WHEN** the user opens a video and goes to the home screen before it starts playing
+- **THEN** no sound plays, and when the user comes back, the video waits for play
+
+### Requirement: Closing the video screen or removing the app stops playback
+Closing the video screen SHALL stop playback and remove the media notification. Removing Dewfall from the recent apps SHALL do the same.
+
+#### Scenario: Closing the video screen
+- **WHEN** a video plays and the user closes its screen
+- **THEN** the sound stops, the notification goes away, and search shows as it was
+
+#### Scenario: Removing the app from the recent apps
+- **WHEN** a video plays in the background and the user removes Dewfall from the recent apps
+- **THEN** the sound stops and the notification goes away
+
+### Requirement: A media notification shows while a video plays
+While a video plays, and while it is paused until Android stops the player, the app SHALL show a media notification with a play and pause button, and the video's title and channel name once its details have loaded. It SHALL show no picture. Tapping it SHALL open the app as it was. While the video plays, the user SHALL NOT be able to dismiss it.
+
+#### Scenario: Playing in the background
+- **WHEN** a video plays and the user goes to the home screen
+- **THEN** a notification shows the video's title and channel name with a pause button, and the pause button pauses the video
+
+#### Scenario: Playing in the app
+- **WHEN** a video plays on the video screen
+- **THEN** the notification shows too
+
+#### Scenario: Tapping the notification
+- **WHEN** a video plays in the background and the user taps its notification
+- **THEN** Dewfall opens on the video screen as it was, and the video plays on
+
+#### Scenario: Details that failed
+- **WHEN** a video plays but its details failed to load
+- **THEN** the notification shows no title or channel name, and its button still plays and pauses
+
+#### Scenario: Paused for a long time
+- **WHEN** a video stays paused in the background for more than 10 minutes
+- **THEN** the user can dismiss the notification, which stops playback, and Android may remove it
+
+#### Scenario: A notification left by an ended process
+- **WHEN** the system ended the app's process while a paused video's notification still showed, and the user taps its play button
+- **THEN** nothing plays, nothing crashes, and the notification goes away
+
+#### Scenario: A failure in the background
+- **WHEN** a video plays in the background and the player runs out of data because the network went away
+- **THEN** the notification stays with a play button, which tries again from the same position, and once the video plays again the video screen shows it playing, with no failure
+
+### Requirement: Headset and Bluetooth buttons play and pause
+While Dewfall's player runs, the play and pause buttons of a headset, a Bluetooth device and the notification SHALL play and pause the video. Next, previous, fast forward and rewind SHALL do nothing. After Android stopped the player, or ended the app's process, a media button SHALL NOT start the app or play anything.
+
+#### Scenario: A headset's button in the background
+- **WHEN** a video plays in the background and the user presses a headset's play and pause button
+- **THEN** the video pauses, and a second press plays it on
+
+#### Scenario: Next and previous
+- **WHEN** a video plays and a Bluetooth device's next, previous, fast forward or rewind button is pressed
+- **THEN** the video plays on at its position
+
+#### Scenario: The notification's buttons
+- **WHEN** a video plays on Android 10, 11 or 12
+- **THEN** the notification shows a pause button and no previous or next button
+
+#### Scenario: A headset's button after Android stopped the player
+- **WHEN** a video was paused in the background, Android stopped the player while the process lived on, and a headset's play button is pressed
+- **THEN** nothing plays
+
+#### Scenario: A headset's button after the process ended
+- **WHEN** the system ended the app's process in the background, and a headset's play button is pressed
+- **THEN** the app doesn't start, and nothing crashes
+
+### Requirement: Only Android's media controls and trusted apps control playback
+Besides Dewfall itself, only Android's own components that may control media, such as the system UI and the Bluetooth service, and apps the user gave notification access SHALL control playback, and only to play, pause, seek within the video and stop. None of them SHALL change which video plays, and no other app SHALL connect to the player.
+
+#### Scenario: The seek bar in the notification shade
+- **WHEN** on Android 13 or later the user drags the seek bar of the media player in the notification shade
+- **THEN** the video goes on from there
+
+#### Scenario: An app asks for another item
+- **WHEN** an app with notification access asks the player to play another item
+- **THEN** the player refuses, and the video plays on

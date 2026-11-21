@@ -151,7 +151,7 @@ The app SHALL never log the video's ID, title, channel name or description. It S
 - **THEN** Android's media session no longer holds the video's title or channel name
 
 ### Requirement: Playback stays private
-The player SHALL fetch video only through the YouTube layer, which SHALL send its requests only over HTTPS to googlevideo.com and its subdomains, and SHALL never follow a redirect to another host. The app SHALL never log a stream link, a video's ID or its title, and Media3 SHALL write nothing to the log. Android's media session SHALL hold no video ID and no link, and no text but the title and channel name and a constant error message. ExoPlayer SHALL report no playback session to Android's media metrics.
+The player SHALL fetch video only through the YouTube layer, which SHALL send its requests only over HTTPS to googlevideo.com and its subdomains, and SHALL never follow a redirect to another host. The app SHALL never log a stream link, a video's ID or its title, and Media3 SHALL write nothing to the log. Android's media session SHALL hold no video ID or link, and no text but the title, the channel name and a constant error. ExoPlayer SHALL report no playback session to Android's media metrics.
 
 #### Scenario: Logs while playing
 - **WHEN** the user plays a video, once to the end and once with the network turned off while it plays
