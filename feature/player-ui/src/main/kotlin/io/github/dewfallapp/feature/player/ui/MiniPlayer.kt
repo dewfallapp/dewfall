@@ -24,9 +24,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -151,35 +153,38 @@ internal fun MiniPlayerBar(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier =
-            modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh),
-    ) {
-        if (progress != null) {
-            ProgressLine(progress)
-        } else {
-            Spacer(Modifier.height(ProgressLineHeight))
-        }
-        Box(
+    // No Surface sits under the bar in :app, so its text takes onSurface, as the role pair asks.
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+        Column(
             modifier =
-                Modifier.fillMaxWidth()
-                    .windowInsetsPadding(
-                        WindowInsets.systemBars
-                            .union(WindowInsets.displayCutout)
-                            .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
-                    ),
-            contentAlignment = Alignment.TopCenter,
+                modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainerHigh),
         ) {
-            MiniPlayerRow(
-                title = title,
-                channelName = channelName,
-                showPlay = showPlay,
-                ended = ended,
-                playEnabled = playEnabled,
-                onPlayPause = onPlayPause,
-                onOpen = onOpen,
-                onClose = onClose,
-            )
+            if (progress != null) {
+                ProgressLine(progress)
+            } else {
+                Spacer(Modifier.height(ProgressLineHeight))
+            }
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .windowInsetsPadding(
+                            WindowInsets.systemBars
+                                .union(WindowInsets.displayCutout)
+                                .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+                        ),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                MiniPlayerRow(
+                    title = title,
+                    channelName = channelName,
+                    showPlay = showPlay,
+                    ended = ended,
+                    playEnabled = playEnabled,
+                    onPlayPause = onPlayPause,
+                    onOpen = onOpen,
+                    onClose = onClose,
+                )
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package io.github.dewfallapp.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -65,13 +66,13 @@ internal fun DewfallNavigation(modifier: Modifier = Modifier) {
                 },
         )
         if (showsMiniPlayer) {
-            MiniPlayer(
-                onOpenVideo = { videoId -> backStack.openVideo(videoId) },
-                modifier =
-                    Modifier.onSizeChanged {
-                        miniPlayerHeight = with(density) { it.height.toDp() }
-                    },
-            )
+            // The box reports 0 when the mini player draws nothing, such as after it closes, so
+            // the screens above get the navigation bar's inset back.
+            Box(
+                Modifier.onSizeChanged { miniPlayerHeight = with(density) { it.height.toDp() } },
+            ) {
+                MiniPlayer(onOpenVideo = { videoId -> backStack.openVideo(videoId) })
+            }
         }
     }
 }

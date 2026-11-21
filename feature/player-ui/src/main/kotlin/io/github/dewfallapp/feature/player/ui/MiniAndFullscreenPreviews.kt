@@ -4,9 +4,10 @@ package io.github.dewfallapp.feature.player.ui
 
 import android.content.res.Configuration
 import androidx.annotation.OptIn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -29,21 +30,23 @@ private fun MiniPreview(
     channelName: String? = previewPage.channelName,
     showPlay: Boolean = false,
 ) {
+    // No Surface, as in :app, so the bar's own content color shows.
     DewfallTheme {
-        Surface {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                MiniPlayerBar(
-                    title = title,
-                    channelName = channelName,
-                    progress = { PREVIEW_PROGRESS },
-                    showPlay = showPlay,
-                    ended = false,
-                    playEnabled = true,
-                    onPlayPause = {},
-                    onOpen = {},
-                    onClose = {},
-                )
-            }
+        Box(
+            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.BottomCenter,
+        ) {
+            MiniPlayerBar(
+                title = title,
+                channelName = channelName,
+                progress = { PREVIEW_PROGRESS },
+                showPlay = showPlay,
+                ended = false,
+                playEnabled = true,
+                onPlayPause = {},
+                onOpen = {},
+                onClose = {},
+            )
         }
     }
 }
@@ -73,6 +76,11 @@ private fun MiniPlayerPausedPreview() {
 }
 
 @Preview(name = "Light", heightDp = 400)
+@Preview(
+    name = "Dark",
+    heightDp = 400,
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
 @Composable
 private fun MiniPlayerNowPlayingPreview() {
     MiniPreview(title = stringResource(R.string.mini_player_now_playing), channelName = null)
@@ -102,6 +110,12 @@ private fun FullscreenPreview(video: () -> VideoAreaContent) {
 @Composable
 private fun FullscreenPausedPreview() {
     FullscreenPreview { VideoAreaContent.Playing(PreviewPlayer(playing = false)) }
+}
+
+@Preview(name = "Dark", widthDp = 915, heightDp = 412)
+@Composable
+private fun FullscreenPlayingPreview() {
+    FullscreenPreview { VideoAreaContent.Playing(PreviewPlayer(playing = true)) }
 }
 
 @Preview(name = "Dark", widthDp = 915, heightDp = 412)
