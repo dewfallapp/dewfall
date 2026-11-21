@@ -16,7 +16,7 @@ Fast tests run on every change. They cover:
 - The theme against the design tokens. [architecture.md](architecture.md#the-theme) explains the check.
 - Dewfall's lint checks, with lint-tests. See [Dewfall's lint checks](#dewfalls-lint-checks).
 - Background jobs.
-- Screenshot tests of each screen, in light, dark and large font.
+- Screenshot tests of each screen, in light, dark and large font, and in dynamic color with a fixed wallpaper. See [Screenshot tests](#screenshot-tests).
 
 Unit tests never touch the network.
 
@@ -40,13 +40,13 @@ The project uses four GitHub Actions workflows, plus Renovate's weekly update pu
 
 ### The pull request workflow
 
-Workflow 1 is .github/workflows/pull-request.yml. Today it runs one job, Checks, with the all-checks command from [AGENTS.md](../AGENTS.md#commands): formatting, detekt, Android Lint with the Android API check, unit tests, and a debug build. After the build, it checks that the Room schemas are committed. Screenshot tests join it when the task that adds them is done. Database migration tests need an emulator, so the task that adds them decides which workflow runs them.
+Workflow 1 is .github/workflows/pull-request.yml. Today it runs one job, Checks, with the all-checks command from [AGENTS.md](../AGENTS.md#commands): formatting, detekt, Android Lint with the Android API check, unit tests, [screenshot tests](#screenshot-tests), and a debug build. After the build, it checks that the Room schemas are committed, and runs scripts/scan_screenshot_tests.py on the screenshot test folders. Database migration tests need an emulator, so the task that adds them decides which workflow runs them.
 
 - It also runs on every push to main. Those runs fill the Gradle cache, which pull request runs and the other workflows only read. Workflow 2 runs the emulator tests, as [The emulator tests workflow](#the-emulator-tests-workflow) describes. The nightly APK isn't built yet.
 - It adds `--continue` to the command, so one run reports every failing check.
 - It installs the Android SDK packages the build needs, and turns off AGP's automatic SDK downloads, so a missing package fails the build.
 - After the Gradle command, a step fails when the build changed or added files in core/database/schemas/. It runs even when the Gradle command failed. See [Database migration tests](#database-migration-tests).
-- When the job fails, it uploads the build/reports/ folder of every project as an artifact called reports, kept for 7 days.
+- When the job fails, it uploads the build/reports/ folder of every project as an artifact called reports, kept for 7 days. The artifact also holds each module's build/intermediates/debug/testDebugScreenshotTestDefaultTestSuite/results/ folder, with the new and diff images of the screenshot tests, which their report names but doesn't hold.
 - It caches Gradle with setup-gradle's basic caching, which is MIT licensed, because the default, enhanced caching, loads a proprietary component ([DISTRIBUTION.md](https://github.com/gradle/actions/blob/v6.4.0/DISTRIBUTION.md)).
 - A repository ruleset named main protects the branch. It requires a pull request, allows only merge commits, and requires the check named Checks to pass on a branch that's up to date with main. It blocks force pushes and deletion, and nobody can bypass it, maintainers included. The ruleset requires the check by its name, so renaming the job blocks merging until the ruleset is updated.
 - The repository allows only GitHub's own actions and gradle/actions/setup-gradle, and requires every action to be pinned to a full commit SHA. A new action needs the allow list changed in the repository settings first.
@@ -196,6 +196,7 @@ In a public repository, GitHub turns off scheduled workflows when the repository
 - **Pre-releases.** Renovate offers a pre-release only when the current version is a pre-release with the same major, minor and patch numbers. So detekt moves from one 2.0.0 alpha to the next or to 2.0.0, and every other dependency gets stable releases only ([ignoreUnstable](https://docs.renovatebot.com/configuration-options/#ignoreunstable)).
 - **Titles.** Gradle updates start with "build:" and Actions updates with "ci:", as the commit message rule in AGENTS.md asks.
 - **Up to date with main.** The ruleset requires a branch that's up to date with main, and Renovate rebases its open pull requests when main moves. To rebase one now, tick the rebase box in its description. Don't press "Update branch". Renovate would then treat the pull request as edited by someone else and stop updating it.
+- **Screenshot images.** An update of the Compose BOM, Media3, AGP or the screenshot engine can change how the screens render, so the screenshot tests fail with no change to the app. renovate.json gives those pull requests a note. Read each changed image in the report. If the change comes from the update and every screen still looks right, record the images again on the Mac, as [Screenshot tests](#screenshot-tests) says, and push them to Renovate's branch, which then shows under "PR Edited (Blocked)", as the next item describes. Renovate offers the engine only as 0.0.1-alphaNN versions, because it is a pre-release, and an engine version may need a newer AGP.
 - **Fixing a pull request.** Some updates need a change before Checks passes. A ktfmt update can change the formatting, a Kotlin or library update can deprecate an API the code uses, an AGP update can need new build tools, and a NewPipeExtractor update can need the saved YouTube responses recorded again. Push the fix to Renovate's branch. Renovate then leaves the branch alone and lists it under "PR Edited (Blocked)" on the Dependency Dashboard. For ktfmt and AGP updates, the pull request's description names the usual fix.
 - **Keeping a fixed pull request up to date.** You can't bring Renovate's commit up to date yourself. Merging main adds a merge commit, which the [pre-push gate](#the-pre-push-gate) rejects, and the gate exempts Renovate's commits from its identity rule only while they sit unchanged on the remote branch, so a Renovate commit that you rebased yourself fails it. Instead, tick the pull request's box under "PR Edited (Blocked)" on the Dependency Dashboard, or the rebase box in its description, which Renovate's notice on an edited pull request points at. Either one asks for the rebuild ([branch/index.ts](https://github.com/renovatebot/renovate/blob/44.140.0/lib/workers/repository/update/branch/index.ts#L363)). Renovate then rebuilds its commit on main and drops the fix, so push the fix again, as in #188, the AGP 9.5.1 update.
 - **A pull request that Renovate won't rebase.** You can open a pull request early from "Pending Status Checks", either under AGENTS.md's security exception or for a NewPipeExtractor breakage fix, which often needs the saved responses recorded again. Renovate doesn't rebase it while its `renovate/stability-days` check is pending, so it falls behind main. Renovate's code lets only an unpend request override pending checks, not a rebase request ([branch/index.ts](https://github.com/renovatebot/renovate/blob/44.140.0/lib/workers/repository/update/branch/index.ts#L314-L315)). So tick the pull request's box under "Pending Status Checks" again, the same box that opened it. If the pull request already carries a fix, such as newly recorded saved responses, Renovate may rebuild the branch and drop it, so push the fix again. As of November 20, 2026, nobody has tried this on a pull request that already exists, so if the box does nothing, make the same update as your own commit in a new pull request and merge that one. Then close Renovate's pull request by hand, and put no closing word before its number in the new description. #195 replaced #191, the Gradle 9.9.2 update, this way.
@@ -216,6 +217,8 @@ Run these from the repository root. AGENTS.md lists the command that runs every 
 | Every unit test | `./gradlew test` |
 | One plain Kotlin/JVM module's tests | `./gradlew :core:mvi:test` |
 | One Android module's tests | `./gradlew :core:data:testDebugUnitTest` |
+| The screenshot tests | `./gradlew testDebugScreenshotTestDefaultTestSuite`. `./gradlew test` doesn't run them. |
+| The screenshot tests of one module | `./gradlew :feature:player-ui:testDebugScreenshotTestDefaultTestSuite` |
 | One test class | Add `--tests` with the class name, such as `./gradlew :core:mvi:test --tests "io.github.dewfallapp.core.mvi.counter.CounterReducerTest"` |
 | The emulator tests, on one emulator or phone | `ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest`. See [Running them](#running-them). |
 
@@ -225,7 +228,7 @@ Each module writes an HTML report to build/reports/tests/test/index.html in a pl
 
 - Use kotlin.test's annotations and assertions, such as kotlin.test.Test, BeforeTest, AfterTest and assertEquals. They run on JUnit 6 in plain Kotlin/JVM modules and on JUnit 4 in Android modules, so a test reads the same in both. [architecture.md](architecture.md#build-settings) explains why there are two.
 - Name each local test in src/test/ with backticks, as a sentence about what it checks, such as `` `increment adds one` ``. detekt's naming rule skips test folders. Don't do this in src/androidTest/: Android runs method names with spaces only from API level 30, and the minimum is 29 ([Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html#names-for-test-methods)).
-- Put tests in the src/test/ folder of the module whose code they test.
+- Put tests in the src/test/ folder of the module whose code they test. Screenshot tests are the exception: their wrappers go in src/screenshotTest/kotlin/, as [Screenshot tests](#screenshot-tests) says.
 
 ### Reducers
 
@@ -257,7 +260,7 @@ A class that logs receives a Logger in its constructor, as [architecture.md](arc
 
 - Check log lines only where logging is the behavior under test, such as a warning that a class must write when a retry fails. Compare the message and the fields, not stack frames, which change whenever the code moves.
 - Tests never read logcat. LogcatWriter's own tests pass a function in place of Log.println, because android.util.Log has no working code in local unit tests.
-- Tests follow the logging rules too. Lint checks test sources with Dewfall's checks, so a println, a printStackTrace or a message built from a template fails `./gradlew lint` in a test as well. Only ConsoleLogWriter, in `:core:youtube`'s tests, writes to standard output, and it never writes to standard error. See [Dewfall's lint checks](#dewfalls-lint-checks).
+- Tests follow the logging rules too. Lint checks test sources with Dewfall's checks, so a println, a printStackTrace or a message built from a template fails `./gradlew lint` in a test as well. Lint can't read the screenshot test folders, src/screenshotTest, so scripts/scan_screenshot_tests.py checks them instead. Only ConsoleLogWriter, in `:core:youtube`'s tests, writes to standard output, and it never writes to standard error. See [Dewfall's lint checks](#dewfalls-lint-checks).
 
 ## Dewfall's lint checks
 
@@ -704,7 +707,7 @@ scripts/pre_push_gate.py checks every commit that a push would send, before the 
 python3 scripts/pre_push_gate.py
 ```
 
-It fetches origin, then checks every commit in origin/main..HEAD, not just the last one, then the build. It ends with PASS only when every check passed. It prints the names of the rules that failed, with each commit's hash and subject, and never an identity or a value it found.
+It fetches origin, then checks every commit in origin/main..HEAD, not just the last one, then the build. Two of its checks run scans of their own: scripts/scan_saved_responses.py on the saved YouTube responses, and scripts/scan_screenshot_tests.py on the screenshot test folders. It ends with PASS only when every check passed. It prints the names of the rules that failed, with each commit's hash and subject, and never an identity or a value it found.
 
 | Check | Fails when |
 |---|---|
@@ -714,6 +717,7 @@ It fetches origin, then checks every commit in origin/main..HEAD, not just the l
 | Messages | A subject doesn't start with one of the conventional types in AGENTS.md, a message has a trailer, such as a co-author line, or a closing word, such as "closes", comes before an issue's number or link. The pull request's description closes issues, never a commit. |
 | Secrets | A commit adds or changes a local.properties, .env, keystore or key file, or a line with a private key, a GitHub token, an AWS access key or a Google API key. |
 | Saved responses | A commit changes core/youtube/src/test/resources/youtube/, and its own copy of the folder fails the scan below. |
+| Screenshot tests | A commit adds or changes a file in a src/screenshotTest* folder, and its own copy of those folders fails scripts/scan_screenshot_tests.py. See [Screenshot tests](#screenshot-tests). |
 | Nothing uncommitted | The folder has a change or a file that no commit holds, which the build would check although the push doesn't send it. |
 | The build | The pull request workflow's command, with `--continue` and `-Pandroid.builder.sdkDownload=false`, fails, or changes a file, such as a Room schema. |
 
@@ -740,7 +744,94 @@ It reads every file, with JSON's `\uXXXX` and `\/` escapes undone, then decodes 
 
 ## Screenshot tests
 
-TODO
+Screenshot tests render each screen's previews and compare them, pixel for pixel, with reference images committed in the repository. They run on the computer's JVM, with no emulator. Google's [Screenshot testing](https://developer.android.com/training/testing/ui-tests/screenshot) page calls screenshot testing "the recommended way to verify visual attributes in Compose UIs".
+
+### The tool
+
+The tests use Google's Compose Preview Screenshot Testing, through the screenshot test suites that AGP 9.5.1 has built in ([Screenshot testing with test suites](https://developer.android.com/studio/preview/compose-screenshot-testing-with-testsuites)). The suite renders previews with Layoutlib, the renderer of Android Studio's previews. It needs no Gradle plugin of its own. The standalone plugin is the older way: its own page says it is "no longer maintained", and the test-suites page calls it "deprecated". These facts were checked on November 21, 2026.
+
+- **The engine.** The suite runs engine 0.0.1-alpha17, whose version is `screenshot` in gradle/libs.versions.toml, shared with the @PreviewTest annotation's artifact, screenshot-validation-api. It is an alpha. Google's [release notes](https://developer.android.com/studio/preview/compose-screenshot-testing-release-notes) stopped at alpha16 on November 21, 2026, so alpha17's changes are unlisted. Its POM's Last-Modified header on Google's Maven repository says October 30, 2026. Every artifact it brings is test only, and none ships. The maintainer approved it on November 21, 2026, for #45.
+- **Guava.** The engine's classpath has Guava 33.4.0-jre, which has the high-severity advisory [GHSA-xxph-c9ww-hj94](https://github.com/advisories/GHSA-xxph-c9ww-hj94), fixed in 33.7.2 (checked on November 21, 2026). The advisory is about deserializing untrusted data, which a test of our own previews doesn't do, and AGP's own build classpath runs the same version (`./gradlew buildEnvironment`). The maintainer accepted it on November 21, 2026, with no constraint. The constraint in `:core:playback` covers the app that ships.
+- **The flags.** gradle.properties turns on `android.experimental.enableScreenshotTest` and `android.experimental.testSuiteSupport`, which the suites need. Each build prints a warning that they are experimental.
+- **The task names.** AGP 9.5.1 names the tasks `testDebugScreenshotTestDefaultTestSuite` and `updateDebugScreenshotTestDefaultTestSuite`. The test-suites page gives the pattern `test{SuiteName}{Target}{Variant}TestSuite`, which is a different order (checked on November 21, 2026). If an AGP update renames them, renovate.json's note lists every file that names them.
+- **The setup.** The convention plugin dewfall.android.screenshots creates the suite, named screenshotTest, for the debug variant, and the three `-ui` modules apply it. [architecture.md](architecture.md#build-settings) describes it.
+- **Android Studio.** The test-suites page says Studio runs and records these tests from Android Studio Rabbit 1 Canary 4 on. Whether Studio shows the previews through the wrappers in src/screenshotTest, now that the previews in src/main have no @Preview, is still to be confirmed in a real Studio.
+
+### What gets tested
+
+Each `-ui` module's previews file in src/main, such as YouTubeSearchPreviews.kt, holds internal preview functions with made-up data and a fixed clock. The module's src/screenshotTest/kotlin/ folder holds one wrapper for each of them, in a file such as YouTubeSearchScreenshots.kt:
+
+```kotlin
+@PreviewTest
+@Preview(name = "Light")
+@Preview(
+    name = "Dark",
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
+@Preview(name = "LargeFont", fontScale = 2f)
+@Composable
+private fun ResultsScreenshot() = ResultsPreview()
+```
+
+Each @Preview annotation makes one image. Every screen has a light, a dark and a large font image (font scale 2) of at least one state, and each state keeps the variants its previews had before the tests, so the images stay few, as Google's page advises. The previews' names have no spaces, because the engine puts them in the images' file names.
+
+**Why wrappers.** Lint can't read src/screenshotTest, so Dewfall's lint checks of the logging rules don't reach it. The previews' code stays in src/main, where lint reads it, and the wrappers hold no code beyond their one call to a preview. scripts/scan_screenshot_tests.py, which the pre-push gate and the pull request workflow run, checks that every file there is such a wrapper, and fails on anything else. It allows only a package line, plain imports, `//` comments, and wrappers whose function is exactly `private fun <Name>Screenshot() = <Name>Preview()`, written either one part to a line or all on one line, as ktfmt writes one that fits. The only other files it allows are the reference images. detekt reads the folder for its style and Compose rules. [ADR 0007](adr/0007-how-the-app-logs.md#the-lint-checks)'s note of November 21, 2026 records this.
+
+**Dynamic color.** On a phone, dynamic color comes from the wallpaper, so a test can't use it. The previews pass `DewfallTheme(dynamicColor = false)`, so the light, dark and large font images show Dewfall's own palette and don't depend on Layoutlib's default wallpaper. Each screen's main state also has a preview with dynamic color on, whose wrapper makes a DynamicLight and a DynamicDark image with `wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE`, as ThemePreviews.kt does. Layoutlib turns that fixed wallpaper into a fixed palette, and a color that a screen hardcodes stands out against the blue.
+
+**The same image on every machine.** A test fails on any pixel that differs, so nothing in an image may depend on the machine or the moment:
+
+- The suite's JVM runs with the locale en-GB and the time zone UTC, which dewfall.android.screenshots sets on the check task and the recording task. Without them, the debug screen's list of counts, which ICU's ListFormatter joins, read "LIVE: 0, and UPCOMING: 0" on a Mac set to US English and "LIVE: 0 and UPCOMING: 0" in British English.
+- The previews pass a fixed clock to the screens.
+- The video screen's made-up player holds its position with `PositionSupplier.getConstant`. Given a plain number, SimpleBasePlayer moves a playing position on with the clock, and the first images showed the Mac's uptime as the position.
+- The search field has focus, and a cursor blinks with the clock, so the Search YouTube previews turn blinking off with `LocalCursorBlinkEnabled`.
+
+A difference in text or content, such as a word, a comma, a moved element or an indicator's frame, is never settled with a tolerance. It means something like the above is still unfixed, and the fix goes there.
+
+**What the images can't show.** Layoutlib draws no system bars, even with `showSystemUi = true`, so the images can't show whether text sits under them. The insets stay checked by hand on a phone. The video area draws nothing in Layoutlib, so it shows as an empty box.
+
+### Running them
+
+```bash
+./gradlew testDebugScreenshotTestDefaultTestSuite
+```
+
+Add a module's path to run one module's tests, such as `./gradlew :feature:player-ui:testDebugScreenshotTestDefaultTestSuite`. `./gradlew test` doesn't run them. The pull request workflow and the pre-push gate do. The report goes to build/reports/tests/testDebugScreenshotTestDefaultTestSuite/index.html in each module.
+
+### Recording and updating the images
+
+After a change to a screen that you meant, record its images again:
+
+```bash
+./gradlew updateDebugScreenshotTestDefaultTestSuite
+```
+
+```bash
+python3 scripts/scan_screenshot_tests.py
+```
+
+The images go to src/screenshotTestDefaultDebug/reference/ in each module, in a folder for the wrapper file under the package's folders, named after the wrapper, the preview's name and a hash of its settings, such as feature/youtube-search-ui/src/screenshotTestDefaultDebug/reference/io/github/dewfallapp/feature/youtubesearch/ui/YouTubeSearchScreenshotsKt/ResultsScreenshot_Light_b29dc7a7_0.png. Then:
+
+1. Before you commit, look at every changed image: `git status` lists them, and your image viewer opens them. A change you didn't mean is a bug to fix, not an image to commit. After the push, GitHub shows each image's old and new versions side by side in the pull request, for the review.
+2. Check that the scan above passed. It fails on any chunk of a PNG file other than the image data, such as text or a time, and on image data whose zlib stream holds anything beyond the pixels that IHDR describes, so no image carries the name of the machine or a folder. The engine writes only the IHDR, IDAT and IEND chunks, in 8-bit RGBA that isn't interlaced.
+3. Commit the images with the change that caused them.
+
+To add a screen or a state, add an internal preview to the previews file in src/main, then a wrapper in src/screenshotTest, then record. Renaming a wrapper or a preview's name changes the image's file name, so record again and delete the old image. Add a preview only when it shows something the others don't. The images take about 4 MB today, and every recording of a changed image adds a whole new copy to Git's history, which the folders' size doesn't show. If the folders pass 20 MB, or the history's PNG objects grow fast, such as after Renovate updates of the Compose BOM, Media3 or AGP, revisit this: fewer variants, or Git LFS, as Google's page suggests.
+
+### When a test fails
+
+The task often prints "WARN: Slow render action 0/3" with a TimeoutException's stack trace, when Layoutlib takes a while on a busy machine. It is a warning, and the test still passes or fails on its image alone, so it isn't a failure by itself. The task's output names each image that didn't match, with its difference as a percentage, and the paths of the reference, new and diff images. The new and diff images are in the module's build/intermediates/debug/testDebugScreenshotTestDefaultTestSuite/results/ folder. In CI, the reports artifact holds both, as [The pull request workflow](#the-pull-request-workflow) says.
+
+1. Look at the diff image and the new image.
+2. If the screen changed by mistake, fix the code.
+3. If the change is one you meant, record the images again, as above.
+4. If the app didn't change at all, look for what else did: an update of a library, the JDK, macOS or the Mac itself can move pixels, as Google's page warns. Read the diff. Record again only when the app is unchanged and the new image is right, and say in the pull request why the images changed.
+
+### The Mac and Linux
+
+The images are recorded on a Mac with Apple silicon, and the pull request workflow checks them on Ubuntu on x86-64. Google's page warns that the two can render differently. The suite sets no tolerance, so the check stays pixel for pixel. Any tolerance above zero, set with `imageDifferenceThreshold` in dewfall.android.screenshots, needs the maintainer's approval first. It is a fraction, so 0.0001f allows 0.01 percent of the pixels to differ. A real change can be that small: one digit of the position text is about 0.008 percent of a phone image. Recording the images only on Linux instead, which Google's page calls taking screenshots on a server, would fail the gate on the Mac whenever the two render differently, because the gate runs the same check. While they match, as below, images recorded on either one pass on both.
+
+On November 21, 2026, #45's first run on the runners ([run 44936455307](https://github.com/dewfallapp/dewfall/actions/runs/44936455307), on an earlier push of #45, commit 755fe20, ubuntu-26.04) matched all 41 images recorded on the Mac pixel for pixel, so no tolerance was needed. The images didn't change after that push, and every later run of the pull request workflow on #45 that finished passed the same check. Layoutlib's text and shapes come out the same on both. Its native code comes from a file of layoutlib-runtime for each system, such as layoutlib-runtime-16.1.0-jdk17-linux.jar and -mac-arm.jar, which AGP picks by the host. If a later update makes the two differ, the check fails on one of them, and the maintainer decides what to do, as above.
 
 ## Database migration tests
 

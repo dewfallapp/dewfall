@@ -80,6 +80,12 @@ reviews:
     - path: "**/src/test/**"
       instructions: >-
         Check tests against AGENTS.md's Testing rules and docs/testing.md.
+    - path: "**/src/screenshotTest/**"
+      instructions: >-
+        Android Lint and Dewfall's lint checks don't read this folder. It holds only @PreviewTest
+        wrappers whose body is one call to a preview in src/main, with no logging and no other
+        code, which scripts/scan_screenshot_tests.py checks. See the note of November 21, 2026 in
+        docs/adr/0007-how-the-app-logs.md and docs/testing.md#screenshot-tests.
     - path: ".github/workflows/**"
       instructions: >-
         Check workflows against the GitHub Actions rule in AGENTS.md's How to work section.
