@@ -175,7 +175,6 @@ private fun FullscreenBox(
         FullscreenPicture(
             content = content,
             loading = loading,
-            onTryAgain = onTryAgain,
             modifier =
                 Modifier.fillMaxSize().clickable(
                     interactionSource = null,
@@ -186,7 +185,13 @@ private fun FullscreenBox(
                 },
         )
         if (visible) {
-            Overlays(content = content, page = page, onPlay = onPlay, onExit = onExit)
+            Overlays(
+                content = content,
+                page = page,
+                onPlay = onPlay,
+                onTryAgain = onTryAgain,
+                onExit = onExit,
+            )
         }
     }
 }
@@ -269,13 +274,12 @@ private fun rememberControlsState(playing: Boolean): ControlsState {
 /**
  * The picture, fitted to the window and kept clear of the display cutout, so showing or hiding the
  * system bars never moves it. Before the first frame a 16:9 box in `surfaceContainerHighest` stands
- * in for it, as in the frames. A failure shows its Banner in the picture's place.
+ * in for it, as in the frames. A failure leaves it black: its Banner is laid out with the overlays.
  */
 @Composable
 private fun FullscreenPicture(
     content: VideoAreaContent,
     loading: Boolean,
-    onTryAgain: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val shutter = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -285,13 +289,8 @@ private fun FullscreenPicture(
     ) {
         val player = (content as? VideoAreaContent.Playing)?.player
         when {
-            content is VideoAreaContent.Failed -> {
-                PlaybackFailureBanner(
-                    failure = content.failure,
-                    onTryAgain = onTryAgain,
-                    modifier = Modifier.widthIn(max = ReadableWidth).padding(DewfallSpacing.margin),
-                )
-            }
+            // A failure's Banner is laid out with the overlays, so the title never covers it.
+            content is VideoAreaContent.Failed -> Unit
             player != null -> {
                 ContentFrame(
                     player = player,
@@ -328,6 +327,7 @@ private fun Overlays(
     content: VideoAreaContent,
     page: VideoPage?,
     onPlay: () -> Unit,
+    onTryAgain: () -> Unit,
     onExit: () -> Unit,
 ) {
     Column(
@@ -339,13 +339,22 @@ private fun Overlays(
                 .padding(DewfallSpacing.md),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        // The title is the only weighted child, so the row is measured first and keeps its space.
-        // The title takes what is left and scrolls there, so it is never cut off, and SpaceBetween
-        // puts the row at the bottom. Without a title, the spacer pushes the row down.
+        // The title is the only weighted child, so the row, and a failure's Banner, are measured
+        // first and keep their space. The title takes what is left and scrolls there, so it is
+        // never cut off, and SpaceBetween puts the row at the bottom and the Banner between them.
+        // Without a title, the spacer pushes them down.
         if (page != null) {
             TitleBox(page, Modifier.weight(1f, fill = false))
         } else {
             Spacer(Modifier.weight(1f))
+        }
+        if (content is VideoAreaContent.Failed) {
+            PlaybackFailureBanner(
+                failure = content.failure,
+                onTryAgain = onTryAgain,
+                modifier =
+                    Modifier.align(Alignment.CenterHorizontally).widthIn(max = ReadableWidth),
+            )
         }
         ControlRow(content = content, onPlay = onPlay, onExit = onExit)
     }
