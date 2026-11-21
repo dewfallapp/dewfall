@@ -86,6 +86,10 @@ The mini player SHALL have a play and pause button, named for screen readers, th
 - **WHEN** the network went away while a video played in the mini player, and the user taps play with the network back
 - **THEN** the video plays on from where it stopped
 
+#### Scenario: A failure says nothing in the mini player
+- **WHEN** a video fails while it plays in the mini player
+- **THEN** the mini player offers play and gives no reason, and the video screen says why once the user opens it
+
 ### Requirement: Tapping the mini player opens the video
 Tapping the mini player's title SHALL open the video screen for its video, which SHALL go on with the playback as it is, without starting it again, and SHALL load the video's details. The mini player SHALL tell screen readers that the tap opens the video.
 
@@ -176,7 +180,7 @@ On a phone, entering fullscreen SHALL turn the screen to landscape, either way r
 - **THEN** the video screen stays in portrait, and doesn't enter fullscreen
 
 ### Requirement: Fullscreen has its own controls
-Fullscreen SHALL show the title and channel name at the top, once the details have loaded, and at the bottom the play and pause button, the position and the length, the seek bar and an exit button, each named for screen readers. A live stream SHALL say "Live" in place of the seek bar and the times. Loading and failures SHALL show as on the video screen. No text or control SHALL sit under the system bars or the display cutout.
+Fullscreen SHALL show the title and channel name at the top, once the details have loaded, and at the bottom the play and pause button, the position and the length, the seek bar and an exit button, each named for screen readers. A live stream SHALL say "Live" in place of the seek bar and the times. Loading and failures SHALL show as on the video screen. The title SHALL wrap and never be cut off.
 
 #### Scenario: Controls in fullscreen
 - **WHEN** a video plays in fullscreen
@@ -190,12 +194,23 @@ Fullscreen SHALL show the title and channel name at the top, once the details ha
 - **WHEN** the network goes away in fullscreen and the player runs out of data
 - **THEN** fullscreen says that YouTube can't be reached, with "Try again", and the exit button stays
 
+#### Scenario: A long title at the largest font size in fullscreen
+- **WHEN** the title is long and the font size is the largest
+- **THEN** the title wraps onto more lines in its box, and nothing is cut off
+
+### Requirement: Fullscreen keeps clear of the display cutout
+In fullscreen, no text, control or picture SHALL sit under the display cutout. The system bars stay hidden, and while a swipe shows them for a moment they may cover the controls.
+
 #### Scenario: A display cutout
 - **WHEN** fullscreen shows in landscape on a phone with a display cutout
 - **THEN** no text, control or picture sits under the cutout
 
+#### Scenario: A system bar over the controls
+- **WHEN** the user swipes the navigation bar in over fullscreen
+- **THEN** it may cover the controls for a moment, and the controls are whole again once it hides
+
 ### Requirement: Fullscreen controls hide while the video plays
-While a video plays in fullscreen, the title and the controls SHALL hide 3 seconds after the user last touched the screen, or later when the phone's accessibility settings ask for more time. A tap on the video SHALL show them again. They SHALL stay while the video is paused, waits for data, has ended or failed.
+While a video plays in fullscreen, the title and the controls SHALL hide 3 seconds after the user last touched the screen, or later when the phone's accessibility settings ask for more time. A tap on the video SHALL show them again. They SHALL stay while the video is paused, waits for data, has ended or failed, and while a screen reader such as TalkBack is on.
 
 #### Scenario: Watching
 - **WHEN** a video plays in fullscreen and the user doesn't touch the screen for 3 seconds
@@ -213,6 +228,10 @@ While a video plays in fullscreen, the title and the controls SHALL hide 3 secon
 - **WHEN** the phone's accessibility setting for time to take action is 1 minute
 - **THEN** the controls hide only after 1 minute without a touch
 
+#### Scenario: A screen reader
+- **WHEN** TalkBack is on and a video plays in fullscreen
+- **THEN** the title and the controls stay
+
 ### Requirement: Leaving fullscreen returns to the video screen
 The exit button and the system's back gesture SHALL leave fullscreen and return to the video screen, with the system bars and the screen's own colors, and playback SHALL go on without a pause.
 
@@ -223,6 +242,10 @@ The exit button and the system's back gesture SHALL leave fullscreen and return 
 #### Scenario: The back gesture in fullscreen
 - **WHEN** the user makes the system's back gesture in fullscreen
 - **THEN** fullscreen ends as with the exit button, and the video screen stays open
+
+#### Scenario: Fullscreen after the process ended
+- **WHEN** the system ended the app's process while a video showed in fullscreen on a phone, and the user returns to it
+- **THEN** fullscreen shows again, waiting for play at the saved position, and leaving it turns the phone back to portrait
 
 ## MODIFIED Requirements
 
