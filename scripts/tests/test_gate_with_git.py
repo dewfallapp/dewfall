@@ -21,6 +21,7 @@ import pre_push_gate  # noqa: E402
 
 LOCAL = ("A Maintainer", "maintainer@example.com")
 SAVED = pre_push_gate.SAVED_RESPONSES
+SCREENSHOT_KOTLIN = "feature/x-ui/src/screenshotTest/kotlin/a/b/XScreenshots.kt"
 
 
 class GitRepository:
@@ -147,6 +148,58 @@ class GateWithGitTest(unittest.TestCase):
         commit = self.repository.commit("test: remove the saved sets")
 
         self.assertEqual([], self.problems_of(commit))
+
+    def test_a_commit_that_changes_screenshot_tests_is_scanned(self):
+        self.repository.write(SCREENSHOT_KOTLIN, 'package a.b\n\nprintln("x")\n')
+        commit = self.repository.commit("test: add a screenshot test")
+
+        self.assertEqual(
+            [f"SCREENSHOT_TEST {SCREENSHOT_KOTLIN}:3 LINE_NOT_ALLOWED"], self.problems_of(commit)
+        )
+
+    def test_a_commit_with_good_screenshot_wrappers_passes(self):
+        self.repository.write(
+            SCREENSHOT_KOTLIN,
+            "package a.b\n\n@PreviewTest\n@Preview(name = \"Light\")\n@Composable\n"
+            "private fun AScreenshot() = APreview()\n",
+        )
+        commit = self.repository.commit("test: add a screenshot test")
+
+        self.assertEqual([], self.problems_of(commit))
+
+    def test_a_commit_that_leaves_screenshot_tests_alone_isnt_scanned(self):
+        # This file would fail the scan, so a scan of the second commit would show.
+        self.repository.write(SCREENSHOT_KOTLIN, 'println("x")\n')
+        self.repository.commit("test: plant a call")
+        self.repository.write("docs/notes.md", "Notes\n")
+        commit = self.repository.commit("docs: add notes")
+
+        self.assertEqual([], self.problems_of(commit))
+
+    def test_a_linked_screenshot_file_is_refused(self):
+        self.repository.write("elsewhere/B.kt", 'println("x")\n')
+        link = os.path.join(self.repository.path, SCREENSHOT_KOTLIN)
+        os.makedirs(os.path.dirname(link))
+        os.symlink(os.path.join(self.repository.path, "elsewhere/B.kt"), link)
+        commit = self.repository.commit("test: link a screenshot test")
+
+        self.assertEqual(
+            [f"SCREENSHOT_TEST {SCREENSHOT_KOTLIN}:0 SYMBOLIC_LINK"], self.problems_of(commit)
+        )
+
+    def test_a_link_in_place_of_a_screenshot_folder_is_refused(self):
+        self.repository.write("elsewhere/kotlin/a/B.kt", 'println("x")\n')
+        folder = os.path.join(self.repository.path, "feature/x-ui/src")
+        os.makedirs(folder)
+        os.symlink(
+            os.path.join(self.repository.path, "elsewhere"), os.path.join(folder, "screenshotTest")
+        )
+        commit = self.repository.commit("test: link a screenshot folder")
+
+        self.assertEqual(
+            ["SCREENSHOT_TEST feature/x-ui/src/screenshotTest:0 SYMBOLIC_LINK"],
+            self.problems_of(commit),
+        )
 
     def test_a_secret_file_is_refused(self):
         self.repository.write("local.properties", "sdk.dir=/somewhere\n")

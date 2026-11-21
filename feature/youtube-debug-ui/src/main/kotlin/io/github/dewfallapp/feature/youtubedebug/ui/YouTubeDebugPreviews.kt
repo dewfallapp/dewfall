@@ -1,8 +1,6 @@
 package io.github.dewfallapp.feature.youtubedebug.ui
 
-import android.content.res.Configuration
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
 import io.github.dewfallapp.core.model.AudioTrackKind
 import io.github.dewfallapp.core.model.PublishedTime
@@ -25,18 +23,22 @@ import io.github.dewfallapp.feature.youtubedebug.logic.YouTubeDebugState
 import kotlin.time.Duration
 import kotlin.time.Instant
 
-// Previews of the debug screen, in light, dark and large font, with made-up answers. Dewfall's
-// own palette keeps them the same on every machine.
+// Previews of the debug screen with made-up answers. The @PreviewTest wrappers in
+// src/screenshotTest carry their @Preview annotations, in light, dark and large font, and render
+// them as screenshot tests. Dewfall's own palette keeps them the same on every machine, except the
+// dynamic color preview, whose wrappers name a fixed wallpaper. See
+// docs/testing.md#screenshot-tests.
 
-@Preview(name = "Light")
-@Preview(
-    name = "Dark",
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
-)
-@Preview(name = "Large font", fontScale = 2f)
 @Composable
-private fun YouTubeDebugScreenPreview() {
+internal fun YouTubeDebugScreenPreview() {
     DewfallTheme(dynamicColor = false) {
+        YouTubeDebugScreen(state = previewState(), onIntent = {})
+    }
+}
+
+@Composable
+internal fun YouTubeDebugScreenDynamicPreview() {
+    DewfallTheme(dynamicColor = true) {
         YouTubeDebugScreen(state = previewState(), onIntent = {})
     }
 }

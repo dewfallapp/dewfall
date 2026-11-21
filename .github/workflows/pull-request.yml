@@ -1,6 +1,6 @@
 # Checks every pull request to main: formatting, detekt, Android Lint with the Android API check,
-# unit tests, a debug build, and the Room schema check. It runs the all-checks command from
-# AGENTS.md.
+# unit tests, screenshot tests, a debug build, the Room schema check, and the scan of the screenshot
+# test folders. It runs the all-checks command from AGENTS.md.
 name: Pull request
 
 on:
@@ -66,10 +66,10 @@ jobs:
 
       # --continue reports every failing check in one run. sdkDownload=false makes a missing SDK
       # package fail the build instead of downloading silently.
-      - name: Check formatting, run detekt, lint and unit tests, and build the debug APK
+      - name: Check formatting, run detekt, lint, unit and screenshot tests, and build the debug APK
         run: >-
           ./gradlew --continue -Pandroid.builder.sdkDownload=false
-          spotlessCheck detekt lint test assembleDebug
+          spotlessCheck detekt lint test testDebugScreenshotTestDefaultTestSuite assembleDebug
 
       # Room rewrites the schema files in core/database/schemas/ when the database changes, and the
       # build still passes, even when the version number stays the same. This fails when the build
@@ -85,11 +85,22 @@ jobs:
             exit 1
           fi
 
+      # Lint can't read the src/screenshotTest folders, so this checks that they hold only one-call
+      # preview wrappers and reference images. See docs/testing.md#screenshot-tests. It runs even
+      # when a step above failed.
+      - name: Check the screenshot test folders
+        if: ${{ !cancelled() }}
+        run: python3 -I scripts/scan_screenshot_tests.py
+
+      # The screenshot tests' report names the images it compared. The new and diff images stay in
+      # the results folder, so they are uploaded too.
       - name: Upload the reports
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: reports
-          path: "**/build/reports/"
+          path: |
+            **/build/reports/
+            **/build/intermediates/*/testDebugScreenshotTestDefaultTestSuite/results/
           retention-days: 7
           if-no-files-found: ignore
