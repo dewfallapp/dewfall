@@ -34,6 +34,11 @@ gradlePlugin {
             id = "dewfall.android.compose"
             implementationClass = "io.github.dewfallapp.buildlogic.AndroidComposeConventionPlugin"
         }
+        register("androidScreenshots") {
+            id = "dewfall.android.screenshots"
+            implementationClass =
+                "io.github.dewfallapp.buildlogic.AndroidScreenshotsConventionPlugin"
+        }
         register("androidHilt") {
             id = "dewfall.android.hilt"
             implementationClass = "io.github.dewfallapp.buildlogic.AndroidHiltConventionPlugin"

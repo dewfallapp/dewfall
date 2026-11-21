@@ -52,8 +52,20 @@
       "matchPackageNames": ["/^com\\.android\\.(application|library):/", "com.android.tools.build:gradle"],
       "prBodyNotes": [
         "If the build fails on a missing build-tools package, update the SDK steps in .github/workflows/pull-request.yml and .github/workflows/emulator-tests.yml and the Commands section of AGENTS.md on this branch.",
-        "lint-api and lint-tests follow AGP, at AGP's version plus 23. Check that :lint-rules' Kotlin apiVersion in build-logic is still no newer than the kotlin-stdlib that the new lint-api POM names. See docs/testing.md#dependency-updates."
+        "lint-api and lint-tests follow AGP, at AGP's version plus 23. Check that :lint-rules' Kotlin apiVersion in build-logic is still no newer than the kotlin-stdlib that the new lint-api POM names. See docs/testing.md#dependency-updates.",
+        "AGP 9.5.1 names the screenshot tests' tasks testDebugScreenshotTestDefaultTestSuite and updateDebugScreenshotTestDefaultTestSuite, unlike Google's page. If this AGP renames them, change them together in .github/workflows/pull-request.yml, BUILD_COMMAND in scripts/pre_push_gate.py, AGENTS.md, CONTRIBUTING.md, docs/testing.md, renovate.json and the task suffix in build-logic's AndroidScreenshotsConventionPlugin.kt."
       ]
+    },
+    {
+      "description": "Compose, Media3, AGP and the screenshot engine draw the screens that the screenshot tests compare, so an update can change the images without any change to the app.",
+      "matchPackageNames": [
+        "androidx.compose:compose-bom",
+        "/^androidx\\.media3:/",
+        "com.android.tools.screenshot:screenshot-validation-api",
+        "/^com\\.android\\.(application|library):/",
+        "com.android.tools.build:gradle"
+      ],
+      "prBodyNotes": ["If testDebugScreenshotTestDefaultTestSuite fails, open its report and look at each changed image. If the change comes from this update and every screen still looks right, record the images again on the Mac with ./gradlew updateDebugScreenshotTestDefaultTestSuite, run python3 scripts/scan_screenshot_tests.py, and push them to this branch. See docs/testing.md#screenshot-tests."]
     },
     {
       "description": "Spotless downloads ktfmt, and ktfmt 0.65 and later need Spotless 8.10.4 or later to load their org.jetbrains.kotlinx coordinates, so both change in one pull request. A ktfmt update can change the formatting.",

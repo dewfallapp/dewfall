@@ -1,6 +1,7 @@
 plugins {
     id("dewfall.android.library")
     id("dewfall.android.compose")
+    id("dewfall.android.screenshots")
     id("dewfall.android.hilt")
 }
 
