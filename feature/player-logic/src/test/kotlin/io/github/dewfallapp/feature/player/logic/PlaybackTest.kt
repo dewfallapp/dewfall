@@ -11,21 +11,46 @@ import kotlin.test.assertTrue
 class PlaybackTest {
     @Test
     fun `the first opening plays, a configuration change does nothing, and a lost session waits`() {
-        assertEquals(StartAction.PLAY, startAction(started = false, playbackIdKnown = false))
-        assertEquals(StartAction.PLAY, startAction(started = false, playbackIdKnown = true))
-        assertEquals(StartAction.NOTHING, startAction(started = true, playbackIdKnown = true))
+        assertEquals(
+            StartAction.PLAY,
+            startAction(started = false, playbackIdKnown = false, playsThisVideo = false),
+        )
+        assertEquals(
+            StartAction.PLAY,
+            startAction(started = false, playbackIdKnown = true, playsThisVideo = false),
+        )
+        assertEquals(
+            StartAction.NOTHING,
+            startAction(started = true, playbackIdKnown = true, playsThisVideo = false),
+        )
         assertEquals(
             StartAction.WAIT_FOR_PLAY,
-            startAction(started = true, playbackIdKnown = false),
+            startAction(started = true, playbackIdKnown = false, playsThisVideo = false),
         )
     }
 
     @Test
-    fun `leaving pauses only a playback that hasn't played, and never on a configuration change`() {
-        assertTrue(pausesOnLeave(changingConfigurations = false, played = false))
-        assertFalse(pausesOnLeave(changingConfigurations = false, played = true))
-        assertFalse(pausesOnLeave(changingConfigurations = true, played = false))
-        assertFalse(pausesOnLeave(changingConfigurations = true, played = true))
+    fun `a first opening goes on with a playback that already plays the video`() {
+        assertEquals(
+            StartAction.GO_ON,
+            startAction(started = false, playbackIdKnown = false, playsThisVideo = true),
+        )
+        assertEquals(
+            StartAction.GO_ON,
+            startAction(started = false, playbackIdKnown = true, playsThisVideo = true),
+        )
+    }
+
+    @Test
+    fun `a screen that started its own playback never goes on with another`() {
+        assertEquals(
+            StartAction.NOTHING,
+            startAction(started = true, playbackIdKnown = true, playsThisVideo = true),
+        )
+        assertEquals(
+            StartAction.WAIT_FOR_PLAY,
+            startAction(started = true, playbackIdKnown = false, playsThisVideo = true),
+        )
     }
 
     @Test

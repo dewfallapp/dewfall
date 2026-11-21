@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -91,13 +93,15 @@ internal sealed interface VideoAreaContent {
  *
  * It reads the player through media3-ui-compose's state holders and [rememberPlaybackStatus], at
  * the rate the visible controls need, and sends play, pause and seek straight to it. [onPlay] runs
- * when the user presses play while it waits, and [onTryAgain] for the failure's "Try again".
+ * when the user presses play while it waits, [onTryAgain] for the failure's "Try again", and
+ * [onFullscreen] for the fullscreen button, which shows while the player is connected.
  */
 @Composable
 internal fun VideoArea(
     content: VideoAreaContent,
     onPlay: () -> Unit,
     onTryAgain: () -> Unit,
+    onFullscreen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -116,7 +120,7 @@ internal fun VideoArea(
                     Picture(player = null, playing = false, loading = true)
                     IdleControls(positionMs = null, onPlay = null)
                 } else {
-                    PlayerArea(player)
+                    PlayerArea(player, onFullscreen)
                 }
             }
         }
@@ -124,7 +128,7 @@ internal fun VideoArea(
 }
 
 @Composable
-private fun PlayerArea(player: Player) {
+private fun PlayerArea(player: Player, onFullscreen: () -> Unit) {
     val playPause = rememberPlayPauseButtonState(player)
     val status = rememberPlaybackStatus(player)
     Column(verticalArrangement = Arrangement.spacedBy(DewfallSpacing.sm)) {
@@ -144,6 +148,8 @@ private fun PlayerArea(player: Player) {
                     text = stringResource(R.string.player_video_live),
                     style = MaterialTheme.typography.titleSmall,
                 )
+                Spacer(Modifier.weight(1f))
+                FullscreenButton(onFullscreen)
             }
         } else {
             SeekBar(player)
@@ -158,6 +164,8 @@ private fun PlayerArea(player: Player) {
                     onClick = playPause::onClick,
                 )
                 Times(player)
+                Spacer(Modifier.weight(1f))
+                FullscreenButton(onFullscreen)
             }
         }
     }
@@ -218,7 +226,7 @@ private fun Modifier.cornersOver(shape: Shape, color: Color): Modifier = drawWit
  * letting go moves playback there.
  */
 @Composable
-private fun SeekBar(player: Player) {
+internal fun SeekBar(player: Player, modifier: Modifier = Modifier) {
     var ticks by remember { mutableIntStateOf(1) }
     val progress = rememberProgressStateWithTickCount(player, ticks)
     LaunchedEffect(progress, ticks) { progress.updateTotalTickCount(ticks) }
@@ -233,7 +241,8 @@ private fun SeekBar(player: Player) {
         },
         enabled = progress.changingProgressEnabled,
         modifier =
-            Modifier.fillMaxWidth()
+            modifier
+                .fillMaxWidth()
                 .onSizeChanged { ticks = it.width.coerceAtLeast(1) }
                 .semantics { contentDescription = description },
     )
@@ -241,13 +250,13 @@ private fun SeekBar(player: Player) {
 
 /** The position and the length, such as "18:24 / 1:14:02", ticking once a second. */
 @Composable
-private fun Times(player: Player) {
+internal fun Times(player: Player) {
     val progress = rememberProgressStateWithTickInterval(player, TIMES_TICK_MS)
     TimesText(positionMs = progress.currentPositionMs, durationMs = progress.durationMs)
 }
 
 @Composable
-private fun TimesText(positionMs: Long, durationMs: Long?) {
+internal fun TimesText(positionMs: Long, durationMs: Long?) {
     val text =
         if (durationMs == null || durationMs == C.TIME_UNSET) {
             clockText(positionMs)
@@ -296,7 +305,7 @@ private fun IdleControls(positionMs: Long?, onPlay: (() -> Unit)?) {
  * it offers to play it again from the start.
  */
 @Composable
-private fun PlayPauseButton(
+internal fun PlayPauseButton(
     showPlay: Boolean,
     ended: Boolean,
     enabled: Boolean,
@@ -319,7 +328,11 @@ private fun PlayPauseButton(
  * trying again can help.
  */
 @Composable
-private fun PlaybackFailureBanner(failure: PlaybackFailure, onTryAgain: () -> Unit) {
+internal fun PlaybackFailureBanner(
+    failure: PlaybackFailure,
+    onTryAgain: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val offers = failure.offersTryAgain
     Banner(
         message = stringResource(playbackFailureText(failure)),
@@ -328,5 +341,18 @@ private fun PlaybackFailureBanner(failure: PlaybackFailure, onTryAgain: () -> Un
         glyphTint = MaterialTheme.colorScheme.error,
         actionLabel = if (offers) stringResource(R.string.player_try_again) else null,
         onAction = if (offers) onTryAgain else null,
+        modifier = modifier,
     )
+}
+
+/** The fullscreen button, as the "Player" frames show it at the end of the play and pause row. */
+@Composable
+private fun FullscreenButton(onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Icon(
+            painter = painterResource(DesignR.drawable.ic_fullscreen),
+            contentDescription = stringResource(R.string.player_fullscreen),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }

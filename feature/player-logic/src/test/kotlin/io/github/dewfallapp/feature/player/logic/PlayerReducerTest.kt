@@ -159,4 +159,30 @@ class PlayerReducerTest {
 
         assertEquals(DetailsArea.Failed(2, YouTubeError.BLOCKED), state.details)
     }
+
+    @Test
+    fun `the screen starts out of fullscreen`() {
+        assertEquals(false, PlayerState().fullscreen)
+    }
+
+    @Test
+    fun `the fullscreen intents turn fullscreen on and off`() {
+        val entered = PlayerReducer.reduce(PlayerState(), PlayerIntent.EnterFullscreen)
+        assertEquals(Next(PlayerState(fullscreen = true)), entered)
+
+        val left = PlayerReducer.reduce(entered.state, PlayerIntent.ExitFullscreen)
+        assertEquals(Next(PlayerState(fullscreen = false)), left)
+    }
+
+    @Test
+    fun `the fullscreen intents leave the details alone`() {
+        val shown = PlayerState(details = DetailsArea.Shown(PAGE))
+
+        val entered = PlayerReducer.reduce(shown, PlayerIntent.EnterFullscreen).state
+        assertEquals(shown.details, entered.details)
+        assertEquals(
+            shown.details,
+            PlayerReducer.reduce(entered, PlayerIntent.ExitFullscreen).state.details,
+        )
+    }
 }
