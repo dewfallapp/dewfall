@@ -389,7 +389,9 @@ private fun ControlRow(content: VideoAreaContent, onPlay: () -> Unit, onExit: ()
             is VideoAreaContent.Failed -> Spacer(Modifier.weight(1f))
             is VideoAreaContent.Waiting -> {
                 PlayPauseButton(showPlay = true, ended = false, enabled = true, onClick = onPlay)
-                content.positionMs?.let { TimesText(positionMs = it, durationMs = null) }
+                content.positionMs?.let {
+                    TimesText(positionMs = it, durationMs = null, Modifier.weight(1f, fill = false))
+                }
                 IdleSeekBar(Modifier.weight(1f))
             }
             is VideoAreaContent.Playing -> {
@@ -430,7 +432,9 @@ private fun RowScope.PlayingControls(player: Player) {
             modifier = Modifier.weight(1f),
         )
     } else {
-        Times(player)
+        // Weighted like the seek bar, so in a narrow window at a large font the times wrap
+        // instead of taking the exit button's width.
+        Times(player, Modifier.weight(1f, fill = false))
         SeekBar(player, Modifier.weight(1f))
     }
 }
