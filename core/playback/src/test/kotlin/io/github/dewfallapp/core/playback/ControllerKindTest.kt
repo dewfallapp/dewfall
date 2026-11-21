@@ -15,29 +15,54 @@ class ControllerKindTest {
                     // Media3's own controller, from the app's package, never counts as OWN.
                     assertEquals(
                         ControllerKind.MEDIA_NOTIFICATION,
-                        controllerKind(true, isOwnPackage = own, isLegacy = legacy, trusted),
+                        controllerKind(
+                            isMediaNotificationController = true,
+                            isOwnPackage = own,
+                            isLegacy = legacy,
+                            isTrusted = trusted,
+                        ),
                     )
                 }
                 // The screens' controller.
                 assertEquals(
                     ControllerKind.OWN,
-                    controllerKind(false, isOwnPackage = true, isLegacy = false, trusted),
+                    controllerKind(
+                        isMediaNotificationController = false,
+                        isOwnPackage = true,
+                        isLegacy = false,
+                        isTrusted = trusted,
+                    ),
                 )
                 // A legacy controller of the app's own, as Media3 sends media buttons before its
                 // media notification controller connects.
                 assertEquals(
                     ControllerKind.TRUSTED,
-                    controllerKind(false, isOwnPackage = true, isLegacy = true, trusted),
+                    controllerKind(
+                        isMediaNotificationController = false,
+                        isOwnPackage = true,
+                        isLegacy = true,
+                        isTrusted = trusted,
+                    ),
                 )
             }
             // The Bluetooth service, or an app with notification access.
             assertEquals(
                 ControllerKind.TRUSTED,
-                controllerKind(false, isOwnPackage = false, isLegacy = legacy, isTrusted = true),
+                controllerKind(
+                    isMediaNotificationController = false,
+                    isOwnPackage = false,
+                    isLegacy = legacy,
+                    isTrusted = true,
+                ),
             )
             assertEquals(
                 ControllerKind.REJECTED,
-                controllerKind(false, isOwnPackage = false, isLegacy = legacy, isTrusted = false),
+                controllerKind(
+                    isMediaNotificationController = false,
+                    isOwnPackage = false,
+                    isLegacy = legacy,
+                    isTrusted = false,
+                ),
             )
         }
     }
