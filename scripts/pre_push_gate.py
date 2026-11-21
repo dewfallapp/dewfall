@@ -17,7 +17,9 @@ then checks every commit in origin/main..HEAD, not just the last one:
 - no commit adds a local.properties, .env, keystore or key file, or a line that
   holds a private key, a GitHub token, an AWS access key or a Google API key;
 - each commit that changes the saved YouTube responses passes
-  scan_saved_responses.py, on that commit's own files.
+  scan_saved_responses.py, on that commit's own files;
+- each commit that changes a screenshot test folder, src/screenshotTest*,
+  passes scan_screenshot_tests.py, on that commit's own files.
 
 Then it checks that nothing is left uncommitted, runs the pull request
 workflow's command, and checks again that the build changed no file. Its own
@@ -54,6 +56,7 @@ SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPTS)
 
 import scan_saved_responses  # noqa: E402
+import scan_screenshot_tests  # noqa: E402
 
 SAVED_RESPONSES = "core/youtube/src/test/resources/youtube"
 BUILD_COMMAND = [
@@ -62,6 +65,7 @@ BUILD_COMMAND = [
     "detekt",
     "lint",
     "test",
+    "testDebugScreenshotTestDefaultTestSuite",
     "assembleDebug",
     "--continue",
     "-Pandroid.builder.sdkDownload=false",
@@ -186,6 +190,32 @@ def saved_files(commit):
         yield relative, data
 
 
+def screenshot_files(commit):
+    """Each (path, bytes, is_link) of [commit]'s screenshot test folders, read from Git itself.
+
+    Anything other than a plain file, such as a symbolic link or a submodule, counts as a link,
+    which the scan refuses.
+    """
+    listing = subprocess.run(
+        ["git", "ls-tree", "-r", "-z", commit], capture_output=True, check=True
+    ).stdout
+    for entry in listing.split(b"\0"):
+        if not entry:
+            continue
+        meta, raw_path = entry.split(b"\t", 1)
+        mode, kind, blob = meta.split(b" ")
+        path = raw_path.decode("utf-8", errors="replace")
+        if not scan_screenshot_tests.SCREENSHOT_FOLDER.search(path):
+            continue
+        if kind != b"blob" or mode not in (b"100644", b"100755"):
+            yield path, b"", True
+            continue
+        data = subprocess.run(
+            ["git", "cat-file", "blob", blob.decode()], capture_output=True, check=True
+        ).stdout
+        yield path, data, False
+
+
 def scan_commit(commit):
     """The findings of the saved-response scan on [commit]'s own files, and how many it read."""
     return scan_saved_responses.scan_files(saved_files(commit))
@@ -232,6 +262,11 @@ def check_commit(commit, local, global_email, on_remote_branch):
             problems.append("SAVED_RESPONSE no file was read")
         for relative, line, depth, kind, key in findings:
             problems.append(f"SAVED_RESPONSE {relative}:{line} depth={depth} {kind} {key}")
+    # A commit that only deletes from the folders adds nothing to check.
+    if any(scan_screenshot_tests.SCREENSHOT_FOLDER.search(path) for path in paths):
+        findings, _ = scan_screenshot_tests.check_files(screenshot_files(commit))
+        for path, location, rule in findings:
+            problems.append(f"SCREENSHOT_TEST {path}:{location} {rule}")
     return problems
 
 
