@@ -10,6 +10,8 @@ Changed in #41, which the maintainer approved on November 19, 2026: an action th
 
 Changed in #42, which the maintainer approved on November 20, 2026: the video screen's player commands go straight to the player through PlaybackConnection, not through intents. They are play, pause, seek, the playback "Try again", the first start, and play after the session was gone. The screen reads playback state through the MediaController with media3-ui-compose's state holders, at the rate the visible controls need, never in screen state. This is an exception to the intent rule, not a new decision: this ADR already keeps playback state out of screen state, and an intent for each tap would only pass through the reducer unchanged. See [The player](../architecture.md#the-player).
 
+Changed in #44, which the maintainer approved on November 21, 2026: the same exception covers the mini player. It is a bar that `:app` places under the back stack, with no screen state and no ViewModel. Its play, pause and close go straight to the player through PlaybackConnection, and its tap, which opens the video screen, goes straight to `:app`'s navigation. It reads playback state through the MediaController with media3-ui-compose's state holders, never in screen state. So `:feature:player-ui` exposes two public composables, the video screen and the mini player. The fullscreen player's state goes through the video screen's reducer as usual. See [The mini player](../architecture.md#the-mini-player).
+
 ## Context
 
 Every screen needs a clear way to hold its state and handle what the user does. Screen logic should be easy to test without a phone.
