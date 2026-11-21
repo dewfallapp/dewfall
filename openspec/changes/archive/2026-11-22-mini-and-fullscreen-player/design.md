@@ -2,7 +2,7 @@
 
 ## Context
 
-See proposal.md for why. What this change builds on, from #42 and #43 and docs/architecture.md's [The player](../../../docs/architecture.md#the-player) and [Navigation](../../../docs/architecture.md#navigation):
+See proposal.md for why. What this change builds on, from #42 and #43 and docs/architecture.md's [The player](../../../../docs/architecture.md#the-player) and [Navigation](../../../../docs/architecture.md#navigation):
 
 - `:app`'s back stack holds SearchKey, then at most one PlayerKey. `openVideo` adds a PlayerKey only while SearchKey is on top. `close(key)` removes that entry's key, and `goBack` the top key while there is more than one.
 - `PlayerRoute(videoId, onClose)` draws the video screen. Its top button, the keyboard_arrow_down glyph named "Close video", and the back gesture both remove the entry. Its strings file already notes that #44 makes the button minimize instead.
@@ -170,7 +170,7 @@ AGENTS.md's module and MVI rules, and a dated note in ADR 0002, as "Refining the
 
 ## Questions for the maintainer
 
-The maintainer answered all five on November 21, 2026, each with the recommendation, and approved the change at commit ed5d4c0. "The maintainer's answers" in [pull request #206](https://github.com/dewfallapp/dewfall/pull/206) records them.
+The maintainer answered all five on November 21, 2026, each with the recommendation, and approved the change at commit ed5d4c0, which the rebases onto ca3360b, 9841b01 and ed1c0b7 carried over unchanged as def76f5, 932d1c6 and then 3105546, the plan commit on the merged branch. "The maintainer's answers" in [pull request #206](https://github.com/dewfallapp/dewfall/pull/206) records them.
 
 Questions 1, 2, 3 and 5 are visible to users and not covered by the roadmap, the brief or the designs. Question 4 widens an ADR's decision, which needs the maintainer's dated approval.
 

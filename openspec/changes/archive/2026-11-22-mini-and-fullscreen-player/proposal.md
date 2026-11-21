@@ -2,7 +2,7 @@
 
 ## Why
 
-Phase 4's task list ends the player with "Mini player and fullscreen player" ([roadmap](../../../docs/roadmap.md#phase-4-search-and-play)), issue [#44](https://github.com/dewfallapp/dewfall/issues/44). Today the video screen's top button closes the screen and stops playback, so the user can't look for the next video while one plays, and a video can only fill a 16:9 box above its details. The design has both missing sizes: "Mini player on the inbox" and "Player full screen" in [docs/design/screens.md](../../../docs/design/screens.md#player).
+Phase 4's task list ends the player with "Mini player and fullscreen player" ([roadmap](../../../../docs/roadmap.md#phase-4-search-and-play)), issue [#44](https://github.com/dewfallapp/dewfall/issues/44). Today the video screen's top button closes the screen and stops playback, so the user can't look for the next video while one plays, and a video can only fill a 16:9 box above its details. The design has both missing sizes: "Mini player on the inbox" and "Player full screen" in [docs/design/screens.md](../../../../docs/design/screens.md#player).
 
 ## What Changes
 
