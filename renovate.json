@@ -48,10 +48,10 @@
       "enabled": false
     },
     {
-      "description": "AGP sets the default build tools version, which the pull request workflow installs. build-logic derives the version of lint's libraries, which :lint-rules compiles against, from AGP's.",
+      "description": "AGP sets the default build tools version, which the pull request and emulator tests workflows install. build-logic derives the version of lint's libraries, which :lint-rules compiles against, from AGP's.",
       "matchPackageNames": ["/^com\\.android\\.(application|library):/", "com.android.tools.build:gradle"],
       "prBodyNotes": [
-        "If the build fails on a missing build-tools package, update the SDK step in .github/workflows/pull-request.yml and the Commands section of AGENTS.md on this branch.",
+        "If the build fails on a missing build-tools package, update the SDK steps in .github/workflows/pull-request.yml and .github/workflows/emulator-tests.yml and the Commands section of AGENTS.md on this branch.",
         "lint-api and lint-tests follow AGP, at AGP's version plus 23. Check that :lint-rules' Kotlin apiVersion in build-logic is still no newer than the kotlin-stdlib that the new lint-api POM names. See docs/testing.md#dependency-updates."
       ]
     },

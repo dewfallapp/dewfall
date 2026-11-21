@@ -1,0 +1,187 @@
+# Runs the emulator tests, on the oldest and the newest Android that the app supports, after every
+# merge to main. docs/testing.md#emulator-tests describes them. They replace the YouTube layer with
+# fakes, so this workflow sends nothing to YouTube.
+name: Emulator tests
+
+on:
+  push:
+    branches: [main]
+  # A pull request that changes the emulator tests, this workflow, the dependencies, the Gradle
+  # wrapper or the build settings runs them before merging, so Renovate's updates of Compose,
+  # Media3, Hilt, AGP, androidx.test and Gradle do too. Branch protection doesn't require this
+  # workflow, so its path filter can't leave a required check pending.
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/src/androidTest/**"
+      - ".github/workflows/emulator-tests.yml"
+      - "gradle/libs.versions.toml"
+      - "gradle/wrapper/**"
+      - "gradle.properties"
+      - "settings.gradle.kts"
+      - "build.gradle.kts"
+      - "app/build.gradle.kts"
+      - "build-logic/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push to a pull request cancels its older run. On main, every merge gets its own run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  emulator-tests:
+    name: Emulator tests (API ${{ matrix.api-level }})
+    # The same image as the Checks job. GitHub's standard Linux runners have had KVM, which the
+    # emulator needs, since April 2, 2024.
+    # https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    strategy:
+      # One API level failing doesn't stop the other, so one run reports both.
+      fail-fast: false
+      matrix:
+        include:
+          # The minimum, minSdk in build-logic. Google's list of the images:
+          # https://dl.google.com/android/repository/sys-img/android/sys-img2-4.xml
+          - api-level: 29
+            image: "system-images;android-29;default;x86_64"
+          # The newest, targetSdk in build-logic.
+          - api-level: 37
+            image: "system-images;android-37.0;default;x86_64"
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # No later step needs git credentials.
+          persist-credentials: false
+
+      # The build compiles with a JDK 17 toolchain and never downloads one.
+      - name: Set up JDK 17
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          # Basic caching keeps Gradle's proprietary caching component from loading.
+          # https://github.com/gradle/actions/blob/v6.4.0/DISTRIBUTION.md
+          cache-provider: basic
+          # The Checks job on main fills the cache. This job only reads it.
+          cache-read-only: true
+          validate-wrappers: true
+
+      # The rule from GitHub's changelog above, which lets the runner's user open /dev/kvm.
+      - name: Let the emulator use KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # The platform and build tools are the Checks job's, so change both workflows together. The
+      # AOSP images have no Google apps.
+      - name: Install the Android SDK packages and the system image
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
+            "platforms;android-37.0" \
+            "build-tools;36.0.0" \
+            "platform-tools" \
+            "emulator" \
+            "$IMAGE"
+          # sdkmanager installs the newest emulator and image and can't pin them, so the log says
+          # which versions ran.
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --list_installed \
+            | grep -E "^ *(emulator|system-images)"
+
+      # avdmanager and the emulator look for AVDs in different folders unless ANDROID_AVD_HOME
+      # names one, so both steps set it. avdmanager uses it only when the folder exists.
+      - name: Create the emulator
+        env:
+          IMAGE: ${{ matrix.image }}
+          ANDROID_AVD_HOME: ${{ runner.temp }}/avd
+        run: |
+          mkdir -p "$ANDROID_AVD_HOME"
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
+            --name test --package "$IMAGE" --device pixel_6
+          # Shows in the log that the emulator finds the AVD and can use KVM, and fails here when
+          # it doesn't find the AVD.
+          ls -l /dev/kvm "$ANDROID_AVD_HOME"
+          "$ANDROID_HOME/emulator/emulator" -accel-check
+          avds="$("$ANDROID_HOME/emulator/emulator" -list-avds)"
+          echo "$avds"
+          if ! echo "$avds" | grep -qx test; then
+            echo "::error::The emulator doesn't find the AVD that avdmanager created."
+            exit 1
+          fi
+
+      # No window and no snapshot. swiftshader draws without a GPU, which the runner lacks.
+      # -feature -HardwareDecoder keeps the emulator from offering its emulated hardware video
+      # decoders, so Android decodes in software. On the Mac where the hand checks run, Android
+      # 17's hardware decoders failed (docs/testing.md#checking-the-player-by-hand). -no-metrics
+      # keeps the emulator from sending usage data to Google. The loop stops early when the
+      # emulator's process ends, and prints the end of its log either way.
+      - name: Start the emulator
+        env:
+          ANDROID_AVD_HOME: ${{ runner.temp }}/avd
+        run: |
+          adb="$ANDROID_HOME/platform-tools/adb"
+          nohup "$ANDROID_HOME/emulator/emulator" -avd test -no-window -no-snapshot \
+            -no-boot-anim -gpu swiftshader_indirect -feature -HardwareDecoder \
+            -no-metrics > emulator.log 2>&1 &
+          emulator_pid=$!
+          for attempt in $(seq 1 120); do
+            if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              echo "::error::The emulator stopped before it finished booting."
+              tail -n 50 emulator.log
+              exit 1
+            fi
+            booted="$("$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            if [ "$booted" = "1" ]; then
+              echo "Booted after about $((attempt * 5)) seconds."
+              # Unlocks the screen, so the test's activity doesn't start behind the keyguard.
+              "$adb" shell input keyevent 82
+              "$adb" shell wm dismiss-keyguard
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::The emulator didn't finish booting in 10 minutes."
+          tail -n 50 emulator.log
+          exit 1
+
+      # sdkDownload=false makes a missing SDK package fail the build instead of downloading.
+      - name: Run the emulator tests
+        run: ./gradlew -Pandroid.builder.sdkDownload=false :app:connectedDebugAndroidTest
+
+      # Also after a cancel or a timeout, which leave no other trace of the emulator. adb waits
+      # for a device that isn't there, so the timeout ends it when the emulator is gone.
+      - name: Save the emulator's log
+        if: ${{ failure() || cancelled() }}
+        run: |
+          timeout 60 "$ANDROID_HOME/platform-tools/adb" logcat -d > logcat.txt || true
+
+      - name: Upload the reports
+        if: ${{ failure() || cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: emulator-tests-api-${{ matrix.api-level }}
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+            logcat.txt
+            emulator.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Stop the emulator
+        if: always()
+        run: |
+          timeout 60 "$ANDROID_HOME/platform-tools/adb" emu kill || true

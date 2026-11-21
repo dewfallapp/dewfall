@@ -4,6 +4,9 @@
 *.jar binary
 # Bundled fonts stay byte for byte as their authors released them.
 *.ttf binary
+# The emulator tests' media files. docs/testing.md says how they were made.
+*.mp4 binary
+*.m4a binary
 
 # Kotlin code and build scripts use LF everywhere, as Spotless and .editorconfig expect.
 *.kt text eol=lf

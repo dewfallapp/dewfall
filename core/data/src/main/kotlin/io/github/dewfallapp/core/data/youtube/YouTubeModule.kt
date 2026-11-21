@@ -22,10 +22,14 @@ import okhttp3.Call
  * Provides the YouTube layer: one [NewPipeYouTube] for the whole app, each of its interfaces from
  * that one instance, and the clients of its media requests for the player. See
  * docs/architecture.md#the-youtube-layer.
+ *
+ * It is public only so that the emulator tests in `:app` can replace it with fakes through Hilt's
+ * `@TestInstallIn`, which names the module it replaces. Nothing else should name it. See
+ * docs/testing.md#emulator-tests.
  */
 @Module
 @InstallIn(SingletonComponent::class)
-internal interface YouTubeModule {
+interface YouTubeModule {
     @Binds fun bindSearch(youTube: NewPipeYouTube): SearchRemoteDataSource
 
     @Binds fun bindVideoDetails(youTube: NewPipeYouTube): VideoDetailsRemoteDataSource

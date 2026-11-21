@@ -12,6 +12,19 @@ android {
     defaultConfig {
         // Android treats a different application ID as a different app, so this never changes.
         applicationId = "io.github.dewfallapp"
+
+        // The emulator tests run in HiltTestApplication, so Hilt can replace the YouTube layer with
+        // fakes. See docs/testing.md#emulator-tests.
+        testInstrumentationRunner = "io.github.dewfallapp.HiltTestRunner"
+        // AndroidX Test's runner has a usage tracker that is off unless a test turns it on. This
+        // keeps it off.
+        testInstrumentationRunnerArguments["disableAnalytics"] = "true"
+    }
+
+    testOptions {
+        // AGP runs the emulator tests with the device's window animations off, without changing
+        // the device's settings.
+        animationsDisabled = true
     }
 
     buildFeatures {
@@ -51,6 +64,21 @@ dependencies {
     // Saves navigation keys as JSON in tests, because the Bundle that SavedState writes needs
     // Android.
     testImplementation(libs.kotlinx.serialization.json)
+
+    // The emulator tests. See docs/testing.md#emulator-tests. Their fakes implement the YouTube
+    // layer's interfaces, so androidTest sees :core:youtube, which the app's own code never does.
+    androidTestImplementation(project(":core:youtube"))
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    // Newer than the Espresso that Compose's test rules bring, which fails on Android 17.
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(libs.hilt.android.testing)
+    androidTestImplementation(libs.kotlin.test.junit)
+    // The test rule's dispatcher. See SearchThenPlayTest.
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    kspAndroidTest(libs.hilt.compiler)
 
     // The YouTube layer's debug screen. Only debug builds contain it. See
     // docs/architecture.md#the-youtube-layers-debug-screen.
