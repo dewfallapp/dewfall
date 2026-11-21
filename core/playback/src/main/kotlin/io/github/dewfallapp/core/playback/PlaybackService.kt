@@ -235,6 +235,10 @@ class PlaybackService : MediaSessionService() {
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             if (playbackState == Player.STATE_READY) refreshLimit.reset()
+            // A video that ended keeps play on. Media3 turns the notification's play button and a
+            // headset's play and pause button into a toggle, which would pause it, so the first
+            // press would do nothing. With play off, it plays the video again from the start.
+            if (playbackState == Player.STATE_ENDED) player.pause()
         }
 
         override fun onTracksChanged(tracks: Tracks) {

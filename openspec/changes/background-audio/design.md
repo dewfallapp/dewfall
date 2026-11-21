@@ -161,7 +161,7 @@ Media3 starts the foreground service as soon as the player buffers with play on,
 
 ### Failures in the background
 
-- A playback that failed keeps its notification, and its play button prepares the player again from the same position, through `Util.handlePlayButtonAction`. The service turns play off when it reports a failure, because on Android 10 to 12 the notification's play button sends the play and pause toggle, which Media3 turns into a pause while play is still on, as the hand checks on Android 10 and 12L found. PlaybackService clears PlaybackSessions' failure when the player's error goes away, in `onPlayerErrorChanged(null)`, so the video screen doesn't show an old failure over a video that plays again.
+- A playback that failed keeps its notification, and its play button prepares the player again from the same position, through `Util.handlePlayButtonAction`. The service turns play off when it reports a failure, and when a video ends, because on Android 10 to 12 the notification's play button, and on every version a headset's play and pause button, send the play and pause toggle, which Media3 turns into a pause while play is still on, as the hand checks on Android 10 and 12L found for failures and the reviewer found for the end. PlaybackService clears PlaybackSessions' failure when the player's error goes away, in `onPlayerErrorChanged(null)`, so the video screen doesn't show an old failure over a video that plays again.
 - The platform session's error message, which car displays and watches may show, comes from `:core:playback`'s string resources, with the words the maintainer approved for OTHER in #42: "This video stopped playing." The cleaning stays a pure function, which now takes the message.
 
 ### Android 17's background audio
