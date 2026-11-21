@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Closest platform dynamic dark surface on Android 12 and 13 (tone 10 in system_neutral2;
+        Material 3 1.4.0's dynamicDarkColorScheme computes tone 6 from system_neutral2_600).
+    -->
+    <color name="launch_surface">@android:color/system_neutral2_900</color>
+</resources>

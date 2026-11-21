@@ -54,3 +54,31 @@ dependencies {
     // docs/architecture.md#the-youtube-layers-debug-screen.
     debugImplementation(project(":feature:youtube-debug-ui"))
 }
+
+// LaunchThemeTest checks the static launch colors against docs/design/'s tokens.json and inspects
+// :app's manifest and resource XMLs. Declaring them as test inputs makes Gradle run the tests
+// again when they change, instead of reusing a cached result.
+val designTokens =
+    rootProject.layout.projectDirectory.file("docs/design/claude-design/design-system/tokens.json")
+val appResources = layout.projectDirectory.dir("src/main/res")
+val appManifest = layout.projectDirectory.file("src/main/AndroidManifest.xml")
+
+tasks.withType<Test>().configureEach {
+    inputs
+        .file(designTokens)
+        .withPropertyName("designTokens")
+        .withPathSensitivity(PathSensitivity.NONE)
+    inputs
+        .dir(appResources)
+        .withPropertyName("appResources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs
+        .file(appManifest)
+        .withPropertyName("appManifest")
+        .withPathSensitivity(PathSensitivity.NONE)
+    // Tests run in the module's folder. Relative paths keep the cache key the same on every
+    // machine.
+    systemProperty("dewfall.designTokens", designTokens.asFile.relativeTo(projectDir).path)
+    systemProperty("dewfall.appResources", appResources.asFile.relativeTo(projectDir).path)
+    systemProperty("dewfall.appManifest", appManifest.asFile.relativeTo(projectDir).path)
+}

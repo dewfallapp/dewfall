@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Light launch window background on Android 10 and 11, where dynamic color is not available.
+        Nothing can read Compose's MaterialTheme before the first frame draws, so this copies
+        DewfallLightColors.surface from tokens.json. LaunchThemeTest checks it against tokens.json.
+    -->
+    <color name="launch_surface">#F5FBF2</color>
+</resources>

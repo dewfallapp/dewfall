@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-        The window theme. Its background shows before Compose draws the first frame. It has no
-        action bar, because the Compose UI draws the whole screen. values-night has the dark
-        version. The app's colors come from the Compose theme, not from here.
+        The window theme. Its background shows before Compose draws the first frame, while a
+        window resizes in multi-window mode, and in Recents. It has no action bar, because the
+        Compose UI draws the whole screen.
+
+        Theme.Material.Light already maps windowBackground and windowBackgroundFallback to
+        ?attr/colorBackground, and Activity copies colorBackground into
+        ActivityManager.TaskDescription for Recents, so setting android:colorBackground covers
+        all three from @color/launch_surface in colors.xml. android:colorPrimaryDark drives
+        Theme.Material's status bar background on Android 10 and 11 without deprecated
+        android:statusBarColor. android:windowLightNavigationBar stays unset through API 33
+        because Theme.Material.Light keeps the navigation bar black there.
+
+        values-night/themes.xml overrides Base.Theme.Dewfall for dark mode, and
+        values-v31/themes.xml adds the Android 12+ splash screen background on Theme.Dewfall.
+        See docs/architecture.md#the-theme.
     -->
-    <style name="Theme.Dewfall" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Base.Theme.Dewfall" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorBackground">@color/launch_surface</item>
+        <item name="android:colorPrimaryDark">@color/launch_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.Dewfall" parent="Base.Theme.Dewfall" />
 </resources>

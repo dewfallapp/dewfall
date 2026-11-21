@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The dark version of the window theme in values/themes.xml. -->
-    <style name="Theme.Dewfall" parent="android:Theme.Material.NoActionBar" />
+    <!--
+        Dark base for Theme.Dewfall in values/themes.xml. Theme.Dewfall itself is defined only
+        in values/themes.xml and values-v31/themes.xml, because the night qualifier outranks
+        v31 and defining Theme.Dewfall here would drop android:windowSplashScreenBackground in
+        dark mode on Android 12 and later.
+    -->
+    <style name="Base.Theme.Dewfall" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorBackground">@color/launch_surface</item>
+        <item name="android:colorPrimaryDark">@color/launch_surface</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

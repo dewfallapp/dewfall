@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Exact platform dynamic light surface on Android 14 and later, the same resource that
+        Material 3's dynamicLightColorScheme reads.
+    -->
+    <color name="launch_surface">@android:color/system_surface_light</color>
+</resources>
