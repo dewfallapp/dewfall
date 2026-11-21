@@ -4,7 +4,9 @@ import androidx.navigation3.runtime.NavKey
 import io.github.dewfallapp.core.model.VideoId
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 private val VIDEO = VideoId("aqz-KE-bpKQ")
 private val OTHER = VideoId("dQw4w9WgXcQ")
@@ -60,5 +62,16 @@ class BackStackTest {
         backStack.goBack()
 
         assertEquals(listOf<NavKey>(SearchKey), backStack)
+    }
+
+    @Test
+    fun `the mini player shows on search, and not over a video screen`() {
+        assertTrue(backStack.showsMiniPlayer())
+
+        backStack.openVideo(VIDEO)
+        assertFalse(backStack.showsMiniPlayer())
+
+        backStack.goBack()
+        assertTrue(backStack.showsMiniPlayer())
     }
 }

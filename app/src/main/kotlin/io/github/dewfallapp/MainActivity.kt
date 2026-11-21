@@ -10,8 +10,9 @@ import javax.inject.Inject
 
 /**
  * The app's only activity. It shows the Compose UI and is Hilt's entry point for it. It tells the
- * player whether the app can be seen, so the player shows no picture in the background, whichever
- * screen played the video. See docs/architecture.md#the-player.
+ * player when the app can be seen and when it stops, so the player shows no picture in the
+ * background and a video that hasn't played waits, whichever screen played it. See
+ * docs/architecture.md#the-player.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -27,12 +28,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        playback.setAppVisible(true)
+        playback.appStarted()
     }
 
     override fun onStop() {
         super.onStop()
-        // A configuration change brings the activity back at once, and keeps the picture.
-        if (!isChangingConfigurations) playback.setAppVisible(false)
+        // A configuration change brings the activity back at once, so the connection does nothing.
+        playback.appStopped(changingConfigurations = isChangingConfigurations)
     }
 }

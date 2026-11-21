@@ -13,9 +13,10 @@ internal fun MutableList<NavKey>.openVideo(videoId: VideoId) {
 }
 
 /**
- * Closes the video screen of [key], if it is still on the back stack. A second tap on the close
- * button, or one during the back gesture, finds it gone and does nothing, so Search YouTube always
- * stays. An empty back stack would crash, because NavDisplay requires at least one entry.
+ * Closes the video screen of [key], if it is still on the back stack, as its minimize button does.
+ * Its playback goes on in the mini player. A second tap on the button, or one during the back
+ * gesture, finds it gone and does nothing, so Search YouTube always stays. An empty back stack
+ * would crash, because NavDisplay requires at least one entry.
  */
 internal fun MutableList<NavKey>.close(key: PlayerKey) {
     remove(key)
@@ -25,3 +26,9 @@ internal fun MutableList<NavKey>.close(key: PlayerKey) {
 internal fun MutableList<NavKey>.goBack() {
     if (size > 1) removeAt(lastIndex)
 }
+
+/**
+ * Whether the mini player shows under the back stack: while no video screen is on top. It draws
+ * nothing itself while the player has no video.
+ */
+internal fun List<NavKey>.showsMiniPlayer(): Boolean = lastOrNull() !is PlayerKey
