@@ -150,18 +150,18 @@ While a video is minimized, the player SHALL decode no picture, and SHALL NOT fe
 - **THEN** the picture shows again at the current position
 
 ### Requirement: The video can play in fullscreen
-The video screen's controls SHALL have a fullscreen button, named for screen readers, while the player is connected. Fullscreen SHALL show the video as large as the window allows, keeping its shape, on black. It SHALL use the dark color scheme in light mode too, and hide the system bars, which a swipe from the screen's edge shows for a moment. The screen SHALL stay on while the video plays.
+The video screen's controls SHALL have a fullscreen button, named for screen readers, while the player is connected. Fullscreen SHALL show the video as large as the window allows, keeping its shape, on black. It SHALL use the dark color scheme in light mode too, and show the system bars only while its controls show, or for a moment after a swipe from the screen's edge. The screen SHALL stay on while the video plays.
 
 #### Scenario: Entering fullscreen
 - **WHEN** a video plays on the video screen and the user taps the fullscreen button
-- **THEN** the video fills the screen in dark colors, without the system bars, and plays on without a pause
+- **THEN** the video fills the screen in dark colors and plays on without a pause, and the system bars hide when the controls do
 
 #### Scenario: Light mode
 - **WHEN** the phone is in light mode and the user enters fullscreen
 - **THEN** fullscreen uses the dark color scheme
 
 #### Scenario: A system bar for a moment
-- **WHEN** the user swipes from the screen's edge in fullscreen
+- **WHEN** the controls are hidden and the user swipes from the screen's edge in fullscreen
 - **THEN** the system bars show for a moment over the video, and hide again
 
 ### Requirement: A phone turns to landscape in fullscreen
@@ -198,27 +198,27 @@ Fullscreen SHALL show the title and channel name at the top, once the details ha
 - **WHEN** the title is long and the font size is the largest
 - **THEN** the title wraps onto more lines in its box, and nothing is cut off
 
-### Requirement: Fullscreen keeps clear of the display cutout
-In fullscreen, no text, control or picture SHALL sit under the display cutout. The system bars stay hidden, and while a swipe shows them for a moment they may cover the controls.
+### Requirement: Fullscreen keeps clear of the system bars and the display cutout
+In fullscreen, no text or control SHALL sit under the system bars or the display cutout, whether the bars show or not, so showing or hiding the bars never moves the title or the controls. No picture SHALL sit under the display cutout.
 
 #### Scenario: A display cutout
 - **WHEN** fullscreen shows in landscape on a phone with a display cutout
 - **THEN** no text, control or picture sits under the cutout
 
-#### Scenario: A system bar over the controls
-- **WHEN** the user swipes the navigation bar in over fullscreen
-- **THEN** it may cover the controls for a moment, and the controls are whole again once it hides
+#### Scenario: The system bars over fullscreen
+- **WHEN** the system bars show in fullscreen in landscape with three-button navigation, after a tap or a swipe
+- **THEN** they cover none of the title and controls, the exit button can be tapped, and nothing moves
 
 ### Requirement: Fullscreen controls hide while the video plays
-While a video plays in fullscreen, the title and the controls SHALL hide 3 seconds after the user last touched the screen, or later when the phone's accessibility settings ask for more time. A tap on the video SHALL show them again. They SHALL stay while the video is paused, waits for data, has ended or failed, and while a screen reader such as TalkBack is on.
+While a video plays in fullscreen, the title and the controls SHALL hide 3 seconds after the user last touched the screen, or later when the phone's accessibility settings ask for more time. A tap on the video SHALL show them again. They SHALL stay while the video is paused, waits for data, has ended or failed, and while a screen reader such as TalkBack is on. The system bars SHALL show and hide with them.
 
 #### Scenario: Watching
 - **WHEN** a video plays in fullscreen and the user doesn't touch the screen for 3 seconds
-- **THEN** the title and the controls hide, and the video plays on
+- **THEN** the title, the controls and the system bars hide, and the video plays on
 
 #### Scenario: Showing them again
 - **WHEN** the controls are hidden and the user taps the video
-- **THEN** the title and the controls show again
+- **THEN** the title, the controls and the system bars show again
 
 #### Scenario: Paused
 - **WHEN** the user pauses a video in fullscreen
