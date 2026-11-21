@@ -1,0 +1,183 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# CodeRabbit's settings for this repository, in its V2 schema:
+# https://docs.coderabbit.ai/reference/configuration
+#
+# CodeRabbit's comments are advice. Merging still follows AGENTS.md: the CI checks, the pre-push
+# gate, the reviewer subagent and the maintainer subagent. CONTRIBUTING.md says the same.
+#
+# On November 21, 2026, CodeRabbit's plans page said that a public repository with fewer than
+# 10 stars gets reviews only by hand: comment "@coderabbitai review" on the pull request
+# (https://docs.coderabbit.ai/management/plans#rate-limits). The auto_review settings below
+# apply once the repository has 10 stars.
+
+language: en-US
+tone_instructions: >-
+  Write in plain English with short sentences and no emoji. Name the rule in AGENTS.md, the
+  ADR or the spec that each finding comes from.
+
+reviews:
+  profile: chill
+
+  # CodeRabbit writes nothing into the pull request description. A summary there could put a
+  # closing word before an issue number, and GitHub would close that issue on merge.
+  high_level_summary: false
+  high_level_summary_in_walkthrough: true
+
+  # No check run and no commit status. The maintainer subagent's merge check needs every check
+  # in a pull request's statusCheckRollup to pass, and CodeRabbit must not take part in merging.
+  review_progress: false
+  commit_status: false
+  fail_commit_status: false
+
+  # CodeRabbit never approves, requests changes, labels or assigns anything on its own.
+  auto_approvals:
+    enabled: false
+    allow_author_approval: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+
+  # Less noise in its comments.
+  in_progress_fortune: false
+  poem: false
+  # Dewfall's agents take instructions only from the maintainer, never from a comment.
+  enable_prompt_for_ai_agents: false
+
+  # CodeRabbit already skips lock files, binaries, images, fonts, jars and generated folders.
+  # These patterns also keep the files out of CodeRabbit's checkout.
+  path_filters:
+    # The saved YouTube responses, which the recorder writes.
+    - "!core/youtube/src/test/resources/youtube/**"
+    # The Room schemas, which the build writes.
+    - "!core/database/schemas/**"
+    # The frames of the Claude Design canvas, which stay as they were exported.
+    - "!docs/design/claude-design/design/**"
+    # The Gradle wrapper scripts, which Gradle's wrapper task writes.
+    - "!gradlew"
+    - "!gradlew.bat"
+
+  # Pointers to the rules, so the rules stay in one place.
+  path_instructions:
+    - path: "**/*.kt"
+      instructions: >-
+        Check against AGENTS.md: its Architecture rules, its Testing rules, and the Kotlin style
+        rule under Commands. Logging follows docs/adr/0007-how-the-app-logs.md. CI runs ktfmt,
+        detekt and Android Lint with Dewfall's own checks, so leave formatting and their findings
+        to them.
+    - path: "core/youtube/**"
+      instructions: >-
+        This is the YouTube layer. Check it against docs/adr/0001-newpipeextractor-behind-youtube-layer.md,
+        docs/adr/0008-youtube-layer-contract.md and docs/adr/0009-how-the-youtube-layer-reaches-youtube.md.
+    - path: "feature/**"
+      instructions: >-
+        Check module boundaries and MVI against AGENTS.md's Architecture rules and
+        docs/adr/0002-mvi-with-playback-state-outside.md.
+    - path: "core/database/**"
+      instructions: >-
+        Check Room changes against the Room rules in AGENTS.md's Architecture rules.
+    - path: "**/src/test/**"
+      instructions: >-
+        Check tests against AGENTS.md's Testing rules and docs/testing.md.
+    - path: ".github/workflows/**"
+      instructions: >-
+        Check workflows against the GitHub Actions rule in AGENTS.md's How to work section.
+    - path: "gradle/libs.versions.toml"
+      instructions: >-
+        Check dependency changes against the dependency rule in AGENTS.md's How to work section.
+    - path: "**/*.gradle.kts"
+      instructions: >-
+        Check dependency and plugin changes against the dependency rule in AGENTS.md's How to
+        work section.
+    - path: "**/*.md"
+      instructions: >-
+        Check docs against AGENTS.md's Writing style, and check facts as the "Invented facts"
+        item of the checklist in .claude/agents/reviewer.md asks.
+    - path: "openspec/**"
+      instructions: >-
+        Check OpenSpec changes against docs/adr/0004-openspec-for-specs.md and the Spec first
+        section of CONTRIBUTING.md.
+    - path: "scripts/**"
+      instructions: >-
+        These are the pre-push gate, its scan of the saved YouTube responses, and the maintainer
+        subagent's guard and checkout script. docs/testing.md#the-pre-push-gate and each
+        script's docstring describe them.
+
+  auto_review:
+    enabled: true
+    # Drafts are still being built. A review starts when the pull request is marked ready.
+    drafts: false
+    # The maintainer subagent checks Renovate's pull requests against AGENTS.md's dependency
+    # rule. To ask CodeRabbit about one anyway, such as one with a fix pushed to it, comment
+    # "@coderabbitai full review", which overrides this list. CodeRabbit's docs say it still
+    # skips a bot author without a seat (https://docs.coderabbit.ai/pr-reviews/missing-reviews).
+    ignore_usernames:
+      - "renovate[bot]"
+
+  # Finishing touches commit code or open pull requests when someone asks. All stay off.
+  finishing_touches:
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+
+  pre_merge_checks:
+    # The list of types comes from AGENTS.md's How to work section, and the SUBJECT pattern in
+    # scripts/pre_push_gate.py checks commit subjects against it. Change all three together.
+    # The types are written out because on November 21, 2026, the title check on pull request
+    # #202 said it couldn't see that list, and came back inconclusive.
+    title:
+      mode: warning
+      requirements: >-
+        The title is a conventional commit message. It starts with one of the types feat, fix,
+        docs, test, refactor, build, ci or chore, then an optional scope in parentheses and an
+        optional "!", then a colon and a space.
+    # The reviewer subagent and the maintainer subagent check the description against
+    # .github/pull_request_template.md.
+    description:
+      mode: "off"
+
+  tools:
+    # CI runs the detekt version in gradle/libs.versions.toml, with config/detekt/detekt.yml
+    # and compose-rules. CodeRabbit runs its own detekt 1.23.8 without compose-rules.
+    detekt:
+      enabled: false
+
+chat:
+  art: false
+  # CodeRabbit answers only when someone mentions @coderabbitai.
+  auto_reply: false
+  # CodeRabbit can write to code, issues and pull requests, so only members of the dewfallapp
+  # organization can ask it for anything.
+  allow_non_org_members: false
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    # CodeRabbit finds AGENTS.md by itself. These entries add the reviewer checklist for every
+    # file, and are meant to keep the OpenSpec skills in .claude/skills/ to the specs, instead
+    # of every file. The docs show applyTo scoping skills that CodeRabbit doesn't find by
+    # itself, but not the ones in .claude/skills/. To check, open the "Code guidelines" list of
+    # a review of a pull request that changes nothing in openspec/: no skill should be on it.
+    filePatterns:
+      - files: ".claude/agents/reviewer.md"
+        applyTo: "**"
+      - files: ".claude/skills/*/SKILL.md"
+        applyTo: "openspec/**"
+  learnings:
+    scope: local
+
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+  planning:
+    auto_planning:
+      enabled: false
+  labeling:
+    auto_apply_labels: false
