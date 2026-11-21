@@ -192,7 +192,7 @@ Fullscreen SHALL show the title and channel name at the top, once the details ha
 
 #### Scenario: A failure in fullscreen
 - **WHEN** the network goes away in fullscreen and the player runs out of data
-- **THEN** fullscreen says that YouTube can't be reached, with "Try again", and the exit button stays
+- **THEN** fullscreen says that YouTube can't be reached, with "Try again" and the exit button
 
 #### Scenario: A long title at the largest font size in fullscreen
 - **WHEN** the title is long and the font size is the largest
@@ -210,7 +210,7 @@ In fullscreen, no text or control SHALL sit under the system bars or the display
 - **THEN** they cover none of the title and controls, the exit button can be tapped, and nothing moves
 
 ### Requirement: Fullscreen controls hide while the video plays
-While a video plays in fullscreen, the title and the controls SHALL hide 3 seconds after the user last touched the screen, or later when the phone's accessibility settings ask for more time. A tap on the video SHALL show them again. They SHALL stay while the video is paused, waits for data, has ended or failed, and while a screen reader such as TalkBack is on. The system bars SHALL show and hide with them.
+While a video plays in fullscreen, the title, the controls and the system bars SHALL hide 3 seconds after the user last touched the screen or pressed a key, or later when the accessibility settings ask for more time. A tap on the video SHALL show them, and a tap while they show SHALL hide them. Whenever the video isn't playing, and while a screen reader is on, they SHALL show, even if they were hidden. When it plays again they SHALL show, and hide 3 seconds later.
 
 #### Scenario: Watching
 - **WHEN** a video plays in fullscreen and the user doesn't touch the screen for 3 seconds
@@ -220,17 +220,45 @@ While a video plays in fullscreen, the title and the controls SHALL hide 3 secon
 - **WHEN** the controls are hidden and the user taps the video
 - **THEN** the title, the controls and the system bars show again
 
+#### Scenario: Hiding them with a tap
+- **WHEN** a video plays in fullscreen with the controls showing and the user taps the video
+- **THEN** the title, the controls and the system bars hide
+
 #### Scenario: Paused
 - **WHEN** the user pauses a video in fullscreen
-- **THEN** the title and the controls stay
+- **THEN** the title and the controls stay, and a tap on the video doesn't hide them
+
+#### Scenario: Paused from elsewhere while hidden
+- **WHEN** the controls are hidden and the video pauses from a headset, the notification or a phone call
+- **THEN** the title, the controls and the system bars show
+
+#### Scenario: Waiting for data while hidden
+- **WHEN** the controls are hidden and the player runs out of data
+- **THEN** the title and the controls show, with the loading sign, until it plays again
+
+#### Scenario: The end while hidden
+- **WHEN** the controls are hidden and the video plays to its end
+- **THEN** the title and the controls show, and the button offers to play it again
+
+#### Scenario: A failure while hidden
+- **WHEN** the controls are hidden and the video fails
+- **THEN** the failure shows with the exit button
+
+#### Scenario: Playing again
+- **WHEN** the user presses play in fullscreen
+- **THEN** the controls stay, and hide 3 seconds after the last touch
+
+#### Scenario: A key press
+- **WHEN** a video plays in fullscreen and the user presses a key on a hardware keyboard
+- **THEN** the controls show, and the 3 seconds start again
 
 #### Scenario: More time to act
 - **WHEN** the phone's accessibility setting for time to take action is 1 minute
 - **THEN** the controls hide only after 1 minute without a touch
 
 #### Scenario: A screen reader
-- **WHEN** TalkBack is on and a video plays in fullscreen
-- **THEN** the title and the controls stay
+- **WHEN** TalkBack is on, or turns on, while a video plays in fullscreen
+- **THEN** the title and the controls show and stay
 
 ### Requirement: Leaving fullscreen returns to the video screen
 The exit button and the system's back gesture SHALL leave fullscreen and return to the video screen, with the system bars and the screen's own colors, and playback SHALL go on without a pause.
@@ -270,6 +298,25 @@ On a phone the screen SHALL stay in portrait, except in fullscreen. In any wider
 #### Scenario: A tablet in landscape
 - **WHEN** the screen shows a video's details on a tablet in landscape
 - **THEN** the details sit in one centered column no wider than the readable width, and nothing is cut off
+
+### Requirement: The sound plays on in the background
+Leaving the app while a video plays, such as with the home gesture or by switching apps, and turning the screen off, SHALL keep the sound playing. Coming back SHALL show the same video playing at its current position, on the video screen or in the mini player. A configuration change, such as a resized window or a theme change, SHALL NOT stop, pause or restart playback.
+
+#### Scenario: Going home
+- **WHEN** a video plays and the user goes to the home screen
+- **THEN** the sound goes on, and when the user comes back, the video plays on at its current position
+
+#### Scenario: The screen off
+- **WHEN** a video plays and the user turns the screen off for 10 minutes
+- **THEN** the sound goes on the whole time
+
+#### Scenario: Paused in the background, back much later
+- **WHEN** the user paused a video on the video screen in the background, and Android stopped the player before the user came back
+- **THEN** the video screen waits at the position where it paused, and plays on from it when the user presses play
+
+#### Scenario: Resizing the window
+- **WHEN** a video plays in split screen and the user resizes the window
+- **THEN** it keeps playing without a pause
 
 ### Requirement: The picture turns off while the app can't be seen
 While no Dewfall screen can be seen, the player SHALL decode no picture, and SHALL NOT fetch a picture that comes in its own file. When the app shows the video screen again, the picture SHALL come back at the current position, after a short load that may pause the sound. When the app shows again with the video minimized, the picture SHALL stay off until the video screen opens. A file that holds both sound and picture, and a live stream, whose segments hold both, still load the picture's bytes with the sound.
