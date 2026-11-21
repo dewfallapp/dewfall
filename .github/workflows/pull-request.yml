@@ -56,7 +56,8 @@ jobs:
           validate-wrappers: true
 
       # compileSdk 37 in build-logic needs platform 37.0, and AGP's default build tools are
-      # 36.0.0. When either changes, update this step and the Commands section of AGENTS.md.
+      # 36.0.0. When either changes, update this step, the same step in emulator-tests.yml and the
+      # Commands section of AGENTS.md.
       - name: Install the Android SDK packages
         run: |
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install \
