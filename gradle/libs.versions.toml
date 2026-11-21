@@ -1,6 +1,6 @@
 [versions]
 agp = "9.5.1"
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 desugarJdkLibsNio = "2.1.5"
 spotless = "8.11.0"
 # The formatter that Spotless runs. Spotless downloads it, so it has no library entry. From 0.65
@@ -22,7 +22,7 @@ composeBom = "2026.09.00"
 activityCompose = "1.13.0"
 startup = "1.2.0"
 hilt = "2.60.1"
-ksp = "2.3.12"
+ksp = "2.3.13"
 # Room 3, in the androidx.room3 package, for the runtime, the compiler and the Gradle plugin.
 # Room 2 is deprecated. See docs/architecture.md#build-settings.
 room3 = "3.0.3"
