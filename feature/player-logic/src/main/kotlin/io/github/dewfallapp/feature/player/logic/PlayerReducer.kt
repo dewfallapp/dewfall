@@ -8,7 +8,8 @@ import io.github.dewfallapp.core.mvi.Reducer
 /**
  * The video screen's reducer. Load starts the first request, and "Try again" starts the next one
  * only after a failure that offers it. An answer counts only while its own request is running. The
- * screen has no effects, so its effect type is Nothing.
+ * fullscreen intents turn fullscreen on and off, and leave the details alone. The screen has no
+ * effects, so its effect type is Nothing.
  */
 object PlayerReducer : Reducer<PlayerState, PlayerIntent, Nothing> {
     override fun reduce(state: PlayerState, intent: PlayerIntent): Next<PlayerState, Nothing> =
@@ -17,6 +18,8 @@ object PlayerReducer : Reducer<PlayerState, PlayerIntent, Nothing> {
                 PlayerIntent.Load -> state.loaded()
                 PlayerIntent.TryAgain -> state.triedAgain()
                 is PlayerIntent.DetailsFinished -> state.finished(intent)
+                PlayerIntent.EnterFullscreen -> state.copy(fullscreen = true)
+                PlayerIntent.ExitFullscreen -> state.copy(fullscreen = false)
             },
         )
 }

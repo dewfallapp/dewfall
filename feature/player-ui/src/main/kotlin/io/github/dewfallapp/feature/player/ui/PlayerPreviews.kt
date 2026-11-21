@@ -32,7 +32,7 @@ import kotlin.time.Instant
 private val previewNow = Instant.parse("2027-03-15T10:30:00Z")
 private val previewZone = ZoneId.of("UTC")
 
-private val previewPage =
+internal val previewPage =
     VideoPage(
         title = "How reading rooms were lit before electric lamps",
         channelName = "Larkspur Lectures",
@@ -48,14 +48,14 @@ private val previewPage =
 
 /** The length of the made-up video, 1:14:02, and where it plays, 18:24, as in the frames. */
 private const val PREVIEW_DURATION_US = 4_442_000_000L
-private const val PREVIEW_POSITION_MS = 1_104_000L
+internal const val PREVIEW_POSITION_MS = 1_104_000L
 private const val MICROS_PER_MILLI = 1000L
 
 /**
  * A made-up player in a fixed state, for the previews. It has one item, whose ID is no real
  * playback ID.
  */
-private class PreviewPlayer(
+internal class PreviewPlayer(
     playing: Boolean,
     playbackState: Int = Player.STATE_READY,
     live: Boolean = false,
@@ -101,9 +101,15 @@ private fun Preview(state: PlayerState, video: () -> VideoAreaContent) {
             now = previewNow,
             zone = previewZone,
             onIntent = {},
-            onClose = {},
+            onMinimize = {},
             videoArea = { modifier ->
-                VideoArea(content = content, onPlay = {}, onTryAgain = {}, modifier = modifier)
+                VideoArea(
+                    content = content,
+                    onPlay = {},
+                    onTryAgain = {},
+                    onFullscreen = {},
+                    modifier = modifier,
+                )
             },
         )
     }

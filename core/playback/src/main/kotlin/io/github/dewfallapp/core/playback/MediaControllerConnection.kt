@@ -32,7 +32,8 @@ import kotlinx.coroutines.launch
  * The PlaybackConnection over a MediaController. It starts PlaybackService, connects one
  * MediaController for the application's context to the service's session, and keeps it while the
  * session lives, so a configuration change finds it as it was. When the session is gone, the next
- * [prepare] starts the service and connects again.
+ * [prepare] starts the service and connects again. It listens to the controller for the playback ID
+ * that last played, which decides what leaving the app pauses.
  */
 @Singleton
 internal class MediaControllerConnection
@@ -53,6 +54,9 @@ constructor(
     private val controller = MutableStateFlow<MediaController?>(null)
     private var connecting: Job? = null
     private var pending: Pending? = null
+
+    /** The playback ID that last played. Only the main thread touches it. */
+    private var playedId: String? = null
 
     override val player: StateFlow<Player?> = controller.asStateFlow()
 
@@ -75,15 +79,7 @@ constructor(
         return playbackId
     }
 
-    override fun isKnown(playbackId: String): Boolean = items.contains(playbackId)
-
-    override fun pause(playbackId: String) {
-        val connected = controller.value
-        val decision =
-            pauseDecision(pending?.playbackId, connected?.currentMediaItem?.mediaId, playbackId)
-        if (decision.waitingStart) pending?.play = false
-        if (decision.player) connected?.pause()
-    }
+    override fun videoOf(playbackId: String): VideoId? = items.videoId(playbackId)
 
     override fun stop(playbackId: String) {
         if (pending?.playbackId == playbackId) pending = null
@@ -97,12 +93,33 @@ constructor(
         }
     }
 
+    override fun release(playbackId: String) {
+        val currentItemId = controller.value?.currentMediaItem?.mediaId
+        if (releaseDrops(pending?.playbackId, currentItemId, playbackId)) items.remove(playbackId)
+    }
+
     override fun describe(playbackId: String, title: String, channelName: String) {
         items.describe(playbackId, PlaybackDescription(title, channelName))
     }
 
-    override fun setAppVisible(visible: Boolean) {
-        sessions.setAppVisible(visible)
+    override fun holdPicture(): PictureHold = sessions.holdPicture()
+
+    override fun appStarted() {
+        sessions.setAppVisible(true)
+    }
+
+    override fun appStopped(changingConfigurations: Boolean) {
+        val connected = controller.value
+        val decision =
+            leaveDecision(
+                changingConfigurations,
+                waitingId = pending?.playbackId,
+                currentItemId = connected?.currentMediaItem?.mediaId,
+                playedId = playedId,
+            )
+        if (decision.hidesApp) sessions.setAppVisible(false)
+        if (decision.stopsWaitingStart) pending?.play = false
+        if (decision.pausesPlayer) connected?.pause()
     }
 
     private fun connect() {
@@ -138,7 +155,10 @@ constructor(
                 null
             }
         controller.value = connected
-        if (connected != null) pending?.runOn(connected)
+        if (connected != null) {
+            connected.addListener(Played())
+            pending?.runOn(connected)
+        }
         pending = null
     }
 
@@ -151,14 +171,21 @@ constructor(
 
     /**
      * A start of [playbackId] from [startPositionMs], which waits for the connection when there is
-     * none yet. A pause before it connects turns [play] off, so it never plays with its screen
-     * gone.
+     * none yet. Leaving the app before it connects turns [play] off, so it never starts in the
+     * background.
      */
     private class Pending(val playbackId: String, val startPositionMs: Long, var play: Boolean) {
         fun runOn(player: Player) {
             player.setMediaItem(MediaItem.Builder().setMediaId(playbackId).build(), startPositionMs)
             player.prepare()
             player.playWhenReady = play
+        }
+    }
+
+    /** Keeps the playback ID of the current item once it plays. */
+    private inner class Played : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) {
+            if (player.isPlaying) playedId = player.currentMediaItem?.mediaId
         }
     }
 

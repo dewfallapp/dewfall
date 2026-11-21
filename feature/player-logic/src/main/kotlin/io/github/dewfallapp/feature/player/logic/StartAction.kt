@@ -6,6 +6,12 @@ enum class StartAction {
     PLAY,
 
     /**
+     * The entry opened for the first time, and the player already plays this video, such as from
+     * the mini player: go on with that playback as it is, and start nothing.
+     */
+    GO_ON,
+
+    /**
      * The entry came back after the system ended the process or stopped the player: wait at the
      * saved position for the user to press play, and fetch nothing until then.
      */
@@ -17,21 +23,14 @@ enum class StartAction {
 
 /**
  * What the video screen does with playback when its entry shows: whether playback [started] before,
- * as the entry's saved state says, and whether its playback ID is still [playbackIdKnown] to the
- * player, which it isn't after the session was gone.
+ * as the entry's saved state says, whether its playback ID is still [playbackIdKnown] to the
+ * player, which it isn't after the session was gone, and whether the player's current item
+ * [playsThisVideo], a playback of this screen's video that another screen started.
  */
-fun startAction(started: Boolean, playbackIdKnown: Boolean): StartAction =
+fun startAction(started: Boolean, playbackIdKnown: Boolean, playsThisVideo: Boolean): StartAction =
     when {
+        !started && playsThisVideo -> StartAction.GO_ON
         !started -> StartAction.PLAY
         playbackIdKnown -> StartAction.NOTHING
         else -> StartAction.WAIT_FOR_PLAY
     }
-
-/**
- * Whether leaving the app pauses the video screen's playback: only when the activity isn't just
- * [changingConfigurations], and the playback hasn't [played] yet. A video that has played keeps
- * playing in the background. One that hasn't would start the foreground service from the
- * background, which Android refuses, so it waits, paused, for the user to come back.
- */
-fun pausesOnLeave(changingConfigurations: Boolean, played: Boolean): Boolean =
-    !changingConfigurations && !played

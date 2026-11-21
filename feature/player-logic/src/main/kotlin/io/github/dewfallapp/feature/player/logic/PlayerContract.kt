@@ -42,8 +42,14 @@ sealed interface DetailsArea {
     data class Failed(val number: Long, val error: YouTubeError) : DetailsArea
 }
 
-/** The video screen's state. Playback state never goes here. See ADR 0002. */
-data class PlayerState(val details: DetailsArea = DetailsArea.Loading(number = 0)) : MviState
+/**
+ * The video screen's state. Playback state never goes here. See ADR 0002. [fullscreen] says whether
+ * the screen shows the fullscreen player. The ViewModel keeps it in its saved state too.
+ */
+data class PlayerState(
+    val details: DetailsArea = DetailsArea.Loading(number = 0),
+    val fullscreen: Boolean = false,
+) : MviState
 
 /** What happens on the video screen. */
 sealed interface PlayerIntent : MviIntent {
@@ -56,4 +62,10 @@ sealed interface PlayerIntent : MviIntent {
     /** Request [number] answered with [result]. */
     data class DetailsFinished(val number: Long, val result: YouTubeResult<VideoDetails>) :
         PlayerIntent
+
+    /** The user tapped the fullscreen button. */
+    data object EnterFullscreen : PlayerIntent
+
+    /** The user tapped the exit button, or made the back gesture, in fullscreen. */
+    data object ExitFullscreen : PlayerIntent
 }

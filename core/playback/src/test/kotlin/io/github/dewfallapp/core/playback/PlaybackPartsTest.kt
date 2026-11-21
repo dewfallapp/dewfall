@@ -123,13 +123,46 @@ class PlaybackPartsTest {
     @Test
     fun `the app counts as visible until a screen says otherwise`() {
         val sessions = PlaybackSessions()
-        assertTrue(sessions.appVisible.value)
+        assertTrue(sessions.picture.value.appVisible)
 
         sessions.setAppVisible(false)
-        assertFalse(sessions.appVisible.value)
+        assertFalse(sessions.picture.value.appVisible)
 
         sessions.setAppVisible(true)
-        assertTrue(sessions.appVisible.value)
+        assertTrue(sessions.picture.value.appVisible)
+    }
+
+    @Test
+    fun `the picture shows only while the app can be seen and a screen holds it`() {
+        val sessions = PlaybackSessions()
+        assertFalse(sessions.picture.value.showsPicture, "no holder")
+
+        val first = sessions.holdPicture()
+        assertTrue(sessions.picture.value.showsPicture, "one holder")
+
+        sessions.setAppVisible(false)
+        assertFalse(sessions.picture.value.showsPicture, "the app hidden")
+        sessions.setAppVisible(true)
+
+        val second = sessions.holdPicture()
+        first.release()
+        assertTrue(sessions.picture.value.showsPicture, "the second holder")
+
+        second.release()
+        assertFalse(sessions.picture.value.showsPicture, "both released")
+    }
+
+    @Test
+    fun `releasing a hold twice lowers the count once`() {
+        val sessions = PlaybackSessions()
+        val first = sessions.holdPicture()
+        sessions.holdPicture()
+
+        first.release()
+        first.release()
+
+        assertEquals(1, sessions.picture.value.holds)
+        assertTrue(sessions.picture.value.showsPicture)
     }
 
     @Test
@@ -174,21 +207,64 @@ class StopsPlaybackTest {
     }
 }
 
-class PauseDecisionTest {
+class LeaveDecisionTest {
+    private val nothing =
+        LeaveDecision(hidesApp = false, stopsWaitingStart = false, pausesPlayer = false)
+
     @Test
-    fun `pausing acts on the screen's own waiting start and player item only`() {
+    fun `leaving pauses only a playback that hasn't played`() {
         assertEquals(
-            PauseDecision(waitingStart = true, player = false),
-            pauseDecision(waitingId = "first", currentItemId = null, playbackId = "first"),
+            LeaveDecision(hidesApp = true, stopsWaitingStart = false, pausesPlayer = true),
+            leaveDecision(false, waitingId = null, currentItemId = "first", playedId = null),
         )
         assertEquals(
-            PauseDecision(waitingStart = false, player = true),
-            pauseDecision(waitingId = null, currentItemId = "first", playbackId = "first"),
+            LeaveDecision(hidesApp = true, stopsWaitingStart = false, pausesPlayer = false),
+            leaveDecision(false, waitingId = null, currentItemId = "first", playedId = "first"),
         )
-        // Another screen's video, waiting or playing, is left alone.
+    }
+
+    @Test
+    fun `a configuration change does nothing, whether the playback played or not`() {
+        assertEquals(nothing, leaveDecision(true, waitingId = null, "first", playedId = null))
+        assertEquals(nothing, leaveDecision(true, waitingId = null, "first", playedId = "first"))
+        assertEquals(nothing, leaveDecision(true, waitingId = "second", null, playedId = null))
+    }
+
+    @Test
+    fun `a start that waits for the connection won't play`() {
         assertEquals(
-            PauseDecision(waitingStart = false, player = false),
-            pauseDecision(waitingId = "second", currentItemId = "second", playbackId = "first"),
+            LeaveDecision(hidesApp = true, stopsWaitingStart = true, pausesPlayer = false),
+            leaveDecision(false, waitingId = "second", currentItemId = null, playedId = "first"),
         )
+    }
+
+    @Test
+    fun `a new video that hasn't played pauses, though an older one did`() {
+        assertTrue(
+            leaveDecision(false, waitingId = null, "second", playedId = "first").pausesPlayer,
+        )
+    }
+
+    @Test
+    fun `with no item and no waiting start, leaving only hides the app`() {
+        assertEquals(
+            LeaveDecision(hidesApp = true, stopsWaitingStart = false, pausesPlayer = false),
+            leaveDecision(false, waitingId = null, currentItemId = null, playedId = null),
+        )
+    }
+}
+
+class ReleaseDropsTest {
+    @Test
+    fun `releasing keeps the player's item and the waiting start for the mini player`() {
+        assertFalse(releaseDrops(waitingId = null, currentItemId = "first", playbackId = "first"))
+        assertFalse(releaseDrops(waitingId = "first", currentItemId = null, playbackId = "first"))
+    }
+
+    @Test
+    fun `releasing drops a playback that has no item and doesn't wait`() {
+        assertTrue(releaseDrops(waitingId = null, currentItemId = null, playbackId = "first"))
+        // Another video took the player's place.
+        assertTrue(releaseDrops(waitingId = "third", currentItemId = "second", "first"))
     }
 }

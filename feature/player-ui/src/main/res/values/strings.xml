@@ -1,7 +1,7 @@
 <resources>
     <!-- The video screen. See openspec/specs/player/spec.md. -->
-    <!-- The close button's content description. #44 makes it minimize the player instead. -->
-    <string name="player_close">Close video</string>
+    <!-- The top button's content description. It minimizes the video into the mini player. -->
+    <string name="player_minimize">Minimize player</string>
     <string name="player_loading">Loading video</string>
 
     <!-- The line under the title. -->
@@ -60,4 +60,19 @@
     <string name="player_video_failed_icon">Couldn\'t play the video</string>
     <string name="player_failed_not_decodable">This video can\'t play on this phone.</string>
     <string name="player_failed_stopped">This video stopped playing.</string>
+    <!-- The fullscreen button's content description, as the "Player" frames name it. -->
+    <string name="player_fullscreen">Full screen</string>
+
+    <!-- The fullscreen player. -->
+    <string name="player_exit_fullscreen">Exit full screen</string>
+    <!-- What a tap on the fullscreen picture does, for screen readers and Switch Access. -->
+    <string name="player_show_controls">Show controls</string>
+    <string name="player_hide_controls">Hide controls</string>
+
+    <!-- The mini player. -->
+    <!-- In the title's place until the video's details have loaded, or when they failed. -->
+    <string name="mini_player_now_playing">Now playing</string>
+    <!-- What a tap on the mini player's title does, for screen readers. -->
+    <string name="mini_player_open">Open video</string>
+    <string name="mini_player_close">Close player</string>
 </resources>
