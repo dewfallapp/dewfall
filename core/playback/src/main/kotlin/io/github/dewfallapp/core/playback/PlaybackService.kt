@@ -178,7 +178,8 @@ class PlaybackService : MediaSessionService() {
             when (val resolution = resolver.resolve(playbackId, videoId, tag.metered)) {
                 is Resolution.Resolved -> {
                     if (player.currentMediaItem?.mediaId == playbackId) {
-                        refresh(PlayerTarget(), resolution.item, point)
+                        val playsNow = resumesAfterRefresh(point.wasPlaying, player.playWhenReady)
+                        refresh(PlayerTarget(), resolution.item, point.copy(wasPlaying = playsNow))
                     }
                 }
                 is Resolution.Failed -> report(resolution.failure, errorCode)

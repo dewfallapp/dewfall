@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -168,7 +170,9 @@ private fun FullscreenBox(
                     false
                 }
                 .focusRequester(focus)
-                .focusable(),
+                // A screen reader moves among the controls itself, and the controls always show
+                // then, so the root takes no focus and gives TalkBack no unnamed stop.
+                .focusable(enabled = !controls.screenReader),
     ) {
         val tapLabel =
             stringResource(
@@ -325,7 +329,11 @@ private fun Overlays(
                 )
                 .padding(DewfallSpacing.md),
     ) {
-        if (page != null) TitleBox(page)
+        // The row is measured before the weighted title, so a long title at a large font never
+        // pushes the controls off: the title scrolls in the space left, and is never cut off.
+        if (page != null) {
+            TitleBox(page, Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()))
+        }
         Spacer(Modifier.weight(1f))
         ControlRow(content = content, onPlay = onPlay, onExit = onExit)
     }
@@ -333,10 +341,11 @@ private fun Overlays(
 
 /** The title and the channel name on `surface` at the duration-scrim opacity. */
 @Composable
-private fun TitleBox(page: VideoPage) {
+private fun TitleBox(page: VideoPage, modifier: Modifier = Modifier) {
     Column(
         modifier =
-            Modifier.widthIn(max = TitleMaxWidth)
+            modifier
+                .widthIn(max = TitleMaxWidth)
                 .clip(MaterialTheme.shapes.large)
                 .background(overlayColor())
                 .padding(horizontal = DewfallSpacing.md, vertical = DewfallSpacing.sm),

@@ -36,6 +36,14 @@ internal fun <Item> refresh(target: RefreshTarget<Item>, item: Item, point: Refr
 }
 
 /**
+ * Whether a refresh plays once its new links are in place: only if the player [wasPlaying] when the
+ * link was refused and [playsNow], its play still on when the links arrive. A pause while the links
+ * load, such as leaving the app before the video played, stays.
+ */
+internal fun resumesAfterRefresh(wasPlaying: Boolean, playsNow: Boolean): Boolean =
+    wasPlaying && playsNow
+
+/**
  * Allows one refresh of expired links for each failure. The limit resets once the refreshed item is
  * ready to play again, so a second expiry hours later refreshes too, while two refusals in a row
  * stop.
