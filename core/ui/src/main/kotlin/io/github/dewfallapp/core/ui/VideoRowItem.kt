@@ -1,4 +1,4 @@
-package io.github.dewfallapp.feature.youtubesearch.ui
+package io.github.dewfallapp.core.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,21 +11,26 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
+import io.github.dewfallapp.core.model.PublishedTime
+import io.github.dewfallapp.core.model.VideoKind
+import io.github.dewfallapp.core.model.lengthLabel
 import io.github.dewfallapp.core.model.timeAgo
-import io.github.dewfallapp.feature.youtubesearch.logic.VideoRow
-import io.github.dewfallapp.feature.youtubesearch.logic.lengthLabel
 import java.time.ZoneId
+import kotlin.time.Duration
 import kotlin.time.Instant
 
 /**
@@ -41,14 +46,20 @@ private const val THUMBNAIL_ASPECT_RATIO = 16f / 9f
 private const val DURATION_SCRIM_ALPHA = 0.8f
 
 /**
- * One video, after the design system's VideoRow: a plain thumbnail box with the length, then the
- * title, which wraps as far as it needs, and the channel and time ago. The box stays plain
- * until #176 decides how to load thumbnails. Its text reads as one node to a screen reader.
+ * One video, after the design system's VideoRow: a plain thumbnail box with the length of a video
+ * of [duration] and [kind], then the [title], which wraps as far as it needs, and the
+ * [channelName], if there is one, and how long ago it was [published], counted from [now] in
+ * [zone]. A list of one channel's videos leaves the name out. The box stays plain until #176
+ * decides how to load thumbnails. Its text reads as one node to a screen reader.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun VideoRowItem(
-    row: VideoRow,
+fun VideoRowItem(
+    title: String,
+    channelName: String?,
+    duration: Duration?,
+    kind: VideoKind,
+    published: PublishedTime?,
     now: Instant,
     zone: ZoneId,
     modifier: Modifier = Modifier,
@@ -60,19 +71,19 @@ internal fun VideoRowItem(
             ) {},
         horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.md),
     ) {
-        Thumbnail(row)
+        Thumbnail(duration, kind)
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = row.title, style = MaterialTheme.typography.titleMedium)
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm)) {
-                MetaText(row.channelName)
-                timeAgo(row.published, now, zone)?.let { MetaText(timeAgoText(it)) }
+                if (channelName != null) MetaText(channelName)
+                timeAgo(published, now, zone)?.let { MetaText(timeAgoText(it)) }
             }
         }
     }
 }
 
 @Composable
-private fun Thumbnail(row: VideoRow, modifier: Modifier = Modifier) {
+private fun Thumbnail(duration: Duration?, kind: VideoKind, modifier: Modifier = Modifier) {
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
     Box(
         modifier =
@@ -83,7 +94,7 @@ private fun Thumbnail(row: VideoRow, modifier: Modifier = Modifier) {
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest),
         contentAlignment = Alignment.BottomEnd,
     ) {
-        val label = lengthLabel(row.duration, row.kind)
+        val label = lengthLabel(duration, kind)
         if (label != null) {
             val spoken = spokenLength(label)
             Text(
@@ -111,4 +122,20 @@ private fun MetaText(text: String, modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier,
     )
+}
+
+/**
+ * The part of a group's rounded shape that row [index] of [count] draws, so a list of rows on one
+ * background reads as one group with rounded outer corners, as the design's groups do.
+ */
+@Composable
+fun rowGroupShape(index: Int, count: Int): Shape {
+    val large = MaterialTheme.shapes.large
+    val none = CornerSize(0)
+    return when {
+        count == 1 -> large
+        index == 0 -> large.copy(bottomStart = none, bottomEnd = none)
+        index == count - 1 -> large.copy(topStart = none, topEnd = none)
+        else -> RectangleShape
+    }
 }

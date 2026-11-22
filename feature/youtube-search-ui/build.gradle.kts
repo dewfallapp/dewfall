@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:model"))
+    implementation(project(":core:ui"))
     implementation(project(":core:mvi"))
 
     implementation(libs.androidx.lifecycle.runtime.compose)

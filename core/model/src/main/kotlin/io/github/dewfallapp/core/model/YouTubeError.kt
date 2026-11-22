@@ -48,5 +48,26 @@ enum class YouTubeError {
      * may have been removed or never existed, or it may be a premiere or live stream that hasn't
      * started.
      */
-    UNAVAILABLE,
+    UNAVAILABLE;
+
+    /**
+     * Whether a screen that failed with this error offers "Try again". It is a rule for screens,
+     * kept here because this is the one plain Kotlin/JVM module that every screen's reducer sees.
+     * NETWORK, BLOCKED and BROKEN mean that nothing from YouTube can load right now, so they do.
+     * Only an app update fixes BROKEN, but a user can't tell it from the other two. The other
+     * errors are about this one video or channel, and asking again gives the same answer.
+     */
+    val offersTryAgain: Boolean
+        get() =
+            when (this) {
+                NETWORK,
+                BLOCKED,
+                BROKEN -> true
+                PRIVATE,
+                AGE_RESTRICTED,
+                COUNTRY_BLOCKED,
+                MEMBERS_OR_PAID,
+                CHANNEL_CLOSED,
+                UNAVAILABLE -> false
+            }
 }

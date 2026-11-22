@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -24,8 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -37,6 +34,8 @@ import io.github.dewfallapp.core.designsystem.component.Banner
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
+import io.github.dewfallapp.core.ui.VideoRowItem
+import io.github.dewfallapp.core.ui.rowGroupShape
 import io.github.dewfallapp.feature.youtubesearch.logic.ResultsArea
 import io.github.dewfallapp.feature.youtubesearch.logic.VideoRow
 import io.github.dewfallapp.feature.youtubesearch.logic.YouTubeSearchIntent
@@ -204,28 +203,19 @@ private fun VideoList(
         }
         itemsIndexed(items = rows, key = { _, row -> row.id.value }) { index, row ->
             VideoRowItem(
-                row = row,
+                title = row.title,
+                channelName = row.channelName,
+                duration = row.duration,
+                kind = row.kind,
+                published = row.published,
                 now = now,
                 zone = zone,
                 modifier =
-                    Modifier.clip(containerShape(index, rows.size))
+                    Modifier.clip(rowGroupShape(index, rows.size))
                         .background(MaterialTheme.colorScheme.surfaceContainerLow)
                         .clickable(onClickLabel = openLabel) { onOpenVideo(row.id) }
                         .padding(horizontal = DewfallSpacing.sm),
             )
         }
-    }
-}
-
-/** The part of the container's rounded shape that row [index] of [count] draws. */
-@Composable
-private fun containerShape(index: Int, count: Int): Shape {
-    val large = MaterialTheme.shapes.large
-    val none = CornerSize(0)
-    return when {
-        count == 1 -> large
-        index == 0 -> large.copy(bottomStart = none, bottomEnd = none)
-        index == count - 1 -> large.copy(topStart = none, topEnd = none)
-        else -> RectangleShape
     }
 }

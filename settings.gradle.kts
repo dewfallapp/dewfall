@@ -44,6 +44,8 @@ include(":core:mvi")
 
 include(":core:playback")
 
+include(":core:ui")
+
 include(":core:youtube")
 
 include(":feature:player-logic")
