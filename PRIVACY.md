@@ -5,6 +5,7 @@ Dewfall collects no data about you.
 - There are no accounts. You never sign in.
 - There are no analytics, no ads and no tracking.
 - Everything the app stores stays on your device. This includes your channels, watch history, downloaded videos and saved subtitles.
+- Android's backups to Google Drive and transfers to a new phone leave all of it out.
 - If you export your data, it goes to a file you pick. The app sends it nowhere else.
 
 ## The media notification

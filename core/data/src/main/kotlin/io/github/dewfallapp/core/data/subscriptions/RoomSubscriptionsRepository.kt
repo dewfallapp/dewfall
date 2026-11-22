@@ -1,0 +1,49 @@
+package io.github.dewfallapp.core.data.subscriptions
+
+import io.github.dewfallapp.core.data.database.ApplicationScope
+import io.github.dewfallapp.core.data.database.toEntity
+import io.github.dewfallapp.core.data.database.toSubscribedChannel
+import io.github.dewfallapp.core.database.ChannelDao
+import io.github.dewfallapp.core.model.Channel
+import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.SubscribedChannel
+import javax.inject.Inject
+import kotlin.time.Clock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+
+/** Keeps the subscriptions in the database's `channels` table. */
+internal class RoomSubscriptionsRepository
+@Inject
+constructor(
+    private val channelDao: ChannelDao,
+    private val clock: Clock,
+    @ApplicationScope private val externalScope: CoroutineScope,
+) : SubscriptionsRepository {
+    override fun subscribedChannels(): Flow<List<SubscribedChannel>> =
+        channelDao
+            .subscribedChannels()
+            .map { rows -> rows.map { it.toSubscribedChannel() } }
+            .distinctUntilChanged()
+
+    override fun subscribedChannel(channelId: ChannelId): Flow<SubscribedChannel?> =
+        channelDao
+            .subscribedChannel(channelId.value)
+            .map { it?.toSubscribedChannel() }
+            .distinctUntilChanged()
+
+    override fun isSubscribed(channelId: ChannelId): Flow<Boolean> =
+        subscribedChannel(channelId).map { it != null }.distinctUntilChanged()
+
+    override suspend fun subscribe(channel: Channel) {
+        val row = channel.toEntity(subscribedAt = clock.now())
+        externalScope.async { channelDao.subscribe(row) }.await()
+    }
+
+    override suspend fun unsubscribe(channelId: ChannelId) {
+        externalScope.async { channelDao.unsubscribe(channelId.value) }.await()
+    }
+}

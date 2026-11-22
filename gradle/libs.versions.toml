@@ -128,13 +128,17 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
-# Only tests use it: :core:designsystem's, to check the theme against the design tokens (see
+# It ships through :core:database, which stores thumbnail and avatar lists as JSON with it (see
+# docs/architecture.md#database-tables). It runs only on the phone and sends nothing anywhere. Tests
+# use it too: :core:designsystem's, to check the theme against the design tokens (see
 # docs/architecture.md#the-theme), and :app's, to check that navigation keys survive being saved.
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 # The emulator tests in :app's androidTest: Compose's test rules, AndroidX Test's runner and JUnit 4
-# runner class, and Hilt's test support, which swaps the YouTube layer for fakes. None of them ships.
-# The maintainer approved them on November 21, 2026, for #46. See docs/testing.md#emulator-tests.
+# runner class, and Hilt's test support, which swaps the YouTube layer for fakes. :core:database's
+# androidTest, the DAO tests, uses the runner and the JUnit 4 runner class too. None of them ships.
+# The maintainer approved them on November 21, 2026, for #46. See docs/testing.md#emulator-tests and
+# docs/testing.md#database-tests.
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }

@@ -341,7 +341,7 @@ Add these one at a time, in the order your first users ask for them. Their feedb
 
 ## Reference: testing and CI/CD
 
-Fast tests run on every change. They cover reducers, use cases, repositories with fake data sources, the YouTube layer against saved responses, Room queries, background jobs, and screenshot tests of each screen. Slow tests are emulator tests of the main flows, such as search then play, and download then play offline. Benchmarks for startup and scrolling run on a real phone before each release.
+Fast tests run on every change. They cover reducers, use cases, repositories with fake data sources, the YouTube layer against saved responses, background jobs, and screenshot tests of each screen. Slow tests are emulator tests of the main flows, such as search then play, and download then play offline, and the Room queries, which run against each Android version's own SQLite, as docs/testing.md#database-tests explains. Benchmarks for startup and scrolling run on a real phone before each release.
 
 The project uses four GitHub Actions workflows, plus Renovate's weekly update pull requests, which workflow 1 tests:
 

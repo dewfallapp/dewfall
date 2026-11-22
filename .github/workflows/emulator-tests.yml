@@ -1,19 +1,23 @@
 # Runs the emulator tests, on the oldest and the newest Android that the app supports, after every
-# merge to main. docs/testing.md#emulator-tests describes them. They replace the YouTube layer with
-# fakes, so this workflow sends nothing to YouTube.
+# merge to main: :app's tests, and :core:database's DAO tests, which run against each Android's own
+# SQLite. docs/testing.md#emulator-tests and docs/testing.md#database-tests describe them. :app's
+# tests replace the YouTube layer with fakes, so this workflow sends nothing to YouTube.
 name: Emulator tests
 
 on:
   push:
     branches: [main]
-  # A pull request that changes the emulator tests, this workflow, the dependencies, the Gradle
-  # wrapper or the build settings runs them before merging, so Renovate's updates of Compose,
-  # Media3, Hilt, AGP, androidx.test and Gradle do too. Branch protection doesn't require this
-  # workflow, so its path filter can't leave a required check pending.
+  # A pull request that changes the emulator tests, the database or the models its rows use, this
+  # workflow, the dependencies, the Gradle wrapper or the build settings runs them before merging,
+  # so Renovate's updates of Compose, Media3, Hilt, Room, AGP, androidx.test and Gradle do too.
+  # Branch protection doesn't require this workflow, so its path filter can't leave a required
+  # check pending.
   pull_request:
     branches: [main]
     paths:
       - "app/src/androidTest/**"
+      - "core/database/**"
+      - "core/model/**"
       - ".github/workflows/emulator-tests.yml"
       - "gradle/libs.versions.toml"
       - "gradle/wrapper/**"
@@ -174,8 +178,11 @@ jobs:
           fi
 
       # sdkDownload=false makes a missing SDK package fail the build instead of downloading.
+      # --continue runs the database tests even when :app's fail, so one run reports both.
       - name: Run the emulator tests
-        run: ./gradlew -Pandroid.builder.sdkDownload=false :app:connectedDebugAndroidTest
+        run: |
+          ./gradlew -Pandroid.builder.sdkDownload=false --continue \
+            :app:connectedDebugAndroidTest :core:database:connectedDebugAndroidTest
 
       # The check above makes FullscreenClearOfBarsTest's precondition hold, and this one makes
       # sure the test ran on Android 10 rather than skipped, since a skip passes the run.
@@ -213,6 +220,8 @@ jobs:
           path: |
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/
+            core/database/build/reports/androidTests/
+            core/database/build/outputs/androidTest-results/
             logcat.txt
             emulator.log
           retention-days: 7
