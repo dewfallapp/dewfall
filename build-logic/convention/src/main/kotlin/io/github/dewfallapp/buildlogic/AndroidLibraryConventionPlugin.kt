@@ -1,6 +1,7 @@
 package io.github.dewfallapp.buildlogic
 
 import com.android.build.api.dsl.LibraryExtension
+import com.android.build.gradle.tasks.ProcessLibraryManifest
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -36,6 +37,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
 
             configureJavaToolchain()
             configureAndroidUnitTests()
+            keepManifestMergeOutOfBuildCache(ProcessLibraryManifest::class.java)
         }
     }
 }
