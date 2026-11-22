@@ -540,7 +540,7 @@ Record the sets again:
 
 ## Emulator tests
 
-Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there is one, SearchThenPlayTest (#46).
+Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are two: SearchThenPlayTest (#46) and TryAgainOfflineTest (#212).
 
 ### What search then play checks
 
@@ -562,12 +562,26 @@ It doesn't check:
 - the YouTube layer, which the [saved responses](#saved-youtube-responses), the [daily check](#the-daily-youtube-check) and the [debug screen](#checking-the-youtube-layer-on-a-phone) cover;
 - background play, the notification and media buttons, which [Checking the player by hand](#checking-the-player-by-hand) covers.
 
+### What try again offline checks
+
+TryAgainOfflineTest checks #212's bug: a video opened with the network off stayed stopped after "Try again" when the player still held an earlier video's error. It goes like this:
+
+1. With FakeNetwork's media off, it opens the first test video. The details and the links load, the files fail, and the test waits until PlaybackConnection reports a NETWORK failure.
+2. The back gesture minimizes it, so it stays the player's item, with its error, in the mini player.
+3. With FakeNetwork all off, it opens the second test video. Its details and its links fail. The test waits until the player is ended with no item, which it is only once the session's prepare has run on the empty player that the failed links left, and then checks that the failure is still NETWORK. Before the fix, that prepare cleared the earlier video's error, and PlaybackService then cleared the second video's failure too.
+4. With FakeNetwork back on, it taps the one "Try again", and waits until the second video plays past 3 seconds.
+
+Both tests end with `stopPlayback`, which stops the player and PlaybackService and waits until the connection has lost its player. The tests share one process, and Hilt makes new objects for each test, but a service that still runs keeps the objects of the test that started it, so the next test's connection would wait for a session that never comes. On November 22, 2026, TryAgainOfflineTest timed out that way whenever it ran after SearchThenPlayTest.
+
+It finds "Try again" and the network message by their text from `:feature:player-ui`'s resources. The details and the playback both failed with NETWORK, so the screen shows one "Try again", and the test's tap would fail if there were two. The waits for the player take up to 60 seconds, because ExoPlayer retries a failed load a few times, with growing delays, before it reports the error.
+
 ### The fakes
 
-- **FakeYouTubeModule** replaces YouTubeModule in every emulator test, through Hilt's `@TestInstallIn` ([Hilt testing guide](https://developer.android.com/training/dependency-injection/hilt-testing)). It binds the YouTube layer's five interfaces to fakes that know one made-up video, TestVideo, and the player's two media clients to AssetMedia. Nothing builds NewPipeYouTube, so the tests send nothing to YouTube or googlevideo.com, locally or in CI. The repositories in `:core:data` are the real ones, as in [Fast tests](#fast-tests)' "repositories with fake data sources".
+- **FakeYouTubeModule** replaces YouTubeModule in every emulator test, through Hilt's `@TestInstallIn` ([Hilt testing guide](https://developer.android.com/training/dependency-injection/hilt-testing)). It binds the YouTube layer's five interfaces to fakes that know TestVideo's two made-up videos, and the player's two media clients to AssetMedia. Nothing builds NewPipeYouTube, so the tests send nothing to YouTube or googlevideo.com, locally or in CI. The repositories in `:core:data` are the real ones, as in [Fast tests](#fast-tests)' "repositories with fake data sources".
 - **YouTubeModule is public** for this, because `@TestInstallIn` names the module that it replaces, and Kotlin's `internal` would hide it from `:app`'s tests. `:app`'s androidTest depends on `:core:youtube` for the five interfaces only. NewPipeExtractor stays off its compile classpath.
-- **AssetMedia** answers the player's requests from the test APK's assets, as a real server does: 200 with the whole file for a request with no Range header, 206 with the bytes that a Range header asks for, and 416 for a range that starts at or past the end. Its OkHttp interceptor answers every request itself and never calls `chain.proceed`, and any other link fails with an IOException. TestVideo's links use the reserved .invalid domain, which never resolves ([RFC 2606](https://www.rfc-editor.org/rfc/rfc2606#section-2)). It counts the requests for each file, so the test checks that the player read both.
-- **TestVideo** has a video-only and an audio-only format, as most YouTube videos do, so the player merges two files, as it does for real videos.
+- **AssetMedia** answers the player's requests from the test APK's assets, as a real server does: 200 with the whole file for a request with no Range header, 206 with the bytes that a Range header asks for, and 416 for a range that starts at or past the end. Its OkHttp interceptor answers every request itself and never calls `chain.proceed`, and any other link fails with an IOException. TestVideo's links use the reserved .invalid domain, which never resolves ([RFC 2606](https://www.rfc-editor.org/rfc/rfc2606#section-2)). It counts the requests for each file, so SearchThenPlayTest checks that the player read both.
+- **FakeNetwork** stands in for the network, one for each test. While its YouTube switch is off, the fake details and stream links answer NETWORK. While its media switch is off, AssetMedia fails every request with an IOException, which Media3 reports as a network error, errorCode 2001. Both start on, so SearchThenPlayTest runs as with a network.
+- **TestVideo** has a video-only and an audio-only format, as most YouTube videos do, so the player merges two files, as it does for real videos. Its second video, with its own ID and title, uses the same files, so a test can open one video while the other is in the mini player. The same search finds both.
 - **HiltTestRunner** starts HiltTestApplication in place of DewfallApplication, which has no code of its own. Once DewfallApplication gets some, such as WorkManager's Configuration.Provider, the tests need Hilt's `@CustomTestApplication` instead, or they run without that code. `:app`'s build names it as the test runner, and passes it `disableAnalytics=true`. AndroidX Test's runner has a usage tracker that sends to Google Analytics only when a test turns it on, and that argument keeps it off.
 
 ### The media files

@@ -13,9 +13,9 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * The one video that the fake YouTube layer knows. Everything here is made up for the emulator
- * tests, and its files are the test pattern and the tone in the test APK's assets. See
- * docs/testing.md#emulator-tests.
+ * The video that the fake YouTube layer knows, and a second one with the same files, [otherId].
+ * Everything here is made up for the emulator tests, and the files are the test pattern and the
+ * tone in the test APK's assets. See docs/testing.md#emulator-tests.
  */
 object TestVideo {
     /** What the test types into the search field. Any other search finds nothing. */
@@ -45,6 +45,13 @@ object TestVideo {
     /** Made up, in the shape that VideoId and ChannelId check. */
     val id = VideoId("dewfallTest")
     val channelId = ChannelId("UCdewfallTestChannel0000")
+
+    /**
+     * The second video, which the same search finds, so a test can open it while the first one is
+     * the player's item, in the mini player.
+     */
+    const val OTHER_TITLE = "Dewfall second test pattern"
+    val otherId = VideoId("dewfallTes2")
 
     private val length = 30.seconds
 
@@ -76,13 +83,20 @@ object TestVideo {
                 isLive = false,
             )
 
+    val otherSummary: VideoSummary
+        get() = summary.copy(id = otherId, title = OTHER_TITLE)
+
+    val otherDetails: VideoDetails
+        get() = details.copy(id = otherId, title = OTHER_TITLE)
+
     /**
      * A video-only and an audio-only format, as most YouTube videos have, so the player merges two
-     * files, as it does for real videos. [videoLength] and [audioLength] are the files' sizes.
+     * files, as it does for real videos. [videoLength] and [audioLength] are the files' sizes, and
+     * [videoId] is [id] or [otherId].
      */
-    fun streamLinks(videoLength: Long, audioLength: Long): StreamLinks =
+    fun streamLinks(videoId: VideoId, videoLength: Long, audioLength: Long): StreamLinks =
         StreamLinks(
-            videoId = id,
+            videoId = videoId,
             audioFormats =
                 listOf(
                     AudioFormat(

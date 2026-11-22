@@ -32,10 +32,11 @@ private val singleRange = Regex("""bytes=(\d+)-(\d*)""")
  * of the input when it starts at the end.
  *
  * Its [calls] never reach the network: the interceptor answers every request itself and never calls
- * `chain.proceed`, and any other link fails with an IOException. It counts the requests for each
- * file, so a test can check that the player read both.
+ * `chain.proceed`, and any other link fails with an IOException, as does every request while
+ * [network] has the media off. It counts the requests for each file that it answers, so a test can
+ * check that the player read both.
  */
-class AssetMedia(private val assets: AssetManager) {
+class AssetMedia(private val assets: AssetManager, private val network: FakeNetwork) {
     private val files =
         mapOf(
             TestVideo.VIDEO_URL to TestVideo.VIDEO_ASSET,
@@ -66,6 +67,7 @@ class AssetMedia(private val assets: AssetManager) {
 
     private fun answer(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        if (!network.mediaReachable) throw IOException("The fake network is off")
         val url = request.url.toString()
         val bytes = bytes(url)
         requests.getOrPut(url) { AtomicInteger() }.incrementAndGet()
