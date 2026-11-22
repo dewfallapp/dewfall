@@ -2,6 +2,7 @@
 
 package io.github.dewfallapp.feature.player.ui
 
+import android.os.Build
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.systemBarsIgnoringVisibility
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.widthIn
@@ -46,11 +48,16 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.platform.LocalAccessibilityManager
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.media3.common.util.UnstableApi
 import io.github.dewfallapp.core.designsystem.theme.DewfallOpacity
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
@@ -318,9 +325,6 @@ private fun Shutter(color: Color) {
  * while they are hidden, and the display cutout, so no bar ever covers them, and showing the bars
  * moves nothing.
  */
-// systemBarsIgnoringVisibility is still marked experimental in the Compose version the app uses.
-// Kotlin's OptIn, because androidx.annotation.OptIn in this file is for Media3's UnstableApi.
-@kotlin.OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Overlays(
     content: VideoAreaContent,
@@ -332,9 +336,7 @@ private fun Overlays(
     Column(
         modifier =
             Modifier.fillMaxSize()
-                .windowInsetsPadding(
-                    WindowInsets.systemBarsIgnoringVisibility.union(WindowInsets.displayCutout),
-                )
+                .windowInsetsPadding(barsIgnoringVisibilityAndCutout())
                 .padding(DewfallSpacing.md),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -356,6 +358,56 @@ private fun Overlays(
             )
         }
         ControlRow(content = content, onPlay = onPlay, onExit = onExit)
+    }
+}
+
+/**
+ * The system bars' insets, whether the bars show or not, joined with the display cutout's.
+ *
+ * On Android 10, Compose's systemBarsIgnoringVisibility can lose a side navigation bar once the
+ * bars have shown or hidden, and the bar then covers the exit button. #218's checks measured it
+ * there: Compose gave the bar 0 px while the root view's insets, from androidx.core's
+ * getInsetsIgnoringVisibility, gave 132. Android 10 has no insets animations, so androidx.core
+ * plays its own and Compose takes its values from their frames. androidx.core 1.18.0 reads a
+ * navigation bar's insets, ignoring visibility, from the stable insets there, and builds those
+ * frames anew with a Builder, which the measurement suggests leaves the stable insets out.
+ * docs/architecture.md links the sources. The root view's insets keep the bar, so before Android 11
+ * this joins them in.
+ */
+// systemBarsIgnoringVisibility is still marked experimental in the Compose version the app uses.
+// Kotlin's OptIn, because androidx.annotation.OptIn in this file is for Media3's UnstableApi.
+@kotlin.OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun barsIgnoringVisibilityAndCutout(): WindowInsets {
+    val insets = WindowInsets.systemBarsIgnoringVisibility.union(WindowInsets.displayCutout)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) return insets
+    val view = LocalView.current
+    val density = LocalDensity.current
+    val direction = LocalLayoutDirection.current
+    // The overlays leave the composition while hidden, so this reads the root view's insets each
+    // time they show. While they show, Compose's insets change after the root view's do, and
+    // reading them here recomposes this, so it reads them again after each change, such as a turn
+    // of the phone or a new navigation mode.
+    val shown = WindowInsets.systemBars
+    val root =
+        remember(
+            view,
+            shown.getLeft(density, direction),
+            shown.getTop(density),
+            shown.getRight(density, direction),
+            shown.getBottom(density),
+            insets.getLeft(density, direction),
+            insets.getTop(density),
+            insets.getRight(density, direction),
+            insets.getBottom(density),
+        ) {
+            ViewCompat.getRootWindowInsets(view)
+                ?.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.systemBars())
+        }
+    return if (root == null) {
+        insets
+    } else {
+        insets.union(WindowInsets(root.left, root.top, root.right, root.bottom))
     }
 }
 
