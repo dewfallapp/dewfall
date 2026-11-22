@@ -44,6 +44,10 @@ include(":core:mvi")
 
 include(":core:playback")
 
+// The reader of Google Takeout files, for the subscriptions import. See
+// docs/architecture.md#the-takeout-import.
+include(":core:takeout")
+
 include(":core:ui")
 
 include(":core:youtube")
