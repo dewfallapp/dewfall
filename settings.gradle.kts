@@ -68,6 +68,10 @@ include(":feature:player-logic")
 
 include(":feature:player-ui")
 
+include(":feature:takeout-import-logic")
+
+include(":feature:takeout-import-ui")
+
 include(":feature:youtube-debug-logic")
 
 include(":feature:youtube-debug-ui")
