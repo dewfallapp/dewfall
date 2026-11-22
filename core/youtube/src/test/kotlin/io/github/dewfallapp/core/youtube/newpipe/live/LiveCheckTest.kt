@@ -660,6 +660,108 @@ class LiveCheckTest {
 }
 
 /**
+ * Tests the fields that say how YouTube answered the visionOS player request of a call that got
+ * UNAVAILABLE when its set expects something else. The answers are made up, and every other call is
+ * answered from its saved set.
+ */
+class LiveCheckPlayabilityTest {
+    private val lines = mutableListOf<String>()
+
+    @Test
+    fun `an UNAVAILABLE call names its visionOS answer's status and whether it gave a reason`() =
+        runTest {
+            val unplayable = PlayabilityAnswer(PlayabilityStatus.UNPLAYABLE, ReasonGiven.GIVEN)
+            val results =
+                liveCheck(
+                        replacing(SavedSet.VIDEO_BIG_BUCK_BUNNY) {
+                            failure(YouTubeError.UNAVAILABLE, playability = unplayable)
+                        },
+                    )
+                    .run()
+
+            assertEquals(
+                "VIDEO_BIG_BUCK_BUNNY FAILED UNEXPECTED_RESULT expected=SUCCESS got=UNAVAILABLE " +
+                    "playability=UNPLAYABLE reasonGiven=GIVEN",
+                results.single { it.kind == SavedSet.VIDEO_BIG_BUCK_BUNNY }.line,
+            )
+            assertTrue(
+                "ERROR Dewfall.LiveCheck Live check result kind=VIDEO_BIG_BUCK_BUNNY " +
+                    "verdict=FAILED reason=UNEXPECTED_RESULT expected=SUCCESS got=UNAVAILABLE " +
+                    "playability=UNPLAYABLE reasonGiven=GIVEN" in lines,
+            )
+        }
+
+    @Test
+    fun `the fields follow the answer, for any set that doesn't expect UNAVAILABLE`() = runTest {
+        val changed: Map<Enum<*>, CallOutcome> =
+            mapOf(
+                SavedSet.VIDEO_BIG_BUCK_BUNNY to
+                    unavailable(PlayabilityStatus.LOGIN_REQUIRED, ReasonGiven.MISSING),
+                SavedSet.VIDEO_PRIVATE to unavailable(PlayabilityStatus.OTHER, ReasonGiven.GIVEN),
+                LiveKind.STREAM_LINKS_BIG_BUCK_BUNNY to
+                    unavailable(PlayabilityStatus.NOT_JSON, null),
+                // A broken call, and one with no visionOS answer, get no field.
+                SavedSet.SUBTITLES_ME_AT_THE_ZOO to
+                    failure(
+                        YouTubeError.BROKEN,
+                        playability = PlayabilityAnswer(PlayabilityStatus.OK, ReasonGiven.MISSING),
+                    ),
+                SavedSet.SUBTITLES_TEARS_OF_STEEL to failure(YouTubeError.UNAVAILABLE),
+            )
+
+        val results =
+            liveCheck(replayCaller { call, outcome -> changed[call.kind] ?: outcome }).run()
+
+        assertEquals(
+            listOf(
+                "VIDEO_BIG_BUCK_BUNNY FAILED UNEXPECTED_RESULT expected=SUCCESS got=UNAVAILABLE " +
+                    "playability=LOGIN_REQUIRED reasonGiven=MISSING",
+                "VIDEO_PRIVATE FAILED UNEXPECTED_RESULT expected=PRIVATE got=UNAVAILABLE " +
+                    "playability=OTHER reasonGiven=GIVEN",
+                "SUBTITLES_ME_AT_THE_ZOO FAILED UNEXPECTED_RESULT expected=SUCCESS got=BROKEN",
+                "SUBTITLES_TEARS_OF_STEEL FAILED UNEXPECTED_RESULT expected=SUCCESS " +
+                    "got=UNAVAILABLE",
+                "STREAM_LINKS_BIG_BUCK_BUNNY FAILED UNEXPECTED_RESULT expected=SUCCESS " +
+                    "got=UNAVAILABLE playability=NOT_JSON",
+            ),
+            results.filter { it.verdict != Verdict.PASSED }.map { it.line },
+        )
+        assertTrue(results.all { RESULT_LINE.matches(it.line) })
+    }
+
+    @Test
+    fun `a set that expects UNAVAILABLE passes with its answer, and names no status`() = runTest {
+        val results =
+            liveCheck(
+                    replacing(SavedSet.VIDEO_NEVER_EXISTED) {
+                        failure(
+                            YouTubeError.UNAVAILABLE,
+                            it.requests,
+                            PlayabilityAnswer(PlayabilityStatus.ERROR, ReasonGiven.GIVEN),
+                        )
+                    },
+                )
+                .run()
+
+        assertEquals(
+            "VIDEO_NEVER_EXISTED PASSED",
+            results.single { it.kind == SavedSet.VIDEO_NEVER_EXISTED }.line,
+        )
+    }
+
+    private fun liveCheck(caller: LayerCaller): LiveCheck {
+        val playable = FirstBytesFetcher { link, _ ->
+            FirstBytesResult(FirstBytesAnswer.PLAYABLE, clientOf(link), 206)
+        }
+        return LiveCheck(caller, playable, EARLY_CLOCK, recordingLogger(lines))
+    }
+}
+
+/** A call that got UNAVAILABLE, whose visionOS player answer said [status] and [reasonGiven]. */
+private fun unavailable(status: PlayabilityStatus, reasonGiven: ReasonGiven?) =
+    failure(YouTubeError.UNAVAILABLE, playability = PlayabilityAnswer(status, reasonGiven))
+
+/**
  * Answers each call from its saved set, through the layer, as the replay tests do, then passes the
  * outcome through [change]. The outcome counts the lines at WARN or above that the layer logged
  * with WarningCounter, as the live run does.
@@ -722,9 +824,15 @@ private fun VideoSubtitles.changeLines(
 private fun success(value: Any?, requests: List<Endpoint>) =
     CallOutcome(YouTubeResult.Success(value), requests, warnings = 0, Duration.ZERO)
 
-/** A call that failed with [error] after [requests], which the layer logged once. */
-private fun failure(error: YouTubeError, requests: List<Endpoint> = STOPPED_VIDEO_REQUESTS) =
-    CallOutcome(YouTubeResult.Failure(error), requests, warnings = 1, Duration.ZERO)
+/**
+ * A call that failed with [error] after [requests], which the layer logged once, and whose visionOS
+ * player answer said [playability], if one came.
+ */
+private fun failure(
+    error: YouTubeError,
+    requests: List<Endpoint> = STOPPED_VIDEO_REQUESTS,
+    playability: PlayabilityAnswer? = null,
+) = CallOutcome(YouTubeResult.Failure(error), requests, warnings = 1, Duration.ZERO, playability)
 
 /** A clock that always says [now]. */
 private fun fixedClock(now: Instant): Clock =

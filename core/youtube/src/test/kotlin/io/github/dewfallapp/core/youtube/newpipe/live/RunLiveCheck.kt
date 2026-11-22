@@ -103,8 +103,14 @@ internal fun exitCodeOf(results: List<KindResult>): Int =
  */
 private fun checkYouTube(logger: Logger, options: LiveCheckOptions): List<KindResult> {
     val requests = EndpointRecorder()
+    val playability = PlayabilityRecorder()
     val layerLines = WarningCounter(ConsoleLogWriter)
-    val youTubeClient = youTubeHttpClient().newBuilder().addInterceptor(requests).build()
+    val youTubeClient =
+        youTubeHttpClient()
+            .newBuilder()
+            .addInterceptor(requests)
+            .addInterceptor(playability)
+            .build()
     val bytesClient = firstBytesClient()
     try {
         val layerLogger = Logger(layerLines, LogLevel.INFO)
@@ -112,7 +118,8 @@ private fun checkYouTube(logger: Logger, options: LiveCheckOptions): List<KindRe
             NewPipeCalls(NewPipeDownloader(youTubeClient), layerLogger, Dispatchers.IO) {
                 SAVED_SET_LOCALE
             }
-        val caller = YouTubeCaller(YouTubeLayer(calls, layerLogger), requests, layerLines)
+        val caller =
+            YouTubeCaller(YouTubeLayer(calls, layerLogger), requests, playability, layerLines)
         val check =
             LiveCheck(
                 caller,
@@ -147,19 +154,28 @@ internal fun crashLogger(logger: Logger): Thread.UncaughtExceptionHandler {
 }
 
 /**
- * Makes each call through [layer], and takes the requests it sent from [requests] and the number of
- * warnings the layer logged from [warnings].
+ * Makes each call through [layer], and takes the requests it sent from [requests], what YouTube's
+ * visionOS player answer said from [playability], and the number of warnings the layer logged from
+ * [warnings].
  */
 internal class YouTubeCaller(
     private val layer: YouTubeLayer,
     private val requests: EndpointRecorder,
+    private val playability: PlayabilityRecorder,
     private val warnings: WarningCounter,
 ) : LayerCaller {
     override suspend fun call(liveCall: LiveCall): CallOutcome {
         requests.take()
+        playability.take()
         val warningsBefore = warnings.count
         val (result, duration) = measureTimedValue { liveCall.call(layer) }
-        return CallOutcome(result, requests.take(), warnings.count - warningsBefore, duration)
+        return CallOutcome(
+            result,
+            requests.take(),
+            warnings.count - warningsBefore,
+            duration,
+            playability.take(),
+        )
     }
 }
 
