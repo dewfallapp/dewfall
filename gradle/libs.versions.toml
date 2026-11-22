@@ -11,7 +11,7 @@ detekt = "2.0.0-alpha.6"
 # compose-rules adds Compose rules to detekt. Each release is built for one detekt version, so a
 # detekt update waits for a compose-rules release built for the new version. Matching versions:
 # https://github.com/mrmans0n/compose-rules/blob/v0.6.7/docs/detekt.md#supported-versions-matrix
-# renovate.json updates both in one pull request, after the maintainer approves it.
+# renovate.json updates both in one pull request, after an agent or the maintainer approves it.
 composeRules = "0.6.7"
 animalsniffer = "2.0.1"
 # Android API signatures for Animal Sniffer. build-logic adds the artifact, whose name holds

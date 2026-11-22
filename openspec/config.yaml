@@ -47,7 +47,10 @@ context: |
     may use the SIL Open Font License 1.1 and must ship with their copyright
     notice and license text. Build tools that never ship, such as Gradle plugins
     and the tools they download, may use any open source license or be in the
-    public domain. Ask before adding a dependency.
+    public domain. Agents decide new and updated dependencies themselves and
+    record each one in the pull request, as AGENTS.md says. Ask the maintainer
+    only about a license outside AGENTS.md's list, a NewPipeExtractor
+    breakage-fix update, or pointing NewPipeExtractor at a commit.
 
   Specs:
   - One change per feature. Keep changes small enough for one small pull request.

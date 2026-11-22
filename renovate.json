@@ -35,7 +35,7 @@
       "prBodyNotes": ["A new Kotlin minor version may also need a newer Hilt. See docs/architecture.md#build-settings."]
     },
     {
-      "description": "Each compose-rules release is built for one detekt version, so both change in one pull request, and only after the maintainer approves it on the Dependency Dashboard.",
+      "description": "Each compose-rules release is built for one detekt version, so both change in one pull request, and only after an agent or the maintainer approves it on the Dependency Dashboard.",
       "matchPackageNames": ["/^dev\\.detekt:/", "io.nlopez.compose.rules:detekt"],
       "groupName": "detekt and compose-rules",
       "dependencyDashboardApproval": true,

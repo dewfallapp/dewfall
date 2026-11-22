@@ -4,9 +4,13 @@ Closes #
 
 ## What changed and why
 
+## Decisions
+
+<!-- Record each decision this pull request makes. For a new or updated dependency, give the release's date with the days since, and, for one that ships, where it sends data: nowhere, or only where the user chose, as AGENTS.md asks. Its license goes under New dependencies. Write "None" if there are none. -->
+
 ## New dependencies
 
-<!-- List each new dependency with its license, and say whether it ships in the app or is a build tool. Write "None" if there are none. -->
+<!-- List each new dependency, transitive ones included, with its license, and say whether it ships in the app or is a build tool. Write "None" if there are none. -->
 
 ## Checklist
 
