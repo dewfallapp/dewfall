@@ -1,0 +1,33 @@
+# Tasks
+
+## 1. The watched rule
+
+- [ ] 1.1 Add `countsAsWatched(position, length)` to `:core:model` with KDoc that names docs/vision.md's 90 percent, and WatchedRuleTest for below, at and above 90 percent, an unknown length and a zero length; verify `./gradlew :core:model:test` passes
+
+## 2. Saving and resuming in the player
+
+- [ ] 2.1 Add the pure functions `progressStep`, `progressSave`, `startPositionFor` and the listener's save decision to `:core:playback`, with JVM tests for every branch and every "never" in design.md, the crossing cases and a save at the length after the end included; verify `./gradlew :core:playback:testDebugUnitTest` passes
+- [ ] 2.2 Add WatchProgress (singleton, own scope on the injected main dispatcher, writes in call order through one Channel consumer, each write a child in a supervisorScope with a handler that logs constant text, the at-the-end flag, the below-90 flag cleared when the video becomes watched, keeps the current item's video ID only while it is current) with a JVM test against a fake WatchStateRepository for the held-write order, a failed write (IllegalStateException) followed by one that lands, the end then a stop saving zero, a hand mark clearing the flag, a live item, an item with no video, a failed replacement leaving the player empty and ended, the video ID gone after the stop's save, the mini player's close (stop then clear) saving and not marking, and a link refresh keeping the video ID and flags, a read queued behind a held write; verify the module's tests pass
+- [ ] 2.3 Wire WatchProgress into PlaybackService (current item changes, the listener's triggers, before `onSetMediaItems` replaces the item, `onDestroy`, the 30-second tick while playing) and resume in `onSetMediaItems` for `C.TIME_UNSET`, reading through WatchProgress's queue, starting from the start when the read fails (Flow `catch`); verify `./gradlew :app:assembleDebug` builds and the hand checks in 4.3 pass
+- [ ] 2.4 Update docs/architecture.md's player section (what saves, when, the resume, the crossing rule, why only the end saves zero), and the lines that name #50: "until #50 stores positions" in the video screen's and the mini player's paragraphs the paused-minimized "When Android stops the player" bullet, the intent filter paragraph's playback resumption line, and the database section's "#50 decides whether a time from a video's details should win" line, `:app`'s module row (androidTest now also sees `:core:database`), the DatabaseModule bullet ("`:app`'s emulator tests don't touch it"), and the process's memory list ("none after the mini player closes it"), as design.md's "Docs that named #50" says; verify it names only classes and functions that exist
+
+## 3. The video screen's chip
+
+- [ ] 3.1 Add `saved: SavedWatch` (Unknown, Unreadable, Known) to PlayerState, the intents WatchStateChanged, WatchStateUnreadable, MarkWatched and MarkUnwatched, and the pure function `waitingPositionMs`, which picks the latest stored or the screen's position as `Long?` milliseconds (null: let the service read the database; PlayerRoute maps it to `C.TIME_UNSET`), with PlayerReducerTest cases and its own test; verify `./gradlew :feature:player-logic:test` passes
+- [ ] 3.2 Make PlayerViewModel collect the video's watch state and call the repository for the taps, with a handler for a failed write and `catch` on the collection, and make PlayerRoute wait at and play from the stored position after process death, with PlayerViewModelTest cases against a fake repository; verify `./gradlew :feature:player-ui:testDebugUnitTest` passes
+- [ ] 3.3 Add the toggle chip to PlayerScreen as the design system's Chip README says (FilterChip, `shape-medium`, `done_all` unselected and `check` selected, both copied from Material Symbols Rounded into `:core:designsystem`, in a FlowRow) with the strings "Mark as watched" and "Watched", previews of both states, record the screenshot references with `./gradlew :feature:player-ui:updateDebugScreenshotTestDefaultTestSuite` and look at every changed image; verify `./gradlew :feature:player-ui:testDebugScreenshotTestDefaultTestSuite` passes and `python3 scripts/scan_screenshot_tests.py` passes
+- [ ] 3.4 Update docs/architecture.md's video screen section for the chip and its `:core:designsystem` row for the two glyphs, and AGENTS.md's "every icon has a content description" line to allow no description for a glyph next to its own word, as the maintainer chose; verify both match the code
+
+## 4. Checks
+
+- [ ] 4.1 Add `androidTestImplementation(project(":core:database"))` with a comment to app/build.gradle.kts, and a `@TestInstallIn` module in `:app`'s androidTest that replaces all of DatabaseModule with an in-memory database built as `buildDewfallDatabase` builds its own, plus the DAOs, Clock and `@ApplicationScope` scope, so each emulator test starts with no watch state; add ResumeTest (play past 10 seconds, pause through PlaybackConnection, minimize, close the mini player, wait until the repository holds at least 10 seconds, reopen, and check the first ready position is at least 10 seconds); update docs/testing.md#emulator-tests; verify `ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest` passes on one emulator
+
+- [ ] 4.2 Update docs/testing.md's player hand checks: "Minimized in the background" and "The mini player" now resume instead of starting from the start, and add the new checks below; verify every step names a real control and command
+- [ ] 4.3 Run the player hand checks on emulators with Android 10, 12L and the newest Android: pause and reopen; close the mini player and reopen; remove the app from the recent apps and reopen; play to the end and reopen; the chip in both directions; the chip changing on its own past 90 percent; a video that resumed, played on and paused in the background until Android stopped the player waits at the later position; unmarking past 90 percent stays; a seek from 50 to 95 percent marks the video; listening on in the background, then ending the process with `adb shell am kill`, comes back at the later position; a live stream saves nothing; the media session holds no video ID, and logcat holds no video ID or position. Write the results in the PR
+- [ ] 4.4 Run `./gradlew spotlessApply`, then the pull request workflow's all-checks command and `python3 scripts/scan_screenshot_tests.py`, and verify they pass
+
+## Workflow follow-up
+
+- Run the reviewer subagent until it says Ready, and the pre-push gate until it ends with PASS.
+- Archive the change with /opsx:archive as the PR's last commit, and run the reviewer again on that commit.
+- Open the PR, which closes #50, wait for CI and CodeRabbit, then send it to the merge desk.
