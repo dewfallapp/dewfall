@@ -1,0 +1,39 @@
+<resources>
+    <!-- The channel page. See openspec/specs/subscriptions/spec.md. -->
+    <string name="channel_page_back">Back</string>
+    <string name="channel_page_loading">Loading channel</string>
+    <string name="channel_page_more">More</string>
+    <string name="channel_page_less">Less</string>
+
+    <!-- The subscription card. Until overnight downloads exist (Phase 7, #60), it speaks of the inbox. -->
+    <string name="channel_page_subscribed">Subscribed</string>
+    <string name="channel_page_subscribed_body">New videos show in your inbox.</string>
+    <string name="channel_page_unsubscribe">Unsubscribe</string>
+    <string name="channel_page_not_subscribed">Not subscribed</string>
+    <string name="channel_page_not_subscribed_body">Subscribe to see this channel\'s new videos in your inbox.</string>
+    <string name="channel_page_subscribe">Subscribe</string>
+    <!-- What a screen reader says for the card's state, and again when it changes. %1$s is the channel's name. -->
+    <string name="channel_page_subscribed_to">Subscribed to %1$s</string>
+    <string name="channel_page_not_subscribed_to">Not subscribed to %1$s</string>
+    <!-- The card's status line as a screen reader says it: %1$s is the state above, such as "Subscribed to Kettle and Crumb", and %2$s the line under it. -->
+    <string name="channel_page_status_spoken">%1$s. %2$s</string>
+
+    <!-- The dialog that Unsubscribe opens. %1$s is the channel's name. -->
+    <string name="channel_page_unsubscribe_title">Unsubscribe from %1$s?</string>
+    <string name="channel_page_unsubscribe_body">Its new videos stop showing in your inbox.</string>
+    <string name="channel_page_cancel">Cancel</string>
+
+    <string name="channel_page_uploads_heading">Latest uploads</string>
+    <!-- What a screen reader says that tapping an upload does. -->
+    <string name="channel_page_open_video">Open video</string>
+    <string name="channel_page_no_videos_title">No videos to show</string>
+    <string name="channel_page_no_videos_body">This channel has no videos to show.</string>
+
+    <!-- The content description of the error glyph in a failure's banner. -->
+    <string name="channel_page_failed_icon">Couldn\'t load the channel</string>
+    <string name="channel_page_failed_network">YouTube can\'t be reached. Check your connection.</string>
+    <string name="channel_page_failed_youtube">YouTube isn\'t loading right now.</string>
+    <string name="channel_page_failed_closed">This channel was closed.</string>
+    <string name="channel_page_failed_unavailable">This channel isn\'t available.</string>
+    <string name="channel_page_try_again">Try again</string>
+</resources>

@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import dagger.hilt.android.lifecycle.withCreationCallback
+import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.feature.player.logic.DetailsArea
@@ -36,8 +37,9 @@ import kotlin.time.Clock
 
 /**
  * The video screen for [videoId], with its ViewModel and its playback. [onMinimize] runs when the
- * user taps the minimize button. The app's navigation gives each screen its own
- * ViewModelStoreOwner, so each video gets its own ViewModel. See openspec/specs/player/spec.md.
+ * user taps the minimize button, and [onOpenChannel] when the user taps the channel. The app's
+ * navigation gives each screen its own ViewModelStoreOwner, so each video gets its own ViewModel.
+ * See openspec/specs/player/spec.md.
  *
  * Playback starts the first time the screen opens, unless the player already plays this video,
  * which goes on as it is. Leaving the app keeps it playing in the background, unless it hasn't
@@ -47,9 +49,15 @@ import kotlin.time.Clock
  * back gesture leaves it.
  */
 @Composable
-fun PlayerRoute(videoId: VideoId, onMinimize: () -> Unit, modifier: Modifier = Modifier) {
+fun PlayerRoute(
+    videoId: VideoId,
+    onMinimize: () -> Unit,
+    onOpenChannel: (ChannelId) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     PlayerContent(
         onMinimize = onMinimize,
+        onOpenChannel = onOpenChannel,
         viewModel = playerViewModel(videoId),
         modifier = modifier,
     )
@@ -59,6 +67,7 @@ fun PlayerRoute(videoId: VideoId, onMinimize: () -> Unit, modifier: Modifier = M
 @Composable
 internal fun PlayerContent(
     onMinimize: () -> Unit,
+    onOpenChannel: (ChannelId) -> Unit,
     viewModel: PlayerViewModel,
     modifier: Modifier = Modifier,
 ) {
@@ -134,6 +143,7 @@ internal fun PlayerContent(
             onPlay = { start(retryPositionMs()) },
             onIntent = viewModel::dispatch,
             onMinimize = onMinimize,
+            onOpenChannel = onOpenChannel,
             modifier = modifier,
         )
     }
@@ -189,6 +199,7 @@ private fun VideoScreen(
     onPlay: () -> Unit,
     onIntent: (PlayerIntent) -> Unit,
     onMinimize: () -> Unit,
+    onOpenChannel: (ChannelId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // The clock is read once per answer, so the screen itself stays a function of what it gets.
@@ -202,6 +213,7 @@ private fun VideoScreen(
             if (intent == PlayerIntent.TryAgain) onTryAgainDetails() else onIntent(intent)
         },
         onMinimize = onMinimize,
+        onOpenChannel = onOpenChannel,
         modifier = modifier,
         videoArea = { areaModifier ->
             VideoArea(

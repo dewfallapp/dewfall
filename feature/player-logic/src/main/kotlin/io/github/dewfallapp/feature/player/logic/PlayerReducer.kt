@@ -55,12 +55,13 @@ private fun PlayerState.finished(intent: PlayerIntent.DetailsFinished): PlayerSt
 }
 
 /**
- * The page for [details]. It leaves out the thumbnails and avatars, which no image shows yet, the
- * channel's ID, which nothing uses yet, and the length, which the player shows in #42.
+ * The page for [details]. It leaves out the thumbnails and avatars, which no image shows yet, and
+ * the length, which the player shows in #42.
  */
 private fun pageOf(details: VideoDetails): VideoPage =
     VideoPage(
         title = details.title,
+        channelId = details.channelId,
         channelName = details.channelName,
         channelInitial = initialOf(details.channelName),
         description = details.description,

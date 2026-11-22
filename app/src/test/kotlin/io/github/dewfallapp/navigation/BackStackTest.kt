@@ -1,6 +1,7 @@
 package io.github.dewfallapp.navigation
 
 import androidx.navigation3.runtime.NavKey
+import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.VideoId
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,6 +11,10 @@ import kotlin.test.assertTrue
 
 private val VIDEO = VideoId("aqz-KE-bpKQ")
 private val OTHER = VideoId("dQw4w9WgXcQ")
+
+// Made-up IDs in a channel ID's form, never real channels'.
+private val CHANNEL = ChannelId("UC" + "0".repeat(21) + "1")
+private val OTHER_CHANNEL = ChannelId("UC" + "0".repeat(21) + "2")
 
 class BackStackTest {
     private val backStack = mutableListOf<NavKey>(SearchKey)
@@ -73,5 +78,93 @@ class BackStackTest {
 
         backStack.goBack()
         assertTrue(backStack.showsMiniPlayer())
+    }
+
+    private fun openedVideo(): PlayerKey {
+        backStack.openVideo(VIDEO)
+        return backStack.last() as PlayerKey
+    }
+
+    @Test
+    fun `opening the channel from a video screen replaces it with the channel page`() {
+        val player = openedVideo()
+
+        backStack.openChannel(player, CHANNEL)
+
+        assertEquals(2, backStack.size)
+        assertEquals(SearchKey, backStack.first())
+        assertEquals(CHANNEL, assertIs<ChannelKey>(backStack.last()).channelId)
+        assertTrue(backStack.showsMiniPlayer())
+    }
+
+    @Test
+    fun `a second tap on the channel opens nothing more`() {
+        val player = openedVideo()
+
+        backStack.openChannel(player, CHANNEL)
+        backStack.openChannel(player, CHANNEL)
+
+        assertEquals(2, backStack.size)
+    }
+
+    @Test
+    fun `a video opened from a channel page returns to that page for the same channel`() {
+        backStack.openChannel(openedVideo(), CHANNEL)
+        val page = backStack.last()
+        backStack.openVideo(OTHER)
+
+        backStack.openChannel(backStack.last() as PlayerKey, CHANNEL)
+
+        assertEquals(listOf(SearchKey, page), backStack)
+    }
+
+    @Test
+    fun `a video opened from a channel page opens another channel's page on top`() {
+        backStack.openChannel(openedVideo(), CHANNEL)
+        backStack.openVideo(OTHER)
+
+        backStack.openChannel(backStack.last() as PlayerKey, OTHER_CHANNEL)
+
+        assertEquals(3, backStack.size)
+        assertEquals(OTHER_CHANNEL, assertIs<ChannelKey>(backStack.last()).channelId)
+    }
+
+    @Test
+    fun `opening a channel from a video screen that isn't on top opens nothing`() {
+        val player = openedVideo()
+        backStack.goBack()
+
+        backStack.openChannel(player, CHANNEL)
+
+        assertEquals(listOf<NavKey>(SearchKey), backStack)
+    }
+
+    @Test
+    fun `an upload or the mini player on a channel page opens its video on top`() {
+        backStack.openChannel(openedVideo(), CHANNEL)
+
+        backStack.openVideo(OTHER)
+
+        assertEquals(3, backStack.size)
+        assertEquals(OTHER, assertIs<PlayerKey>(backStack.last()).videoId)
+        assertFalse(backStack.showsMiniPlayer())
+    }
+
+    @Test
+    fun `the channel page's back arrow twice goes back once`() {
+        backStack.openChannel(openedVideo(), CHANNEL)
+        val page = backStack.last()
+
+        backStack.close(page)
+        backStack.close(page)
+
+        assertEquals(listOf<NavKey>(SearchKey), backStack)
+    }
+
+    @Test
+    fun `closing search does nothing`() {
+        backStack.close(SearchKey)
+
+        assertEquals(listOf<NavKey>(SearchKey), backStack)
     }
 }
