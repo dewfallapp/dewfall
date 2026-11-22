@@ -10,6 +10,7 @@ import io.github.dewfallapp.core.model.SubtitleTrack
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoFormat
 import io.github.dewfallapp.core.model.VideoId
+import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.YouTubeResult
 import io.github.dewfallapp.core.youtube.newpipe.saved.BIG_BUCK_BUNNY_ID
 import io.github.dewfallapp.core.youtube.newpipe.saved.Endpoint
@@ -19,6 +20,7 @@ import io.github.dewfallapp.core.youtube.newpipe.saved.TrackLines
 import io.github.dewfallapp.core.youtube.newpipe.saved.VideoSubtitles
 import java.io.IOException
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Duration
@@ -121,6 +123,32 @@ class LiveCheckOutputTest {
                 CallOutcome(youTube.call(liveCall.call), youTube.sentRequests, 0, Duration.ZERO)
             }
         }
+    }
+
+    @Test
+    fun `no log line or result holds any text of a visionOS player answer`() = runTest {
+        val answer =
+            playabilityAnswerOf(
+                """{"playabilityStatus":{"status":"$SENTINEL","reason":"$SENTINEL $LINK",""" +
+                    """"messages":["$SENTINEL"]}}""",
+            )
+        val unavailable = LayerCaller { liveCall ->
+            CallOutcome(
+                YouTubeResult.Failure(YouTubeError.UNAVAILABLE),
+                liveCall.set.requests,
+                warnings = 1,
+                Duration.ZERO,
+                answer,
+            )
+        }
+
+        val results =
+            LiveCheck(unavailable, FirstBytes(firstBytesClient(), logger), CLOCK, logger).run()
+
+        assertEquals(PlayabilityAnswer(PlayabilityStatus.OTHER, ReasonGiven.GIVEN), answer)
+        assertTrue(results.any { "playability=OTHER reasonGiven=GIVEN" in it.line })
+        val text = lines + results.map { it.line }
+        assertTrue(text.none { SENTINEL in it || ADDRESS in it || "://" in it })
     }
 
     @Test

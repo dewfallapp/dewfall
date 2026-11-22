@@ -36,6 +36,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
  */
 class RunLiveCheckTest {
     private val requests = EndpointRecorder()
+    private val playability = PlayabilityRecorder()
     private val warnings = WarningCounter { _, _, _ -> }
 
     @Test
@@ -138,20 +139,55 @@ class RunLiveCheckTest {
     }
 
     /**
-     * A YouTubeCaller over the layer, built as the live run builds it, with the shared [requests]
-     * and [warnings], but answered from [set] instead of YouTube.
+     * The statuses in today's saved visionOS answers. Recording a set again can change one while
+     * the set still passes, such as the video that never existed going from ERROR to UNPLAYABLE,
+     * and then this test's expectation changes with it.
+     */
+    @Test
+    fun `the caller keeps what each call's visionOS player answer said`() = runTest {
+        val outcomes =
+            listOf(
+                    SavedSet.VIDEO_BIG_BUCK_BUNNY,
+                    SavedSet.VIDEO_PRIVATE,
+                    SavedSet.VIDEO_NEVER_EXISTED,
+                    SavedSet.UPLOADS_JAWED,
+                )
+                .map { callerAnswering(it).call(liveCallOf(it)).playability }
+
+        assertEquals(
+            listOf(
+                PlayabilityAnswer(PlayabilityStatus.OK, ReasonGiven.MISSING),
+                PlayabilityAnswer(PlayabilityStatus.LOGIN_REQUIRED, ReasonGiven.GIVEN),
+                PlayabilityAnswer(PlayabilityStatus.ERROR, ReasonGiven.GIVEN),
+                // Uploads send no player request.
+                null,
+            ),
+            outcomes,
+        )
+    }
+
+    /**
+     * A YouTubeCaller over the layer, built as the live run builds it, with the shared [requests],
+     * [playability] and [warnings], but answered from [set] instead of YouTube.
      */
     private fun TestScope.callerAnswering(set: SavedSet): YouTubeCaller {
         resetNewPipeExtractorState()
         val replay = ReplayingClient(set, loadSavedSet(set))
-        // The recorder goes first, because the replaying interceptor answers without going on.
-        val client = replay.client.newBuilder().apply { interceptors().add(0, requests) }.build()
+        // The recorders go first, because the replaying interceptor answers without going on.
+        val client =
+            replay.client
+                .newBuilder()
+                .apply {
+                    interceptors().add(0, requests)
+                    interceptors().add(1, playability)
+                }
+                .build()
         val logger = Logger(warnings, LogLevel.DEBUG)
         val calls =
             NewPipeCalls(NewPipeDownloader(client), logger, StandardTestDispatcher(testScheduler)) {
                 SAVED_SET_LOCALE
             }
-        return YouTubeCaller(YouTubeLayer(calls, logger), requests, warnings)
+        return YouTubeCaller(YouTubeLayer(calls, logger), requests, playability, warnings)
     }
 }
 

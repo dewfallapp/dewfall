@@ -163,13 +163,15 @@ internal val LIVE_KINDS: List<Enum<*>> = LIVE_CALLS.map { it.kind } + LiveKind.N
 
 /**
  * How one call through the layer went: its [result], the [requests] it sent, how many lines at WARN
- * or above the layer logged during it, and how long it took.
+ * or above the layer logged during it, how long it took, and what [PlayabilityRecorder] kept of its
+ * visionOS player answer, if it sent that request.
  */
 internal class CallOutcome(
     val result: YouTubeResult<*>,
     val requests: List<Endpoint>,
     val warnings: Int,
     val duration: Duration,
+    val playability: PlayabilityAnswer? = null,
 ) {
     /** The category that the call failed with, or null when it succeeded. */
     val error: YouTubeError?
@@ -247,6 +249,7 @@ internal class LiveCheck(
                     FailedBecause.UNEXPECTED_RESULT,
                     ResultField.state("expected", expected ?: CallSucceeded.SUCCESS),
                     ResultField.state("got", error ?: CallSucceeded.SUCCESS),
+                    *playabilityFields(error, outcome.playability),
                 )
             }
             withoutSwJsData(outcome.requests) != withoutSwJsData(liveCall.set.requests) -> {
@@ -262,6 +265,28 @@ internal class LiveCheck(
             else -> contentResult(kind, outcome.result)
         }
     }
+
+    /**
+     * The fields that say how YouTube answered the visionOS player request of a call that got
+     * UNAVAILABLE when its set expects something else: the answer's status, and whether it gave a
+     * reason. None for any other error, or when no such answer came. NewPipeExtractor reports a
+     * playability status that it doesn't recognise as UNAVAILABLE, and the layer's log names only
+     * the exception's class, so these say which answer it was. See
+     * docs/breakage.md#unexpected_result.
+     */
+    private fun playabilityFields(
+        error: YouTubeError?,
+        answer: PlayabilityAnswer?,
+    ): Array<ResultField> =
+        if (error != YouTubeError.UNAVAILABLE || answer == null) {
+            emptyArray()
+        } else {
+            listOfNotNull(
+                    ResultField.state("playability", answer.status),
+                    answer.reasonGiven?.let { ResultField.state("reasonGiven", it) },
+                )
+                .toTypedArray()
+        }
 
     /** Makes [liveCall], and once more after [retryDelay] if it fails with NETWORK unexpectedly. */
     private suspend fun callWithRetry(liveCall: LiveCall): CallOutcome {
