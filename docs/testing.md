@@ -540,7 +540,7 @@ Record the sets again:
 
 ## Emulator tests
 
-Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are two: SearchThenPlayTest (#46) and TryAgainOfflineTest (#212).
+Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are three: SearchThenPlayTest (#46), TryAgainOfflineTest (#212) and VideoScreenBackgroundTest (#211).
 
 ### What search then play checks
 
@@ -571,9 +571,15 @@ TryAgainOfflineTest checks #212's bug: a video opened with the network off staye
 3. With FakeNetwork all off, it opens the second test video. Its details and its links fail. The test waits until the player is ended with no item, which it is only once the session's prepare has run on the empty player that the failed links left, and then checks that the failure is still NETWORK. Before the fix, that prepare cleared the earlier video's error, and PlaybackService then cleared the second video's failure too.
 4. With FakeNetwork back on, it taps the one "Try again", and waits until the second video plays past 3 seconds.
 
-Both tests end with `stopPlayback`, which stops the player and PlaybackService and waits until the connection has lost its player. The tests share one process, and Hilt makes new objects for each test, but a service that still runs keeps the objects of the test that started it, so the next test's connection would wait for a session that never comes. On November 22, 2026, TryAgainOfflineTest timed out that way whenever it ran after SearchThenPlayTest.
+Every test ends with `stopPlayback`, which stops the player and PlaybackService and waits until the connection has lost its player. The tests share one process, and Hilt makes new objects for each test, but a service that still runs keeps the objects of the test that started it, so the next test's connection would wait for a session that never comes. On November 22, 2026, TryAgainOfflineTest timed out that way whenever it ran after SearchThenPlayTest.
 
 It finds "Try again" and the network message by their text from `:feature:player-ui`'s resources. The details and the playback both failed with NETWORK, so the screen shows one "Try again", and the test's tap would fail if there were two. The waits for the player take up to 60 seconds, because ExoPlayer retries a failed load a few times, with growing delays, before it reports the error.
+
+### What the video screen background test checks
+
+VideoScreenBackgroundTest opens the test video the same way as SearchThenPlayTest, waits until it plays its 320x180 picture, and pauses it, so the screen stays still with the last frame. It then captures the window with Compose's `captureToImage`, which copies the window's own pixels, and checks two regions: the minimize button and the description. Neither may have a pixel that isn't fully opaque, and the button must have more than one color, so its icon shows.
+
+It guards #211. Android 10 and 11 make a SurfaceView's hole by clearing everything inside the canvas's clip, and before ClippedContentFrame clipped it, that cleared the video screen's background and minimize button. Those pixels were transparent in the window, and black on the screen. Android 12 and later clear only the SurfaceView's rectangle, so the test matters on the workflow's Android 10 emulator. Screenshot tests can't catch it, because they draw no SurfaceView hole.
 
 ### The fakes
 

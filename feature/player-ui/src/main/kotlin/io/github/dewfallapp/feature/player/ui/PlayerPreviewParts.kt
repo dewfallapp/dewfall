@@ -84,7 +84,7 @@ internal class PreviewPlayer(
 
     override fun getState(): State = fixedState
 
-    /** ContentFrame hands the player its surface. The made-up player shows nothing on it. */
+    /** ClippedContentFrame hands the player its surface. The made-up player shows nothing on it. */
     override fun handleSetVideoOutput(videoOutput: Any): ListenableFuture<*> =
         Futures.immediateVoidFuture()
 

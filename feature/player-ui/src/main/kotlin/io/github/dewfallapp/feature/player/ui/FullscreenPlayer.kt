@@ -52,7 +52,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.compose.ContentFrame
 import io.github.dewfallapp.core.designsystem.theme.DewfallOpacity
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
@@ -292,7 +291,7 @@ private fun FullscreenPicture(
             // A failure's Banner is laid out with the overlays, so the title never covers it.
             content is VideoAreaContent.Failed -> Unit
             player != null -> {
-                ContentFrame(
+                ClippedContentFrame(
                     player = player,
                     modifier = Modifier.fillMaxSize(),
                     shutter = { Shutter(shutter) },

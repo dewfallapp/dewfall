@@ -48,7 +48,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.ui.compose.ContentFrame
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickCount
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
@@ -172,10 +171,10 @@ private fun PlayerArea(player: Player, onFullscreen: () -> Unit) {
 }
 
 /**
- * The 16:9 box with the picture, drawn by ContentFrame on a SurfaceView. A picture of another shape
- * fits inside it. Compose's clip doesn't round a SurfaceView, so the corners are drawn over it in
- * the screen's background role. The shutter before the first frame is a color role too, not
- * ContentFrame's black.
+ * The 16:9 box with the picture, drawn by [ClippedContentFrame] on a SurfaceView. A picture of
+ * another shape fits inside it. A rounded Compose clip doesn't round a SurfaceView's picture, so
+ * the corners are drawn over it in the screen's background role. The shutter before the first frame
+ * is a color role too, not ContentFrame's black.
  */
 @Composable
 private fun Picture(player: Player?, playing: Boolean, loading: Boolean) {
@@ -196,7 +195,7 @@ private fun Picture(player: Player?, playing: Boolean, loading: Boolean) {
         if (player == null) {
             Box(Modifier.fillMaxSize().background(shutter))
         } else {
-            ContentFrame(
+            ClippedContentFrame(
                 player = player,
                 modifier = Modifier.fillMaxSize(),
                 shutter = { Box(Modifier.fillMaxSize().background(shutter)) },
