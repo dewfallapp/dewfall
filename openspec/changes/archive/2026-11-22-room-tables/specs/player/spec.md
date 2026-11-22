@@ -19,15 +19,15 @@ The app SHALL never log the video's ID, title, channel name or description. It S
 
 #### Scenario: A saved watch state
 - **WHEN** a video's position is saved or it is marked watched
-- **THEN** the video's ID, position and times are only in the app's database, and the app's log lines hold none of them
+- **THEN** the app's database holds the video's ID, position and times, beside the copies this requirement already allows, and the app's log lines hold none of them
 
 ## ADDED Requirements
 
 ### Requirement: Dewfall remembers where each video was left
-Saving a video's position SHALL keep it on the phone with the time it was saved, for that video's ID, whether or not the video's details or its channel are saved. The latest save SHALL replace the earlier one. The player starts saving positions with resume and mark as watched (#50). A video that never had a position saved and was never marked SHALL have no watch state.
+Saving a video's position SHALL keep it on the phone with the time it was saved, for that video's ID, whether or not the video's details or its channel are saved. The latest save SHALL replace the earlier one. A video that never had a position saved and was never marked SHALL have no watch state.
 
 #### Scenario: Saving a position
-- **WHEN** the position 12 minutes 30 seconds is saved for a video
+- **WHEN** the position 12 minutes 30 seconds is saved for a video that isn't marked watched
 - **THEN** that video's watch state holds 12 minutes 30 seconds and the time of the save, and it isn't marked watched
 
 #### Scenario: A later position

@@ -21,9 +21,9 @@
 
 ## 4. CI and docs
 
-- [ ] 4.1 Make .github/workflows/emulator-tests.yml run `:core:database:connectedDebugAndroidTest` with `:app`'s tests on both API levels, add `core/database/**` and `core/model/**` to its pull request paths and `:core:database`'s report folders to its upload step, and verify the workflow run on the PR passes
+- [x] 4.1 Make .github/workflows/emulator-tests.yml run `:core:database:connectedDebugAndroidTest` with `:app`'s tests on both API levels, add `core/database/**` and `core/model/**` to its pull request paths and `:core:database`'s report folders to its upload step, and verify the workflow run on the PR passes
 - [x] 4.2 Update docs/architecture.md (core modules table and text, build settings, data flow, database tables, error handling), docs/testing.md (fast tests list with the answer from 2.5, emulator tests, the workflow, database migration tests), docs/roadmap.md (the testing section's fast tests) and AGENTS.md (where things are, commands), and verify each doc names only files and commands that exist
-- [ ] 4.3 Run `./gradlew spotlessApply`, then the pull request workflow's all-checks command and `python3 scripts/scan_screenshot_tests.py`, and verify they pass and `git status core/database/schemas` is clean after the build
+- [x] 4.3 Run `./gradlew spotlessApply`, then the pull request workflow's all-checks command and `python3 scripts/scan_screenshot_tests.py`, and verify they pass and `git status core/database/schemas` is clean after the build
 
 ## Workflow follow-up
 

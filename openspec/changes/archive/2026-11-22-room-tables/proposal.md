@@ -50,4 +50,4 @@ On November 22, 2026, in this change's session, the maintainer answered three qu
 2. "When you unsubscribe from a channel, should Dewfall keep what you watched of its videos (resume positions and watched marks)?" Answer: "Keep them (Recommended)". The subscriptions spec's "Unsubscribing removes only the subscription" follows it.
 3. "May the app ship kotlinx-serialization-json 1.11.0, a small JetBrains library for storing thumbnail lists (Apache 2.0, released April 9, 2026, no known vulnerabilities)?" Answer: "Yes, ship it (Recommended)".
 
-Earlier, on November 21, 2026, the maintainer delegated dependency decisions: "if you need dependencies, then don't ask for my approval. Check yourself and do whatever you feel is correct." Question 3 asks anyway, because AGENTS.md on main still says to ask before adding a dependency.
+Earlier, on November 21, 2026, the maintainer delegated dependency decisions: "if you need dependencies, then don't ask for my approval. Check yourself and do whatever you feel is correct." Question 3 asked anyway, because AGENTS.md on main then still said to ask before adding a dependency. PR #227 later wrote the delegation into AGENTS.md.

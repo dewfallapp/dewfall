@@ -1,10 +1,10 @@
-# Spec Delta
+# subscriptions Specification
 
 ## Purpose
 
-Keeps the channels a user subscribes to, and those channels' videos, on the phone, so the inbox, the channels screen and the overnight downloads can read them without asking YouTube again. The Subscribe button comes with the channel page (#47), and the screens that read what is kept come with #49, #115 and #52.
+Keeps the channels a user subscribes to, and those channels' videos, on the phone, so the inbox, the channels screen and the overnight downloads can read them without asking YouTube again.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Subscriptions are kept on the phone
 Subscribing to a channel SHALL keep its ID, name, avatars, description and the time of subscribing on the phone, until the user unsubscribes. They SHALL still be there after the app closes, the phone restarts or the app is updated, until a schema change before the first public release asks for the app's data to be cleared.
@@ -68,6 +68,10 @@ Reading a channel's saved videos SHALL give them newest first by publish time, w
 #### Scenario: A video a later save no longer holds
 - **WHEN** a video was saved with the same publish time as videos that a later save holds
 - **THEN** reading the channel's saved videos gives it after them
+
+#### Scenario: Saves at the same moment, or with a clock set back
+- **WHEN** a later save runs at the same time on the phone's clock as an earlier one, or at an earlier time after the clock was set back, and holds fewer of the videos with the same publish time
+- **THEN** reading the channel's saved videos still gives the later save's videos first
 
 ### Requirement: Saving again updates YouTube's details
 Saving a video that is already saved SHALL take the new title, channel ID, channel name and kind. It SHALL take the new length and thumbnails, unless the new save has none, and then keep the saved ones. It SHALL keep the time Dewfall first saved the video.
