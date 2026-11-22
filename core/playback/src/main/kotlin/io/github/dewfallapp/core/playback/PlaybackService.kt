@@ -252,9 +252,14 @@ class PlaybackService : MediaSessionService() {
             limitLiveVariants(tracks)
         }
 
-        /** A player that plays again, such as after play in the notification, has no failure. */
+        /**
+         * A player that plays again, such as after play in the notification, has no failure. An
+         * empty player keeps it, as [clearsFailure] says.
+         */
         override fun onPlayerErrorChanged(error: PlaybackException?) {
-            if (error == null) sessions.clearFailure()
+            if (clearsFailure(error == null, player.currentMediaItem != null)) {
+                sessions.clearFailure()
+            }
         }
 
         override fun onPlayerError(error: PlaybackException) {

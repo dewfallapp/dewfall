@@ -32,6 +32,16 @@ class PlaybackErrorsTest {
     }
 
     @Test
+    fun `an error that goes clears the failure only while the player has an item`() {
+        // Play after a failure prepares the same item again.
+        assertTrue(clearsFailure(errorGone = true, hasItem = true))
+        // #212: the prepare after failed links clears the earlier item's error on an empty player.
+        assertFalse(clearsFailure(errorGone = true, hasItem = false))
+        assertFalse(clearsFailure(errorGone = false, hasItem = true))
+        assertFalse(clearsFailure(errorGone = false, hasItem = false))
+    }
+
+    @Test
     fun `the cause-chain walk ends on a loop`() {
         val first = IOException()
         val second = IOException(first)

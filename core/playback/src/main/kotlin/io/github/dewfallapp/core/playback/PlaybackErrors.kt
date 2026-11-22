@@ -83,6 +83,16 @@ internal fun httpStatusOf(error: Throwable): Int? =
 internal fun refusedInChain(error: Throwable): Boolean =
     causeChain(error).any { it is MediaRequestRefused }
 
+/**
+ * Whether the player's error going away, [errorGone], clears the session's failure: only while the
+ * player [hasItem], which plays again, such as after play in the notification. ExoPlayer clears an
+ * error only in prepare. A video whose links failed leaves the player empty, and the session's
+ * prepare then clears the error of the item before it, such as a live stream that failed in the
+ * mini player meanwhile. That error isn't the empty player's, so the failure that the links
+ * reported stays, and the screen's one "Try again" retries both, as #212 found.
+ */
+internal fun clearsFailure(errorGone: Boolean, hasItem: Boolean): Boolean = errorGone && hasItem
+
 /** The error that the media session sees in place of the player's own. */
 internal data class CleanedError(val message: String, val errorCode: Int)
 
