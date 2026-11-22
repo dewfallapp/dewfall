@@ -34,3 +34,11 @@ None.
 - Docs: docs/architecture.md (modules, data flow, the import), AGENTS.md (modules and where things are), docs/testing.md (the hand check with a made-up file), and PRIVACY.md (the import reads a file you pick and sends it nowhere).
 - Dependencies: `:core:data` declares androidx.core:core-ktx 1.18.0 (Apache 2.0, released on March 11, 2026, by the Last-Modified date of its POM on Google's Maven, checked on November 23, 2026), which the app already shipped through other AndroidX libraries, for `String.toUri`, which lint asks for. It sends nothing anywhere. The emulator test adds androidx.test.espresso:espresso-intents 3.7.0, which never ships. Zip reading uses the JDK's java.util.zip, which Android also has.
 - Privacy: the file and everything in it are user data. Dewfall keeps only the channel IDs and names, never logs them or the file's name or link, and sends nothing anywhere. Test files are made up, with placeholder IDs.
+
+## The maintainer's answers
+
+On November 23, 2026, in this change's session's question dialog, the maintainer answered three questions:
+
+1. "Plan for #51: a screen to import your YouTube channels from a Google Takeout file you pick (the .zip, or the subscriptions .csv inside). Dewfall reads it once, on the phone only, subscribes to every channel in it, and shows how many it found, how many were new, and how many lines it couldn't read. It opens from the empty inbox's "Import from Google Takeout" button. Videos and avatars come with the next refresh (#52). Approve this plan?" Answer: "Approve (Recommended)". This is the approval that AGENTS.md's "Spec first" asks for.
+2. "When you pick the file, should Dewfall subscribe right away and then show the list of channels it added, or show the list first and subscribe only after you tap a button?" Answer: "Right away (Recommended)".
+3. "The design shows the import button only while you have no channels (empty inbox, empty Channels screen). Once you have one channel, nothing opens the import again until a later task adds a way in. Is that fine for now?" Answer: "Fine for now (Recommended)".
