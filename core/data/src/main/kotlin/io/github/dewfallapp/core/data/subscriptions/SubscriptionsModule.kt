@@ -5,9 +5,14 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 
-/** Binds the repository of the subscribed channels. */
+/** Binds the repository of the subscribed channels, and subscribing with uploads. */
 @Module
 @InstallIn(SingletonComponent::class)
 internal interface SubscriptionsModule {
     @Binds fun bindSubscriptions(repository: RoomSubscriptionsRepository): SubscriptionsRepository
+
+    @Binds
+    fun bindSubscribeWithUploads(
+        subscribe: RepositoriesSubscribeWithUploads,
+    ): SubscribeWithUploads
 }

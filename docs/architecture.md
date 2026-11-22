@@ -157,7 +157,7 @@ The channel page, which opens from the video screen's channel, is the third. Its
 | `:feature:channel-page-logic` | feature/channel-page-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.channelpage.logic | ChannelState, ChannelIntent, the reducer, and its tests | `:core:mvi`, `:core:model`, both as api dependencies |
 | `:feature:channel-page-ui` | feature/channel-page-ui/ | Android library | io.github.dewfallapp.feature.channelpage.ui | ChannelPage, the Compose screen and the subscription card with their previews, the previews' screenshot tests in src/screenshotTest with their reference images, ChannelViewModel and its tests, and string resources | `:feature:channel-page-logic`, `:core:data`, `:core:designsystem`, `:core:model`, `:core:mvi`, `:core:ui` |
 
-The page reads a channel's latest uploads through ChannelUploadsRepository and keeps subscriptions through SubscriptionsRepository. The modules are named channel-page, because #115's Channels screen, the list of subscribed channels, is a feature of its own. See openspec/specs/subscriptions/spec.md.
+The page reads a channel's latest uploads through ChannelUploadsRepository and keeps subscriptions through SubscriptionsRepository. While its card says Subscribed, it saves the uploads it shows: on Subscribe through SubscribeWithUploads, which keeps the subscription and then saves them, and through StoredVideosRepository once for each load that finishes while subscribed, so they reach the inbox with no request of their own. It saves them under the ID YouTube answered for. Its state keeps only rows, so ChannelViewModel keeps the shown uploads in a private field for the save. The modules are named channel-page, because #115's Channels screen, the list of subscribed channels, is a feature of its own. See openspec/specs/subscriptions/spec.md.
 
 The YouTube layer's debug screen has a pair of its own, which `:app` adds to debug builds only. [The YouTube layer's debug screen](#the-youtube-layers-debug-screen) explains it.
 
@@ -682,7 +682,8 @@ Features reach the database only through the repositories in `:core:data`, as th
 | Repository | Functions | First used by |
 |---|---|---|
 | SubscriptionsRepository | `subscribedChannels()`, `channelOverviews()`, `subscribedChannel(channelId)` and `isSubscribed(channelId)` as Flows, `subscribe(channel)`, `unsubscribe(channelId)` | #47, the channel page, and #115, the Channels screen, which reads `channelOverviews()` |
-| StoredVideosRepository | `saveUploads(uploads)`, and `inboxVideos()` as a Flow of a list of VideoSummary | #49, the inbox, which reads `inboxVideos()`, and the channel page, from #49's second pull request, and #52, which save the uploads they fetch |
+| StoredVideosRepository | `saveUploads(uploads)`, and `inboxVideos()` as a Flow of a list of VideoSummary | #49, the inbox, which reads `inboxVideos()`, and the channel page and #52, which save the uploads they fetch |
+| SubscribeWithUploads | `subscribe(channel, uploads)`, which subscribes and then saves the uploads, if any, as one unit in the app-wide scope, so the save counts as the first since subscribing and finishes after the caller is cancelled | #49, the channel page's Subscribe |
 | WatchStateRepository | `watchState(videoId)` as a Flow, `savePosition(videoId, position)`, `markWatched(videoId)`, `markUnwatched(videoId)` | WatchProgress in `:core:playback`, which saves positions and marks videos watched near their end, and PlayerViewModel, which shows and changes the watched chip |
 
 - **Main-safe.** Room runs every query on its own query context, so callers don't switch threads, and the repositories take no dispatcher.
