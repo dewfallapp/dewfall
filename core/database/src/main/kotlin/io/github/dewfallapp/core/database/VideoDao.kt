@@ -6,6 +6,7 @@ import androidx.room3.Query
 import androidx.room3.Transaction
 import androidx.room3.Update
 import io.github.dewfallapp.core.model.Thumbnail
+import io.github.dewfallapp.core.model.VideoKind
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -33,14 +34,53 @@ abstract class VideoDao {
      * A channel's saved videos: newest publish time first, videos with no time last, then the
      * latest save that held them first, then their place in it, then by ID. SQLite sorts NULL below
      * every other value, so `DESC` puts videos with no time last, and Android 10's SQLite has no
-     * `NULLS LAST`. This keeps YouTube's order for videos with the same time. The inbox (#49)
-     * builds on it.
+     * `NULLS LAST`. This keeps YouTube's order for videos with the same time. [inboxVideos] uses
+     * the same order.
      */
     @Query(
         "SELECT * FROM videos WHERE channel_id = :channelId " +
             "ORDER BY published_at DESC, listing_number DESC, list_position ASC, id ASC",
     )
     abstract fun channelVideos(channelId: String): Flow<List<VideoEntity>>
+
+    /**
+     * The inbox's videos, as the inbox spec defines them, in the order of [channelVideos] across
+     * every channel: the [video] kind videos of subscribed channels that aren't marked watched, and
+     * that either were published at or after the time of subscribing, or were first saved by a save
+     * of the channel's uploads later than its first such save since subscribing, or are one of the
+     * channel's 2 latest of that kind, watched or not, or were started, resumed or marked unwatched
+     * since subscribing, with a position past 0.
+     *
+     * The subquery `s` works out each channel's facts once. Its `LIMIT -1` sets no limit, but it
+     * stops SQLite from flattening `s` into the outer query, which would run its scalar subqueries
+     * again for every video. See "The inbox's videos" in docs/architecture.md#database-tables. Room
+     * runs it again whenever `videos`, `channels` or `watch_state` changes.
+     */
+    @Query(
+        "SELECT v.* FROM videos AS v " +
+            "JOIN (" +
+            "SELECT c.id AS channel_id, c.subscribed_at AS subscribed_at, " +
+            "(SELECT l.id FROM videos AS l WHERE l.channel_id = c.id AND l.kind = :video " +
+            "ORDER BY l.published_at DESC, l.listing_number DESC, l.list_position ASC, l.id ASC " +
+            "LIMIT 1) AS latest, " +
+            "(SELECT l.id FROM videos AS l WHERE l.channel_id = c.id AND l.kind = :video " +
+            "ORDER BY l.published_at DESC, l.listing_number DESC, l.list_position ASC, l.id ASC " +
+            "LIMIT 1 OFFSET 1) AS second, " +
+            "(SELECT MIN(f.first_seen_at) FROM videos AS f WHERE f.channel_id = c.id " +
+            "AND f.listing_number IS NOT NULL AND f.first_seen_at >= c.subscribed_at) " +
+            "AS first_save " +
+            "FROM channels AS c LIMIT -1" +
+            ") AS s ON s.channel_id = v.channel_id " +
+            "LEFT JOIN watch_state AS w ON w.video_id = v.id " +
+            "WHERE v.kind = :video AND w.watched_at IS NULL AND (" +
+            "v.published_at >= s.subscribed_at " +
+            "OR (v.listing_number IS NOT NULL AND v.first_seen_at > s.first_save) " +
+            "OR v.id = s.latest OR v.id = s.second " +
+            "OR (w.position_ms > 0 AND w.updated_at >= s.subscribed_at)" +
+            ") " +
+            "ORDER BY v.published_at DESC, v.listing_number DESC, v.list_position ASC, v.id ASC",
+    )
+    abstract fun inboxVideos(video: VideoKind): Flow<List<VideoEntity>>
 
     /** The highest listing number stored, or null when no save has run. */
     @Query("SELECT MAX(listing_number) FROM videos")

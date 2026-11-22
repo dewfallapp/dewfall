@@ -15,12 +15,16 @@ import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -43,9 +47,37 @@ private fun summary(id: String, published: PublishedTime?, kind: VideoKind = Vid
         kind = kind,
     )
 
+private fun row(id: String, publishedAt: Instant?, approximate: Boolean, durationMs: Long?) =
+    VideoEntity(
+        id = id,
+        channelId = "UCaaaaaaaaaaaaaaaaaaaaaa",
+        channelName = "Kettle and Crumb",
+        title = "Title $id",
+        durationMs = durationMs,
+        publishedAt = publishedAt,
+        publishedApproximate = approximate,
+        kind = VideoKind.VIDEO,
+        thumbnails = THUMBNAILS,
+        firstSeenAt = NOW,
+        listingNumber = 1,
+        listPosition = 0,
+    )
+
 /** Records each save, and can hold it until the test lets it go. */
 private class FakeVideoDao(private val gate: CompletableDeferred<Unit>? = null) : VideoDao() {
     val saves = mutableListOf<Pair<ChannelDetails, List<VideoEntity>>>()
+
+    /**
+     * The rows the inbox query answers with, and the kind it was asked for. A SharedFlow, because
+     * Room emits again after every change, even when the rows are equal, and a StateFlow wouldn't.
+     */
+    val inbox = MutableSharedFlow<List<VideoEntity>>(replay = 1)
+    var inboxKind: VideoKind? = null
+
+    override fun inboxVideos(video: VideoKind): Flow<List<VideoEntity>> {
+        inboxKind = video
+        return inbox
+    }
 
     override suspend fun saveChannelUploads(channel: ChannelDetails, videos: List<VideoEntity>) {
         gate?.await()
@@ -141,5 +173,46 @@ class RoomStoredVideosRepositoryTest {
         runCurrent()
 
         assertEquals(1, dao.saves.size)
+    }
+
+    @Test
+    fun `the inbox asks for videos and maps each row in order`() = runTest {
+        val dao = FakeVideoDao()
+        dao.inbox.tryEmit(
+            listOf(
+                row("aaaaaaaaaaa", PUBLISHED, approximate = true, durationMs = 720_000),
+                row("bbbbbbbbbbb", null, approximate = false, durationMs = null),
+            ),
+        )
+        val repository = RoomStoredVideosRepository(dao, FixedClock(NOW), backgroundScope)
+
+        val videos = repository.inboxVideos().first()
+
+        assertEquals(VideoKind.VIDEO, dao.inboxKind)
+        assertEquals(
+            listOf(
+                summary("aaaaaaaaaaa", PublishedTime(PUBLISHED, isApproximate = true)),
+                summary("bbbbbbbbbbb", null).copy(duration = null),
+            ),
+            videos,
+        )
+        assertEquals(720_000.milliseconds, videos[0].duration)
+    }
+
+    @Test
+    fun `the inbox doesn't emit the same videos twice`() = runTest {
+        val dao = FakeVideoDao()
+        val repository = RoomStoredVideosRepository(dao, FixedClock(NOW), backgroundScope)
+        val seen = mutableListOf<List<VideoSummary>>()
+        backgroundScope.launch { repository.inboxVideos().toList(seen) }
+        runCurrent()
+
+        val rows = listOf(row("aaaaaaaaaaa", PUBLISHED, approximate = false, durationMs = 1))
+        dao.inbox.tryEmit(rows)
+        runCurrent()
+        dao.inbox.tryEmit(rows.map { it.copy() })
+        runCurrent()
+
+        assertEquals(1, seen.size)
     }
 }
