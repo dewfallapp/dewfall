@@ -21,8 +21,9 @@ import kotlinx.coroutines.SupervisorJob
  * Provides the database, one for the whole app, its DAOs, the clock the repositories read "now"
  * from, and the [ApplicationScope] their writes run in. See docs/architecture.md#database-tables.
  *
- * It is public so that a later emulator test can replace it with an in-memory database through
- * Hilt's `@TestInstallIn`, which names the module it replaces, as the tests do with YouTubeModule.
+ * It is public so that the emulator tests' TestDatabaseModule can replace it with an in-memory
+ * database through Hilt's `@TestInstallIn`, which names the module it replaces, as the tests do
+ * with YouTubeModule.
  */
 @Module
 @InstallIn(SingletonComponent::class)

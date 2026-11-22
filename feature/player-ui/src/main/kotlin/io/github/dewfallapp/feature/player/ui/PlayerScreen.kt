@@ -5,18 +5,22 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +36,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.core.designsystem.component.Banner
@@ -44,6 +49,7 @@ import io.github.dewfallapp.core.model.timeAgo
 import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.PlayerState
+import io.github.dewfallapp.feature.player.logic.SavedWatch
 import io.github.dewfallapp.feature.player.logic.VideoPage
 import java.time.ZoneId
 import kotlin.time.Instant
@@ -53,6 +59,12 @@ import kotlin.time.Instant
  * ChannelHeader. It grows with the font size, so the initial always fits.
  */
 private val EmblemSize = 36.dp
+
+/** A chip's glyph, as the design system's Chip component sets it. */
+private val ChipGlyphSize = 18.dp
+
+/** The width of an unselected chip's border, as the design system's Chip component sets it. */
+private val ChipBorderWidth: Dp = 1.dp
 
 /**
  * The video screen: a minimize button, then [videoArea], then the video's details, or loading, or a
@@ -98,9 +110,11 @@ internal fun PlayerScreen(
                     is DetailsArea.Shown -> {
                         Details(
                             page = details.page,
+                            saved = state.saved,
                             now = now,
                             zone = zone,
                             onOpenChannel = { onOpenChannel(details.page.channelId) },
+                            onIntent = onIntent,
                             modifier = areaModifier,
                         )
                     }
@@ -131,16 +145,19 @@ private fun Loading(modifier: Modifier = Modifier) {
 }
 
 /**
- * The video's details, after the "Player" frames: the title, the publish line, the channel and the
- * description, which the user can select and copy. They scroll, so a long description or a large
- * font never cuts anything off.
+ * The video's details, after the "Player" frames: the title, the publish line, the watched chip
+ * once the database has answered with what it holds, [saved], the channel and the description,
+ * which the user can select and copy. They scroll, so a long description or a large font never cuts
+ * anything off.
  */
 @Composable
 private fun Details(
     page: VideoPage,
+    saved: SavedWatch,
     now: Instant,
     zone: ZoneId,
     onOpenChannel: () -> Unit,
+    onIntent: (PlayerIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -166,6 +183,14 @@ private fun Details(
                 )
             }
         }
+        if (saved is SavedWatch.Known) {
+            // A row of chips, where Phase 6's "Downloaded" and Phase 7's "Keep" join it later.
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm)) {
+                val tap =
+                    if (saved.watched) PlayerIntent.MarkUnwatched else PlayerIntent.MarkWatched
+                WatchedChip(watched = saved.watched, onClick = { onIntent(tap) })
+            }
+        }
         Channel(name = page.channelName, initial = page.channelInitial, onOpen = onOpenChannel)
         if (page.description.isNotEmpty()) {
             SelectionContainer {
@@ -173,6 +198,56 @@ private fun Details(
             }
         }
     }
+}
+
+/**
+ * The design system's toggle chip for whether the video is [watched]: "Mark as watched" with the
+ * done_all glyph while it isn't, and "Watched", selected, with the check glyph while it is. The
+ * glyph sits next to its word, so it has no content description of its own, and FilterChip tells
+ * screen readers whether it is selected. See the Chip component's README in docs/design/.
+ */
+@Composable
+private fun WatchedChip(watched: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    FilterChip(
+        selected = watched,
+        onClick = onClick,
+        label = {
+            Text(
+                text =
+                    stringResource(
+                        if (watched) R.string.player_watched else R.string.player_mark_watched,
+                    ),
+            )
+        },
+        modifier = modifier,
+        leadingIcon = {
+            Icon(
+                painter =
+                    painterResource(
+                        if (watched) DesignR.drawable.ic_check else DesignR.drawable.ic_done_all,
+                    ),
+                contentDescription = null,
+                modifier = Modifier.size(ChipGlyphSize),
+            )
+        },
+        shape = MaterialTheme.shapes.medium,
+        colors =
+            FilterChipDefaults.filterChipColors(
+                labelColor = colors.onSurfaceVariant,
+                iconColor = colors.onSurfaceVariant,
+                selectedContainerColor = colors.secondaryContainer,
+                selectedLabelColor = colors.onSecondaryContainer,
+                selectedLeadingIconColor = colors.onSecondaryContainer,
+            ),
+        border =
+            FilterChipDefaults.filterChipBorder(
+                enabled = true,
+                selected = watched,
+                borderColor = colors.outline,
+                borderWidth = ChipBorderWidth,
+            ),
+    )
 }
 
 /** "Live now", how long ago the video was published, or null when YouTube gave no past time. */

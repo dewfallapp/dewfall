@@ -69,6 +69,10 @@ dependencies {
     // The emulator tests. See docs/testing.md#emulator-tests. Their fakes implement the YouTube
     // layer's interfaces, so androidTest sees :core:youtube, which the app's own code never does.
     androidTestImplementation(project(":core:youtube"))
+    // TestDatabaseModule replaces DatabaseModule with an in-memory database, so each emulator test
+    // starts with no saved positions, and names the database's types, which :core:data keeps to
+    // itself.
+    androidTestImplementation(project(":core:database"))
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)

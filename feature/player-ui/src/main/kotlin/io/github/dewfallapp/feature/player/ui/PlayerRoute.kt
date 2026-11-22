@@ -30,10 +30,15 @@ import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.StartAction
+import io.github.dewfallapp.feature.player.logic.StoredPosition
+import io.github.dewfallapp.feature.player.logic.WaitingPosition
 import io.github.dewfallapp.feature.player.logic.startAction
 import io.github.dewfallapp.feature.player.logic.videoAreaFailure
+import io.github.dewfallapp.feature.player.logic.waitingPosition
 import java.time.ZoneId
 import kotlin.time.Clock
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * The video screen for [videoId], with its ViewModel and its playback. [onMinimize] runs when the
@@ -44,9 +49,9 @@ import kotlin.time.Clock
  * Playback starts the first time the screen opens, unless the player already plays this video,
  * which goes on as it is. Leaving the app keeps it playing in the background, unless it hasn't
  * played yet, as the connection decides, and minimizing leaves it to the mini player. When the
- * screen comes back after the system ended the process or stopped the player, it waits at the saved
- * position for the user to press play. The fullscreen button shows the fullscreen player, and the
- * back gesture leaves it.
+ * screen comes back after the system ended the process or stopped the player, it waits for the user
+ * to press play at the position stored in the database, or its own saved one, as [waitingPosition]
+ * decides. The fullscreen button shows the fullscreen player, and the back gesture leaves it.
  */
 @Composable
 fun PlayerRoute(
@@ -102,25 +107,28 @@ internal fun PlayerContent(
         onPlay = { start(C.TIME_UNSET) },
         onGoOn = { id -> recordStart(id, C.TIME_UNSET) },
         onFollow = viewModel::follow,
+        onLeave = viewModel::cancelStoredAnswer,
     )
     FollowPlayback(player, playbackId, onSave = { savedPositionMs = it })
     SaveOnStop(player, playbackId, onSave = { savedPositionMs = it })
     // Called every time, with enabled, as BackHandler's reference asks, so the order of the back
     // handlers stays the same. The entry composes after NavDisplay's handler, so this one runs.
     BackHandler(enabled = state.fullscreen) { viewModel.dispatch(PlayerIntent.ExitFullscreen) }
-    // Try again, or play after the session was gone, goes on from the last position.
-    val retryPositionMs = {
-        player?.takeIf { it.currentMediaItem?.mediaId == playbackId }?.let(::resumePosition)
-            ?: savedPositionMs
-    }
     val waiting = started && !known
+    // Where a screen that waits for play stands: the database's stored position wins over the
+    // screen's own, because the video may have played on in the background since. The route reads
+    // it only while the screen waits, and never in screen state.
+    val waitingAt = waitingPositionWhile(waiting, viewModel.storedPosition, savedPositionMs)
+    // Try again, or play after the session was gone, goes on from the last position.
+    fun last(action: (Long) -> Unit) =
+        viewModel.withLastPosition(playingAt(player, playbackId), waitingAt, action)
     if (state.fullscreen) {
         FullscreenPlayer(
             // Fullscreen has no details' message to share a failure with, so it shows the player's.
-            content = videoAreaContent(failure, waiting, savedPositionMs, player),
+            content = videoAreaContent(failure, waiting, waitingAt.shownMs, player),
             page = (state.details as? DetailsArea.Shown)?.page,
-            onPlay = { start(retryPositionMs()) },
-            onTryAgain = { start(retryPositionMs()) },
+            onPlay = { last(::start) },
+            onTryAgain = { last(::start) },
             onExit = { viewModel.dispatch(PlayerIntent.ExitFullscreen) },
             modifier = modifier,
         )
@@ -131,16 +139,17 @@ internal fun PlayerContent(
                 videoAreaContent(
                     videoAreaFailure(state.details, failure),
                     waiting,
-                    savedPositionMs,
+                    waitingAt.shownMs,
                     player,
                 ),
             onTryAgainDetails = {
-                val positionMs = retryPositionMs()
-                viewModel.tryAgainDetails(failure, positionMs)?.let { id ->
-                    recordStart(id, positionMs)
+                last { positionMs ->
+                    viewModel.tryAgainDetails(failure, positionMs)?.let { id ->
+                        recordStart(id, positionMs)
+                    }
                 }
             },
-            onPlay = { start(retryPositionMs()) },
+            onPlay = { last(::start) },
             onIntent = viewModel::dispatch,
             onMinimize = onMinimize,
             onOpenChannel = onOpenChannel,
@@ -155,6 +164,7 @@ internal fun PlayerContent(
  * whether its [playbackId] is still [known], and that playback. [onPlay] starts it, and [onGoOn]
  * keeps the playback it goes on with. [onFollow] tells the ViewModel which playback is its own: the
  * one it goes on with, or its own after it was made again, as after "Don't keep activities".
+ * [onLeave] runs when this composition leaves, such as on a rotation.
  */
 @Composable
 private fun StartOnOpen(
@@ -165,11 +175,15 @@ private fun StartOnOpen(
     onPlay: () -> Unit,
     onGoOn: (String) -> Unit,
     onFollow: (String) -> Unit,
+    onLeave: () -> Unit,
 ) {
     val find by rememberUpdatedState(playbackOfThisVideo)
     val play by rememberUpdatedState(onPlay)
     val goOn by rememberUpdatedState(onGoOn)
     val follow by rememberUpdatedState(onFollow)
+    val leave by rememberUpdatedState(onLeave)
+    // A wait that a tap started for the database's answer ends with this composition.
+    DisposableEffect(Unit) { onDispose { leave() } }
     LaunchedEffect(Unit) {
         val playing = find()
         when (startAction(started, known, playsThisVideo = playing != null)) {
@@ -279,20 +293,49 @@ private fun SaveOnStop(player: Player?, playbackId: String?, onSave: (Long) -> U
 }
 
 /**
- * What the video area shows: the [failure] if there is one, the play button at the saved position
- * while [waiting] after the session was gone, or else the [player].
+ * What the video area shows: the [failure] if there is one, the play button at [waitingAtMs] while
+ * [waiting] after the session was gone, or else the [player].
  */
 private fun videoAreaContent(
     failure: PlaybackFailure?,
     waiting: Boolean,
-    savedPositionMs: Long,
+    waitingAtMs: Long?,
     player: Player?,
 ): VideoAreaContent =
     when {
         failure != null -> VideoAreaContent.Failed(failure)
-        waiting -> VideoAreaContent.Waiting(savedPositionMs.takeIf { it != C.TIME_UNSET })
+        waiting -> VideoAreaContent.Waiting(waitingAtMs)
         else -> VideoAreaContent.Playing(player)
     }
+
+/** The [player]'s position while it plays this screen's [playbackId], or null. */
+private fun playingAt(player: Player?, playbackId: String?): Long? =
+    player?.takeIf { it.currentMediaItem?.mediaId == playbackId }?.let(::resumePosition)
+
+/**
+ * Where the screen stands while it is [waiting] for play, from the database's stored position,
+ * collected from [positions] only while it waits, so its updates never redraw a playing screen, and
+ * the screen's own [savedPositionMs], or C.TIME_UNSET, as [waitingPosition] decides. While it
+ * doesn't wait, it stands at its own position.
+ */
+@Composable
+private fun waitingPositionWhile(
+    waiting: Boolean,
+    positions: Flow<StoredPosition>,
+    savedPositionMs: Long,
+): WaitingPosition {
+    val source =
+        remember(waiting, positions) {
+            if (waiting) positions else flowOf(StoredPosition.Unknown)
+        }
+    val stored by source.collectAsStateWithLifecycle(StoredPosition.Unknown)
+    val screenPositionMs = savedPositionMs.takeIf { it != C.TIME_UNSET }
+    return if (waiting) {
+        waitingPosition(stored, screenPositionMs)
+    } else {
+        WaitingPosition(screenPositionMs, screenPositionMs)
+    }
+}
 
 /** Where playback goes on from: the position, or the live edge for a live stream. */
 private fun resumePosition(player: Player): Long =

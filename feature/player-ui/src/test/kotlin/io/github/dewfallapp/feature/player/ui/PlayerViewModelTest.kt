@@ -8,10 +8,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import io.github.dewfallapp.core.data.video.VideoDetailsRepository
+import io.github.dewfallapp.core.data.watch.WatchStateRepository
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
+import io.github.dewfallapp.core.model.WatchState
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.YouTubeResult
 import io.github.dewfallapp.core.playback.PictureHold
@@ -20,7 +22,13 @@ import io.github.dewfallapp.core.playback.stopsPlayback
 import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerIntent.EnterFullscreen
 import io.github.dewfallapp.feature.player.logic.PlayerIntent.ExitFullscreen
+import io.github.dewfallapp.feature.player.logic.PlayerIntent.MarkUnwatched
+import io.github.dewfallapp.feature.player.logic.PlayerIntent.MarkWatched
 import io.github.dewfallapp.feature.player.logic.PlayerIntent.TryAgain
+import io.github.dewfallapp.feature.player.logic.PlayerState
+import io.github.dewfallapp.feature.player.logic.SavedWatch
+import io.github.dewfallapp.feature.player.logic.StoredPosition
+import io.github.dewfallapp.feature.player.logic.WaitingPosition
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -29,11 +37,20 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -67,6 +84,52 @@ private class FakeRepository : VideoDetailsRepository {
     override suspend fun videoDetails(videoId: VideoId): YouTubeResult<VideoDetails> {
         val call = FakeCall(videoId).also { calls += it }
         return call.answer.await()
+    }
+}
+
+private val MARKED = Instant.parse("2026-11-22T08:00:00Z")
+
+/**
+ * A repository of watch states that records its marks and answers from [state]. A test can make
+ * reads or writes throw.
+ */
+private class FakeWatchStates : WatchStateRepository {
+    val state = MutableStateFlow<WatchState?>(null)
+    val marks = mutableListOf<String>()
+    var failReads = false
+    var failWrites = false
+
+    /** While set, a new read answers only once the test completes it. */
+    var holdReads: CompletableDeferred<Unit>? = null
+
+    override fun watchState(videoId: VideoId): Flow<WatchState?> {
+        val hold = holdReads
+        return when {
+            failReads -> flow { throw IllegalStateException("The database can't be read") }
+            hold != null -> {
+                flow {
+                    hold.await()
+                    emitAll(state)
+                }
+            }
+            else -> state
+        }
+    }
+
+    override suspend fun savePosition(videoId: VideoId, position: Duration) =
+        error("The video screen never saves a position")
+
+    override suspend fun markWatched(videoId: VideoId) {
+        marks += "mark ${videoId.value}"
+        check(!failWrites) { "The disk is full" }
+        state.value =
+            (state.value ?: WatchState(Duration.ZERO, null, MARKED)).copy(watchedAt = MARKED)
+    }
+
+    override suspend fun markUnwatched(videoId: VideoId) {
+        marks += "unmark ${videoId.value}"
+        check(!failWrites) { "The disk is full" }
+        state.value = state.value?.copy(watchedAt = null)
     }
 }
 
@@ -148,6 +211,7 @@ private fun storeOf(viewModel: PlayerViewModel): ViewModelStore {
 class PlayerViewModelTest {
     private val repository = FakeRepository()
     private val connection = FakeConnection()
+    private val watchStates = FakeWatchStates()
 
     @BeforeTest
     fun setUp() {
@@ -162,7 +226,7 @@ class PlayerViewModelTest {
     }
 
     private fun newViewModel(savedState: SavedStateHandle = SavedStateHandle()) =
-        PlayerViewModel(PlayerArgs(VIDEO), repository, connection, savedState)
+        PlayerViewModel(PlayerArgs(VIDEO), repository, watchStates, connection, savedState)
 
     @Test
     fun `creating the ViewModel asks once for its video, and the answer shows`() = runTest {
@@ -348,6 +412,164 @@ class PlayerViewModelTest {
         viewModel.startPlayback(C.TIME_UNSET)
 
         assertTrue(connection.descriptions.isEmpty())
+    }
+
+    @Test
+    fun `the state follows whether the database marks the video, and not its position`() = runTest {
+        val viewModel = newViewModel()
+        assertEquals(SavedWatch.Known(watched = false), viewModel.state.value.saved)
+        val states = mutableListOf<PlayerState>()
+        val following =
+            launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.state.toList(states) }
+
+        // A save every 30 seconds while playing changes no screen state.
+        watchStates.state.value = WatchState(40.minutes, watchedAt = null, updatedAt = MARKED)
+        watchStates.state.value = WatchState(41.minutes, watchedAt = null, updatedAt = MARKED)
+        assertEquals(1, states.size)
+
+        watchStates.state.value = WatchState(41.minutes, watchedAt = MARKED, updatedAt = MARKED)
+        assertEquals(SavedWatch.Known(watched = true), viewModel.state.value.saved)
+        following.cancel()
+    }
+
+    @Test
+    fun `the stored position follows the database outside the screen state`() = runTest {
+        val viewModel = newViewModel()
+
+        assertEquals(StoredPosition.Known(null), viewModel.storedPosition.first())
+        watchStates.state.value = WatchState(40.minutes, watchedAt = MARKED, updatedAt = MARKED)
+        assertEquals(StoredPosition.Known(40.minutes), viewModel.storedPosition.first())
+    }
+
+    @Test
+    fun `a stored position that can't be read is unreadable`() = runTest {
+        watchStates.failReads = true
+
+        val viewModel = newViewModel()
+
+        assertEquals(StoredPosition.Unreadable, viewModel.storedPosition.first())
+    }
+
+    @Test
+    fun `the chip's taps mark and unmark the video, and the answer comes back`() = runTest {
+        val viewModel = newViewModel()
+
+        viewModel.dispatch(MarkWatched)
+        assertEquals(
+            SavedWatch.Known(watched = true),
+            viewModel.state.value.saved,
+        )
+
+        viewModel.dispatch(MarkUnwatched)
+        assertEquals(
+            SavedWatch.Known(watched = false),
+            viewModel.state.value.saved,
+        )
+        assertEquals(listOf("mark ${VIDEO.value}", "unmark ${VIDEO.value}"), watchStates.marks)
+    }
+
+    @Test
+    fun `a database that can't be read leaves the chip hidden`() = runTest {
+        watchStates.failReads = true
+
+        val viewModel = newViewModel()
+
+        assertEquals(SavedWatch.Unreadable, viewModel.state.value.saved)
+    }
+
+    @Test
+    fun `a mark the database can't write changes nothing and doesn't crash`() = runTest {
+        val viewModel = newViewModel()
+        watchStates.failWrites = true
+
+        viewModel.dispatch(MarkWatched)
+
+        assertEquals(listOf("mark ${VIDEO.value}"), watchStates.marks)
+        assertEquals(
+            SavedWatch.Known(watched = false),
+            viewModel.state.value.saved,
+        )
+    }
+
+    @Test
+    fun `a start waits for the stored answer, and a second tap meanwhile starts nothing`() =
+        runTest {
+            watchStates.state.value = WatchState(40.minutes, watchedAt = null, updatedAt = MARKED)
+            val viewModel = newViewModel()
+            val held = CompletableDeferred<Unit>()
+            watchStates.holdReads = held
+            val starts = mutableListOf<Long>()
+
+            viewModel.afterStoredAnswer(screenPositionMs = 600_000) { starts += it }
+            assertTrue(viewModel.waitsForStoredAnswer)
+            viewModel.afterStoredAnswer(screenPositionMs = 600_000) { starts += it }
+            assertEquals(emptyList(), starts)
+
+            held.complete(Unit)
+            assertEquals(listOf(2_400_000L), starts)
+            assertFalse(viewModel.waitsForStoredAnswer)
+        }
+
+    @Test
+    fun `a stored answer that can't be read starts from the screen's own position`() = runTest {
+        watchStates.failReads = true
+        val viewModel = newViewModel()
+        val starts = mutableListOf<Long>()
+
+        viewModel.afterStoredAnswer(screenPositionMs = 600_000) { starts += it }
+
+        assertEquals(listOf(600_000L), starts)
+    }
+
+    @Test
+    fun `a video with no stored position and no screen position starts from the default`() =
+        runTest {
+            val viewModel = newViewModel()
+            val starts = mutableListOf<Long>()
+
+            viewModel.afterStoredAnswer(screenPositionMs = null) { starts += it }
+
+            assertEquals(listOf(C.TIME_UNSET), starts)
+        }
+
+    @Test
+    fun `the last position is the player's, then a running wait, then the screen's, then a wait`() =
+        runTest {
+            watchStates.state.value = WatchState(40.minutes, watchedAt = null, updatedAt = MARKED)
+            val held = CompletableDeferred<Unit>()
+            watchStates.holdReads = held
+            val viewModel = newViewModel()
+            val starts = mutableListOf<Long>()
+            val unknown = WaitingPosition(shownMs = 600_000, startMs = null)
+
+            // The player's own position wins, even with nothing stored known yet.
+            viewModel.withLastPosition(5_000, unknown) { starts += it }
+            // A waiting screen that knows where it stands starts there at once.
+            viewModel.withLastPosition(null, WaitingPosition(700_000, 700_000)) { starts += it }
+            assertEquals(listOf(5_000L, 700_000L), starts)
+
+            // Before the database answers, it waits, and a tap meanwhile does nothing, even one
+            // that knows where it stands.
+            viewModel.withLastPosition(null, unknown) { starts += it }
+            viewModel.withLastPosition(null, WaitingPosition(700_000, 700_000)) { starts += it }
+            assertEquals(listOf(5_000L, 700_000L), starts)
+            held.complete(Unit)
+            assertEquals(listOf(5_000L, 700_000L, 2_400_000L), starts)
+        }
+
+    @Test
+    fun `leaving the screen's composition cancels a wait, so it starts nothing`() = runTest {
+        val held = CompletableDeferred<Unit>()
+        watchStates.holdReads = held
+        val viewModel = newViewModel()
+        val starts = mutableListOf<Long>()
+
+        viewModel.afterStoredAnswer(screenPositionMs = 600_000) { starts += it }
+        viewModel.cancelStoredAnswer()
+        held.complete(Unit)
+
+        assertEquals(emptyList(), starts)
+        assertFalse(viewModel.waitsForStoredAnswer)
     }
 }
 

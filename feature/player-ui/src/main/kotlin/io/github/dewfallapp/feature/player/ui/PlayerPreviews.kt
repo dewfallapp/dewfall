@@ -6,6 +6,7 @@ import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerState
+import io.github.dewfallapp.feature.player.logic.SavedWatch
 
 // Previews of the video screen, with the made-up video and player in PlayerPreviewParts.kt. The
 // @PreviewTest wrappers in src/screenshotTest carry their @Preview annotations and render them as
@@ -13,7 +14,12 @@ import io.github.dewfallapp.feature.player.logic.PlayerState
 // except the dynamic color preview, whose wrappers name a fixed one. See
 // docs/testing.md#screenshot-tests.
 
-private val shownPage = PlayerState(DetailsArea.Shown(previewPage))
+/** The video screen with its details, for a video that isn't watched. */
+internal val shownPage =
+    PlayerState(
+        DetailsArea.Shown(previewPage),
+        saved = SavedWatch.Known(watched = false),
+    )
 
 @Composable
 internal fun PlayingPreview() {
