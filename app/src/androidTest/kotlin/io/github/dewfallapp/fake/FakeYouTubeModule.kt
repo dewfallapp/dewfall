@@ -23,9 +23,10 @@ import javax.inject.Singleton
 import okhttp3.Call
 
 /**
- * Replaces the YouTube layer in every emulator test with fakes that know only [TestVideo], and the
- * player's media clients with [AssetMedia]. Nothing builds NewPipeYouTube, so no request reaches
- * YouTube or googlevideo.com. The repositories in `:core:data` are the real ones. See
+ * Replaces the YouTube layer in every emulator test with fakes that know only [TestVideo]'s two
+ * videos, and the player's media clients with [AssetMedia]. Nothing builds NewPipeYouTube, so no
+ * request reaches YouTube or googlevideo.com. The repositories in `:core:data` are the real ones.
+ * While [FakeNetwork] has YouTube off, the details and the stream links answer NETWORK. See
  * docs/testing.md#emulator-tests.
  */
 @Module
@@ -33,27 +34,41 @@ import okhttp3.Call
 object FakeYouTubeModule {
     @Provides
     fun provideSearch(): SearchRemoteDataSource = SearchRemoteDataSource { query ->
-        val videos = if (query == TestVideo.QUERY) listOf(TestVideo.summary) else emptyList()
+        val videos =
+            if (query == TestVideo.QUERY) {
+                listOf(TestVideo.summary, TestVideo.otherSummary)
+            } else {
+                emptyList()
+            }
         YouTubeResult.Success(SearchResults(channels = emptyList(), videos = videos))
     }
 
     @Provides
-    fun provideVideoDetails(): VideoDetailsRemoteDataSource = VideoDetailsRemoteDataSource { id ->
-        if (id == TestVideo.id) YouTubeResult.Success(TestVideo.details) else unavailable
-    }
+    fun provideVideoDetails(network: FakeNetwork): VideoDetailsRemoteDataSource =
+        VideoDetailsRemoteDataSource { id ->
+            when {
+                !network.youTubeReachable -> unreachable
+                id == TestVideo.id -> YouTubeResult.Success(TestVideo.details)
+                id == TestVideo.otherId -> YouTubeResult.Success(TestVideo.otherDetails)
+                else -> unavailable
+            }
+        }
 
     @Provides
-    fun provideStreamLinks(media: AssetMedia): StreamLinksRemoteDataSource =
+    fun provideStreamLinks(network: FakeNetwork, media: AssetMedia): StreamLinksRemoteDataSource =
         StreamLinksRemoteDataSource { id ->
-            if (id == TestVideo.id) {
-                YouTubeResult.Success(
-                    TestVideo.streamLinks(
-                        videoLength = media.length(TestVideo.VIDEO_URL),
-                        audioLength = media.length(TestVideo.AUDIO_URL),
-                    ),
-                )
-            } else {
-                unavailable
+            when {
+                !network.youTubeReachable -> unreachable
+                id == TestVideo.id || id == TestVideo.otherId -> {
+                    YouTubeResult.Success(
+                        TestVideo.streamLinks(
+                            videoId = id,
+                            videoLength = media.length(TestVideo.VIDEO_URL),
+                            audioLength = media.length(TestVideo.AUDIO_URL),
+                        ),
+                    )
+                }
+                else -> unavailable
             }
         }
 
@@ -76,11 +91,14 @@ object FakeYouTubeModule {
             ): YouTubeResult<List<SubtitleLine>> = unavailable
         }
 
+    /** One for the whole test, so the test can turn it off and on. */
+    @Provides @Singleton fun provideFakeNetwork(): FakeNetwork = FakeNetwork()
+
     /** One for the whole test, so the test can read its request counts. */
     @Provides
     @Singleton
-    fun provideAssetMedia(): AssetMedia =
-        AssetMedia(InstrumentationRegistry.getInstrumentation().context.assets)
+    fun provideAssetMedia(network: FakeNetwork): AssetMedia =
+        AssetMedia(InstrumentationRegistry.getInstrumentation().context.assets, network)
 
     @Provides
     @ProgressiveMediaCalls
@@ -92,4 +110,6 @@ object FakeYouTubeModule {
     fun provideLiveMediaCalls(media: AssetMedia): Call.Factory = media.calls
 
     private val unavailable = YouTubeResult.Failure(YouTubeError.UNAVAILABLE)
+
+    private val unreachable = YouTubeResult.Failure(YouTubeError.NETWORK)
 }

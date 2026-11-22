@@ -17,6 +17,7 @@ import io.github.dewfallapp.core.playback.PlaybackConnection
 import io.github.dewfallapp.fake.AssetMedia
 import io.github.dewfallapp.fake.TestVideo
 import javax.inject.Inject
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -73,6 +74,12 @@ class SearchThenPlayTest {
     @BeforeTest
     fun inject() {
         hilt.inject()
+    }
+
+    /** So the next test starts the service with its own objects. */
+    @AfterTest
+    fun stop() {
+        compose.stopPlayback(playback)
     }
 
     @Test
