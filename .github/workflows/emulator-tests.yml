@@ -157,9 +157,46 @@ jobs:
           tail -n 50 emulator.log
           exit 1
 
+      # Before Android 11, FullscreenClearOfBarsTest needs the navigation bar on a side in
+      # landscape, which three-button navigation gives a phone. The image's own default sets the
+      # mode, and sdkmanager can't pin the image, so this step fails if a newer image changes it,
+      # where the test would otherwise skip and check nothing. docs/testing.md#emulator-tests
+      # explains it.
+      - name: Check three-button navigation
+        if: ${{ matrix.api-level == 29 }}
+        run: |
+          mode="$("$ANDROID_HOME/platform-tools/adb" shell settings get secure navigation_mode \
+            | tr -d '\r')"
+          echo "navigation_mode: $mode"
+          if [ "$mode" != "0" ]; then
+            echo "::error::The Android 10 emulator doesn't use three-button navigation (0)."
+            exit 1
+          fi
+
       # sdkDownload=false makes a missing SDK package fail the build instead of downloading.
       - name: Run the emulator tests
         run: ./gradlew -Pandroid.builder.sdkDownload=false :app:connectedDebugAndroidTest
+
+      # The check above makes FullscreenClearOfBarsTest's precondition hold, and this one makes
+      # sure the test ran on Android 10 rather than skipped, since a skip passes the run.
+      - name: Check that the fullscreen test ran
+        if: ${{ matrix.api-level == 29 }}
+        run: |
+          python3 - <<'PY'
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
+
+          files = glob.glob("app/build/outputs/androidTest-results/connected/**/*.xml",
+                            recursive=True)
+          cases = [case for name in files for case in ET.parse(name).iter("testcase")
+                   if case.get("classname") == "io.github.dewfallapp.FullscreenClearOfBarsTest"]
+          skipped = [case for case in cases if case.find("skipped") is not None]
+          print(f"FullscreenClearOfBarsTest: {len(cases)} run, {len(skipped)} skipped")
+          if len(cases) != 1 or skipped:
+              print("::error::FullscreenClearOfBarsTest must run once on Android 10, unskipped.")
+              sys.exit(1)
+          PY
 
       # Also after a cancel or a timeout, which leave no other trace of the emulator. adb waits
       # for a device that isn't there, so the timeout ends it when the emulator is gone.
