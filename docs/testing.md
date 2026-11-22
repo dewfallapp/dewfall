@@ -10,9 +10,9 @@ Fast tests run on every change. They cover:
 
 - Reducers.
 - Use cases.
-- Repositories with fake data sources.
+- Repositories with fake data sources, and the database's repositories with fake DAOs.
 - The YouTube layer against saved responses.
-- Room queries.
+- The database's column converters and its merge rule for saved videos. The Room queries themselves run on an emulator, as [Database tests](#database-tests) explains.
 - The theme against the design tokens. [architecture.md](architecture.md#the-theme) explains the check.
 - Dewfall's lint checks, with lint-tests. See [Dewfall's lint checks](#dewfalls-lint-checks).
 - Background jobs.
@@ -22,7 +22,7 @@ Unit tests never touch the network.
 
 ### Slow tests
 
-Slow tests are emulator tests of the main flows, such as search then play, and download then play offline. See [Emulator tests](#emulator-tests).
+Slow tests are emulator tests of the main flows, such as search then play, and download then play offline, and the database's DAO tests, which run against the phone's own SQLite. See [Emulator tests](#emulator-tests) and [Database tests](#database-tests).
 
 ### Benchmarks
 
@@ -230,6 +230,7 @@ Run these from the repository root. AGENTS.md lists the command that runs every 
 | The screenshot tests of one module | `./gradlew :feature:player-ui:testDebugScreenshotTestDefaultTestSuite` |
 | One test class | Add `--tests` with the class name, such as `./gradlew :core:mvi:test --tests "io.github.dewfallapp.core.mvi.counter.CounterReducerTest"` |
 | The emulator tests, on one emulator or phone | `ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest`. See [Running them](#running-them). |
+| The database's DAO tests, on one emulator or phone | `ANDROID_SERIAL=<serial> ./gradlew :core:database:connectedDebugAndroidTest`. See [Database tests](#database-tests). |
 
 Each module writes an HTML report to build/reports/tests/test/index.html in a plain Kotlin/JVM module, or to build/reports/tests/testDebugUnitTest/index.html in an Android module. The XML results go to build/test-results/. AGP 9 creates unit tests for the debug build type only, so Android modules have no release unit tests.
 
@@ -549,7 +550,7 @@ Record the sets again:
 
 ## Emulator tests
 
-Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are four: SearchThenPlayTest (#46), TryAgainOfflineTest (#212), VideoScreenBackgroundTest (#211) and FullscreenClearOfBarsTest (#218).
+Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are four: SearchThenPlayTest (#46), TryAgainOfflineTest (#212), VideoScreenBackgroundTest (#211) and FullscreenClearOfBarsTest (#218). The database's DAO tests run on an emulator too, from core/database/src/androidTest/, as [Database tests](#database-tests) explains.
 
 ### What search then play checks
 
@@ -643,16 +644,16 @@ ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest
 
 ### The emulator tests workflow
 
-Workflow 2 is .github/workflows/emulator-tests.yml. It runs `:app:connectedDebugAndroidTest` on an emulator, once with Android 10 (API 29) and once with Android 17 (API 37), the oldest and newest Android that the app supports.
+Workflow 2 is .github/workflows/emulator-tests.yml. It runs `:app:connectedDebugAndroidTest` and `:core:database:connectedDebugAndroidTest`, with `--continue`, so one run reports both, on an emulator, once with Android 10 (API 29) and once with Android 17 (API 37), the oldest and newest Android that the app supports.
 
-- **When.** On every push to main, as workflow 2's plan says. Also on pull requests to main that change app/src/androidTest/, the workflow itself, gradle/libs.versions.toml, the Gradle wrapper, gradle.properties, settings.gradle.kts, the root build.gradle.kts, app/build.gradle.kts or build-logic/, so a change to the tests, and Renovate's updates of Compose, Media3, Hilt, AGP, androidx.test and Gradle, run them before merging. Branch protection doesn't require it, so its path filter can't leave a required check pending. GitHub's Actions tab can start it by hand too, but only once the workflow is on main, because workflow_dispatch "will only trigger a workflow run if the workflow file exists on the default branch" ([Events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch)).
+- **When.** On every push to main, as workflow 2's plan says. Also on pull requests to main that change app/src/androidTest/, core/database/, core/model/, whose types the database's rows use, the workflow itself, gradle/libs.versions.toml, the Gradle wrapper, gradle.properties, settings.gradle.kts, the root build.gradle.kts, app/build.gradle.kts or build-logic/, so a change to the tests or the database, and Renovate's updates of Compose, Media3, Hilt, Room, AGP, androidx.test and Gradle, run them before merging. Once a screen's emulator test builds the real database through `:core:data`'s DatabaseModule, the filter needs core/data/ too, and that task adds it. Branch protection doesn't require it, so its path filter can't leave a required check pending. GitHub's Actions tab can start it by hand too, but only once the workflow is on main, because workflow_dispatch "will only trigger a workflow run if the workflow file exists on the default branch" ([Events that trigger workflows](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch)).
 - **What it misses before merging.** The Checks job doesn't compile androidTest. So a pull request that changes only other modules, such as a screen or the player, can break the tests' code or their run, and that shows only on main. Run the tests by hand before merging such a change, as [Running them](#running-them) says.
 - **The emulator.** The images are Google's AOSP images, `system-images;android-29;default;x86_64` and `system-images;android-37.0;default;x86_64`, which have no Google apps. On November 21, 2026, Google's [list](https://dl.google.com/android/repository/sys-img/android/sys-img2-4.xml) had revision 8 of the first and revision 6 of the second. sdkmanager installs the newest emulator and image and can't pin them, so the job's log prints the versions that ran.
 - **KVM.** GitHub's standard Linux runners have had KVM for the emulator since April 2, 2024 ([GitHub's changelog](https://github.blog/changelog/2024-04-02-github-actions-hardware-accelerated-android-virtualization-now-available/)), and the job turns it on with the udev rule from that changelog. On November 21, 2026, a standard Linux runner for a public repository had 4 CPUs, 16 GB of RAM and 14 GB of disk ([GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)).
 - **How the emulator runs.** With no window, no snapshot and swiftshader graphics, because the runner has no GPU. With `-feature -HardwareDecoder`, which keeps the emulator from offering its emulated hardware video decoders, so Android decodes in software. The emulator's own lib/advancedFeatures.ini describes the feature. With `-no-metrics`, which keeps the emulator from sending usage data to Google. Before the start, the log shows /dev/kvm, the AVDs that the emulator finds and its acceleration check. avdmanager and the emulator look for AVDs in different folders unless `ANDROID_AVD_HOME` names one, so both steps set it, and the job creates that folder first, because avdmanager uses the variable only when the folder exists. The step fails when the emulator doesn't list the AVD. The boot wait stops early when the emulator's process ends, and prints the end of the emulator's log. After boot, the job unlocks the screen, so the test's activity doesn't start behind the keyguard. The Android 10 job then checks that `adb shell settings get secure navigation_mode` prints 0, three-button navigation, which FullscreenClearOfBarsTest needs, and fails with a message if not. After the tests, it checks the JUnit results that the connected run writes: FullscreenClearOfBarsTest must have run once, with no `<skipped>`, because a skip passes the run. API 29 and API 37 run as separate jobs, and one failing doesn't cancel the other.
 - **Permissions.** The token can only read the code. The job writes no issue and no comment, so a failure shows only as a failed run.
 - **Cache.** It reads setup-gradle's cache, which the Checks job on main fills, and never writes it.
-- **Failures.** When it fails or is cancelled, it uploads the test reports, the emulator's logcat and the emulator's own log as an artifact, kept for 7 days. Anyone signed in to GitHub can read them, as with the daily check's logs. The app logs no user data ([ADR 0007](adr/0007-how-the-app-logs.md)), and the tests' data is made up.
+- **Failures.** When it fails or is cancelled, it uploads the test reports of `:app` and `:core:database`, the emulator's logcat and the emulator's own log as an artifact, kept for 7 days. Anyone signed in to GitHub can read them, as with the daily check's logs. The app logs no user data ([ADR 0007](adr/0007-how-the-app-logs.md)), and the tests' data is made up.
 - **Requests.** The tests send nothing to YouTube. The runner downloads the SDK packages and the image from Google, as the Checks job does for the platform and the build tools.
 - **When the job breaks without an app change.** A new emulator or image release can break the job. Compare the versions in the log of the last run that passed with those of the run that failed. Run the tests by hand on a local emulator: if they pass there, the job's emulator flags or image need a change, not the app.
 
@@ -878,9 +879,19 @@ The images are recorded on a Mac with Apple silicon, and the pull request workfl
 
 On November 21, 2026, #45's first run on the runners ([run 44936455307](https://github.com/dewfallapp/dewfall/actions/runs/44936455307), on an earlier push of #45, commit 755fe20, ubuntu-26.04) matched all 41 images recorded on the Mac pixel for pixel, so no tolerance was needed. The images didn't change after that push, and every later run of the pull request workflow on #45 that finished passed the same check. Layoutlib's text and shapes come out the same on both. Its native code comes from a file of layoutlib-runtime for each system, such as layoutlib-runtime-16.1.0-jdk17-linux.jar and -mac-arm.jar, which AGP picks by the host. If a later update makes the two differ, the check fails on one of them, and the maintainer decides what to do, as above.
 
+## Database tests
+
+The DAO tests are in core/database/src/androidTest/: ChannelDaoTest, VideoDaoTest, WatchStateDaoTest and DatabaseFileTest. Each spec scenario that the DAOs decide has a test, in the subscriptions and player specs. They build an in-memory database as the app builds its own, with AndroidSQLiteDriver, so they run against the phone's own SQLite: 3.22 on Android 10 and 3.50 on Android 17, the two versions the emulator tests workflow runs. That is the point of running them on an emulator: a query that Android 10's SQLite can't run, such as one with UPSERT or `NULLS LAST`, or a statement that binds more than 999 values, fails there. [architecture.md](architecture.md#database-tables) explains those limits. DatabaseFileTest writes to a database file in the test app's cache folder, never the real dewfall.db, closes it and opens it again, for the "after the app closes" scenarios. Every test chooses its own times, so none depends on the clock.
+
+The JVM unit tests in core/database/src/test/ cover what needs no SQLite: DatabaseConvertersTest and VideoMergeTest, with one test for each part of the merge rule. The repositories' tests in `:core:data` use fake DAOs that record what they were asked, and check the mapping, the clock, the Flows and that a write finishes after its caller is cancelled. They don't reimplement SQL.
+
+Run the DAO tests with `ANDROID_SERIAL=<serial> ./gradlew :core:database:connectedDebugAndroidTest`. Run them on Android 10 before pushing a change to a query, because the Checks job doesn't compile androidTest. The emulator tests workflow runs them on pull requests that change core/database/ or core/model/. On November 22, 2026, 36 tests passed on the Dewfall_Pixel_4_API_29_GA emulator, whose SQLite is 3.22.0.
+
+**On the computer's JVM.** The comment on #48 asked whether the DAO tests could run on the JVM with the bundled driver instead. On November 22, 2026 one test was tried as a JVM unit test of `:core:database`, with Room 3.0.3, `Room.inMemoryDatabaseBuilder<DewfallDatabase>()` without a Context, and androidx.sqlite:sqlite-bundled-jvm 2.7.1, the version Room 3.0.3 resolves, published on Google's Maven on September 9, 2026 by its POM's Last-Modified header (checked on November 22, 2026), as a test-only dependency, on macOS with an Apple silicon Mac. It ran and passed: it subscribed a channel and read it back. The try wasn't committed. The DAO tests stay on the emulator anyway, because the bundled SQLite is 3.50, so on the JVM a query that Android 10 can't run would pass. Fast JVM runs of the same tests could be added later, next to the emulator runs, if their speed is worth a second copy of the setup. A later Room or androidx.sqlite release can change this answer, so try again before relying on it.
+
 ## Database migration tests
 
-There are no migration tests yet. The first public release is the first GitHub release, including a pre-release, published from a version tag. A tag made only to test the release workflow, with no published release, doesn't count, and nightly APKs don't count. Until then, the database stays at version 1 and a schema change needs no migration, as AGENTS.md says. Phase 5 adds the first tables (#48).
+There are no migration tests yet. The first public release is the first GitHub release, including a pre-release, published from a version tag. A tag made only to test the release workflow, with no published release, doesn't count, and nightly APKs don't count. Until then, the database stays at version 1 and a schema change needs no migration, as AGENTS.md says. #48 added the first tables, and [Database tests](#database-tests) covers their queries.
 
 **The schema check.** Room writes the schema of each database version to core/database/schemas/, and the files are committed. When the schema changes, Room rewrites the file, even when the version number stays the same, and the build still passes. So the pull request workflow has a step after the build that fails when the build changed or added a file in that folder. Locally, `git status core/database/schemas` shows the same changes after a build.
 

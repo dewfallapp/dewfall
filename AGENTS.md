@@ -36,6 +36,7 @@ This section is updated whenever a phase's milestone closes.
 | app/src/androidTest/ | The emulator tests, with their fakes of the YouTube layer and their media files. docs/testing.md#emulator-tests explains them |
 | core/ | Core modules that every feature can use. docs/architecture.md describes each one |
 | core/database/schemas/ | The Room database schemas that the build writes, one JSON file per database version |
+| core/database/src/androidTest/ | The database's DAO tests, which run on an emulator against its own SQLite. docs/testing.md#database-tests explains them |
 | core/youtube/src/test/resources/youtube/ | The saved YouTube responses that the YouTube layer's tests replay, which the recorder writes |
 | feature/ | Feature modules, two for each feature. Today the Search YouTube screen, the video screen with the mini player and the fullscreen player, and the YouTube layer's debug screen, which only debug builds contain |
 | feature/*-ui/src/screenshotTest/ | The screenshot tests: one-call @PreviewTest wrappers of the previews in src/main. The reference images they are compared with are in src/screenshotTestDefaultDebug/reference/ next to it. docs/testing.md#screenshot-tests explains them |
@@ -45,7 +46,7 @@ This section is updated whenever a phase's milestone closes.
 | gradle/libs.versions.toml | The version of every plugin and library |
 | config/detekt/detekt.yml | detekt's settings: the changes to its default rules, and the list of Compose rules |
 | .editorconfig | Editor settings, with a Kotlin section that comes close to the formatter |
-| .github/workflows/ | GitHub Actions workflows. pull-request.yml runs the checks on every pull request to main and every push to main. daily-youtube-check.yml runs the live YouTube check every day and reports failures as issues. emulator-tests.yml runs the emulator tests after every push to main, and on pull requests that change the tests, the dependencies or the build |
+| .github/workflows/ | GitHub Actions workflows. pull-request.yml runs the checks on every pull request to main and every push to main. daily-youtube-check.yml runs the live YouTube check every day and reports failures as issues. emulator-tests.yml runs the emulator tests and the database's DAO tests after every push to main, and on pull requests that change the tests, the database, the models, the dependencies or the build |
 | renovate.json | Renovate's settings for the weekly dependency update pull requests. docs/testing.md explains them |
 | .coderabbit.yaml | CodeRabbit's settings for its AI code reviews of pull requests. Its comments are advice, and CONTRIBUTING.md says how to ask for a review |
 | .claude/ | Claude Code setup: the reviewer and maintainer subagents in agents/, plus the OpenSpec commands and skills. The maintainer subagent critiques plans and checks pull requests on the maintainer's behalf, from its own worktree. Its own commands only read, and it runs a pull request's gate and build, which run that pull request's code |
@@ -131,6 +132,7 @@ Run these from the repository root. The build needs JDK 17 installed, because ev
 - Build the debug APK: `./gradlew assembleDebug`. The APK goes to app/build/outputs/apk/debug/app-debug.apk.
 - Run the unit tests: `./gradlew test`. It runs the tests of the plain Kotlin/JVM modules and the debug unit tests of the Android modules.
 - Run the emulator tests: `ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest`, with the serial of one emulator or phone from `adb devices`. Without ANDROID_SERIAL, they run on every device that adb sees. They install the debug app and the test APK and uninstall both at the end, so they remove a debug build that was installed before, with its data. docs/testing.md#running-them says when to run them.
+- Run the database's DAO tests: `ANDROID_SERIAL=<serial> ./gradlew :core:database:connectedDebugAndroidTest`, on one emulator or phone. Run them on Android 10 before pushing a change to a query, because the Checks job doesn't compile androidTest. docs/testing.md#database-tests explains them.
 - Run one module's unit tests: `./gradlew :core:mvi:test` for a plain Kotlin/JVM module, or `./gradlew :core:data:testDebugUnitTest` for an Android module. Add `--tests` with a class name to run one test class. The HTML report goes to build/reports/tests/ in the module.
 - Check formatting: `./gradlew spotlessCheck`. It checks every Kotlin file and Kotlin build script in the repository, build-logic included, against ktfmt in kotlinlang style.
 - Fix formatting: `./gradlew spotlessApply`. It rewrites the same files in place. Run it before you commit.
