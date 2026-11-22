@@ -1,4 +1,4 @@
-package io.github.dewfallapp.feature.player.logic
+package io.github.dewfallapp.core.model
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

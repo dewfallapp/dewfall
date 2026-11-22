@@ -1,7 +1,6 @@
 package io.github.dewfallapp.feature.player.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,11 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,16 +25,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.core.designsystem.component.Banner
+import io.github.dewfallapp.core.designsystem.component.ChannelEmblem
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.core.model.YouTubeError
@@ -46,7 +42,6 @@ import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.VideoPage
-import io.github.dewfallapp.feature.player.logic.offersTryAgain
 import java.time.ZoneId
 import kotlin.time.Instant
 
@@ -184,7 +179,6 @@ private fun publishLine(page: VideoPage, now: Instant, zone: ZoneId): String? =
  */
 @Composable
 private fun Channel(name: String, initial: String?, modifier: Modifier = Modifier) {
-    val emblemSize = EmblemSize * LocalDensity.current.fontScale.coerceAtLeast(1f)
     Row(
         modifier =
             modifier
@@ -195,23 +189,7 @@ private fun Channel(name: String, initial: String?, modifier: Modifier = Modifie
         horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier.size(emblemSize)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiaryContainer)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                    .clearAndSetSemantics {},
-            contentAlignment = Alignment.Center,
-        ) {
-            if (initial != null) {
-                Text(
-                    text = initial,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            }
-        }
+        ChannelEmblem(initial = initial, size = EmblemSize)
         Text(
             text = name,
             style = MaterialTheme.typography.titleSmall,
@@ -227,7 +205,7 @@ private fun Channel(name: String, initial: String?, modifier: Modifier = Modifie
 @Composable
 private fun Failure(error: YouTubeError, onTryAgain: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        val offers = offersTryAgain(error)
+        val offers = error.offersTryAgain
         Banner(
             message = stringResource(failureText(error)),
             glyph = painterResource(DesignR.drawable.ic_error),

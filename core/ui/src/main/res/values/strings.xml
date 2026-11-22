@@ -1,0 +1,46 @@
+<resources>
+    <!-- Text that several features share: a video row's length and how long ago it was published. -->
+    <!-- The length tag on a video's thumbnail box. -->
+    <string name="core_ui_length_hours">%1$dh %2$02dm</string>
+    <string name="core_ui_length_minutes">%1$dm</string>
+    <string name="core_ui_length_seconds">%1$ds</string>
+    <string name="core_ui_live">Live</string>
+    <string name="core_ui_upcoming">Upcoming</string>
+
+    <!-- The length as a screen reader says it, such as "1 hour 6 minutes". -->
+    <string name="core_ui_spoken_hours_and_minutes">%1$s %2$s</string>
+    <plurals name="core_ui_spoken_hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="core_ui_spoken_minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="core_ui_spoken_seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+
+    <!-- How long ago a video was published. -->
+    <string name="core_ui_minutes_ago">%1$dm ago</string>
+    <string name="core_ui_hours_ago">%1$dh ago</string>
+    <string name="core_ui_today">Today</string>
+    <string name="core_ui_yesterday">Yesterday</string>
+    <plurals name="core_ui_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <plurals name="core_ui_weeks_ago">
+        <item quantity="one">%d week ago</item>
+        <item quantity="other">%d weeks ago</item>
+    </plurals>
+    <plurals name="core_ui_months_ago">
+        <item quantity="one">%d month ago</item>
+        <item quantity="other">%d months ago</item>
+    </plurals>
+    <plurals name="core_ui_years_ago">
+        <item quantity="one">%d year ago</item>
+        <item quantity="other">%d years ago</item>
+    </plurals>
+</resources>

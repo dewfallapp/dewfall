@@ -2,6 +2,7 @@ package io.github.dewfallapp.feature.player.logic
 
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.YouTubeResult
+import io.github.dewfallapp.core.model.initialOf
 import io.github.dewfallapp.core.mvi.Next
 import io.github.dewfallapp.core.mvi.Reducer
 
@@ -35,7 +36,7 @@ private fun PlayerState.loaded(): PlayerState =
 /** Starts the next request after a failure that offers "Try again", or changes nothing. */
 private fun PlayerState.triedAgain(): PlayerState {
     val failed = details as? DetailsArea.Failed
-    return if (failed != null && offersTryAgain(failed.error)) {
+    return if (failed != null && failed.error.offersTryAgain) {
         copy(details = DetailsArea.Loading(failed.number + 1))
     } else {
         this

@@ -1,6 +1,5 @@
-package io.github.dewfallapp.feature.youtubesearch.logic
+package io.github.dewfallapp.core.model
 
-import io.github.dewfallapp.core.model.VideoKind
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes

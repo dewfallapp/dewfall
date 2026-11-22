@@ -1,6 +1,5 @@
-package io.github.dewfallapp.feature.youtubesearch.logic
+package io.github.dewfallapp.core.model
 
-import io.github.dewfallapp.core.model.VideoKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

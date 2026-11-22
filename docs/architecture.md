@@ -11,7 +11,7 @@ Dewfall is one Gradle build with an app module, core modules, and feature module
 
 ### The module graph
 
-Solid arrows are dependencies in the build today. An arrow labeled api is an api dependency, so a module that depends on the module where the arrow starts sees the module where it ends too. For example, `:core:data` sees `:core:logging` through `:core:youtube`. The arrow labeled debug only is a debugImplementation dependency, so release builds leave out the debug screen's modules. See [The YouTube layer's debug screen](#the-youtube-layers-debug-screen). Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds, and `:core:ui`, which comes when features share UI that needs the domain models or string resources, such as the video row that the inbox shares with search.
+Solid arrows are dependencies in the build today. An arrow labeled api is an api dependency, so a module that depends on the module where the arrow starts sees the module where it ends too. For example, `:core:data` sees `:core:logging` through `:core:youtube`. The arrow labeled debug only is a debugImplementation dependency, so release builds leave out the debug screen's modules. See [The YouTube layer's debug screen](#the-youtube-layers-debug-screen). Dashed arrows show modules that come later: the inbox's two modules, which Phase 5 adds. The inbox will share `:core:ui`'s video row with search.
 
 ```mermaid
 graph TD
@@ -30,7 +30,7 @@ graph TD
     playerLogic[":feature:player-logic<br/>Kotlin/JVM"]
     debugUi[":feature:youtube-debug-ui<br/>Android library, debug builds only"]
     debugLogic[":feature:youtube-debug-logic<br/>Kotlin/JVM, debug builds only"]
-    coreUi[":core:ui<br/>Android library, later"]
+    coreUi[":core:ui<br/>Android library"]
     inboxUi[":feature:inbox-ui<br/>Android library, later"]
     inboxLogic[":feature:inbox-logic<br/>Kotlin/JVM, later"]
 
@@ -52,6 +52,7 @@ graph TD
     searchUi --> data
     searchUi --> designsystem
     searchUi --> model
+    searchUi --> coreUi
     searchUi --> mvi
     searchLogic -->|api| mvi
     searchLogic -->|api| model
@@ -79,10 +80,11 @@ graph TD
     inboxUi -.-> designsystem
     inboxUi -.-> mvi
     inboxUi -.-> model
+    inboxUi -.-> coreUi
     inboxLogic -.-> mvi
     inboxLogic -.-> model
-    coreUi -.-> designsystem
-    coreUi -.-> model
+    coreUi --> designsystem
+    coreUi -->|api| model
 ```
 
 ### Core modules
@@ -92,20 +94,21 @@ Android modules set a namespace. Plain Kotlin/JVM modules have no namespace, so 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
 | `:app` | app/ | Android app | io.github.dewfallapp | The entry point, which ties the other modules together. It holds the Hilt Application class, the app's only activity, and the navigation between screens, which opens on Search YouTube. See [Navigation](#navigation). It also holds the logcat writer and the Hilt module that provides the logger. See [Logging](#logging). Its activity tells the player whether the app can be seen, and its PlaybackModule gives the media notification the PendingIntent that opens the app. See [The player](#the-player). | `:core:data`, `:core:designsystem`, `:core:logging`, `:core:playback`, and each feature's `-ui` module, today `:feature:youtube-search-ui` and `:feature:player-ui`. In debug builds only, `:feature:youtube-debug-ui`. Navigation 3 and kotlinx-serialization-core, for the back stack. In androidTest only, `:core:youtube`, for the emulator tests' fakes. |
-| `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError, TimeAgo, which counts how long ago a PublishedTime was, the way YouTube writes it, for screens to turn into text, and the player's FormatChoice, PlaybackFailure and MediaRequestRefused. See [The YouTube layer](#the-youtube-layer) and [The player](#the-player). | Nothing |
+| `:core:model` | core/model/ | Kotlin/JVM | io.github.dewfallapp.core.model | Domain models, such as videos, channels and subtitle lines. Today it holds the YouTube layer's models, its IDs, YouTubeResult and YouTubeError, TimeAgo, which counts how long ago a PublishedTime was, the way YouTube writes it, for screens to turn into text, LengthLabel, which says what a video row's thumbnail box shows about its length, `initialOf`, a channel name's first character for its emblem, and the player's FormatChoice, PlaybackFailure and MediaRequestRefused. It also holds one rule for screens, YouTubeError's `offersTryAgain`, because it is the one plain Kotlin/JVM module that every screen's reducer sees. See [The YouTube layer](#the-youtube-layer) and [The player](#the-player). | Nothing |
 | `:core:logging` | core/logging/ | Kotlin/JVM | io.github.dewfallapp.core.logging | The Logger that every module logs through, its levels and fields, and the error summary that leaves out messages. See [Logging](#logging). | Nothing |
 | `:core:mvi` | core/mvi/ | Kotlin/JVM | io.github.dewfallapp.core.mvi | The MVI base: MviState, MviIntent, MviEffect, the Reducer, and MviViewModel, the base class of every screen's ViewModel. See [The MVI contract](#the-mvi-contract). | Nothing. It uses Lifecycle's ViewModel and kotlinx.coroutines. |
 | `:core:youtube` | core/youtube/ | Kotlin/JVM | io.github.dewfallapp.core.youtube | The YouTube layer: Dewfall's interfaces for search, video details, a channel's latest uploads, stream links and subtitles, and their NewPipeExtractor implementation. NewPipeYouTube, one of its two public classes, implements all five. The other, MediaRequests, makes the player's OkHttp clients for googlevideo.com. It also holds the HTTP code that NewPipeExtractor sends its requests through, and the code that runs each call. It is the only module that may use NewPipeExtractor. See [ADR 0001](adr/0001-newpipeextractor-behind-youtube-layer.md) and [The YouTube layer](#the-youtube-layer). | `:core:model`, `:core:logging`, kotlinx.coroutines and OkHttp, all four as api dependencies, because the interfaces return the models, NewPipeYouTube's constructor takes a Logger and a CoroutineDispatcher, and MediaRequests returns OkHttp's Call.Factory |
 | `:core:database` | core/database/ | Android library | io.github.dewfallapp.core.database | The Room database: entities, DAOs, migrations and the exported schemas | `:core:model` |
 | `:core:data` | core/data/ | Android library | io.github.dewfallapp.core.data | Repositories that combine the database and the YouTube layer. Today it holds YouTubeSearchRepository, which the Search YouTube screen uses, VideoDetailsRepository, which the video screen uses, StreamLinksRepository, which the player uses, and YouTubeModule, the Hilt module that provides the YouTube layer, and the player's two OkHttp Call.Factory providers, marked `@ProgressiveMediaCalls` and `@LiveMediaCalls`. See [How Hilt provides the layer](#how-hilt-provides-the-layer) and [Reading from YouTube](#reading-from-youtube). | `:core:model`, `:core:database`, `:core:youtube` |
 | `:core:playback` | core/playback/ | Android library | io.github.dewfallapp.core.playback | The player: PlaybackService, the media session service with one ExoPlayer, and PlaybackConnection, which hands screens and the mini player its MediaController, with the format choice's Android parts, the media sources and the error mapping. See [The player](#the-player). | `:core:model` as an api dependency, `:core:data`, `:core:logging`, Media3 with media3-session as an api dependency, because the connection exposes Media3's Player, and OkHttp |
-| `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). It also holds the shared icons, today the search, close, error, keyboard_arrow_down, play_arrow, filled pause, fullscreen and fullscreen_exit glyphs from Material Symbols Rounded, under the Apache License 2.0, ReadableWidth, the widest a screen's column gets, DewfallOpacity, with the opacities that the components use, and the first shared component, Banner. | Nothing. It exposes Material 3 as an api dependency. |
+| `:core:designsystem` | core/designsystem/ | Android library | io.github.dewfallapp.core.designsystem | The Compose theme built from the design tokens, with the Manrope font. See [The theme](#the-theme). It also holds the shared icons, today the search, close, error, keyboard_arrow_down, play_arrow, filled pause, fullscreen and fullscreen_exit glyphs from Material Symbols Rounded, under the Apache License 2.0, ReadableWidth, the widest a screen's column gets, DewfallOpacity, with the opacities that the components use, and the shared components that take plain values: Banner, and ChannelEmblem, a channel's round emblem with its initial. | Nothing. It exposes Material 3 as an api dependency. |
+| `:core:ui` | core/ui/ | Android library | io.github.dewfallapp.core.ui | Shared UI that needs the domain models or string resources: VideoRowItem, the video row that Search YouTube shows and the channel page and the inbox will show, `rowGroupShape`, the rounded shape of a group of rows, and the text of a video's length and of how long ago it was published, with their strings. | `:core:model` as an api dependency, because VideoRowItem takes its types, and `:core:designsystem` |
 
-`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds the search, video details and stream links repositories and the Hilt module that provides the YouTube layer. `:core:playback` holds the player. A module that logs depends on `:core:logging`. Today `:app`, `:core:youtube` and `:core:playback` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements all five of the YouTube layer's interfaces. Compose is set up in `:app`, `:core:designsystem` and every feature's `-ui` module. Hilt is set up in `:app`, `:core:data`, `:core:playback` and every feature's `-ui` module.
+`:core:mvi` holds the MVI base, `:core:designsystem` holds the theme, and `:core:logging` holds the logger. `:core:youtube` holds the YouTube layer's interfaces and the code that runs NewPipeExtractor, and `:core:model` the models they return. `:core:database` holds no code yet, and `:core:data` holds the search, video details and stream links repositories and the Hilt module that provides the YouTube layer. `:core:playback` holds the player, and `:core:ui` the video row and its text, which several features share. A module that logs depends on `:core:logging`. Today `:app`, `:core:youtube` and `:core:playback` do, and each other module adds the dependency when it first logs. `-logic` modules never do, because reducers don't log. `:core:database` has Room set up, but no database until Phase 5 adds the first tables (#48). NewPipeYouTube implements all five of the YouTube layer's interfaces. Compose is set up in `:app`, `:core:designsystem`, `:core:ui` and every feature's `-ui` module. Hilt is set up in `:app`, `:core:data`, `:core:playback` and every feature's `-ui` module.
 
 `:lint-rules` is a build tool, not part of the app. It holds Dewfall's own lint checks, which lint runs on every module of the app. No module's code depends on it, and nothing from it ships. See [Dewfall's lint checks](#dewfalls-lint-checks).
 
-`:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the text of a duration, goes in a `:core:ui` Android library instead. Counting that needs no text, such as TimeAgo, stays in `:core:model`, a plain Kotlin/JVM module, as ADR 0006 asks. `:core:ui` gets created when two features first need such a piece. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
+`:core:designsystem` holds the theme and the components that know nothing about Dewfall's data. Its components take plain values, such as text, images and click handlers. Shared UI that needs the domain models or string resources, such as a video row that several features use, or the text of a duration, goes in a `:core:ui` Android library instead. Counting that needs no text, such as TimeAgo, stays in `:core:model`, a plain Kotlin/JVM module, as ADR 0006 asks. `:core:ui` was created when search and the channel page (#47) first needed the same video row. It may depend on `:core:designsystem` and `:core:model`, and feature `-ui` modules may depend on it.
 
 ### Feature modules
 
@@ -124,14 +127,14 @@ The Search YouTube screen is the first feature. Its pair:
 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
-| `:feature:youtube-search-logic` | feature/youtube-search-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.youtubesearch.logic | YouTubeSearchState, YouTubeSearchIntent, the reducer, the length label, the line-break functions, and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
-| `:feature:youtube-search-ui` | feature/youtube-search-ui/ | Android library | io.github.dewfallapp.feature.youtubesearch.ui | The Compose screen and its previews, the previews' screenshot tests in src/screenshotTest with their reference images, YouTubeSearchViewModel and its tests, and string resources | `:feature:youtube-search-logic`, `:core:data`, `:core:designsystem`, `:core:model`, `:core:mvi` |
+| `:feature:youtube-search-logic` | feature/youtube-search-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.youtubesearch.logic | YouTubeSearchState, YouTubeSearchIntent, the reducer, the line-break functions, and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
+| `:feature:youtube-search-ui` | feature/youtube-search-ui/ | Android library | io.github.dewfallapp.feature.youtubesearch.ui | The Compose screen and its previews, the previews' screenshot tests in src/screenshotTest with their reference images, YouTubeSearchViewModel and its tests, and string resources | `:feature:youtube-search-logic`, `:core:data`, `:core:designsystem`, `:core:model`, `:core:mvi`, `:core:ui` |
 
 The video screen, which opens from a search result, is the second. Its pair:
 
 | Module | Folder | Type | Namespace or package | What it holds | Depends on |
 |---|---|---|---|---|---|
-| `:feature:player-logic` | feature/player-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.player.logic | PlayerState, PlayerIntent, the reducer, the channel's initial, which errors offer "Try again", the start decision, the shared failure rule, the playback times' text, what the mini player shows, when the fullscreen controls show, and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
+| `:feature:player-logic` | feature/player-logic/ | Kotlin/JVM | io.github.dewfallapp.feature.player.logic | PlayerState, PlayerIntent, the reducer, the start decision, the shared failure rule, the playback times' text, what the mini player shows, when the fullscreen controls show, and their tests | `:core:mvi`, `:core:model`, both as api dependencies |
 | `:feature:player-ui` | feature/player-ui/ | Android library | io.github.dewfallapp.feature.player.ui | PlayerRoute, the Compose screen and its previews, the previews' screenshot tests in src/screenshotTest with their reference images, the video area and its playback status, the fullscreen player, MiniPlayer and their previews, PlayerViewModel and its tests, and string resources | `:feature:player-logic`, `:core:data`, `:core:designsystem`, `:core:model`, `:core:mvi`, `:core:playback`, media3-ui-compose, media3-common-ktx and activity-compose, for fullscreen's window and back gesture |
 
 The modules are named player, because #42 to #44 add playback to the same screen, and #44 adds the mini and fullscreen players. The service that plays media doesn't depend on any screen, so it lives in a core module of its own, `:core:playback`. See [The player](#the-player).
