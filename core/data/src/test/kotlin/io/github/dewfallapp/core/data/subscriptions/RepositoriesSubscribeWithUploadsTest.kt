@@ -44,6 +44,8 @@ private class FakeSubscriptions(
         writes.done += "subscribe"
     }
 
+    override suspend fun subscribeAll(channels: List<Channel>): Int = error("Not used")
+
     override suspend fun unsubscribe(channelId: ChannelId) = error("Not used")
 }
 

@@ -104,6 +104,9 @@ private class FakeSubscriptions : SubscriptionsRepository {
         }
     }
 
+    override suspend fun subscribeAll(channels: List<Channel>): Int =
+        error("Search YouTube subscribes to one channel at a time")
+
     override suspend fun unsubscribe(channelId: ChannelId) {
         unsubscribed += channelId
         kept.value = kept.value.orEmpty().filterNot { it.channel.id == channelId }

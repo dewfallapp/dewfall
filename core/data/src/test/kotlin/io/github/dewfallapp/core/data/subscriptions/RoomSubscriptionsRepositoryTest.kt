@@ -47,6 +47,10 @@ private class FakeChannelDao(
     private val gate: CompletableDeferred<Unit>? = null,
 ) : ChannelDao {
     val subscribed = mutableListOf<ChannelEntity>()
+    val batches = mutableListOf<List<ChannelEntity>>()
+
+    /** The IDs already subscribed, which subscribeAll gives -1 for. */
+    val existing = mutableSetOf<String>()
     val unsubscribed = mutableListOf<String>()
     val askedFor = mutableListOf<String>()
 
@@ -62,6 +66,12 @@ private class FakeChannelDao(
     override suspend fun subscribe(channel: ChannelEntity) {
         gate?.await()
         subscribed += channel
+    }
+
+    override suspend fun subscribeAll(channels: List<ChannelEntity>): List<Long> {
+        gate?.await()
+        batches += channels
+        return channels.mapIndexed { place, row -> if (row.id in existing) -1L else place + 1L }
     }
 
     override suspend fun unsubscribe(id: String) {
@@ -81,6 +91,56 @@ class RoomSubscriptionsRepositoryTest {
         repository.subscribe(CHANNEL)
 
         assertEquals(listOf(ROW), dao.subscribed)
+    }
+
+    @Test
+    fun `subscribing to many saves them in one batch with one time, and counts the new ones`() =
+        runTest {
+            val dao = FakeChannelDao()
+            dao.existing += "UCbbbbbbbbbbbbbbbbbbbbbb"
+            val repository = RoomSubscriptionsRepository(dao, FixedClock(NOW), backgroundScope)
+            val second =
+                Channel(ChannelId("UCbbbbbbbbbbbbbbbbbbbbbb"), "Orbit Hour", emptyList(), "")
+            val third = Channel(ChannelId("UCcccccccccccccccccccccc"), "Tidewater", emptyList(), "")
+
+            val added = repository.subscribeAll(listOf(CHANNEL, second, third))
+
+            assertEquals(2, added)
+            assertEquals(1, dao.batches.size)
+            assertEquals(
+                listOf(
+                    "UCaaaaaaaaaaaaaaaaaaaaaa",
+                    "UCbbbbbbbbbbbbbbbbbbbbbb",
+                    "UCcccccccccccccccccccccc",
+                ),
+                dao.batches.single().map { it.id },
+            )
+            assertEquals(setOf(NOW), dao.batches.single().map { it.subscribedAt }.toSet())
+            assertEquals(ROW, dao.batches.single().first())
+        }
+
+    @Test
+    fun `subscribing to no channels touches nothing`() = runTest {
+        val dao = FakeChannelDao()
+        val repository = RoomSubscriptionsRepository(dao, FixedClock(NOW), backgroundScope)
+
+        assertEquals(0, repository.subscribeAll(emptyList()))
+        assertEquals(emptyList(), dao.batches)
+    }
+
+    @Test
+    fun `a batch subscribe finishes when the caller is cancelled`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val dao = FakeChannelDao(gate = gate)
+        val repository = RoomSubscriptionsRepository(dao, FixedClock(NOW), backgroundScope)
+        val caller = launch { repository.subscribeAll(listOf(CHANNEL)) }
+        runCurrent()
+
+        caller.cancel()
+        gate.complete(Unit)
+        runCurrent()
+
+        assertEquals(listOf(listOf(ROW)), dao.batches)
     }
 
     @Test
