@@ -2,13 +2,16 @@ package io.github.dewfallapp.feature.player.ui
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.C
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.dewfallapp.core.data.video.VideoDetailsRepository
+import io.github.dewfallapp.core.data.watch.WatchStateRepository
 import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoId
+import io.github.dewfallapp.core.model.WatchState
 import io.github.dewfallapp.core.mvi.MviViewModel
 import io.github.dewfallapp.core.playback.PictureHold
 import io.github.dewfallapp.core.playback.PlaybackConnection
@@ -16,8 +19,19 @@ import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.PlayerReducer
 import io.github.dewfallapp.feature.player.logic.PlayerState
+import io.github.dewfallapp.feature.player.logic.StoredPosition
+import io.github.dewfallapp.feature.player.logic.WaitingPosition
 import io.github.dewfallapp.feature.player.logic.sharesFailure
+import io.github.dewfallapp.feature.player.logic.waitingPosition
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -52,6 +66,12 @@ internal fun playbackOfVideo(
  * player. It holds the picture while it exists. It keeps fullscreen in its saved state, so the
  * screen comes back in fullscreen after the process ends. Player commands skip intents, as ADR
  * 0002's note says.
+ *
+ * It follows whether the database marks the video watched for as long as it exists, and writes the
+ * watched chip's marks, whose answers come back through that Flow. It has no Logger: a database
+ * that can't be read leaves the chip hidden, and WatchProgress in the playback service logs the
+ * failure once the video is the player's item, through its own reads; a mark that can't be written
+ * leaves the chip as it was, with no log line.
  */
 @HiltViewModel(assistedFactory = PlayerViewModel.Factory::class)
 internal class PlayerViewModel
@@ -59,6 +79,7 @@ internal class PlayerViewModel
 constructor(
     @Assisted private val args: PlayerArgs,
     private val repository: VideoDetailsRepository,
+    private val watchStates: WatchStateRepository,
     /** The player, which the route reads and sends play, pause and seek to, never through state. */
     internal val playback: PlaybackConnection,
     private val savedState: SavedStateHandle,
@@ -80,8 +101,83 @@ constructor(
     /** Shows the picture while this screen exists, even while it turns to landscape. */
     private val picture: PictureHold = playback.holdPicture()
 
+    /** A mark that the database can't write leaves the chip as it was. */
+    private val markFailed = CoroutineExceptionHandler { _, _ ->
+        // Nothing to undo: the chip shows what the database holds, which didn't change.
+    }
+
     init {
         dispatch(PlayerIntent.Load)
+        viewModelScope.launch {
+            watchStates
+                .watchState(args.videoId)
+                .map { it?.watchedAt != null }
+                .distinctUntilChanged()
+                .catch { dispatch(PlayerIntent.WatchStateUnreadable) }
+                .collect { dispatch(PlayerIntent.WatchStateChanged(it)) }
+        }
+    }
+
+    /**
+     * The position the database stores for this screen's video, which the route reads only while
+     * the screen waits for play. It stays out of screen state, because the playback service updates
+     * it while the video plays. A database that can't be read gives Unreadable. Each collection
+     * asks the repository anew.
+     */
+    internal val storedPosition: Flow<StoredPosition> = flow {
+        emitAll(watchStates.watchState(args.videoId))
+    }
+        .map<WatchState?, StoredPosition> { StoredPosition.Known(it?.position) }
+        .catch { emit(StoredPosition.Unreadable) }
+
+    /** A tap's wait for the stored position's first answer. Only the main thread touches it. */
+    private var storedAnswer: Job? = null
+
+    /** Whether a tap's wait for the stored position's first answer still runs. */
+    internal val waitsForStoredAnswer: Boolean
+        get() = storedAnswer?.isActive == true
+
+    /**
+     * Runs [action] with the position that "Try again", or play after the session was gone, starts
+     * from: [playingMs], the player's position while it plays this screen's video; or where the
+     * screen stands, [waitingAt]; or, before the database's first answer, that answer, as
+     * [afterStoredAnswer] gets it. While such a wait runs, a call does nothing, so a second tap
+     * starts nothing.
+     */
+    internal fun withLastPosition(
+        playingMs: Long?,
+        waitingAt: WaitingPosition,
+        action: (Long) -> Unit,
+    ) {
+        val standingMs = waitingAt.startMs
+        when {
+            playingMs != null -> action(playingMs)
+            waitsForStoredAnswer -> Unit
+            standingMs != null -> action(standingMs)
+            else -> afterStoredAnswer(waitingAt.shownMs, action)
+        }
+    }
+
+    /**
+     * Runs [action], on the main thread, with where a waiting screen starts once the database's
+     * first answer about the stored position comes, as [waitingPosition] picks it from that answer
+     * and the screen's own [screenPositionMs], or C.TIME_UNSET. A call while an earlier one waits
+     * does nothing, so a second tap starts nothing.
+     */
+    internal fun afterStoredAnswer(screenPositionMs: Long?, action: (Long) -> Unit) {
+        if (waitsForStoredAnswer) return
+        storedAnswer = viewModelScope.launch {
+            val answer = waitingPosition(storedPosition.first(), screenPositionMs)
+            action(answer.startMs ?: C.TIME_UNSET)
+        }
+    }
+
+    /**
+     * Cancels a tap's wait for the stored position's first answer, when the screen's composition
+     * that asked for it leaves, such as on a rotation, so the old composition starts nothing.
+     */
+    internal fun cancelStoredAnswer() {
+        storedAnswer?.cancel()
     }
 
     override fun runSideEffects(intent: PlayerIntent) {
@@ -91,6 +187,14 @@ constructor(
             is PlayerIntent.DetailsFinished -> describePlayback()
             PlayerIntent.EnterFullscreen,
             PlayerIntent.ExitFullscreen -> savedState[FULLSCREEN_KEY] = state.value.fullscreen
+            PlayerIntent.MarkWatched -> {
+                viewModelScope.launch(markFailed) { watchStates.markWatched(args.videoId) }
+            }
+            PlayerIntent.MarkUnwatched -> {
+                viewModelScope.launch(markFailed) { watchStates.markUnwatched(args.videoId) }
+            }
+            is PlayerIntent.WatchStateChanged,
+            PlayerIntent.WatchStateUnreadable -> Unit
         }
     }
 

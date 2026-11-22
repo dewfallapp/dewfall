@@ -32,15 +32,26 @@ import io.github.dewfallapp.core.model.liveVariantsWithin
 import io.github.dewfallapp.core.model.pictureLimit
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /** The notification channel of the media notification. Media3 names it "Now playing". */
 private const val NOTIFICATION_CHANNEL_ID = "playback"
+
+/**
+ * How often a playing video saves its position, besides every pause and stop, so a process that
+ * ends without warning loses at most this much. See
+ * docs/architecture.md#saving-where-a-video-was-left.
+ */
+private val SAVE_INTERVAL = 30.seconds
 
 /**
  * The media session service that plays videos: one ExoPlayer, which no screen owns, so it plays on
@@ -58,6 +69,7 @@ class PlaybackService : MediaSessionService() {
     @Inject internal lateinit var network: NetworkCheck
     @Inject internal lateinit var dispatchers: PlaybackDispatchers
     @Inject internal lateinit var sessionActivity: SessionActivity
+    @Inject internal lateinit var progress: WatchProgress
 
     private lateinit var scope: CoroutineScope
     private lateinit var player: ExoPlayer
@@ -65,6 +77,9 @@ class PlaybackService : MediaSessionService() {
     private lateinit var sessionPlayer: SessionPlayer
     private val refreshLimit = RefreshLimit()
     private var currentPlaybackId: String? = null
+
+    /** Saves the position every [SAVE_INTERVAL] while the video plays. */
+    private var ticking: Job? = null
 
     override fun onCreate() {
         // Before any other Media3 call, because Media3's lines can name a host or carry a link.
@@ -142,6 +157,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        progress.saveOn(ProgressTrigger.SERVICE_ENDING, player)
+        progress.itemChanged(null, null, live = false)
         clearListener()
         sessions.publish(null)
         session.release()
@@ -224,10 +241,32 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun currentItemChanged() {
-        val playbackId = player.currentMediaItem?.mediaId
+        val item = player.currentMediaItem
+        val playbackId = item?.mediaId
         if (playbackId != currentPlaybackId) refreshLimit.reset()
         currentPlaybackId = playbackId
+        val live = (item?.localConfiguration?.tag as? PlaybackTag)?.live == true
+        progress.itemChanged(playbackId, playbackId?.let(items::videoId), live)
         items.currentChanged(playbackId)
+    }
+
+    /**
+     * Saves the position every [SAVE_INTERVAL] while play is on, [playing], even while the player
+     * waits for data, and stops when play turns off.
+     */
+    private fun tick(playing: Boolean) {
+        ticking?.cancel()
+        ticking =
+            if (playing) {
+                scope.launch {
+                    while (true) {
+                        delay(SAVE_INTERVAL)
+                        progress.saveOn(ProgressTrigger.TICK, player)
+                    }
+                }
+            } else {
+                null
+            }
     }
 
     private inner class PlayerEvents : Player.Listener {
@@ -240,12 +279,50 @@ class PlaybackService : MediaSessionService() {
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
-            if (playbackState == Player.STATE_READY) refreshLimit.reset()
+            when (playbackState) {
+                Player.STATE_READY -> {
+                    refreshLimit.reset()
+                    progress.look(player.currentPosition, player.duration)
+                }
+                Player.STATE_ENDED -> progress.ended()
+                Player.STATE_IDLE -> progress.saveOn(ProgressTrigger.IDLE, player)
+                Player.STATE_BUFFERING -> Unit
+            }
             // A video that ended keeps play on. Media3 turns the notification's play button on
             // Android 10 to 12, and a headset's play and pause button on every version, into a
             // toggle, which would pause it, so the first press would do nothing. With play off, it
             // plays the video again from the start.
             if (playbackState == Player.STATE_ENDED) player.pause()
+        }
+
+        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+            if (!playWhenReady) progress.saveOn(ProgressTrigger.PLAY_OFF, player)
+            // The timer follows play, not isPlaying, so buffering never restarts its 30 seconds.
+            tick(playWhenReady)
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            if (isPlaying) progress.movedOn()
+        }
+
+        /** A seek moves on from the end, and saves while paused, or only looks while playing. */
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int,
+        ) {
+            if (
+                reason != Player.DISCONTINUITY_REASON_SEEK &&
+                    reason != Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT
+            ) {
+                return
+            }
+            progress.movedOn()
+            if (savesOn(ProgressTrigger.POSITION_JUMP, player.moment())) {
+                progress.save(player.currentPosition, player.duration)
+            } else {
+                progress.look(player.currentPosition, player.duration)
+            }
         }
 
         override fun onTracksChanged(tracks: Tracks) {
@@ -356,12 +433,28 @@ class PlaybackService : MediaSessionService() {
             startIndex: Int,
             startPositionMs: Long,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            // The item that plays now saves its place before another one takes it.
+            progress.saveOn(ProgressTrigger.REPLACED, player)
             val result = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
             val playbackId = mediaItems.singleOrNull()?.mediaId
+            val videoId = playbackId?.let(items::videoId)
             val metered = network.isMetered()
             val job = scope.launch {
+                // The saved position is read beside the links, so it adds no wait.
+                val saved =
+                    if (startPositionMs == C.TIME_UNSET && videoId != null) {
+                        async { progress.storedPosition(videoId) }
+                    } else {
+                        null
+                    }
                 val resolution = resolveItem(items, resolver, playbackId, metered)
-                result.set(itemsFor(resolution, startPositionMs))
+                val tag = (resolution as? Resolution.Resolved)?.item?.localConfiguration?.tag
+                val live = (tag as? PlaybackTag)?.live == true
+                val start = startPositionFor(startPositionMs, saved?.await(), live)
+                // The item that played on while the links loaded saves its place again, just
+                // before the new one takes it.
+                progress.saveOn(ProgressTrigger.REPLACED, player)
+                result.set(itemsFor(resolution, start))
             }
             result.addListener(
                 { if (result.isCancelled) job.cancel() },
@@ -392,4 +485,22 @@ class PlaybackService : MediaSessionService() {
                 }
             }
     }
+}
+
+/** The player as [savesOn] reads it. */
+private fun Player.moment(): PlayerMoment =
+    PlayerMoment(
+        playbackState = playbackState,
+        playWhenReady = playWhenReady,
+        hasError = playerError != null,
+        hasItem = currentMediaItem != null,
+    )
+
+/**
+ * Saves the current item's position if [trigger] saves, as [savesOn] decides. It reads [player]
+ * now, inside the callback of the command that changed it, so a stop followed by clearing the items
+ * still saves the position the stop kept.
+ */
+private fun WatchProgress.saveOn(trigger: ProgressTrigger, player: Player) {
+    if (savesOn(trigger, player.moment())) save(player.currentPosition, player.duration)
 }

@@ -186,4 +186,46 @@ class PlayerReducerTest {
             PlayerReducer.reduce(entered, PlayerIntent.ExitFullscreen).state.details,
         )
     }
+
+    @Test
+    fun `the database's answer sets whether the video is watched`() {
+        val shown = PlayerState(details = DetailsArea.Shown(PAGE))
+
+        assertEquals(
+            Next(shown.copy(saved = SavedWatch.Known(watched = false))),
+            PlayerReducer.reduce(shown, PlayerIntent.WatchStateChanged(watched = false)),
+        )
+        assertEquals(
+            Next(shown.copy(saved = SavedWatch.Known(watched = true))),
+            PlayerReducer.reduce(shown, PlayerIntent.WatchStateChanged(watched = true)),
+        )
+    }
+
+    @Test
+    fun `a later answer replaces the earlier one`() {
+        val known = PlayerState(saved = SavedWatch.Known(watched = true))
+
+        assertEquals(
+            SavedWatch.Known(watched = false),
+            PlayerReducer.reduce(known, PlayerIntent.WatchStateChanged(watched = false))
+                .state
+                .saved,
+        )
+    }
+
+    @Test
+    fun `a database that can't be read is unreadable`() {
+        assertEquals(
+            Next(PlayerState(saved = SavedWatch.Unreadable)),
+            PlayerReducer.reduce(PlayerState(), PlayerIntent.WatchStateUnreadable),
+        )
+    }
+
+    @Test
+    fun `the chip's taps change nothing until the database answers`() {
+        val known = PlayerState(saved = SavedWatch.Known(watched = false))
+
+        assertEquals(Next(known), PlayerReducer.reduce(known, PlayerIntent.MarkWatched))
+        assertEquals(Next(known), PlayerReducer.reduce(known, PlayerIntent.MarkUnwatched))
+    }
 }

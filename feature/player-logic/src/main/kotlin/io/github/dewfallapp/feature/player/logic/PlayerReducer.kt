@@ -9,8 +9,9 @@ import io.github.dewfallapp.core.mvi.Reducer
 /**
  * The video screen's reducer. Load starts the first request, and "Try again" starts the next one
  * only after a failure that offers it. An answer counts only while its own request is running. The
- * fullscreen intents turn fullscreen on and off, and leave the details alone. The screen has no
- * effects, so its effect type is Nothing.
+ * fullscreen intents turn fullscreen on and off, and leave the details alone. The database's
+ * answers set what it holds about the video, and the chip's taps change nothing until the answer
+ * comes. The screen has no effects, so its effect type is Nothing.
  */
 object PlayerReducer : Reducer<PlayerState, PlayerIntent, Nothing> {
     override fun reduce(state: PlayerState, intent: PlayerIntent): Next<PlayerState, Nothing> =
@@ -21,6 +22,13 @@ object PlayerReducer : Reducer<PlayerState, PlayerIntent, Nothing> {
                 is PlayerIntent.DetailsFinished -> state.finished(intent)
                 PlayerIntent.EnterFullscreen -> state.copy(fullscreen = true)
                 PlayerIntent.ExitFullscreen -> state.copy(fullscreen = false)
+                is PlayerIntent.WatchStateChanged -> {
+                    state.copy(saved = SavedWatch.Known(watched = intent.watched))
+                }
+                PlayerIntent.WatchStateUnreadable -> state.copy(saved = SavedWatch.Unreadable)
+                // The ViewModel writes the mark, and the database's answer changes the state.
+                PlayerIntent.MarkWatched,
+                PlayerIntent.MarkUnwatched -> state
             },
         )
 }

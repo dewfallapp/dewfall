@@ -30,4 +30,12 @@ class PlaybackLog @Inject internal constructor(logger: Logger) {
             )
         }
     }
+
+    /**
+     * One line when the database can't save or read a video's watch state, with the [error] as
+     * class names and stack frames only. It names no video and no position, which are user data.
+     */
+    internal fun watchStateFailed(error: Throwable) {
+        logger.warn("Watch state failed", error = error)
+    }
 }

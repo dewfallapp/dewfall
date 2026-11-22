@@ -6,6 +6,10 @@
     <string name="player_open_channel">Open %1$s</string>
     <string name="player_loading">Loading video</string>
 
+    <!-- The watched chip under the publish line: its label while unwatched, and while watched. -->
+    <string name="player_mark_watched">Mark as watched</string>
+    <string name="player_watched">Watched</string>
+
     <!-- The line under the title. -->
     <string name="player_live_now">Live now</string>
     <string name="player_published_today">Published today</string>
