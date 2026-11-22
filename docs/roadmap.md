@@ -224,6 +224,7 @@ Start using the app on your own phone now. You will find more bugs that way than
 - Mark as watched, with resume from the last position.
 - Import subscriptions from a Google Takeout export.
 - Manual refresh.
+- Channel results in Search YouTube, each with a Subscribe button and opening its channel page.
 
 ### Your guide
 
