@@ -1,6 +1,7 @@
 package io.github.dewfallapp.feature.player.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -36,6 +38,7 @@ import io.github.dewfallapp.core.designsystem.component.Banner
 import io.github.dewfallapp.core.designsystem.component.ChannelEmblem
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
+import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.timeAgo
 import io.github.dewfallapp.feature.player.logic.DetailsArea
@@ -54,8 +57,8 @@ private val EmblemSize = 36.dp
 /**
  * The video screen: a minimize button, then [videoArea], then the video's details, or loading, or a
  * failure. It is stateless: it shows [state], with the time ago counted from [now] in [zone], and
- * reports what the user does through [onIntent] and [onMinimize]. The video area reads the player
- * itself, so playback state never enters [state].
+ * reports what the user does through [onIntent], [onMinimize] and [onOpenChannel]. The video area
+ * reads the player itself, so playback state never enters [state].
  *
  * Its background fills the window behind the system bars. Its content sits inside the safe drawing
  * area, in one column at most [ReadableWidth] wide, so nothing is under the system bars or the
@@ -68,6 +71,7 @@ internal fun PlayerScreen(
     zone: ZoneId,
     onIntent: (PlayerIntent) -> Unit,
     onMinimize: () -> Unit,
+    onOpenChannel: (ChannelId) -> Unit,
     modifier: Modifier = Modifier,
     videoArea: @Composable (Modifier) -> Unit = {},
 ) {
@@ -96,6 +100,7 @@ internal fun PlayerScreen(
                             page = details.page,
                             now = now,
                             zone = zone,
+                            onOpenChannel = { onOpenChannel(details.page.channelId) },
                             modifier = areaModifier,
                         )
                     }
@@ -131,7 +136,13 @@ private fun Loading(modifier: Modifier = Modifier) {
  * font never cuts anything off.
  */
 @Composable
-private fun Details(page: VideoPage, now: Instant, zone: ZoneId, modifier: Modifier = Modifier) {
+private fun Details(
+    page: VideoPage,
+    now: Instant,
+    zone: ZoneId,
+    onOpenChannel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier =
             modifier
@@ -155,7 +166,7 @@ private fun Details(page: VideoPage, now: Instant, zone: ZoneId, modifier: Modif
                 )
             }
         }
-        Channel(name = page.channelName, initial = page.channelInitial)
+        Channel(name = page.channelName, initial = page.channelInitial, onOpen = onOpenChannel)
         if (page.description.isNotEmpty()) {
             SelectionContainer {
                 Text(text = page.description, style = MaterialTheme.typography.bodyLarge)
@@ -174,17 +185,25 @@ private fun publishLine(page: VideoPage, now: Instant, zone: ZoneId): String? =
     }
 
 /**
- * The channel, in a rounded box: its emblem with the initial, then its name. The emblem is hidden
- * from screen readers, which read the name. It opens nothing until channel pages exist.
+ * The channel, in a rounded box: its emblem with the initial, its name, and a chevron that shows
+ * that the box opens the channel's page through [onOpen], as in the "Player" frames. The emblem and
+ * the chevron are hidden from screen readers, which read the name and hear that a tap opens it.
  */
 @Composable
-private fun Channel(name: String, initial: String?, modifier: Modifier = Modifier) {
+private fun Channel(
+    name: String,
+    initial: String?,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val openLabel = stringResource(R.string.player_open_channel, name)
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.large)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .clickable(onClickLabel = openLabel, onClick = onOpen)
                 .padding(DewfallSpacing.md),
         horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -194,6 +213,13 @@ private fun Channel(name: String, initial: String?, modifier: Modifier = Modifie
             text = name,
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.weight(1f),
+        )
+        // The box's click label says what the chevron shows, so screen readers skip it.
+        Icon(
+            painter = painterResource(DesignR.drawable.ic_chevron_right),
+            contentDescription = openLabel,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.clearAndSetSemantics {},
         )
     }
 }

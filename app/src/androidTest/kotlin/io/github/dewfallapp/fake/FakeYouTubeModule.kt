@@ -24,10 +24,10 @@ import okhttp3.Call
 
 /**
  * Replaces the YouTube layer in every emulator test with fakes that know only [TestVideo]'s two
- * videos, and the player's media clients with [AssetMedia]. Nothing builds NewPipeYouTube, so no
- * request reaches YouTube or googlevideo.com. The repositories in `:core:data` are the real ones.
- * While [FakeNetwork] has YouTube off, the details and the stream links answer NETWORK. See
- * docs/testing.md#emulator-tests.
+ * videos and their channel, and the player's media clients with [AssetMedia]. Nothing builds
+ * NewPipeYouTube, so no request reaches YouTube or googlevideo.com. The repositories in
+ * `:core:data` are the real ones. While [FakeNetwork] has YouTube off, the details, the stream
+ * links and the channel answer NETWORK. See docs/testing.md#emulator-tests.
  */
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [YouTubeModule::class])
@@ -72,11 +72,16 @@ object FakeYouTubeModule {
             }
         }
 
-    /** Search then play never opens a channel. */
+    /** The test channel, with its two videos. Every other channel is unavailable. */
     @Provides
-    fun provideChannelUploads(): ChannelUploadsRemoteDataSource = ChannelUploadsRemoteDataSource {
-        unavailable
-    }
+    fun provideChannelUploads(network: FakeNetwork): ChannelUploadsRemoteDataSource =
+        ChannelUploadsRemoteDataSource { id ->
+            when {
+                !network.youTubeReachable -> unreachable
+                id == TestVideo.channelId -> YouTubeResult.Success(TestVideo.uploads)
+                else -> unavailable
+            }
+        }
 
     /** Search then play never reads subtitles. */
     @Provides

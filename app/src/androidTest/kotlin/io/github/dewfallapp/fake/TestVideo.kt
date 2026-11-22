@@ -1,7 +1,9 @@
 package io.github.dewfallapp.fake
 
 import io.github.dewfallapp.core.model.AudioFormat
+import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.StreamLinks
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoFormat
@@ -26,6 +28,9 @@ object TestVideo {
 
     /** Only the video screen shows it, so seeing it shows that the screen got the details. */
     const val DESCRIPTION = "A test pattern and a tone, made for Dewfall's emulator tests."
+
+    /** What the test channel's page says about it. */
+    const val CHANNEL_DESCRIPTION = "Test patterns for Dewfall's emulator tests."
 
     /** The picture's size in video.mp4. */
     const val WIDTH = 320
@@ -88,6 +93,20 @@ object TestVideo {
 
     val otherDetails: VideoDetails
         get() = details.copy(id = otherId, title = OTHER_TITLE)
+
+    /** The test channel, as its channel page shows it, with both videos. */
+    val uploads: ChannelUploads
+        get() =
+            ChannelUploads(
+                channel =
+                    Channel(
+                        id = channelId,
+                        name = CHANNEL_NAME,
+                        avatars = emptyList(),
+                        description = CHANNEL_DESCRIPTION,
+                    ),
+                videos = listOf(summary, otherSummary),
+            )
 
     /**
      * A video-only and an audio-only format, as most YouTube videos have, so the player merges two

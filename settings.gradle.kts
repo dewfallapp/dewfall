@@ -48,6 +48,10 @@ include(":core:ui")
 
 include(":core:youtube")
 
+include(":feature:channel-page-logic")
+
+include(":feature:channel-page-ui")
+
 include(":feature:player-logic")
 
 include(":feature:player-ui")

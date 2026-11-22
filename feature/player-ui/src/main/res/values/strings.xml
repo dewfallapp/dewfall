@@ -2,6 +2,8 @@
     <!-- The video screen. See openspec/specs/player/spec.md. -->
     <!-- The top button's content description. It minimizes the video into the mini player. -->
     <string name="player_minimize">Minimize player</string>
+    <!-- What a screen reader says that tapping the channel does. %1$s is the channel's name. -->
+    <string name="player_open_channel">Open %1$s</string>
     <string name="player_loading">Loading video</string>
 
     <!-- The line under the title. -->

@@ -1,5 +1,6 @@
 package io.github.dewfallapp.feature.player.logic
 
+import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.YouTubeError
@@ -13,6 +14,8 @@ import io.github.dewfallapp.core.mvi.MviState
  */
 data class VideoPage(
     val title: String,
+    /** The channel's ID, which opens its channel page. User data, so never log it. */
+    val channelId: ChannelId,
     val channelName: String,
     /** The channel name's first user-perceived character, or null when the name has none. */
     val channelInitial: String?,

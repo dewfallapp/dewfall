@@ -77,7 +77,7 @@ data class ChannelState(
     val openedId: ChannelId,
     /** The ID YouTube answered for, when a load gave another one than [openedId]. */
     val answeredId: ChannelId? = null,
-    val load: LoadArea,              // Loading(number) | Loaded(number, channel, rows) | Failed(number, error)
+    val load: LoadArea,              // Loading(number) | Loaded(number, rows) | Failed(number, error)
     /** What the database said for each of the page's IDs: a missing key is not read yet, null is not subscribed. */
     val reads: Map<ChannelId, Channel?> = emptyMap(),
     /** The channel the page shows: the loaded one, else the stored one, kept after an unsubscribe. */
@@ -91,12 +91,12 @@ The page's IDs are `openedId` and, after a redirect, `answeredId`. `subscription
 
 `shownChannel` is set by a successful load, and, after a load failed, by the stored channel that a `SubscriptionRead` holds, whichever comes last. While the channel loads, the page shows no channel and no card, as the spec's "Before the page knows" asks. Nothing clears it, so after an offline unsubscribe the header and card stay, and Subscribe still has a channel to keep. The card shows when `shownChannel` isn't null and `subscription` isn't Unknown. Rows are `UploadRow(id, title, duration, kind, published)`.
 
-Intents: `Loaded(number, result)`, `TryAgain`, `SubscriptionRead(channelId, stored: Channel?)`, `Subscribe`, `UnsubscribeTapped`, `UnsubscribeConfirmed`, `UnsubscribeCancelled`, `DescriptionToggled`. The screen has no effects. Opening a video and going back start in the UI and change no state, so they go straight to `:app`, as AGENTS.md says.
+Intents: `LoadFinished(number, result)`, `TryAgain`, `SubscriptionRead(channelId, stored: Channel?)`, `Subscribe`, `UnsubscribeTapped`, `UnsubscribeConfirmed`, `UnsubscribeCancelled`, `DescriptionToggled`. The screen has no effects. Opening a video and going back start in the UI and change no state, so they go straight to `:app`, as AGENTS.md says.
 
-- `Loaded` counts only for the running load number. A success whose channel ID differs from `openedId` sets `answeredId`. `SubscriptionRead` for an ID that isn't one of the page's is ignored.
+- `LoadFinished` counts only for the running load number. A success whose channel ID differs from `openedId` sets `answeredId`. `SubscriptionRead` for an ID that isn't one of the page's is ignored.
 - `Subscribe` changes no state. The ViewModel subscribes with `shownChannel`. The card changes when the database answers, through `SubscriptionRead`, so the card shows what is kept, never a guess.
 - `UnsubscribeTapped` opens the dialog. `UnsubscribeConfirmed` and `UnsubscribeCancelled` close it.
-- **What screen readers hear.** The card's status line is one node whose content description is "Subscribed to %1$s" or "Not subscribed to %1$s", with a polite live region, as the SubscriptionCard README asks. It is one lasting node in both states, whose text and content description change, not two `if` branches: a new node would be a new live region, and TalkBack may say nothing after the tap. The card's first appearance and a rotation make a new node, which TalkBack shouldn't read as a change. When the state changes, the text changes and TalkBack says it. No event is needed, so nothing waits in state or as an effect to be said again after a rotation. Android 16 deprecates `announceForAccessibility` and names Compose's `liveRegion` as the way "to inform the user of changes to critical UI" ([Android 16 behavior changes](https://developer.android.com/about/versions/16/behavior-changes-all#deprecating-disruptive-accessibility-announcements), checked November 22, 2026).
+- **What screen readers hear.** The card's status line is one node whose content description is "Subscribed to %1$s" or "Not subscribed to %1$s", followed by the line under it, such as "New videos show in your inbox.", with a polite live region, as the SubscriptionCard README asks. It is one lasting node in both states, whose text and content description change, not two `if` branches: a new node would be a new live region, and TalkBack may say nothing after the tap. The card's first appearance and a rotation make a new node, which TalkBack shouldn't read as a change. When the state changes, the text changes and TalkBack says it. No event is needed, so nothing waits in state or as an effect to be said again after a rotation. Android 16 deprecates `announceForAccessibility` and names Compose's `liveRegion` as the way "to inform the user of changes to critical UI" ([Android 16 behavior changes](https://developer.android.com/about/versions/16/behavior-changes-all#deprecating-disruptive-accessibility-announcements), checked November 22, 2026).
 
 ### The ViewModel
 

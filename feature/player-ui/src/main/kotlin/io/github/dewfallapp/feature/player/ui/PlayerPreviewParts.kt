@@ -15,6 +15,7 @@ import androidx.media3.common.util.UnstableApi
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
+import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.VideoPage
@@ -31,6 +32,8 @@ private val previewZone = ZoneId.of("UTC")
 internal val previewPage =
     VideoPage(
         title = "How reading rooms were lit before electric lamps",
+        // A made-up ID in a channel ID's form, never a real channel's.
+        channelId = ChannelId("UC" + "0".repeat(21) + "1"),
         channelName = "Larkspur Lectures",
         channelInitial = "L",
         description =
@@ -110,6 +113,7 @@ internal fun PlayerScreenPreview(
             zone = previewZone,
             onIntent = {},
             onMinimize = {},
+            onOpenChannel = {},
             videoArea = { modifier ->
                 VideoArea(
                     content = content,

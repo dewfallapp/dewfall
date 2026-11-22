@@ -19,6 +19,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.github.dewfallapp.feature.channelpage.ui.ChannelPage
 import io.github.dewfallapp.feature.player.ui.MiniPlayer
 import io.github.dewfallapp.feature.player.ui.PlayerRoute
 import io.github.dewfallapp.feature.youtubesearch.ui.YouTubeSearch
@@ -61,7 +62,18 @@ internal fun DewfallNavigation(modifier: Modifier = Modifier) {
                         YouTubeSearch(onOpenVideo = { videoId -> backStack.openVideo(videoId) })
                     }
                     entry<PlayerKey>(clazzContentKey = { key -> key.entryId }) { key ->
-                        PlayerRoute(videoId = key.videoId, onMinimize = { backStack.close(key) })
+                        PlayerRoute(
+                            videoId = key.videoId,
+                            onMinimize = { backStack.close(key) },
+                            onOpenChannel = { channelId -> backStack.openChannel(key, channelId) },
+                        )
+                    }
+                    entry<ChannelKey>(clazzContentKey = { key -> key.entryId }) { key ->
+                        ChannelPage(
+                            channelId = key.channelId,
+                            onOpenVideo = { videoId -> backStack.openVideo(videoId) },
+                            onBack = { backStack.close(key) },
+                        )
                     }
                 },
         )

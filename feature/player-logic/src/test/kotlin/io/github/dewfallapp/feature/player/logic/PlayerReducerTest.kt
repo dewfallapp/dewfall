@@ -31,6 +31,7 @@ private fun details(isLive: Boolean = false) =
 private val PAGE =
     VideoPage(
         title = "How reading rooms were lit before electric lamps",
+        channelId = ChannelId("UCLA_DiR1FfKNvjuUpBHmylQ"),
         channelName = "Larkspur Lectures",
         channelInitial = "L",
         description = "A walk through four reading rooms.\nRecorded on location.",
