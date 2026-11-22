@@ -2,7 +2,7 @@
 
 ## Why
 
-Phase 5 is done when "resuming a half-watched video starts where you stopped" ([roadmap](../../../docs/roadmap.md#phase-5-subscriptions-and-the-inbox)). Today every video starts from the start, unless the same screen comes back after Android ended the app. The database from #48 can already keep a position and a watched mark for each video, but nothing writes to it or reads from it. The inbox (#49) and the later cleanup ([ADR 0005](../../../docs/adr/0005-download-deletion-rules.md)) need to know which videos are watched, and [docs/vision.md](../../../docs/vision.md) says a video counts as watched at about 90 percent. This change does [#50](https://github.com/dewfallapp/dewfall/issues/50).
+Phase 5 is done when "resuming a half-watched video starts where you stopped" ([roadmap](../../../../docs/roadmap.md#phase-5-subscriptions-and-the-inbox)). Today every video starts from the start, unless the same screen comes back after Android ended the app. The database from #48 can already keep a position and a watched mark for each video, but nothing writes to it or reads from it. The inbox (#49) and the later cleanup ([ADR 0005](../../../../docs/adr/0005-download-deletion-rules.md)) need to know which videos are watched, and [docs/vision.md](../../../../docs/vision.md) says a video counts as watched at about 90 percent. This change does [#50](https://github.com/dewfallapp/dewfall/issues/50).
 
 ## What Changes
 
@@ -29,9 +29,9 @@ None.
 
 - `:core:model`: the watched rule, `countsAsWatched`, and its tests.
 - `:core:playback`: PlaybackService saves positions and marks videos through WatchStateRepository, which `:core:data` already has, and starts a video with no explicit start position from its saved one. New JVM tests for the decisions.
-- `:feature:player-logic`: PlayerState holds the video's stored watch state, with intents for the database's answer and the chip, and a pure function that picks the stored or the screen's position. Tests for both.
+- `:feature:player-logic`: PlayerState holds whether the video is watched, with intents for the database's answer and the chip, and a pure function that picks the stored or the screen's position. Tests for both.
 - `:feature:player-ui`: PlayerViewModel follows the video's watch state and marks or unmarks it. PlayerScreen shows the chip. Two new strings, previews and screenshot test references for both states, and a ViewModel test.
-- `:core:designsystem`: the `done_all` and `check` glyphs.
+- `:core:designsystem`: the `done_all` glyph. (`check` came with #47.)
 - `:app`'s androidTest: an in-memory database module for the emulator tests, and ResumeTest. app/build.gradle.kts adds `:core:database` to androidTest only, so the module can name the database's types. The emulator tests workflow runs on the pull request.
 - No change to the database schema, the DAOs or WatchStateRepository's functions. No new dependency.
 - Docs: docs/architecture.md (the player, the video screen, and the lines that name #50), docs/testing.md (the player's hand checks: opening a video again now resumes it), and AGENTS.md's icon line, which now lets a glyph next to its own word go without a content description, as the maintainer chose.
