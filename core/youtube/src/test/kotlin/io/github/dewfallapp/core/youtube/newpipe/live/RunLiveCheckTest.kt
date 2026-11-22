@@ -139,10 +139,9 @@ class RunLiveCheckTest {
     }
 
     /**
-     * The statuses in today's saved visionOS answers, which the probe of November 22, 2026 also saw
-     * live. Recording a set again can change one while the set still passes, such as the video that
-     * never existed going from ERROR to UNPLAYABLE, and then this test's expectation changes with
-     * it.
+     * The statuses in today's saved visionOS answers. Recording a set again can change one while
+     * the set still passes, such as the video that never existed going from ERROR to UNPLAYABLE,
+     * and then this test's expectation changes with it.
      */
     @Test
     fun `the caller keeps what each call's visionOS player answer said`() = runTest {
