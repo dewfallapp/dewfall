@@ -26,16 +26,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.core.designsystem.component.Banner
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
+import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.ui.VideoRowItem
 import io.github.dewfallapp.core.ui.rowGroupShape
+import io.github.dewfallapp.feature.youtubesearch.logic.ChannelRow
 import io.github.dewfallapp.feature.youtubesearch.logic.ResultsArea
 import io.github.dewfallapp.feature.youtubesearch.logic.VideoRow
 import io.github.dewfallapp.feature.youtubesearch.logic.YouTubeSearchIntent
@@ -45,14 +48,19 @@ import kotlin.time.Instant
 /** The round badge behind a message's glyph, as in the "Search YouTube" frames. */
 private val MessageBadgeSize = 64.dp
 
-/** What the area under the search field shows, from [results]. */
+/**
+ * What the area under the search field shows, from [results], with each channel row's button from
+ * [subscribedIds], which is null until the database answers.
+ */
 @Composable
 internal fun SearchResultsArea(
     results: ResultsArea,
+    subscribedIds: Set<ChannelId>?,
     now: Instant,
     zone: ZoneId,
     onIntent: (YouTubeSearchIntent) -> Unit,
     onOpenVideo: (VideoId) -> Unit,
+    onOpenChannel: (ChannelId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (results) {
@@ -65,11 +73,15 @@ internal fun SearchResultsArea(
         }
         is ResultsArea.Loading -> Loading(modifier = modifier)
         is ResultsArea.Results -> {
-            VideoList(
-                rows = results.rows,
+            ResultList(
+                channels = results.channels,
+                videos = results.videos,
+                subscribedIds = subscribedIds,
                 now = now,
                 zone = zone,
+                onIntent = onIntent,
                 onOpenVideo = onOpenVideo,
+                onOpenChannel = onOpenChannel,
                 modifier = modifier,
             )
         }
@@ -175,15 +187,21 @@ private fun failureText(error: YouTubeError): Int =
     }
 
 /**
- * The videos found, in YouTube's order, under a "Videos" heading, in one rounded container as in
- * the "Search YouTube, results" frame. Tapping a row opens its video through [onOpenVideo].
+ * What a search found, in YouTube's order: the channels under a "Channels" heading, then the videos
+ * under a "Videos" heading, each list in one rounded container, as in the "Search YouTube, results"
+ * frames. A heading shows only above a list with rows. Tapping a channel row opens its page through
+ * [onOpenChannel], and tapping a video opens it through [onOpenVideo].
  */
 @Composable
-private fun VideoList(
-    rows: List<VideoRow>,
+private fun ResultList(
+    channels: List<ChannelRow>,
+    videos: List<VideoRow>,
+    subscribedIds: Set<ChannelId>?,
     now: Instant,
     zone: ZoneId,
+    onIntent: (YouTubeSearchIntent) -> Unit,
     onOpenVideo: (VideoId) -> Unit,
+    onOpenChannel: (ChannelId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val openLabel = stringResource(R.string.youtube_search_open_video)
@@ -192,30 +210,75 @@ private fun VideoList(
         contentPadding =
             PaddingValues(horizontal = DewfallSpacing.margin, vertical = DewfallSpacing.sm),
     ) {
-        item {
-            Text(
-                text = stringResource(R.string.youtube_search_videos_heading),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier =
-                    Modifier.padding(horizontal = DewfallSpacing.md, vertical = DewfallSpacing.sm),
-            )
+        if (channels.isNotEmpty()) {
+            item(key = CHANNELS_HEADING_KEY) {
+                Heading(text = stringResource(R.string.youtube_search_channels_heading))
+            }
+            itemsIndexed(items = channels, key = { _, row -> CHANNEL_KEY_PREFIX + row.id.value }) {
+                index,
+                row ->
+                ChannelResultRow(
+                    row = row,
+                    subscribed = subscribedIds?.let { row.id in it },
+                    onOpen = { onOpenChannel(row.id) },
+                    onSubscribe = { onIntent(YouTubeSearchIntent.Subscribe(row.id)) },
+                    onUnsubscribe = { onIntent(YouTubeSearchIntent.UnsubscribeTapped(row.id)) },
+                    modifier =
+                        Modifier.clip(rowGroupShape(index, channels.size))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                            .padding(horizontal = DewfallSpacing.sm),
+                )
+            }
         }
-        itemsIndexed(items = rows, key = { _, row -> row.id.value }) { index, row ->
-            VideoRowItem(
-                title = row.title,
-                channelName = row.channelName,
-                duration = row.duration,
-                kind = row.kind,
-                published = row.published,
-                now = now,
-                zone = zone,
-                modifier =
-                    Modifier.clip(rowGroupShape(index, rows.size))
-                        .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                        .clickable(onClickLabel = openLabel) { onOpenVideo(row.id) }
-                        .padding(horizontal = DewfallSpacing.sm),
-            )
+        if (videos.isNotEmpty()) {
+            item(key = VIDEOS_HEADING_KEY) {
+                Heading(
+                    text = stringResource(R.string.youtube_search_videos_heading),
+                    modifier =
+                        if (channels.isNotEmpty()) {
+                            Modifier.padding(top = DewfallSpacing.sm)
+                        } else {
+                            Modifier
+                        },
+                )
+            }
+            itemsIndexed(items = videos, key = { _, row -> row.id.value }) { index, row ->
+                VideoRowItem(
+                    title = row.title,
+                    channelName = row.channelName,
+                    duration = row.duration,
+                    kind = row.kind,
+                    published = row.published,
+                    now = now,
+                    zone = zone,
+                    modifier =
+                        Modifier.clip(rowGroupShape(index, videos.size))
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                            .clickable(onClickLabel = openLabel) { onOpenVideo(row.id) }
+                            .padding(horizontal = DewfallSpacing.sm),
+                )
+            }
         }
     }
+}
+
+/**
+ * The lazy list's keys for the two headings. A video's key is its ID, and a channel's has a prefix.
+ */
+private const val CHANNELS_HEADING_KEY = "heading:channels"
+private const val VIDEOS_HEADING_KEY = "heading:videos"
+private const val CHANNEL_KEY_PREFIX = "channel:"
+
+/** A heading above a group of rows, as in the "Search YouTube, results" frames. */
+@Composable
+private fun Heading(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier =
+            modifier
+                .semantics { heading() }
+                .padding(horizontal = DewfallSpacing.md, vertical = DewfallSpacing.sm),
+    )
 }

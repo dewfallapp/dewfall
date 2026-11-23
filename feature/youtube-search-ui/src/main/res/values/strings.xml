@@ -1,21 +1,33 @@
 <resources>
     <!-- The Search YouTube screen. See openspec/specs/youtube-search/spec.md. -->
     <string name="youtube_search_title">Search YouTube</string>
-    <string name="youtube_search_subtitle">Videos to stream</string>
+    <string name="youtube_search_subtitle">Videos to stream and channels to follow</string>
     <string name="youtube_search_placeholder">Search YouTube</string>
     <string name="youtube_search_field_icon">Search</string>
     <string name="youtube_search_clear">Clear search</string>
 
-    <string name="youtube_search_intro_title">Find a video</string>
-    <string name="youtube_search_intro_body">Videos you open from here stream right away.</string>
+    <string name="youtube_search_intro_title">Find a video or a channel</string>
+    <string name="youtube_search_intro_body">Videos you open from here stream right away. Subscribe to a channel to see its new videos in your inbox.</string>
     <string name="youtube_search_loading">Searching YouTube</string>
+    <string name="youtube_search_channels_heading">Channels</string>
     <string name="youtube_search_videos_heading">Videos</string>
     <!-- What a screen reader says that tapping a row does. -->
     <string name="youtube_search_open_video">Open video</string>
+    <!-- What a screen reader says that tapping a channel row does. -->
+    <string name="youtube_search_open_channel">Open channel</string>
+
+    <!-- A channel row's button. -->
+    <string name="youtube_search_subscribe">Subscribe</string>
+    <string name="youtube_search_subscribed">Subscribed</string>
+    <!-- The button as a screen reader says it, and again when it changes. %1$s is the channel's name. -->
+    <string name="youtube_search_subscribe_to">Subscribe to %1$s</string>
+    <string name="youtube_search_subscribed_to">Subscribed to %1$s</string>
+    <!-- What a screen reader says that tapping "Subscribed" does. -->
+    <string name="youtube_search_unsubscribe">Unsubscribe</string>
 
     <string name="youtube_search_no_results_title">No results</string>
     <!-- %1$s is the search text, as the user typed it, trimmed. -->
-    <string name="youtube_search_no_results_body">No videos on YouTube match “%1$s”. Check the spelling, or try fewer words.</string>
+    <string name="youtube_search_no_results_body">Nothing on YouTube matches “%1$s”. Check the spelling, or try fewer words.</string>
 
     <!-- The content description of the error glyph in a failed search's banner. -->
     <string name="youtube_search_failed_icon">Couldn\'t search</string>

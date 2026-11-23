@@ -47,6 +47,7 @@ import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.initialOf
+import io.github.dewfallapp.core.ui.UnsubscribeDialog
 import io.github.dewfallapp.core.ui.VideoRowItem
 import io.github.dewfallapp.core.ui.rowGroupShape
 import io.github.dewfallapp.feature.channelpage.logic.ChannelIntent
@@ -118,7 +119,11 @@ internal fun ChannelScreen(
     }
     val channel = state.shownChannel
     if (state.confirmingUnsubscribe && channel != null) {
-        UnsubscribeDialog(channelName = channel.name, onIntent = onIntent)
+        UnsubscribeDialog(
+            channelName = channel.name,
+            onConfirm = { onIntent(ChannelIntent.UnsubscribeConfirmed) },
+            onDismiss = { onIntent(ChannelIntent.UnsubscribeCancelled) },
+        )
     }
 }
 

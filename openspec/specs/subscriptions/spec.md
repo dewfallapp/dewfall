@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Lets a user open a channel's page, see its latest uploads, and subscribe to it or unsubscribe from it there. Keeps the channels a user subscribes to, and those channels' videos, on the phone, so the inbox, the channels screen and the overnight downloads can read them without asking YouTube again.
+Lets a user open a channel's page, see its latest uploads, and subscribe to it or unsubscribe from it there, or from Search YouTube's channel results. Keeps the channels a user subscribes to, and those channels' videos, on the phone, so the inbox, the channels screen and the overnight downloads can read them without asking YouTube again.
 
 ## Requirements
 
 ### Requirement: Subscriptions are kept on the phone
-Subscribing to a channel SHALL keep its ID, name, avatars, description and the time of subscribing on the phone, until the user unsubscribes. They SHALL still be there after the app closes, the phone restarts or the app is updated, until a schema change before the first public release asks for the app's data to be cleared.
+Subscribing to a channel SHALL keep its ID, name, avatars, its description when one is given, and the time of subscribing on the phone, until the user unsubscribes. They SHALL still be there after the app closes, the phone restarts or the app is updated, until a schema change before the first public release asks for the app's data to be cleared.
 
 #### Scenario: Subscribing
 - **WHEN** the user subscribes to a channel
@@ -20,6 +20,10 @@ Subscribing to a channel SHALL keep its ID, name, avatars, description and the t
 #### Scenario: A channel never subscribed to
 - **WHEN** the user has not subscribed to a channel
 - **THEN** the channel does not count as subscribed, reading it gives nothing, and the list of subscribed channels doesn't hold it
+
+#### Scenario: A subscription with no description
+- **WHEN** the user subscribes from Search YouTube's channel results, which keep no description
+- **THEN** reading that channel gives its name, avatars, no description and the time of subscribing, until a save of its uploads brings one, as "Saving a channel's uploads refreshes its details" says
 
 ### Requirement: Subscribing twice keeps one subscription
 Subscribing to a channel that is already subscribed SHALL change nothing. The channel SHALL appear once in the list, and its time of subscribing SHALL stay the first one.
@@ -299,6 +303,10 @@ The back arrow and the system's back gesture SHALL return to the screen under th
 #### Scenario: Back from a channel opened from a video
 - **WHEN** the user opened a video from search results, opened its channel page, and taps the back arrow
 - **THEN** Search YouTube shows the same text and results, and the video plays on in the mini player
+
+#### Scenario: Back from a channel opened from search
+- **WHEN** the user opened a channel from Search YouTube's channel results, subscribed on its page, and taps the back arrow
+- **THEN** Search YouTube shows the same text and results, and that channel's row says "Subscribed"
 
 ### Requirement: The channel page keeps its state
 A configuration change SHALL keep the channel, the uploads, a running load, the description's folding and an open dialog. After the system ends the app's process in the background, the page SHALL come back for the same channel and load it again.

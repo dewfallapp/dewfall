@@ -1,7 +1,9 @@
 package io.github.dewfallapp.feature.youtubesearch.logic
 
+import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.SearchResults
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
@@ -10,6 +12,7 @@ import io.github.dewfallapp.core.model.YouTubeResult
 import io.github.dewfallapp.core.mvi.Next
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.minutes
 
 private fun video(id: String, kind: VideoKind = VideoKind.VIDEO) =
@@ -24,8 +27,19 @@ private fun video(id: String, kind: VideoKind = VideoKind.VIDEO) =
         kind = kind,
     )
 
-private fun found(vararg videos: VideoSummary) =
-    YouTubeResult.Success(SearchResults(channels = emptyList(), videos = videos.toList()))
+private fun channel(id: String, name: String = "Channel $id", description: String = "") =
+    Channel(
+        id = ChannelId(id),
+        name = name,
+        avatars = listOf(Thumbnail("https://example.com/$id.jpg", width = 88, height = 88)),
+        description = description,
+    )
+
+private fun found(vararg videos: VideoSummary, channels: List<Channel> = emptyList()) =
+    YouTubeResult.Success(SearchResults(channels = channels, videos = videos.toList()))
+
+private const val KETTLE = "UCaaaaaaaaaaaaaaaaaaaaaa"
+private const val JAR = "UCbbbbbbbbbbbbbbbbbbbbbb"
 
 class YouTubeSearchReducerTest {
     private fun reduce(state: YouTubeSearchState, intent: YouTubeSearchIntent): YouTubeSearchState {
@@ -81,7 +95,7 @@ class YouTubeSearchReducerTest {
                     ),
                 )
 
-        val rows = (state.results as ResultsArea.Results).rows
+        val rows = (state.results as ResultsArea.Results).videos
         assertEquals(listOf("aaaaaaaaaaa", "ccccccccccc", "ddddddddddd"), rows.map { it.id.value })
         assertEquals(VideoKind.LIVE, rows[1].kind)
         assertEquals("Title of aaaaaaaaaaa", rows[0].title)
@@ -101,12 +115,12 @@ class YouTubeSearchReducerTest {
                     ),
                 )
 
-        val rows = (state.results as ResultsArea.Results).rows
+        val rows = (state.results as ResultsArea.Results).videos
         assertEquals(listOf("aaaaaaaaaaa", "bbbbbbbbbbb"), rows.map { it.id.value })
     }
 
     @Test
-    fun `no videos, or only Shorts, show no results`() {
+    fun `no channels and no videos, or only Shorts, show no results`() {
         val searching = YouTubeSearchState().after(YouTubeSearchIntent.Submit("sourdough"))
 
         assertEquals(
@@ -175,7 +189,7 @@ class YouTubeSearchReducerTest {
             state.after(YouTubeSearchIntent.SearchFinished(second, found(video("bbbbbbbbbbb"))))
         assertEquals(
             listOf("bbbbbbbbbbb"),
-            (answered.results as ResultsArea.Results).rows.map { it.id.value },
+            (answered.results as ResultsArea.Results).videos.map { it.id.value },
         )
     }
 
@@ -232,5 +246,173 @@ class YouTubeSearchReducerTest {
         for (state in listOf(YouTubeSearchState(), loading, found)) {
             assertEquals(state, state.after(YouTubeSearchIntent.TryAgain))
         }
+    }
+
+    private fun withResults(channels: List<Channel>, subscribed: Set<String>? = setOf(KETTLE)) =
+        YouTubeSearchState()
+            .after(
+                YouTubeSearchIntent.Submit("sourdough"),
+                YouTubeSearchIntent.SearchFinished(
+                    sourdough,
+                    found(video("aaaaaaaaaaa"), channels = channels),
+                ),
+            )
+            .let { state ->
+                if (subscribed == null) {
+                    state
+                } else {
+                    state.after(
+                        YouTubeSearchIntent.SubscriptionsRead(subscribed.map(::ChannelId).toSet()),
+                    )
+                }
+            }
+
+    @Test
+    fun `channels keep YouTube's order, show once, and keep their name, excerpt and avatars`() {
+        val kettle = channel(KETTLE, "Kettle and Crumb", "Bread, fermentation and old recipes")
+        val state = withResults(listOf(kettle, channel(JAR), kettle))
+
+        val channels = (state.results as ResultsArea.Results).channels
+        assertEquals(listOf(KETTLE, JAR), channels.map { it.id.value })
+        assertEquals("Kettle and Crumb", channels[0].name)
+        assertEquals("Bread, fermentation and old recipes", channels[0].excerpt)
+        assertEquals(kettle.avatars, channels[0].avatars)
+    }
+
+    @Test
+    fun `an excerpt shows runs of spaces and line breaks as one space`() {
+        val state =
+            withResults(
+                listOf(channel(KETTLE, description = "  Your friendly\n   flight center.  ")),
+            )
+
+        val channels = (state.results as ResultsArea.Results).channels
+        assertEquals("Your friendly flight center.", channels[0].excerpt)
+    }
+
+    @Test
+    fun `only channels, or channels with only Shorts, still show results`() {
+        val searching = YouTubeSearchState().after(YouTubeSearchIntent.Submit("sourdough"))
+
+        val onlyChannels =
+            searching.after(
+                YouTubeSearchIntent.SearchFinished(
+                    sourdough,
+                    found(channels = listOf(channel(JAR))),
+                ),
+            )
+        assertEquals(
+            ResultsArea.Results(
+                sourdough,
+                channels =
+                    listOf(ChannelRow(ChannelId(JAR), "Channel $JAR", "", channel(JAR).avatars)),
+                videos = emptyList(),
+            ),
+            onlyChannels.results,
+        )
+
+        val withShorts =
+            searching.after(
+                YouTubeSearchIntent.SearchFinished(
+                    sourdough,
+                    found(video("bbbbbbbbbbb", VideoKind.SHORT), channels = listOf(channel(JAR))),
+                ),
+            )
+        val results = withShorts.results as ResultsArea.Results
+        assertEquals(listOf(JAR), results.channels.map { it.id.value })
+        assertEquals(emptyList(), results.videos)
+    }
+
+    @Test
+    fun `the subscribed channels are unknown until the database answers, then follow it`() {
+        assertNull(YouTubeSearchState().subscribedIds)
+
+        val read =
+            YouTubeSearchState()
+                .after(YouTubeSearchIntent.SubscriptionsRead(setOf(ChannelId(KETTLE))))
+        assertEquals(setOf(ChannelId(KETTLE)), read.subscribedIds)
+        assertEquals(
+            emptySet(),
+            read.after(YouTubeSearchIntent.SubscriptionsRead(emptySet())).subscribedIds,
+        )
+    }
+
+    @Test
+    fun `a new search and clearing keep what the database said`() {
+        val state = withResults(listOf(channel(KETTLE)))
+
+        assertEquals(setOf(ChannelId(KETTLE)), state.after(YouTubeSearchIntent.Clear).subscribedIds)
+        assertEquals(
+            setOf(ChannelId(KETTLE)),
+            state.after(YouTubeSearchIntent.Submit("rye")).subscribedIds,
+        )
+    }
+
+    @Test
+    fun `subscribing changes no state`() {
+        val state = withResults(listOf(channel(KETTLE), channel(JAR)))
+
+        assertEquals(state, state.after(YouTubeSearchIntent.Subscribe(ChannelId(JAR))))
+    }
+
+    @Test
+    fun `tapping Subscribed opens the dialog for that channel`() {
+        val state = withResults(listOf(channel(KETTLE, "Kettle and Crumb"), channel(JAR)))
+
+        val asking = state.after(YouTubeSearchIntent.UnsubscribeTapped(ChannelId(KETTLE)))
+        assertEquals(ChannelId(KETTLE), asking.confirmingUnsubscribe)
+        assertEquals("Kettle and Crumb", asking.unsubscribeDialogRow?.name)
+    }
+
+    @Test
+    fun `the dialog opens only for a subscribed channel in the results`() {
+        val state = withResults(listOf(channel(KETTLE), channel(JAR)))
+
+        // Not subscribed.
+        assertEquals(state, state.after(YouTubeSearchIntent.UnsubscribeTapped(ChannelId(JAR))))
+        // Subscribed, but not in the results.
+        val elsewhere =
+            state.after(
+                YouTubeSearchIntent.SubscriptionsRead(
+                    setOf(ChannelId(KETTLE), ChannelId("UCcccccccccccccccccccccc")),
+                ),
+            )
+        assertEquals(
+            elsewhere,
+            elsewhere.after(
+                YouTubeSearchIntent.UnsubscribeTapped(ChannelId("UCcccccccccccccccccccccc")),
+            ),
+        )
+        // Before the database answers.
+        val unknown = withResults(listOf(channel(KETTLE)), subscribed = null)
+        assertEquals(
+            unknown,
+            unknown.after(YouTubeSearchIntent.UnsubscribeTapped(ChannelId(KETTLE))),
+        )
+    }
+
+    @Test
+    fun `confirming, cancelling, a new search and clearing close the dialog`() {
+        val asking =
+            withResults(listOf(channel(KETTLE)))
+                .after(YouTubeSearchIntent.UnsubscribeTapped(ChannelId(KETTLE)))
+
+        val closing =
+            listOf(
+                YouTubeSearchIntent.UnsubscribeConfirmed(ChannelId(KETTLE)),
+                YouTubeSearchIntent.UnsubscribeCancelled,
+                YouTubeSearchIntent.Submit("rye"),
+                YouTubeSearchIntent.Clear,
+            )
+        for (intent in closing) {
+            val closed = asking.after(intent)
+            assertNull(closed.confirmingUnsubscribe, intent.toString())
+            assertNull(closed.unsubscribeDialogRow, intent.toString())
+        }
+        // Confirming changes nothing else: the button changes when the database answers.
+        assertEquals(
+            asking.copy(confirmingUnsubscribe = null),
+            asking.after(YouTubeSearchIntent.UnsubscribeConfirmed(ChannelId(KETTLE))),
+        )
     }
 }

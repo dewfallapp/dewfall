@@ -162,6 +162,29 @@ class BackStackTest {
     }
 
     @Test
+    fun `a channel opened from search sits on search, and back returns to it`() {
+        backStack.openChannel(SearchKey, CHANNEL)
+
+        assertEquals(2, backStack.size)
+        val page = assertIs<ChannelKey>(backStack.last())
+        assertEquals(CHANNEL, page.channelId)
+        assertTrue(backStack.showsMiniPlayer())
+
+        backStack.close(page)
+        assertEquals(listOf<NavKey>(SearchKey), backStack)
+    }
+
+    @Test
+    fun `a second tap on a channel in search opens nothing more`() {
+        backStack.openChannel(SearchKey, CHANNEL)
+        backStack.openChannel(SearchKey, CHANNEL)
+        backStack.openChannel(SearchKey, OTHER_CHANNEL)
+
+        assertEquals(2, backStack.size)
+        assertEquals(CHANNEL, assertIs<ChannelKey>(backStack.last()).channelId)
+    }
+
+    @Test
     fun `closing search does nothing`() {
         backStack.close(SearchKey)
 

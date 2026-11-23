@@ -32,6 +32,12 @@ object TestVideo {
     /** What the test channel's page says about it. */
     const val CHANNEL_DESCRIPTION = "Test patterns for Dewfall's emulator tests."
 
+    /**
+     * The excerpt of the test channel's description that the search gives, as YouTube's search
+     * gives only part of it. Only the search's channel row shows it.
+     */
+    const val CHANNEL_EXCERPT = "Test patterns and tones, made for..."
+
     /** The picture's size in video.mp4. */
     const val WIDTH = 320
     const val HEIGHT = 180
@@ -93,6 +99,16 @@ object TestVideo {
 
     val otherDetails: VideoDetails
         get() = details.copy(id = otherId, title = OTHER_TITLE)
+
+    /** The test channel, as the search finds it, with only an excerpt of its description. */
+    val searchChannel: Channel
+        get() =
+            Channel(
+                id = channelId,
+                name = CHANNEL_NAME,
+                avatars = emptyList(),
+                description = CHANNEL_EXCERPT,
+            )
 
     /** The test channel, as its channel page shows it, with both videos. */
     val uploads: ChannelUploads

@@ -1,5 +1,5 @@
 <resources>
-    <!-- Text that several features share: a video row's length and how long ago it was published. -->
+    <!-- Text that several features share: a video row's length and how long ago it was published, and the Unsubscribe dialog. -->
     <!-- The length tag on a video's thumbnail box. -->
     <string name="core_ui_length_hours">%1$dh %2$02dm</string>
     <string name="core_ui_length_minutes">%1$dm</string>
@@ -43,4 +43,10 @@
         <item quantity="one">%d year ago</item>
         <item quantity="other">%d years ago</item>
     </plurals>
+
+    <!-- The dialog that asks before unsubscribing. %1$s is the channel's name. -->
+    <string name="core_ui_unsubscribe_title">Unsubscribe from %1$s?</string>
+    <string name="core_ui_unsubscribe_body">Its new videos stop showing in your inbox.</string>
+    <string name="core_ui_unsubscribe">Unsubscribe</string>
+    <string name="core_ui_cancel">Cancel</string>
 </resources>

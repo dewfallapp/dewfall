@@ -18,14 +18,15 @@ internal fun MutableList<NavKey>.openVideo(videoId: VideoId) {
 }
 
 /**
- * Opens the channel page for [channelId] from the video screen of [from], only while that screen is
- * on top. It removes the video screen, as its minimize button does, so the video goes on in the
- * mini player. When the screen under it is already a page for the same channel ID, that page shows
- * again and no second one opens. A second tap finds [from] gone, so it opens nothing.
+ * Opens the channel page for [channelId] from the screen of [from], such as a video screen or
+ * Search YouTube, only while that screen is on top, so a second tap, which finds the channel page
+ * on top, opens nothing. From a video screen it removes that screen, as its minimize button does,
+ * so the video goes on in the mini player. When the screen under it is then already a page for the
+ * same channel ID, that page shows again and no second one opens.
  */
-internal fun MutableList<NavKey>.openChannel(from: PlayerKey, channelId: ChannelId) {
+internal fun MutableList<NavKey>.openChannel(from: NavKey, channelId: ChannelId) {
     if (lastOrNull() != from) return
-    remove(from)
+    if (from is PlayerKey) remove(from)
     val under = lastOrNull()
     if (under is ChannelKey && under.channelId == channelId) return
     add(ChannelKey(channelId, entryId = UUID.randomUUID().toString()))

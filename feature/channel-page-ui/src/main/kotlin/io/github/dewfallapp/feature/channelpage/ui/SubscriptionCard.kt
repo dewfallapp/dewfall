@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -140,26 +139,4 @@ private fun SubscribeButton(onClick: () -> Unit) {
         Spacer(Modifier.size(ButtonDefaults.IconSpacing))
         Text(text = stringResource(R.string.channel_page_subscribe))
     }
-}
-
-/** The dialog that "Unsubscribe" opens. Cancel, the back gesture and a tap outside close it. */
-@Composable
-internal fun UnsubscribeDialog(channelName: String, onIntent: (ChannelIntent) -> Unit) {
-    AlertDialog(
-        onDismissRequest = { onIntent(ChannelIntent.UnsubscribeCancelled) },
-        title = {
-            Text(text = stringResource(R.string.channel_page_unsubscribe_title, channelName))
-        },
-        text = { Text(text = stringResource(R.string.channel_page_unsubscribe_body)) },
-        confirmButton = {
-            TextButton(onClick = { onIntent(ChannelIntent.UnsubscribeConfirmed) }) {
-                Text(text = stringResource(R.string.channel_page_unsubscribe))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { onIntent(ChannelIntent.UnsubscribeCancelled) }) {
-                Text(text = stringResource(R.string.channel_page_cancel))
-            }
-        },
-    )
 }
