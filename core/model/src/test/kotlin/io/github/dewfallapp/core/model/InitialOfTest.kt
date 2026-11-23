@@ -7,8 +7,7 @@ import kotlin.test.assertNull
 /**
  * The tests run on JDK 17, whose BreakIterator splits most emoji sequences, such as flags, into
  * code points, while a phone's ICU keeps them whole. So these cover only the cases on which both
- * agree. A check of flags and emoji sequences on an emulator is still open, as task 7.3 in
- * openspec/changes/archive/2026-11-19-video-screen/tasks.md says.
+ * agree. ChannelInitialTest in :app's emulator tests checks flags and emoji sequences on Android.
  */
 class InitialOfTest {
     @Test
