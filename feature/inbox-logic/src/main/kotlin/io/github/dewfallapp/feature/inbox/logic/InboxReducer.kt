@@ -10,15 +10,19 @@ import io.github.dewfallapp.core.mvi.Reducer
  * the card with the newest video comes first, and each card keeps the videos' order. The count of
  * channels and the videos come from two reads, which can disagree for a moment, such as a count of
  * 0 with the last videos while the user unsubscribes. The videos win: any video shows the cards,
- * and only an empty list looks at the count. The inbox has no effects, so its effect type is
- * Nothing.
+ * and only an empty list looks at the count. The check for new videos is copied as it comes, and a
+ * tap on "Check for new videos" changes nothing here: the ViewModel starts the check. The inbox has
+ * no effects, so its effect type is Nothing.
  */
 object InboxReducer : Reducer<InboxState, InboxIntent, Nothing> {
     override fun reduce(state: InboxState, intent: InboxIntent): Next<InboxState, Nothing> =
         Next(
             when (intent) {
-                is InboxIntent.Loaded -> InboxState(content(intent))
-                InboxIntent.ReadFailed -> InboxState(InboxContent.Unreadable)
+                is InboxIntent.Loaded -> state.copy(content = content(intent))
+                InboxIntent.ReadFailed -> state.copy(content = InboxContent.Unreadable)
+                // The ViewModel starts the check. The state follows from the check's own state.
+                InboxIntent.CheckForNewVideos -> state
+                is InboxIntent.CheckChanged -> state.copy(check = intent.check)
             },
         )
 }

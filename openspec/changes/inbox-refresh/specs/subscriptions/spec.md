@@ -25,8 +25,8 @@ A check SHALL ask YouTube for the latest uploads of each channel the user subscr
 When YouTube can't be reached, or refuses to answer, a check SHALL stop at once and send no more requests. The uploads it saved before SHALL stay saved, and the inbox SHALL say why, as its spec says.
 
 #### Scenario: The connection drops
-- **WHEN** a check has saved 3 of 10 channels and the connection drops
-- **THEN** the check stops, the 3 channels' uploads stay saved, and no request is sent for the other 7
+- **WHEN** a check has saved 3 of 10 channels, the connection drops, and the request for the fourth fails
+- **THEN** the check stops, the 3 channels' uploads stay saved, and no request is sent for the other 6
 
 #### Scenario: YouTube refuses
 - **WHEN** YouTube refuses a check's request, such as by asking for proof that the user isn't a bot
@@ -48,7 +48,7 @@ When YouTube closed a channel, can't show it, or sends an answer for it that the
 - **THEN** the other 2 channels' uploads are saved, and the check ends with no failure
 
 ### Requirement: A check follows a channel that moved
-When YouTube answers for a subscribed channel with another channel's ID, a check SHALL move the subscription to that ID, keeping the time the user subscribed, and save the uploads under it. If the user already subscribes under the new ID, the old subscription SHALL go and the new one SHALL keep its own time. Videos saved under the old ID, and what the user watched of them, SHALL stay.
+When YouTube answers for a subscribed channel with another channel's ID, a check SHALL move the subscription to that ID, keeping the time the user subscribed, and save the uploads under it. If the user already subscribes under the new ID, the old subscription SHALL go and the new one SHALL keep its own time. Videos saved under the old ID SHALL move to the new ID with the subscription, so they stay in the inbox as they were, and what the user watched of them SHALL stay.
 
 #### Scenario: A moved channel
 - **WHEN** the user subscribed last month under an ID that YouTube now sends on to another, and a check runs
@@ -57,6 +57,10 @@ When YouTube answers for a subscribed channel with another channel's ID, a check
 #### Scenario: Subscribed under both IDs
 - **WHEN** the user subscribes under a moved channel's old ID and under its new one, and a check runs
 - **THEN** only the subscription under the new ID stays, with its own time of subscribing
+
+#### Scenario: A started video under the old ID
+- **WHEN** the user half watched a video saved under a moved channel's old ID, YouTube's latest uploads under the new ID no longer list it, and a check runs
+- **THEN** the video is under the new ID and still in the inbox, at the same position
 
 ### Requirement: A check survives a failure on the phone
 When the phone can't read the subscriptions or save what a check fetched, such as on a full disk, the check SHALL stop, send no more requests, and end without crashing the app. The inbox SHALL show no banner for it, and a new check SHALL be possible at once.

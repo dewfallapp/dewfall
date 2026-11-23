@@ -53,6 +53,7 @@ private class FakeChannelDao(
     val existing = mutableSetOf<String>()
     val unsubscribed = mutableListOf<String>()
     val askedFor = mutableListOf<String>()
+    val moved = mutableListOf<Pair<String, ChannelEntity>>()
 
     override fun subscribedChannels(): Flow<List<ChannelEntity>> = all
 
@@ -77,6 +78,15 @@ private class FakeChannelDao(
     override suspend fun unsubscribe(id: String) {
         gate?.await()
         unsubscribed += id
+    }
+
+    override suspend fun channel(id: String): ChannelEntity? = error("Not used")
+
+    override suspend fun moveVideos(fromId: String, toId: String) = error("Not used")
+
+    override suspend fun moveSubscription(fromId: String, to: ChannelEntity) {
+        gate?.await()
+        moved += fromId to to
     }
 }
 
@@ -151,6 +161,23 @@ class RoomSubscriptionsRepositoryTest {
         repository.unsubscribe(CHANNEL.id)
 
         assertEquals(listOf("UCaaaaaaaaaaaaaaaaaaaaaa"), dao.unsubscribed)
+    }
+
+    @Test
+    fun `moving passes both IDs and the new channel's details`() = runTest {
+        val dao = FakeChannelDao()
+        val repository = RoomSubscriptionsRepository(dao, FixedClock(NOW), backgroundScope)
+        val moved = CHANNEL.copy(id = ChannelId("UCbbbbbbbbbbbbbbbbbbbbbb"), name = "Kettle")
+
+        repository.moveSubscription(from = CHANNEL.id, to = moved)
+
+        assertEquals(
+            listOf(
+                "UCaaaaaaaaaaaaaaaaaaaaaa" to
+                    ROW.copy(id = "UCbbbbbbbbbbbbbbbbbbbbbb", name = "Kettle"),
+            ),
+            dao.moved,
+        )
     }
 
     @Test
@@ -250,5 +277,21 @@ class RoomSubscriptionsRepositoryTest {
         runCurrent()
 
         assertEquals(listOf("UCaaaaaaaaaaaaaaaaaaaaaa"), dao.unsubscribed)
+    }
+
+    @Test
+    fun `a move finishes when the caller is cancelled`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val dao = FakeChannelDao(gate = gate)
+        val repository = RoomSubscriptionsRepository(dao, FixedClock(NOW), backgroundScope)
+        val moved = CHANNEL.copy(id = ChannelId("UCbbbbbbbbbbbbbbbbbbbbbb"))
+        val caller = launch { repository.moveSubscription(from = CHANNEL.id, to = moved) }
+        runCurrent()
+
+        caller.cancel()
+        gate.complete(Unit)
+        runCurrent()
+
+        assertEquals(listOf("UCaaaaaaaaaaaaaaaaaaaaaa"), dao.moved.map { it.first })
     }
 }

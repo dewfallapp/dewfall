@@ -3,6 +3,7 @@ package io.github.dewfallapp.feature.inbox.ui
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.dewfallapp.core.data.subscriptions.SubscriptionsRepository
+import io.github.dewfallapp.core.data.subscriptions.UploadsChecker
 import io.github.dewfallapp.core.data.video.StoredVideosRepository
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.mvi.MviViewModel
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 /**
@@ -30,9 +32,12 @@ private const val STOP_TIMEOUT_MS = 5_000L
 
 /**
  * Reads the inbox from the phone: the number of subscribed channels and the inbox's videos, and
- * dispatches each pair as [InboxIntent.Loaded]. It reads only while the screen collects its state,
- * and for [STOP_TIMEOUT_MS] after, so the query doesn't run again for every change while another
- * screen covers the inbox. The state keeps the last answer for the way back.
+ * dispatches each pair as [InboxIntent.Loaded]. It also reads the app's check for new videos, as
+ * [InboxIntent.CheckChanged], and starts a check for [InboxIntent.CheckForNewVideos]. The check
+ * runs in the app, not here, so it goes on when the inbox doesn't show. It reads only while the
+ * screen collects its state, and for [STOP_TIMEOUT_MS] after, so the query doesn't run again for
+ * every change while another screen covers the inbox. The state keeps the last answer for the way
+ * back.
  *
  * A read that throws, such as on a damaged database, shows Unreadable instead of crashing the app,
  * which opens on the inbox. The reads start again the next time the inbox shows after they stopped.
@@ -47,13 +52,16 @@ internal class InboxViewModel
 constructor(
     private val subscriptions: SubscriptionsRepository,
     private val storedVideos: StoredVideosRepository,
+    private val checker: UploadsChecker,
 ) : MviViewModel<InboxState, InboxIntent, Nothing>(InboxState(), InboxReducer) {
 
     init {
         readWhileShown()
     }
 
-    override fun runSideEffects(intent: InboxIntent) = Unit
+    override fun runSideEffects(intent: InboxIntent) {
+        if (intent == InboxIntent.CheckForNewVideos) checker.start()
+    }
 
     // flatMapLatest is still marked experimental.
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -63,7 +71,7 @@ constructor(
                 .command(stateSubscriptionCount)
                 .distinctUntilChanged()
                 .flatMapLatest { command ->
-                    if (command == SharingCommand.START) inbox() else emptyFlow()
+                    if (command == SharingCommand.START) merge(inbox(), check()) else emptyFlow()
                 }
                 .collect(::dispatch)
         }
@@ -78,4 +86,7 @@ constructor(
             }
             // The inbox is the first screen, so a read that throws must not crash the app.
             .catch { emit(InboxIntent.ReadFailed) }
+
+    /** The check's state, which is a StateFlow, so it never throws and starts with its value. */
+    private fun check(): Flow<InboxIntent> = checker.state.map(InboxIntent::CheckChanged)
 }

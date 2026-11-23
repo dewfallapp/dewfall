@@ -6,6 +6,7 @@ import androidx.room3.Embedded
 import androidx.room3.Insert
 import androidx.room3.OnConflictStrategy
 import androidx.room3.Query
+import androidx.room3.Transaction
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 
@@ -79,4 +80,27 @@ interface ChannelDao {
 
     /** Unsubscribes from the channel with [id]. Its videos and their watch state stay. */
     @Query("DELETE FROM channels WHERE id = :id") suspend fun unsubscribe(id: String)
+
+    /** The subscribed channel with [id], read once, or null while it isn't subscribed. */
+    @Query("SELECT * FROM channels WHERE id = :id") suspend fun channel(id: String): ChannelEntity?
+
+    /**
+     * Moves the subscription with [fromId] to [to]'s ID, after YouTube sent the channel on to
+     * another one, in one transaction. The new row takes [to]'s ID, name, description and avatars,
+     * and the old row's time of subscribing, which [to]'s own time doesn't replace. If [to]'s ID is
+     * already subscribed, that row stays as it is. The videos saved under [fromId] move to [to]'s
+     * ID, so they stay in the inbox as they were. Either way the old row goes. If [fromId] isn't
+     * subscribed, such as after the user unsubscribed during a check, nothing changes.
+     */
+    @Transaction
+    suspend fun moveSubscription(fromId: String, to: ChannelEntity) {
+        val from = channel(fromId) ?: return
+        subscribe(to.copy(subscribedAt = from.subscribedAt))
+        moveVideos(fromId = fromId, toId = to.id)
+        unsubscribe(fromId)
+    }
+
+    /** Moves every video saved under the channel [fromId] to the channel [toId]. */
+    @Query("UPDATE videos SET channel_id = :toId WHERE channel_id = :fromId")
+    suspend fun moveVideos(fromId: String, toId: String)
 }

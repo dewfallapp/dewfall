@@ -38,6 +38,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,6 +48,7 @@ import io.github.dewfallapp.core.designsystem.component.ChannelEmblem
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.UploadsCheckFailure
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.initialOf
 import io.github.dewfallapp.core.ui.VideoRowItem
@@ -64,7 +67,9 @@ private val MessageBadgeSize = 64.dp
 /**
  * The inbox: its top bar, then the cards of new videos, or an empty state. It is stateless: it
  * shows [state], with time ago counted from [now] in [zone], and reports taps through
- * [onOpenVideo], [onOpenChannel], [onOpenSearch] and [onImportFromTakeout]. Before the phone's
+ * [onOpenVideo], [onOpenChannel], [onOpenSearch], [onImportFromTakeout], and [onCheck] for "Check
+ * for new videos" and the banner's "Try again". The check button's glyph turns while a check runs
+ * only when [glyphTurns], which is false when the phone's animations are off. Before the phone's
  * first answer it shows only the top bar.
  *
  * Its background fills the window behind the system bars. Its content sits in one centered column
@@ -80,6 +85,8 @@ internal fun InboxScreen(
     onOpenChannel: (ChannelId) -> Unit,
     onOpenSearch: () -> Unit,
     onImportFromTakeout: () -> Unit,
+    onCheck: () -> Unit,
+    glyphTurns: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
@@ -88,59 +95,99 @@ internal fun InboxScreen(
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(modifier = Modifier.widthIn(max = ReadableWidth).fillMaxWidth()) {
-                TopBar(onOpenSearch = onOpenSearch)
-                when (val content = state.content) {
-                    null -> Unit
-                    is InboxContent.Videos -> {
-                        Cards(
-                            groups = content.groups,
-                            now = now,
-                            zone = zone,
-                            onOpenVideo = onOpenVideo,
-                            onOpenChannel = onOpenChannel,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    InboxContent.NoChannels -> {
-                        NoChannels(
-                            onOpenSearch = onOpenSearch,
-                            onImportFromTakeout = onImportFromTakeout,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    is InboxContent.CaughtUp -> {
-                        Message(
-                            glyph = DesignR.drawable.ic_done_all,
-                            glyphDescription = stringResource(R.string.inbox_caught_up_icon),
-                            title = stringResource(R.string.inbox_caught_up_title),
-                            body =
-                                pluralStringResource(
-                                    R.plurals.inbox_caught_up_body,
-                                    content.channelCount,
-                                    content.channelCount,
-                                ),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    InboxContent.Unreadable -> {
-                        Message(
-                            glyph = DesignR.drawable.ic_error,
-                            glyphDescription = stringResource(R.string.inbox_unreadable_icon),
-                            glyphTint = MaterialTheme.colorScheme.error,
-                            title = stringResource(R.string.inbox_unreadable_title),
-                            body = stringResource(R.string.inbox_unreadable_body),
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
+                TopBar(
+                    checking = state.checking,
+                    glyphTurns = glyphTurns,
+                    onOpenSearch = onOpenSearch,
+                    onCheck = if (state.offersCheck) onCheck else null,
+                )
+                Content(
+                    state = state,
+                    now = now,
+                    zone = zone,
+                    onOpenVideo = onOpenVideo,
+                    onOpenChannel = onOpenChannel,
+                    onOpenSearch = onOpenSearch,
+                    onImportFromTakeout = onImportFromTakeout,
+                    onCheck = onCheck,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }
 }
 
-/** "Dewfall", "Inbox" under it, and the search button, as in the "Inbox" frame. */
+/**
+ * What the inbox shows under its top bar for [state]: nothing before the phone's first answer, the
+ * cards, or an empty or failed state, each given [modifier].
+ */
 @Composable
-private fun TopBar(onOpenSearch: () -> Unit, modifier: Modifier = Modifier) {
+private fun Content(
+    state: InboxState,
+    now: Instant,
+    zone: ZoneId,
+    onOpenVideo: (VideoId) -> Unit,
+    onOpenChannel: (ChannelId) -> Unit,
+    onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
+    onCheck: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    when (val content = state.content) {
+        null -> Unit
+        is InboxContent.Videos -> {
+            Cards(
+                groups = content.groups,
+                banner = state.banner,
+                now = now,
+                zone = zone,
+                onOpenVideo = onOpenVideo,
+                onOpenChannel = onOpenChannel,
+                onTryAgain = onCheck,
+                modifier = modifier,
+            )
+        }
+        InboxContent.NoChannels -> {
+            NoChannels(
+                onOpenSearch = onOpenSearch,
+                onImportFromTakeout = onImportFromTakeout,
+                modifier = modifier,
+            )
+        }
+        is InboxContent.CaughtUp -> {
+            CaughtUp(
+                channelCount = content.channelCount,
+                banner = state.banner,
+                onTryAgain = onCheck,
+                modifier = modifier,
+            )
+        }
+        InboxContent.Unreadable -> {
+            Message(
+                glyph = DesignR.drawable.ic_error,
+                glyphDescription = stringResource(R.string.inbox_unreadable_icon),
+                glyphTint = MaterialTheme.colorScheme.error,
+                title = stringResource(R.string.inbox_unreadable_title),
+                body = stringResource(R.string.inbox_unreadable_body),
+                modifier = modifier,
+            )
+        }
+    }
+}
+
+/**
+ * "Dewfall", "Inbox" under it, or "Checking for new videos" while [checking], the search button,
+ * and the "Check for new videos" button when [onCheck] isn't null, as in the "Inbox" frame. The
+ * title reads as one node, which a screen reader reads again when its second line changes.
+ */
+@Composable
+private fun TopBar(
+    checking: Boolean,
+    glyphTurns: Boolean,
+    onOpenSearch: () -> Unit,
+    onCheck: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier =
             modifier
@@ -149,13 +196,19 @@ private fun TopBar(onOpenSearch: () -> Unit, modifier: Modifier = Modifier) {
                 .padding(vertical = DewfallSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f).semantics(mergeDescendants = true) {}) {
+        Column(
+            modifier =
+                Modifier.weight(1f).semantics(mergeDescendants = true) {
+                    liveRegion = LiveRegionMode.Polite
+                },
+        ) {
             Text(
                 text = stringResource(R.string.inbox_app_name),
                 style = MaterialTheme.typography.titleLarge,
             )
             Text(
-                text = stringResource(R.string.inbox_title),
+                text =
+                    stringResource(if (checking) R.string.inbox_checking else R.string.inbox_title),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -167,22 +220,27 @@ private fun TopBar(onOpenSearch: () -> Unit, modifier: Modifier = Modifier) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        if (onCheck != null) {
+            CheckButton(checking = checking, glyphTurns = glyphTurns, onCheck = onCheck)
+        }
     }
 }
 
 /**
- * The cards, one per channel, then the line that ends the list. The list and its scroll state live
- * only here, so after process death the list is first laid out with its cards, and the saved scroll
- * position holds. The items hold no saveable state, so the state Android saves holds no channel or
- * video ID.
+ * The cards, one per channel, after the [banner] of a check that stopped early, if any, then the
+ * line that ends the list. The list and its scroll state live only here, so after process death the
+ * list is first laid out with its cards, and the saved scroll position holds. The items hold no
+ * saveable state, so the state Android saves holds no channel or video ID.
  */
 @Composable
 private fun Cards(
     groups: List<InboxGroup>,
+    banner: UploadsCheckFailure?,
     now: Instant,
     zone: ZoneId,
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
+    onTryAgain: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -192,6 +250,10 @@ private fun Cards(
             PaddingValues(horizontal = DewfallSpacing.margin, vertical = DewfallSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(DewfallSpacing.md),
     ) {
+        if (banner != null) {
+            // Channel IDs start with UC, so this key never meets a card's.
+            item(key = "banner") { CheckBanner(failure = banner, onTryAgain = onTryAgain) }
+        }
         items(items = groups, key = { it.channelId.value }) { group ->
             Card(
                 group = group,
@@ -367,6 +429,37 @@ private fun NoChannels(
                 )
             }
         }
+    }
+}
+
+/**
+ * "You're all caught up" for [channelCount] channels, under the [banner] of a check that stopped
+ * early, if any, whose "Try again" calls [onTryAgain].
+ */
+@Composable
+private fun CaughtUp(
+    channelCount: Int,
+    banner: UploadsCheckFailure?,
+    onTryAgain: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        if (banner != null) {
+            CheckBanner(
+                failure = banner,
+                onTryAgain = onTryAgain,
+                modifier =
+                    Modifier.padding(horizontal = DewfallSpacing.margin)
+                        .padding(top = DewfallSpacing.sm),
+            )
+        }
+        Message(
+            glyph = DesignR.drawable.ic_done_all,
+            glyphDescription = stringResource(R.string.inbox_caught_up_icon),
+            title = stringResource(R.string.inbox_caught_up_title),
+            body = pluralStringResource(R.plurals.inbox_caught_up_body, channelCount, channelCount),
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 

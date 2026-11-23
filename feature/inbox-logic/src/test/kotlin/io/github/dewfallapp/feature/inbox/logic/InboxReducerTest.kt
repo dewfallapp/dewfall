@@ -1,13 +1,17 @@
 package io.github.dewfallapp.feature.inbox.logic
 
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.UploadsCheck
+import io.github.dewfallapp.core.model.UploadsCheckFailure
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.mvi.Next
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 
 private val KETTLE = ChannelId("UCaaaaaaaaaaaaaaaaaaaaaa")
@@ -113,5 +117,80 @@ class InboxReducerTest {
         val state = reduce(failed, InboxIntent.Loaded(1, emptyList()))
 
         assertEquals(InboxContent.CaughtUp(1), state.content)
+    }
+
+    private val running = UploadsCheck(running = true)
+    private val offline = UploadsCheck(failure = UploadsCheckFailure.CANT_REACH_YOUTUBE)
+    private val videos =
+        InboxContent.Videos(listOf(InboxGroup(KETTLE, "Kettle and Crumb", listOf(a1))))
+
+    @Test
+    fun `a check's state is copied in, and the content stays`() {
+        val before = InboxState(content = InboxContent.CaughtUp(2))
+
+        val state = reduce(before, InboxIntent.CheckChanged(running))
+
+        assertEquals(InboxState(InboxContent.CaughtUp(2), running), state)
+    }
+
+    @Test
+    fun `a new answer keeps the check`() {
+        val before = InboxState(content = InboxContent.CaughtUp(2), check = running)
+
+        val state = reduce(before, InboxIntent.Loaded(2, listOf(a1)))
+
+        assertEquals(running, state.check)
+        assertEquals(videos, state.content)
+    }
+
+    @Test
+    fun `a failed read keeps the check`() {
+        val state = reduce(InboxState(check = offline), InboxIntent.ReadFailed)
+
+        assertEquals(InboxState(InboxContent.Unreadable, offline), state)
+    }
+
+    @Test
+    fun `a tap on check for new videos changes nothing in the state`() {
+        val before = InboxState(content = videos, check = offline)
+
+        assertEquals(before, reduce(before, InboxIntent.CheckForNewVideos))
+    }
+
+    @Test
+    fun `only cards and caught up offer a check`() {
+        assertTrue(InboxState(content = videos).offersCheck)
+        assertTrue(InboxState(content = InboxContent.CaughtUp(1)).offersCheck)
+        assertFalse(InboxState(content = InboxContent.NoChannels).offersCheck)
+        assertFalse(InboxState(content = InboxContent.Unreadable).offersCheck)
+        assertFalse(InboxState(content = null).offersCheck)
+    }
+
+    @Test
+    fun `the line reads checking while a check runs`() {
+        assertTrue(InboxState(content = videos, check = running).checking)
+        assertFalse(InboxState(content = videos, check = offline).checking)
+    }
+
+    @Test
+    fun `the banner shows the last failure where a check is offered`() {
+        assertEquals(
+            UploadsCheckFailure.CANT_REACH_YOUTUBE,
+            InboxState(content = videos, check = offline).banner,
+        )
+        assertEquals(
+            UploadsCheckFailure.CANT_REACH_YOUTUBE,
+            InboxState(content = InboxContent.CaughtUp(1), check = offline).banner,
+        )
+        assertNull(InboxState(content = InboxContent.NoChannels, check = offline).banner)
+        assertNull(InboxState(content = InboxContent.Unreadable, check = offline).banner)
+        assertNull(InboxState(content = null, check = offline).banner)
+    }
+
+    @Test
+    fun `no banner while a check runs or after one that worked`() {
+        val again = UploadsCheck(running = true, failure = UploadsCheckFailure.YOUTUBE_NOT_LOADING)
+        assertNull(InboxState(content = videos, check = again).banner)
+        assertNull(InboxState(content = videos, check = UploadsCheck()).banner)
     }
 }

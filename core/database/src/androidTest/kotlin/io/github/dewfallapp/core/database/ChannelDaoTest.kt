@@ -1,6 +1,7 @@
 package io.github.dewfallapp.core.database
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.dewfallapp.core.model.VideoKind
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -138,5 +139,75 @@ class ChannelDaoTest {
             listOf("larkspur Lectures", "Tidewater Woodshop"),
             channels.subscribedChannels().first().map { it.name },
         )
+    }
+
+    @Test
+    fun aMoveKeepsTheTimeOfSubscribingUnderTheNewId() = runTest {
+        channels.subscribe(channel(id = CHANNEL_A, name = "Old name", subscribedAt = MONDAY))
+
+        channels.moveSubscription(
+            CHANNEL_A,
+            channel(id = CHANNEL_B, name = "New name", subscribedAt = WEDNESDAY),
+        )
+
+        assertNull(channels.subscribedChannel(CHANNEL_A).first())
+        assertEquals(
+            listOf(channel(id = CHANNEL_B, name = "New name", subscribedAt = MONDAY)),
+            channels.subscribedChannels().first(),
+        )
+    }
+
+    @Test
+    fun aMoveOntoAnExistingSubscriptionKeepsItsOwnRow() = runTest {
+        channels.subscribe(channel(id = CHANNEL_A, name = "Old name", subscribedAt = MONDAY))
+        channels.subscribe(channel(id = CHANNEL_B, name = "Kept name", subscribedAt = TUESDAY))
+
+        channels.moveSubscription(
+            CHANNEL_A,
+            channel(id = CHANNEL_B, name = "New name", subscribedAt = WEDNESDAY),
+        )
+
+        assertEquals(
+            listOf(channel(id = CHANNEL_B, name = "Kept name", subscribedAt = TUESDAY)),
+            channels.subscribedChannels().first(),
+        )
+    }
+
+    @Test
+    fun aMoveFromAChannelNotSubscribedChangesNothing() = runTest {
+        channels.moveSubscription(CHANNEL_A, channel(id = CHANNEL_B, subscribedAt = WEDNESDAY))
+
+        assertEquals(emptyList(), channels.subscribedChannels().first())
+    }
+
+    @Test
+    fun aMoveTakesTheOldIdsVideosAlongAndKeepsTheirWatchState() = runTest {
+        val started = videoId(1)
+        channels.subscribe(channel(id = CHANNEL_A, subscribedAt = MONDAY))
+        database
+            .videoDao()
+            .saveChannelUploads(details(id = CHANNEL_A), listed(TUESDAY, video(started)))
+        database.watchStateDao().savePosition(started, 300_000, TUESDAY)
+
+        channels.moveSubscription(CHANNEL_A, channel(id = CHANNEL_B, subscribedAt = WEDNESDAY))
+
+        assertEquals(CHANNEL_B, database.videoDao().video(started)?.channelId)
+        assertEquals(300_000, database.watchStateDao().watchState(started).first()?.positionMs)
+        assertEquals(
+            listOf(started),
+            database.videoDao().inboxVideos(VideoKind.VIDEO).first().map { it.id },
+        )
+    }
+
+    @Test
+    fun aMoveFromAChannelNotSubscribedLeavesItsVideos() = runTest {
+        val kept = videoId(1)
+        database
+            .videoDao()
+            .saveChannelUploads(details(id = CHANNEL_A), listed(TUESDAY, video(kept)))
+
+        channels.moveSubscription(CHANNEL_A, channel(id = CHANNEL_B, subscribedAt = WEDNESDAY))
+
+        assertEquals(CHANNEL_A, database.videoDao().video(kept)?.channelId)
     }
 }

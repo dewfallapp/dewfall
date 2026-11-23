@@ -4,6 +4,19 @@
     <string name="inbox_title">Inbox</string>
     <!-- The top bar's search button, for screen readers. Until subtitle search, it opens Search YouTube. -->
     <string name="inbox_search">Search YouTube</string>
+    <!-- The top bar's button that checks every subscribed channel for new videos, for screen readers. -->
+    <string name="inbox_check">Check for new videos</string>
+    <!-- The line under "Dewfall" in place of "Inbox" while a check runs. -->
+    <string name="inbox_checking">Checking for new videos</string>
+
+    <!-- The banner after a check that couldn't reach YouTube. Phase 6 adds that downloads still play. -->
+    <string name="inbox_check_failed_network">Couldn\'t check for new videos. YouTube can\'t be reached. Check your connection.</string>
+    <!-- The banner after a check that YouTube refused, or answered in a way the app can't read. -->
+    <string name="inbox_check_failed_youtube">Couldn\'t check for new videos because YouTube isn\'t loading.</string>
+    <!-- The content descriptions of the two banners' glyphs. -->
+    <string name="inbox_check_failed_network_icon">No connection</string>
+    <string name="inbox_check_failed_youtube_icon">Error</string>
+    <string name="inbox_try_again">Try again</string>
 
     <!-- What a screen reader says that tapping a row or a card's channel row does. -->
     <string name="inbox_open_video">Open video</string>

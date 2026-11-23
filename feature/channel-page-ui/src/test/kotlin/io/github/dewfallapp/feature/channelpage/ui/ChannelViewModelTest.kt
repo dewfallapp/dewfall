@@ -107,6 +107,8 @@ private class FakeSubscriptions : SubscriptionsRepository {
         unsubscribed += channelId
         kept.value -= channelId
     }
+
+    override suspend fun moveSubscription(from: ChannelId, to: Channel) = error("Not used")
 }
 
 /**
