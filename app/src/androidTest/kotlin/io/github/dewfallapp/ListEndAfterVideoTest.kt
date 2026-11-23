@@ -1,6 +1,7 @@
 package io.github.dewfallapp
 
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
+import androidx.compose.ui.unit.toSize
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -120,32 +122,22 @@ class ListEndAfterVideoTest {
                     hasText(TestVideo.OTHER_TITLE) and hasAnyAncestor(hasScrollToIndexAction()),
                 )
                 .fetchSemanticsNodes()
-        assertTrue(firstRows.all { it.boundsInRoot.bottom <= listTop }, "The list didn't scroll")
+        assertTrue(
+            firstRows.all { it.unclippedBounds().bottom <= listTop },
+            "The list didn't scroll",
+        )
         val before = rowBounds()
         assertTrue(before.bottom <= listBottom() + TOLERANCE_PX, "The last row isn't fully shown")
 
         compose.onNode(lastRow).performClick()
         waitForNode(hasText(TestVideo.DESCRIPTION))
         Espresso.pressBack()
-        // The video screen is gone, and the mini player shows the test video.
-        compose.waitUntil(SCREEN_TIMEOUT_MS) {
-            compose.onAllNodes(hasText(TestVideo.DESCRIPTION)).fetchSemanticsNodes().isEmpty() &&
-                compose
-                    .onAllNodes(hasContentDescription(closePlayer))
-                    .fetchSemanticsNodes()
-                    .isNotEmpty() &&
-                compose
-                    .onAllNodes(
-                        hasText(TestVideo.TITLE) and !hasAnyAncestor(hasScrollToIndexAction()),
-                    )
-                    .fetchSemanticsNodes()
-                    .isNotEmpty()
-        }
+        waitForMiniPlayerOfTestVideo()
         compose.waitForIdle()
 
         val shown = compose.onAllNodes(lastRow).fetchSemanticsNodes()
         assertTrue(shown.isNotEmpty(), "The last row scrolled out of view")
-        val after = shown.single().boundsInRoot
+        val after = shown.single().unclippedBounds()
         assertTrue(
             abs(after.top - before.top) <= TOLERANCE_PX,
             "The last row moved from ${before.top} to ${after.top}",
@@ -162,8 +154,31 @@ class ListEndAfterVideoTest {
         )
     }
 
+    /** Waits until the video screen is gone, and the mini player shows the test video. */
+    private fun waitForMiniPlayerOfTestVideo() {
+        compose.waitUntil(SCREEN_TIMEOUT_MS) {
+            compose.onAllNodes(hasText(TestVideo.DESCRIPTION)).fetchSemanticsNodes().isEmpty() &&
+                compose
+                    .onAllNodes(hasContentDescription(closePlayer))
+                    .fetchSemanticsNodes()
+                    .isNotEmpty() &&
+                compose
+                    .onAllNodes(
+                        hasText(TestVideo.TITLE) and !hasAnyAncestor(hasScrollToIndexAction()),
+                    )
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+        }
+    }
+
     /** Where the test video's row is, in the window. */
-    private fun rowBounds(): Rect = compose.onNode(lastRow).fetchSemanticsNode().boundsInRoot
+    private fun rowBounds(): Rect = compose.onNode(lastRow).fetchSemanticsNode().unclippedBounds()
+
+    /**
+     * Where the node is in the window, whole. boundsInRoot is clipped to the list's viewport, so a
+     * row cut off at the bottom would still seem to end inside it.
+     */
+    private fun SemanticsNode.unclippedBounds(): Rect = Rect(positionInRoot, size.toSize())
 
     /** The bottom of the results list, which ends at the mini player's top edge. */
     private fun listBottom(): Float =
