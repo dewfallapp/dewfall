@@ -51,8 +51,13 @@ private class FakeSubscriptions : SubscriptionsRepository {
     /** When true, the read throws, as a damaged database would. */
     var fails = false
 
-    override fun channelOverviews(): Flow<List<ChannelOverview>> =
-        if (fails) flow { throw IllegalStateException("Damaged database") } else overviews
+    /** How many times a read of the overviews started. */
+    var starts = 0
+
+    override fun channelOverviews(): Flow<List<ChannelOverview>> {
+        starts++
+        return if (fails) flow { throw IllegalStateException("Damaged database") } else overviews
+    }
 
     override fun subscribedChannels() = error("Not used")
 
@@ -176,4 +181,38 @@ class ChannelsViewModelTest {
 
         assertEquals(ChannelsList.Shown(listOf(KETTLE)), viewModel.state.value.list)
     }
+
+    @Test
+    fun `a failed read starts again when the screen comes back within 5 seconds`() = runTest {
+        subscriptions.fails = true
+        val viewModel = ChannelsViewModel(subscriptions)
+        val shown = backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+        assertEquals(ChannelsList.Unreadable, viewModel.state.value.list)
+        shown.cancel()
+        advanceTimeBy(1_000)
+        runCurrent()
+
+        subscriptions.fails = false
+        subscriptions.overviews.value = listOf(KETTLE)
+        backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+
+        assertEquals(ChannelsList.Shown(listOf(KETTLE)), viewModel.state.value.list)
+    }
+
+    @Test
+    fun `a healthy read isn't started again when the screen comes back within 5 seconds`() =
+        runTest {
+            val viewModel = ChannelsViewModel(subscriptions)
+            val shown = backgroundScope.launch { viewModel.state.collect {} }
+            runCurrent()
+            val startsBefore = subscriptions.starts
+            shown.cancel()
+            advanceTimeBy(1_000)
+            backgroundScope.launch { viewModel.state.collect {} }
+            runCurrent()
+
+            assertEquals(startsBefore, subscriptions.starts)
+        }
 }

@@ -5,17 +5,21 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.dewfallapp.core.data.subscriptions.SubscriptionsRepository
 import io.github.dewfallapp.core.mvi.MviViewModel
 import io.github.dewfallapp.feature.channels.logic.ChannelsIntent
+import io.github.dewfallapp.feature.channels.logic.ChannelsList
 import io.github.dewfallapp.feature.channels.logic.ChannelsReducer
 import io.github.dewfallapp.feature.channels.logic.ChannelsState
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingCommand
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 /**
@@ -46,26 +50,36 @@ constructor(private val subscriptions: SubscriptionsRepository) :
 
     override fun runSideEffects(intent: ChannelsIntent) = Unit
 
+    /**
+     * Reads while the screen shows, and for [STOP_TIMEOUT_MS] after. A read that failed has ended,
+     * and a collector that comes back within [STOP_TIMEOUT_MS] doesn't change the sharing command,
+     * so each return of a collector while the list is Unreadable starts a new read too.
+     */
     // flatMapLatest is still marked experimental.
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun readWhileShown() {
         viewModelScope.launch {
-            SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS)
-                .command(stateSubscriptionCount)
-                .distinctUntilChanged()
-                .flatMapLatest { command ->
-                    if (command == SharingCommand.START) {
-                        subscriptions
-                            .channelOverviews()
-                            .map<_, ChannelsIntent> { ChannelsIntent.ChannelsRead(it) }
-                            // A read that throws, as from a damaged database, must not crash the
-                            // app, so the screen says it can't show the channels.
-                            .catch { emit(ChannelsIntent.ReadFailed) }
-                    } else {
-                        emptyFlow()
-                    }
-                }
+            val command =
+                SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS)
+                    .command(stateSubscriptionCount)
+                    .distinctUntilChanged()
+                    .map { it == SharingCommand.START }
+            val returnAfterFailure =
+                stateSubscriptionCount
+                    .map { it > 0 }
+                    .distinctUntilChanged()
+                    .filter { shown -> shown && state.value.list == ChannelsList.Unreadable }
+            merge(command, returnAfterFailure)
+                .flatMapLatest { read -> if (read) channels() else emptyFlow() }
                 .collect(::dispatch)
         }
     }
+
+    private fun channels(): Flow<ChannelsIntent> =
+        subscriptions
+            .channelOverviews()
+            .map<_, ChannelsIntent> { ChannelsIntent.ChannelsRead(it) }
+            // A read that throws, as from a damaged database, must not crash the app, so the
+            // screen says it can't show the channels.
+            .catch { emit(ChannelsIntent.ReadFailed) }
 }
