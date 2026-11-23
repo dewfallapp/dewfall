@@ -37,7 +37,7 @@ Search YouTube's top bar SHALL have a back arrow, which a screen reader SHALL he
 - **THEN** the inbox shows, and the app stays open
 
 ### Requirement: Search text stays private
-The app SHALL never log the search text, or the titles, channel names, descriptions and IDs of results, and SHALL send them nowhere but YouTube. It SHALL keep no search history. The only copies kept outside the screen SHALL be the field's text of each open Search YouTube, at most one under the inbox and one under the Channels screen, and the ID of a video or a channel the user opened from the results, in the state Android saves for a process that it ends in the background. The player spec's "Video details stay private" covers the opened video.
+The app SHALL never log the search text, or the titles, channel names, descriptions and IDs of results, and SHALL send them nowhere but YouTube. It SHALL keep no search history. The only copies kept outside the screen SHALL be the text of each open Search YouTube's field, at most one per destination, and the ID of a video or a channel opened from the results, in the state Android saves before ending the process. The player spec's "Video details stay private" covers the opened video.
 
 #### Scenario: Logs after a search
 - **WHEN** the user searches and results show
