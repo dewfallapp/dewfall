@@ -41,7 +41,7 @@ Group 1 and the proposal go in the first pull request, "Part of #49", which need
 ## 7. Checks
 
 - [x] 7.1 Time the inbox query once on the Android 17 emulator too, as docs/testing.md says, and record it. Run the inbox's hand checks from docs/testing.md on one emulator, including scrolling down, ending the process with `adb shell am kill io.github.dewfallapp` from the background, and coming back to the same scroll position, and record what they found in the pull request
-- [ ] 7.2 Run `./gradlew spotlessApply`, then the pull request workflow's all-checks command and `python3 scripts/scan_screenshot_tests.py`; verify they pass
+- [x] 7.2 Run `./gradlew spotlessApply`, then the pull request workflow's all-checks command and `python3 scripts/scan_screenshot_tests.py`; verify they pass
 
 ## Workflow follow-up
 
