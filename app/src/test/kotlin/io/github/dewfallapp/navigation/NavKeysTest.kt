@@ -54,6 +54,14 @@ class NavKeysTest {
                 Json.encodeToString(SearchKey.serializer(), search),
             ),
         )
+        val takeout = TakeoutImportKey(entryId = "6f1c0d4e-0000-4000-8000-000000000002")
+        assertEquals(
+            takeout,
+            Json.decodeFromString(
+                TakeoutImportKey.serializer(),
+                Json.encodeToString(TakeoutImportKey.serializer(), takeout),
+            ),
+        )
     }
 
     @Test

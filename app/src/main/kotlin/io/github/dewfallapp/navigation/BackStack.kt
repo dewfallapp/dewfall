@@ -43,11 +43,21 @@ internal fun MutableList<NavKey>.openSearch(from: NavKey) {
 }
 
 /**
+ * Opens the Takeout import screen from the screen of [from], the inbox or the Channels screen, with
+ * its "Import from Google Takeout" button, only while that screen is on top, so a second tap while
+ * it opens adds nothing.
+ */
+internal fun MutableList<NavKey>.openTakeoutImport(from: NavKey) {
+    if (lastOrNull() == from) add(TakeoutImportKey(entryId = UUID.randomUUID().toString()))
+}
+
+/**
  * Closes the screen of [key], if it is still on the back stack, as the video screen's minimize
- * button and the back arrows of the channel page and Search YouTube do. A video's playback goes on
- * in the mini player. A second tap on the button, or one during the back gesture, finds it gone and
- * does nothing, so the first screen, the inbox or the Channels screen, always stays. An empty back
- * stack would crash, because NavDisplay requires at least one entry.
+ * button, the back arrows of the channel page, Search YouTube and the Takeout import, and the
+ * import's Done button do. A video's playback goes on in the mini player. A second tap on the
+ * button, or one during the back gesture, finds it gone and does nothing, so the first screen, the
+ * inbox or the Channels screen, always stays. An empty back stack would crash, because NavDisplay
+ * requires at least one entry.
  */
 internal fun MutableList<NavKey>.close(key: NavKey) {
     if (key != InboxKey && key != ChannelsKey) remove(key)

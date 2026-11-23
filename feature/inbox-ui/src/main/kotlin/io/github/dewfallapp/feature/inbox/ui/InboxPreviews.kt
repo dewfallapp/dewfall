@@ -120,6 +120,7 @@ private fun Preview(state: InboxState, dynamicColor: Boolean = false) {
             onOpenVideo = {},
             onOpenChannel = {},
             onOpenSearch = {},
+            onImportFromTakeout = {},
         )
     }
 }

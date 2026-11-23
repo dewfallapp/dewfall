@@ -20,6 +20,8 @@
     <!-- The content description of the glyph above "No channels yet". -->
     <string name="inbox_no_channels_icon">Channels</string>
     <string name="inbox_search_button">Search YouTube</string>
+    <!-- The button under "Search YouTube" that opens the Takeout import screen. -->
+    <string name="inbox_import_button">Import from Google Takeout</string>
 
     <string name="inbox_caught_up_title">You\'re all caught up</string>
     <!-- %1$d is the number of channels the user subscribes to, at least 1. -->

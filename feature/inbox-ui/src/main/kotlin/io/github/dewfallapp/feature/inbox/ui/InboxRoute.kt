@@ -13,20 +13,23 @@ import kotlin.time.Clock
 
 /**
  * The inbox, the app's home screen, with its ViewModel. [onOpenVideo] runs when the user taps a
- * video, [onOpenChannel] when they tap a card's channel row, and [onOpenSearch] when they tap a
- * search button. See the inbox spec in openspec/.
+ * video, [onOpenChannel] when they tap a card's channel row, [onOpenSearch] when they tap a search
+ * button, and [onImportFromTakeout] when they tap "Import from Google Takeout". See the inbox spec
+ * in openspec/.
  */
 @Composable
 fun Inbox(
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
     onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     InboxRoute(
         onOpenVideo = onOpenVideo,
         onOpenChannel = onOpenChannel,
         onOpenSearch = onOpenSearch,
+        onImportFromTakeout = onImportFromTakeout,
         modifier = modifier,
     )
 }
@@ -41,6 +44,7 @@ internal fun InboxRoute(
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
     onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: InboxViewModel = viewModel(),
 ) {
@@ -55,6 +59,7 @@ internal fun InboxRoute(
         onOpenVideo = onOpenVideo,
         onOpenChannel = onOpenChannel,
         onOpenSearch = onOpenSearch,
+        onImportFromTakeout = onImportFromTakeout,
         modifier = modifier,
     )
 }

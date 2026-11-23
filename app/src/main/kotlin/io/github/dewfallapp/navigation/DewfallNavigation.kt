@@ -49,6 +49,7 @@ import io.github.dewfallapp.feature.channels.ui.Channels
 import io.github.dewfallapp.feature.inbox.ui.Inbox
 import io.github.dewfallapp.feature.player.ui.MiniPlayer
 import io.github.dewfallapp.feature.player.ui.PlayerRoute
+import io.github.dewfallapp.feature.takeoutimport.ui.TakeoutImport
 import io.github.dewfallapp.feature.youtubesearch.ui.YouTubeSearch
 
 /**
@@ -264,6 +265,7 @@ private fun EntryProviderScope<NavKey>.screens(navigation: AppNavigation) {
             onOpenVideo = { videoId -> navigation.openVideo(videoId) },
             onOpenChannel = { channelId -> navigation.openChannel(InboxKey, channelId) },
             onOpenSearch = { navigation.openSearch(InboxKey) },
+            onImportFromTakeout = { navigation.openTakeoutImport(InboxKey) },
         )
     }
     entry<ChannelsKey>(metadata = mapOf(SHOWS_NAVIGATION_BAR to true)) {
@@ -278,6 +280,9 @@ private fun EntryProviderScope<NavKey>.screens(navigation: AppNavigation) {
             onOpenChannel = { channelId -> navigation.openChannel(key, channelId) },
             onBack = { navigation.close(key) },
         )
+    }
+    entry<TakeoutImportKey>(clazzContentKey = { key -> key.entryId }) { key ->
+        TakeoutImport(onBack = { navigation.close(key) }, onDone = { navigation.close(key) })
     }
     entry<PlayerKey>(
         clazzContentKey = { key -> key.entryId },

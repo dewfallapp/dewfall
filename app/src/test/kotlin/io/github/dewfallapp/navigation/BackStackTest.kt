@@ -228,6 +228,38 @@ class BackStackTest {
     }
 
     @Test
+    fun `the import opens from the inbox once, and back and Done return to the inbox`() {
+        backStack.openTakeoutImport(InboxKey)
+        backStack.openTakeoutImport(InboxKey)
+        val takeout = assertIs<TakeoutImportKey>(backStack.last())
+        assertEquals(2, backStack.size)
+
+        backStack.close(takeout)
+        backStack.close(takeout)
+
+        assertEquals(listOf<NavKey>(InboxKey), backStack)
+    }
+
+    @Test
+    fun `the import opens only while the screen it opens from is on top`() {
+        backStack.openSearch(InboxKey)
+
+        backStack.openTakeoutImport(InboxKey)
+
+        assertIs<SearchKey>(backStack.last())
+    }
+
+    @Test
+    fun `the import opened again gets a new entry`() {
+        backStack.openTakeoutImport(InboxKey)
+        val first = backStack.last() as TakeoutImportKey
+        backStack.close(first)
+        backStack.openTakeoutImport(InboxKey)
+
+        assertTrue(first.entryId != (backStack.last() as TakeoutImportKey).entryId)
+    }
+
+    @Test
     fun `a card opens its channel page once, only while the inbox is on top`() {
         backStack.openChannel(InboxKey, CHANNEL)
         backStack.openChannel(InboxKey, OTHER_CHANNEL)
