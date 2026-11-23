@@ -137,3 +137,14 @@ The import SHALL read the picked file once, when the user picks it, and SHALL ke
 #### Scenario: What an import logs
 - **WHEN** an import succeeds or fails
 - **THEN** the app's log holds no channel ID, channel name, file name or file link from it
+
+### Requirement: The empty Channels screen offers the import
+When the Channels screen says "No channels yet", it SHALL show an "Import from Google Takeout" button under "Search YouTube", which opens the Takeout import screen. The import's back button, the back gesture and Done SHALL return to the Channels screen.
+
+#### Scenario: Opening the import from the Channels screen
+- **WHEN** the user subscribes to no channel, opens the Channels screen and taps "Import from Google Takeout"
+- **THEN** the Takeout import screen opens, without the navigation bar
+
+#### Scenario: Back to the Channels screen
+- **WHEN** the user opened the import from the Channels screen and taps the back button
+- **THEN** the Channels screen shows again, with "Channels" selected in the navigation bar
