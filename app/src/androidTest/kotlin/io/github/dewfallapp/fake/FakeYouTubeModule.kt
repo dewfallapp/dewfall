@@ -34,13 +34,16 @@ import okhttp3.Call
 object FakeYouTubeModule {
     @Provides
     fun provideSearch(): SearchRemoteDataSource = SearchRemoteDataSource { query ->
-        val videos =
-            if (query == TestVideo.QUERY) {
-                listOf(TestVideo.summary, TestVideo.otherSummary)
-            } else {
-                emptyList()
-            }
-        YouTubeResult.Success(SearchResults(channels = emptyList(), videos = videos))
+        if (query == TestVideo.QUERY) {
+            YouTubeResult.Success(
+                SearchResults(
+                    channels = listOf(TestVideo.searchChannel),
+                    videos = listOf(TestVideo.summary, TestVideo.otherSummary),
+                ),
+            )
+        } else {
+            YouTubeResult.Success(SearchResults(channels = emptyList(), videos = emptyList()))
+        }
     }
 
     @Provides
