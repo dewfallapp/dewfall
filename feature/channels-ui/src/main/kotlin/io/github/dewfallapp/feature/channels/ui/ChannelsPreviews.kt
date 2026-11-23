@@ -50,10 +50,18 @@ private fun overview(n: Int, name: String, lastUpload: PublishedTime?) =
 private val previewChannels =
     listOf(
         overview(1, "Kettle and Crumb", PublishedTime(previewNow - 1.days, isApproximate = true)),
-        overview(2, "Larkspur Lectures", PublishedTime(previewNow - 7.hours, isApproximate = false)),
+        overview(
+            2,
+            "Larkspur Lectures",
+            PublishedTime(previewNow - 7.hours, isApproximate = false),
+        ),
         overview(3, "Orbit Hour", PublishedTime(previewNow - 1.days, isApproximate = true)),
         overview(4, "Quillwort Field Notes", null),
-        overview(5, "Tidewater Woodshop", PublishedTime(previewNow - 4.hours, isApproximate = false)),
+        overview(
+            5,
+            "Tidewater Woodshop",
+            PublishedTime(previewNow - 4.hours, isApproximate = false),
+        ),
     )
 
 private fun read(channels: List<ChannelOverview>): ChannelsState =

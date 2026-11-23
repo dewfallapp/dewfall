@@ -9,7 +9,10 @@ import io.github.dewfallapp.core.mvi.Reducer
  * Nothing.
  */
 object ChannelsReducer : Reducer<ChannelsState, ChannelsIntent, Nothing> {
-    override fun reduce(state: ChannelsState, intent: ChannelsIntent): Next<ChannelsState, Nothing> =
+    override fun reduce(
+        state: ChannelsState,
+        intent: ChannelsIntent,
+    ): Next<ChannelsState, Nothing> =
         Next(
             when (intent) {
                 is ChannelsIntent.ChannelsRead -> {
