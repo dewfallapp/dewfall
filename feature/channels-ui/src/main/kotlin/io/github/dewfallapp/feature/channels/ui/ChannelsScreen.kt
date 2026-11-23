@@ -1,5 +1,6 @@
 package io.github.dewfallapp.feature.channels.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -99,6 +101,7 @@ internal fun ChannelsScreen(
                     ChannelsList.NoChannels -> {
                         NoChannels(onOpenSearch = onOpenSearch, modifier = Modifier.weight(1f))
                     }
+                    ChannelsList.Unreadable -> Unreadable(modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -221,9 +224,10 @@ private fun ChannelRow(
                 )
             }
         }
+        // The row's click label says what the chevron shows, so screen readers skip it.
         Icon(
             painter = painterResource(DesignR.drawable.ic_chevron_right),
-            contentDescription = null,
+            contentDescription = stringResource(R.string.channels_open_channel),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.clearAndSetSemantics {},
         )
@@ -232,11 +236,67 @@ private fun ChannelRow(
 
 /**
  * "No channels yet", as in the "Channels, no channels yet" frame: the channels glyph in a round
- * badge, the title, the body and the "Search YouTube" button. It scrolls, so a large font or a
- * small window never cuts it off.
+ * badge, the title, the body and the "Search YouTube" button.
  */
 @Composable
 private fun NoChannels(onOpenSearch: () -> Unit, modifier: Modifier = Modifier) {
+    Message(
+        glyph = DesignR.drawable.ic_subscriptions,
+        glyphDescription = stringResource(R.string.channels_no_channels_icon),
+        glyphTint = MaterialTheme.colorScheme.onSurfaceVariant,
+        title = stringResource(R.string.channels_no_channels_title),
+        body = stringResource(R.string.channels_no_channels_body),
+        modifier = modifier,
+    ) {
+        Button(
+            onClick = onOpenSearch,
+            contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+        ) {
+            Icon(
+                painter = painterResource(DesignR.drawable.ic_search),
+                // The button's own text names it, so the glyph has no description of its own.
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.IconSize),
+            )
+            Text(
+                text = stringResource(R.string.channels_search_button),
+                modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
+            )
+        }
+    }
+}
+
+/**
+ * The phone couldn't read what it keeps: the error glyph, "Your channels can't be shown" and why,
+ * as the inbox says it. The top bar's search button still works.
+ */
+@Composable
+private fun Unreadable(modifier: Modifier = Modifier) {
+    Message(
+        glyph = DesignR.drawable.ic_error,
+        glyphDescription = stringResource(R.string.channels_unreadable_icon),
+        glyphTint = MaterialTheme.colorScheme.error,
+        title = stringResource(R.string.channels_unreadable_title),
+        body = stringResource(R.string.channels_unreadable_body),
+        modifier = modifier,
+    )
+}
+
+/**
+ * A message in place of the list: a glyph in a round badge, a title, a body, and an optional
+ * [action] below them, as in the "Channels, no channels yet" frame. It scrolls, so a large font or
+ * a small window never cuts it off.
+ */
+@Composable
+private fun Message(
+    @DrawableRes glyph: Int,
+    glyphDescription: String,
+    glyphTint: Color,
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+    action: @Composable () -> Unit = {},
+) {
     Column(
         modifier =
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(DewfallSpacing.xl),
@@ -251,35 +311,22 @@ private fun NoChannels(onOpenSearch: () -> Unit, modifier: Modifier = Modifier) 
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                painter = painterResource(DesignR.drawable.ic_subscriptions),
-                contentDescription = stringResource(R.string.channels_no_channels_icon),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                painter = painterResource(glyph),
+                contentDescription = glyphDescription,
+                tint = glyphTint,
             )
         }
         Text(
-            text = stringResource(R.string.channels_no_channels_title),
+            text = title,
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
         )
         Text(
-            text = stringResource(R.string.channels_no_channels_body),
+            text = body,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        Button(
-            onClick = onOpenSearch,
-            contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-        ) {
-            Icon(
-                painter = painterResource(DesignR.drawable.ic_search),
-                contentDescription = stringResource(R.string.channels_search_button_icon),
-                modifier = Modifier.size(ButtonDefaults.IconSize),
-            )
-            Text(
-                text = stringResource(R.string.channels_search_button),
-                modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
-            )
-        }
+        action()
     }
 }

@@ -99,3 +99,8 @@ internal fun NoChannelsPreview() {
 internal fun NoChannelsDynamicPreview() {
     Preview(ChannelsState(ChannelsList.NoChannels), dynamicColor = true)
 }
+
+@Composable
+internal fun UnreadablePreview() {
+    Preview(ChannelsState(ChannelsList.Unreadable))
+}

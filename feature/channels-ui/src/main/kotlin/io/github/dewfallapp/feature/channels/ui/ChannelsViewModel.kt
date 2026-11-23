@@ -11,6 +11,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingCommand
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -27,7 +28,8 @@ private const val STOP_TIMEOUT_MS = 5_000L
  * Reads the subscribed channels with their last uploads from the phone, and dispatches each answer
  * as [ChannelsIntent.ChannelsRead]. It reads only while the screen collects its state, and for
  * [STOP_TIMEOUT_MS] after, so the query doesn't run again for every save while the inbox covers a
- * hidden Channels screen. The state keeps the last answer for the way back.
+ * hidden Channels screen. The state keeps the last answer for the way back. A read that fails shows
+ * that the channels can't be shown, and the next time the screen shows, it reads again.
  *
  * It takes no dispatcher, because the repository's Flow is main-safe. The channels are user data,
  * so it never logs them.
@@ -53,7 +55,12 @@ constructor(private val subscriptions: SubscriptionsRepository) :
                 .distinctUntilChanged()
                 .flatMapLatest { command ->
                     if (command == SharingCommand.START) {
-                        subscriptions.channelOverviews().map { ChannelsIntent.ChannelsRead(it) }
+                        subscriptions
+                            .channelOverviews()
+                            .map<_, ChannelsIntent> { ChannelsIntent.ChannelsRead(it) }
+                            // A read that throws, as from a damaged database, must not crash the
+                            // app, so the screen says it can't show the channels.
+                            .catch { emit(ChannelsIntent.ReadFailed) }
                     } else {
                         emptyFlow()
                     }

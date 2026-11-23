@@ -77,4 +77,22 @@ class ChannelsReducerTest {
 
         assertEquals(ChannelsState(ChannelsList.NoChannels), state)
     }
+
+    @Test
+    fun `a failed read says the channels can't be shown`() {
+        val shown = reduce(ChannelsState(), ChannelsIntent.ChannelsRead(listOf(orbit)))
+
+        val state = reduce(shown, ChannelsIntent.ReadFailed)
+
+        assertEquals(ChannelsState(ChannelsList.Unreadable), state)
+    }
+
+    @Test
+    fun `a read after a failed one shows the channels`() {
+        val failed = reduce(ChannelsState(), ChannelsIntent.ReadFailed)
+
+        val state = reduce(failed, ChannelsIntent.ChannelsRead(listOf(kettle)))
+
+        assertEquals(ChannelsState(ChannelsList.Shown(listOf(kettle))), state)
+    }
 }

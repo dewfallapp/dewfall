@@ -68,6 +68,13 @@ When the user subscribes to no channel, the Channels screen SHALL show the chann
 - **WHEN** the user subscribes to no channel and opens the Channels screen
 - **THEN** it says "No channels yet" and offers "Search YouTube", and tapping it opens Search YouTube
 
+### Requirement: The Channels screen says when it can't be read
+When the app can't read what it keeps on the phone for the Channels screen, the screen SHALL show the error glyph, "Your channels can't be shown" and "Dewfall couldn't read what it keeps on this phone. Restarting the app may help.", and SHALL NOT crash. Its search button and the navigation bar SHALL still work. When the screen shows again after its read stopped, it SHALL read again.
+
+#### Scenario: A database that can't be read
+- **WHEN** the user taps "Channels" and the screen's read fails
+- **THEN** the Channels screen says "Your channels can't be shown", the app stays open, the search button opens Search YouTube, and tapping "Inbox" shows the inbox
+
 ### Requirement: The Channels screen fits any window
 On a phone the Channels screen SHALL stay in portrait. In any wider window it SHALL keep its content in one centered column of readable width, and its background SHALL fill the window. Its background SHALL draw under the system bars, and no text or control SHALL sit under the system bars, the display cutout, the mini player or the navigation bar. Text SHALL wrap at large font sizes and never be cut off. It SHALL work in light, dark and dynamic color.
 

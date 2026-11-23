@@ -14,6 +14,9 @@ sealed interface ChannelsList {
 
     /** The subscribed channels, in the repository's order, by name. Never empty. */
     data class Shown(val channels: List<ChannelOverview>) : ChannelsList
+
+    /** The phone couldn't read what it keeps, such as from a damaged database. */
+    data object Unreadable : ChannelsList
 }
 
 /** The Channels screen's state. */
@@ -23,4 +26,7 @@ data class ChannelsState(val list: ChannelsList = ChannelsList.Loading) : MviSta
 sealed interface ChannelsIntent : MviIntent {
     /** The phone answered with every subscribed channel, sorted by name. */
     data class ChannelsRead(val channels: List<ChannelOverview>) : ChannelsIntent
+
+    /** The read threw, so the screen says it can't show the channels instead of crashing. */
+    data object ReadFailed : ChannelsIntent
 }

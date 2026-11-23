@@ -46,6 +46,9 @@
     <!-- The content description of the glyph above "No channels yet". -->
     <string name="channels_no_channels_icon">Channels</string>
     <string name="channels_search_button">Search YouTube</string>
-    <!-- The content description of the search glyph in the "Search YouTube" button. -->
-    <string name="channels_search_button_icon">Search</string>
+
+    <string name="channels_unreadable_title">Your channels can\'t be shown</string>
+    <string name="channels_unreadable_body">Dewfall couldn\'t read what it keeps on this phone. Restarting the app may help.</string>
+    <!-- The content description of the error glyph above "Your channels can't be shown". -->
+    <string name="channels_unreadable_icon">Couldn\'t read the channels</string>
 </resources>

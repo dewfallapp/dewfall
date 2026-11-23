@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -47,7 +48,11 @@ private val ORBIT =
 private class FakeSubscriptions : SubscriptionsRepository {
     val overviews = MutableStateFlow<List<ChannelOverview>>(emptyList())
 
-    override fun channelOverviews(): Flow<List<ChannelOverview>> = overviews
+    /** When true, the read throws, as a damaged database would. */
+    var fails = false
+
+    override fun channelOverviews(): Flow<List<ChannelOverview>> =
+        if (fails) flow { throw IllegalStateException("Damaged database") } else overviews
 
     override fun subscribedChannels() = error("Not used")
 
@@ -142,5 +147,33 @@ class ChannelsViewModelTest {
         runCurrent()
 
         assertEquals(1, readers())
+    }
+
+    @Test
+    fun `a read that throws shows unreadable instead of crashing`() = runTest {
+        subscriptions.fails = true
+        val viewModel = ChannelsViewModel(subscriptions)
+        backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+
+        assertEquals(ChannelsList.Unreadable, viewModel.state.value.list)
+    }
+
+    @Test
+    fun `after a failed read, the screen reads again when it shows again`() = runTest {
+        subscriptions.fails = true
+        val viewModel = ChannelsViewModel(subscriptions)
+        val shown = backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+        shown.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+
+        subscriptions.fails = false
+        subscriptions.overviews.value = listOf(KETTLE)
+        backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+
+        assertEquals(ChannelsList.Shown(listOf(KETTLE)), viewModel.state.value.list)
     }
 }

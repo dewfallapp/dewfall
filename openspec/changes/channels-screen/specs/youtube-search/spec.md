@@ -11,11 +11,11 @@
 ## MODIFIED Requirements
 
 ### Requirement: Search YouTube opens from the inbox and the Channels screen
-Search YouTube SHALL open from the search button of the inbox and of the Channels screen, and from the "Search YouTube" button of their "No channels yet" states. It SHALL show its title, a line saying it finds videos to stream, and an empty search field. Tapping a second time while the screen opens SHALL NOT open it twice.
+Search YouTube SHALL open from the search button of the inbox and of the Channels screen, and from the "Search YouTube" button of their "No channels yet" states. It SHALL show its title, the line "Videos to stream and channels to follow", and an empty search field. Tapping a second time while the screen opens SHALL NOT open it twice.
 
 #### Scenario: Opening Search YouTube
 - **WHEN** the user taps the inbox's search button
-- **THEN** Search YouTube shows its title, the line saying it finds videos to stream, an empty search field and a back arrow
+- **THEN** Search YouTube shows its title, the line "Videos to stream and channels to follow", an empty search field and a back arrow
 
 #### Scenario: Opening Search YouTube from the Channels screen
 - **WHEN** the user taps the Channels screen's search button
