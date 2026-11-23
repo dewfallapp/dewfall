@@ -8,9 +8,10 @@ on:
   push:
     branches: [main]
   # A pull request that changes the emulator tests, the database, the repositories in :core:data
-  # that the channel page's test reaches the real database through, or the models its rows use, this
-  # workflow, the dependencies, the Gradle wrapper or the build settings runs them before merging,
-  # so Renovate's updates of Compose, Media3, Hilt, Room, AGP, androidx.test and Gradle do too.
+  # that the channel page's test reaches the real database through, :core:model (the models its rows
+  # use, with the channel's initial that ChannelInitialTest checks), this workflow, the
+  # dependencies, the Gradle wrapper or the build settings runs them before merging, so Renovate's
+  # updates of Compose, Media3, Hilt, Room, AGP, androidx.test and Gradle do too.
   # Branch protection doesn't require this workflow, so its path filter can't leave a required
   # check pending.
   pull_request:

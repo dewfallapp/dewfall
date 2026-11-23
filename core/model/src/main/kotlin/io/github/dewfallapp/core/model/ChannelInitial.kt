@@ -7,7 +7,8 @@ import java.util.Locale
  * The first user-perceived character of [name], after any leading whitespace, as it is written, or
  * null when [name] has nothing else. A channel's emblem shows it. On a phone, BreakIterator follows
  * Unicode's grapheme rules, so a flag or an emoji with a skin tone stays whole. Locale.ROOT keeps
- * the result from depending on the phone's language.
+ * the result from depending on the phone's language. ChannelInitialTest in :app's emulator tests
+ * checks emoji sequences on Android.
  */
 fun initialOf(name: String): String? {
     val text = name.trimStart()
