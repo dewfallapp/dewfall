@@ -22,9 +22,12 @@ then checks every commit in origin/main..HEAD, not just the last one:
   passes scan_screenshot_tests.py, on that commit's own files.
 
 Then it checks that nothing is left uncommitted, runs the pull request
-workflow's command, and checks again that the build changed no file. Its own
-tests run first, so a broken check fails instead of passing. It prints rule
-names, commit hashes and subjects, never an identity or a found value.
+workflow's command, and checks again that the build changed no file. After a
+build that passed, it reads every module's manifest merge reports and fails
+when one names a path outside the checkout and outside Gradle's user home, or
+when it finds no report or no path to check (#232). Its own tests run first, so
+a broken check fails instead of passing. It prints rule names, commit hashes
+and subjects, never an identity or a found value.
 
 --remote-branch origin/<name>, or --remote-branch=origin/<name>, names the
 branch on GitHub whose Renovate commits are exempt from the identity rule. It
@@ -42,6 +45,7 @@ docs/testing.md#the-pre-push-gate explains each rule.
 
 import os
 import re
+import shlex
 import subprocess
 import sys
 import unittest
@@ -70,6 +74,19 @@ BUILD_COMMAND = [
     "--continue",
     "-Pandroid.builder.sdkDownload=false",
 ]
+# Where AGP writes the manifest merge's report and blame files in each module's build folder.
+# Both hold absolute paths, and lint reads the report (#230).
+MERGE_REPORTS = os.path.join("outputs", "logs")
+MERGE_REPORT = re.compile(r"^manifest-merger-.*-report\.txt$")
+MERGE_BLAME = os.path.join("intermediates", "manifest_merge_blame_file")
+# A location in a merge report follows "ADDED from ", "MERGED from [<coordinates>] " and the like.
+# In a blame file it follows "<line>-->". The rest of a blame file is the merged manifest's XML.
+REPORT_LOCATION = re.compile(r"\bfrom (?:\[[^\]]*\] )?(.*)$")
+BLAME_LOCATION = re.compile(r"^\d+-->(?:\[[^\]]*\] )?(.*)$")
+LINE_AND_COLUMN = re.compile(r"(?::\d+(?::\d+)?(?:-\d+(?::\d+)?)?)?$")
+GRADLE_USER_HOME_PROPERTY = "-Dgradle.user.home="
+# Where Java finds options for gradlew's JVM, in the order it applies them.
+JAVA_OPTION_VARIABLES = ("JAVA_TOOL_OPTIONS", "JDK_JAVA_OPTIONS", "JAVA_OPTS", "GRADLE_OPTS")
 # Renovate's commits on its own branches. A fix pushed to Renovate's branch, as
 # docs/testing.md says to, sends them again, and they can't carry the clone's
 # identity. They are exempt from the identity rule only, and only once they are
@@ -270,6 +287,124 @@ def check_commit(commit, local, global_email, on_remote_branch):
     return problems
 
 
+def gradle_user_home(environment):
+    """Gradle's user home, as Gradle decides it from [environment].
+
+    The gradle.user.home system property comes first, then GRADLE_USER_HOME, then ~/.gradle.
+    Java takes the property from JAVA_TOOL_OPTIONS, then JDK_JAVA_OPTIONS, then the command
+    line, where gradlew puts JAVA_OPTS and then GRADLE_OPTS, and the last value wins. Gradle
+    takes the property and the variable as they are, with no ~ expanded, and a relative one is
+    relative to the folder that gradlew runs in, which is the checkout.
+    """
+    options = []
+    for name in JAVA_OPTION_VARIABLES:
+        try:
+            options += shlex.split(environment.get(name, ""))
+        except ValueError:
+            pass
+    named = [
+        option[len(GRADLE_USER_HOME_PROPERTY) :]
+        for option in options
+        if option.startswith(GRADLE_USER_HOME_PROPERTY)
+    ]
+    if named:
+        return named[-1]
+    # Gradle checks only that the variable is set, so an empty one names the checkout.
+    if environment.get("GRADLE_USER_HOME") is not None:
+        return environment["GRADLE_USER_HOME"]
+    return os.path.join(os.path.expanduser("~"), ".gradle")
+
+
+def merge_report_files(root):
+    """The manifest merge reports and blame files in the module build folders under [root], and
+    the other checkouts inside it.
+
+    A folder below [root] with its own .git is another checkout, such as a worktree inside the
+    main checkout, so its reports are skipped.
+    """
+    found = []
+    nested = []
+    for folder, children, files in os.walk(root):
+        if folder != root and ".git" in children + files:
+            nested.append(folder)
+            children[:] = []
+            continue
+        # The checkout's own folder may be named build too, and it isn't a module's.
+        if folder != root and os.path.basename(folder) == "build":
+            children[:] = []
+            logs = os.path.join(folder, MERGE_REPORTS)
+            if os.path.isdir(logs):
+                found += [
+                    os.path.join(logs, name)
+                    for name in sorted(os.listdir(logs))
+                    if MERGE_REPORT.match(name)
+                ]
+            for blame_folder, blame_children, blame_files in os.walk(
+                os.path.join(folder, MERGE_BLAME)
+            ):
+                blame_children.sort()
+                found += [os.path.join(blame_folder, name) for name in sorted(blame_files)]
+            continue
+        children[:] = sorted(name for name in children if name not in (".git", ".gradle"))
+    return found, nested
+
+
+def folder_prefixes(folders):
+    """Each of [folders] with a trailing separator, as given and with its links resolved."""
+    prefixes = set()
+    for folder in folders:
+        for form in (os.path.abspath(folder), os.path.realpath(folder)):
+            prefixes.add(form.rstrip(os.sep) + os.sep)
+    return prefixes
+
+
+def report_locations(path):
+    """Each (line number, location) in the merge report or blame file at [path]."""
+    blame = os.sep + MERGE_BLAME + os.sep in path
+    pattern = BLAME_LOCATION if blame else REPORT_LOCATION
+    with open(path, encoding="utf-8", errors="replace") as file:
+        for number, line in enumerate(file, start=1):
+            match = pattern.search(line.rstrip("\n"))
+            if match:
+                yield number, LINE_AND_COLUMN.sub("", match.group(1), count=1)
+
+
+def manifest_report_problems(root, gradle_home):
+    """The problems of the manifest merge reports under [root], as rule names.
+
+    An absolute path passes when it is under [root] or under [gradle_home], and not under another
+    checkout inside [root], such as a worktree inside the main checkout, nor under [root]'s .git
+    folder. Each path is judged by where it leads, with its .. parts removed and its symbolic
+    links resolved, so a link inside [root] can't hide another checkout. The problems name the
+    report and the line, never the path found.
+    """
+    files, nested = merge_report_files(root)
+    allowed = folder_prefixes([root, gradle_home])
+    # The main checkout's .git folder can hold worktrees too, such as the maintainer subagent's
+    # in .git/maintainer-check/, and nothing else in it is a source file.
+    other_checkouts = folder_prefixes(nested + [os.path.join(root, ".git")])
+    problems = []
+    # Lint reads the report in outputs/logs, so blame files alone don't count.
+    if not any(os.sep + MERGE_REPORTS + os.sep in path for path in files):
+        problems.append("NO_MANIFEST_MERGE_REPORT")
+    if not files:
+        return problems
+    paths_read = 0
+    for path in files:
+        for number, location in report_locations(path):
+            if not location.startswith("/"):
+                continue
+            paths_read += 1
+            resolved = os.path.realpath(location)
+            inside = any(resolved.startswith(prefix) for prefix in allowed)
+            in_other = any(resolved.startswith(prefix) for prefix in other_checkouts)
+            if not inside or in_other:
+                problems.append(f"FOREIGN_PATH {os.path.relpath(path, root)}:{number}")
+    if paths_read == 0:
+        problems.append("NO_PATH_READ")
+    return problems
+
+
 def run_own_tests():
     suite = unittest.defaultTestLoader.discover(os.path.join(SCRIPTS, "tests"))
     result = unittest.TextTestRunner(stream=open(os.devnull, "w")).run(suite)
@@ -370,6 +505,16 @@ def main(arguments, own_tests=True):
     verdict("full build and every test", built)
     left = uncommitted()
     verdict("the build changed no file", not left)
+    # A build that failed may not have merged the manifests, so the reports could be missing or old.
+    if built:
+        problems = manifest_report_problems(root, gradle_user_home(os.environ))
+        verdict(
+            "manifest merge reports name only this checkout",
+            not problems,
+            "" if not problems else "see docs/testing.md#manifest-merge-reports",
+        )
+        for problem in problems:
+            print("    " + problem)
     print("PASS: the gate passed." if not failed else "FAIL: the gate failed.")
     return 1 if failed else 0
 

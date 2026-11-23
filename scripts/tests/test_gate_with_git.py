@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -297,6 +298,58 @@ class GateWithGitTest(unittest.TestCase):
 
         self.assertEqual(0, code)
         self.assertIn("Nothing to push", output)
+
+    def run_gate_with_build(self, report_path):
+        """Runs the whole gate, with a build that does nothing, on a commit that ignores build/.
+
+        The app's merge report names [report_path].
+        """
+        self.repository.write(".gitignore", "build/\n")
+        self.repository.commit("chore: ignore build folders")
+        self.repository.write(
+            "app/build/outputs/logs/manifest-merger-debug-report.txt",
+            "manifest\nADDED from " + report_path + ":2:1-67:12\n",
+        )
+        os.environ["GRADLE_USER_HOME"] = os.path.join(self.folder.name, "gradle-home")
+        output = io.StringIO()
+        with mock.patch.object(pre_push_gate, "BUILD_COMMAND", ["true"]):
+            with contextlib.redirect_stdout(output):
+                code = pre_push_gate.main([], own_tests=False)
+        return code, output.getvalue()
+
+    def test_the_gate_passes_when_the_merge_report_names_this_checkout(self):
+        root = self.repository.run_git("rev-parse", "--show-toplevel")
+
+        code, output = self.run_gate_with_build(root + "/app/src/main/AndroidManifest.xml")
+
+        self.assertEqual(0, code)
+        self.assertIn("PASS manifest merge reports name only this checkout", output)
+        self.assertIn("PASS: the gate passed.", output)
+
+    def test_the_gate_fails_when_the_merge_report_names_another_checkout(self):
+        other = os.path.join(self.folder.name, "other-checkout")
+
+        code, output = self.run_gate_with_build(other + "/app/src/main/AndroidManifest.xml")
+
+        self.assertEqual(1, code)
+        self.assertIn("FAIL manifest merge reports name only this checkout", output)
+        self.assertIn(
+            "    FOREIGN_PATH app/build/outputs/logs/manifest-merger-debug-report.txt:2", output
+        )
+        self.assertNotIn(other, output)
+        self.assertIn("FAIL: the gate failed.", output)
+
+    def test_the_gate_skips_the_report_check_when_the_build_fails(self):
+        self.repository.write(".gitignore", "build/\n")
+        self.repository.commit("chore: ignore build folders")
+        output = io.StringIO()
+        with mock.patch.object(pre_push_gate, "BUILD_COMMAND", ["false"]):
+            with contextlib.redirect_stdout(output):
+                code = pre_push_gate.main([], own_tests=False)
+
+        self.assertEqual(1, code)
+        self.assertIn("FAIL full build and every test", output.getvalue())
+        self.assertNotIn("manifest merge reports", output.getvalue())
 
 
 if __name__ == "__main__":
