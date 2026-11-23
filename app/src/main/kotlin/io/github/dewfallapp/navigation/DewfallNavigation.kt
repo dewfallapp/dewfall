@@ -188,12 +188,16 @@ private fun MiniPlayerBox(
  * its height through [onHeight].
  */
 @Composable
-private fun DestinationsBar(navigation: AppNavigation, onHeight: (Dp) -> Unit) {
+private fun DestinationsBar(
+    navigation: AppNavigation,
+    onHeight: (Dp) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val density = LocalDensity.current
     val colors = MaterialTheme.colorScheme
     NavigationBar(
         containerColor = colors.surfaceContainer,
-        modifier = Modifier.onSizeChanged { onHeight(with(density) { it.height.toDp() }) },
+        modifier = modifier.onSizeChanged { onHeight(with(density) { it.height.toDp() }) },
     ) {
         for (destination in Destination.entries) {
             val selected = navigation.selected == destination
