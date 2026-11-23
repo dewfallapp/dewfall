@@ -93,6 +93,7 @@ class SearchChannelTest {
 
     @Test
     fun subscribeAndUnsubscribeFromAChannelRow() {
+        compose.openSearchFromInbox()
         compose.onNode(hasSetTextAction()).performTextInput(TestVideo.QUERY)
         compose.onNode(hasSetTextAction()).performImeAction()
 

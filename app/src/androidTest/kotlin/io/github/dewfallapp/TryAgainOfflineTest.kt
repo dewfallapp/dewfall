@@ -84,6 +84,7 @@ class TryAgainOfflineTest {
 
         // The first video's details and links load, and its files fail.
         network.mediaReachable = false
+        compose.openSearchFromInbox()
         compose.onNode(hasSetTextAction()).performTextInput(TestVideo.QUERY)
         compose.onNode(hasSetTextAction()).performImeAction()
         waitForNode(hasText(TestVideo.TITLE))

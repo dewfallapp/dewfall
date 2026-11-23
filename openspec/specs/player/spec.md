@@ -384,7 +384,7 @@ While a video plays, and while it is paused until Android stops the player, the 
 
 #### Scenario: Tapping the notification
 - **WHEN** a video plays in the background and the user taps its notification
-- **THEN** Dewfall opens as it was, on the video screen or on Search YouTube with the mini player, and the video plays on
+- **THEN** Dewfall opens as it was, on the video screen, or on the screen under the video screen with the mini player, such as the inbox, Search YouTube or a channel page, and the video plays on
 
 #### Scenario: Details that failed
 - **WHEN** a video plays but its details failed to load
@@ -464,7 +464,7 @@ While the player has a video and no video screen shows, the app SHALL show a min
 
 #### Scenario: A minimized video
 - **WHEN** a video plays and the user minimizes it
-- **THEN** the mini player shows at the bottom of Search YouTube
+- **THEN** the mini player shows at the bottom of the screen that was under the video screen, such as the inbox, Search YouTube or a channel page
 
 #### Scenario: The video screen
 - **WHEN** the video screen shows
@@ -536,7 +536,7 @@ Tapping the mini player's title SHALL open the video screen for its video, which
 - **THEN** the video screen shows it paused at the same position
 
 ### Requirement: Opening the video that already plays goes on with it
-Opening, from search results or a channel page, the video that the mini player plays SHALL open its video screen and go on with that playback, as tapping the mini player does. Opening another video SHALL replace it, and start the new one from its saved position, or from the start when none is saved.
+Opening, from the inbox, search results or a channel page, the video that the mini player plays SHALL open its video screen and go on with that playback, as tapping the mini player does. Opening another video SHALL replace it, and start the new one from its saved position, or from the start when none is saved.
 
 #### Scenario: The same video from search
 - **WHEN** a video plays in the mini player and the user opens the same video from search results
@@ -548,6 +548,10 @@ Opening, from search results or a channel page, the video that the mini player p
 
 #### Scenario: The same video from its channel page
 - **WHEN** the user opened a video's channel page from the video screen, and taps that video in the channel's uploads
+- **THEN** the video screen shows it playing on from where it was
+
+#### Scenario: The same video from the inbox
+- **WHEN** a video from the inbox plays in the mini player and the user taps it in the inbox again
 - **THEN** the video screen shows it playing on from where it was
 
 ### Requirement: The mini player fits any window

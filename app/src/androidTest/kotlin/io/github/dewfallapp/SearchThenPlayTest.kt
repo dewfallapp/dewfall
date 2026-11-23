@@ -84,6 +84,7 @@ class SearchThenPlayTest {
 
     @Test
     fun searchThenPlay() {
+        compose.openSearchFromInbox()
         // Search YouTube has one text field.
         compose.onNode(hasSetTextAction()).performTextInput(TestVideo.QUERY)
         compose.onNode(hasSetTextAction()).performImeAction()

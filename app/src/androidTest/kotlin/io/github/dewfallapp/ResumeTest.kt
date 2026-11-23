@@ -84,6 +84,8 @@ class ResumeTest {
     fun reopeningAVideoStartsWhereItWasLeft() {
         val close = compose.activity.getString(PlayerR.string.mini_player_close)
 
+        compose.openSearchFromInbox()
+
         compose.onNode(hasSetTextAction()).performTextInput(TestVideo.QUERY)
         compose.onNode(hasSetTextAction()).performImeAction()
         waitForNode(hasText(TestVideo.TITLE))

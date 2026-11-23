@@ -11,8 +11,15 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
-/** Search YouTube, the first screen on the back stack. */
-@Serializable data object SearchKey : NavKey
+/** The inbox, the first screen on the back stack, which always stays. */
+@Serializable data object InboxKey : NavKey
+
+/**
+ * Search YouTube, which opens from the inbox. [entryId] is a random UUID's text, made when the key
+ * is created, and the entry's content key, as PlayerKey's is, so a quick reopen during the closing
+ * screen's exit animation gets a new entry, with a new ViewModel and an empty field.
+ */
+@Serializable data class SearchKey(val entryId: String) : NavKey
 
 /**
  * The video screen for [videoId]. [entryId] is a random UUID's text, made when the key is created

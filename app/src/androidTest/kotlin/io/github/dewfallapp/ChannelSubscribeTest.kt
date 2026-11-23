@@ -83,6 +83,7 @@ class ChannelSubscribeTest {
 
     @Test
     fun subscribeFromTheChannelPage() {
+        compose.openSearchFromInbox()
         compose.onNode(hasSetTextAction()).performTextInput(TestVideo.QUERY)
         compose.onNode(hasSetTextAction()).performImeAction()
         openChannelPage()

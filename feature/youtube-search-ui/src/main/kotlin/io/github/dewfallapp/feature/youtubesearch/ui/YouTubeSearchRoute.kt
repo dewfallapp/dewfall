@@ -13,19 +13,21 @@ import java.time.ZoneId
 import kotlin.time.Clock
 
 /**
- * The Search YouTube screen, with its ViewModel. The app shows it as its first screen.
- * [onOpenVideo] runs when the user taps a video, and [onOpenChannel] when they tap a channel. See
- * openspec/specs/youtube-search/spec.md.
+ * The Search YouTube screen, with its ViewModel, which opens from the inbox. [onOpenVideo] runs
+ * when the user taps a video, [onOpenChannel] when they tap a channel, and [onBack] when they tap
+ * the back arrow. See openspec/specs/youtube-search/spec.md.
  */
 @Composable
 fun YouTubeSearch(
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     YouTubeSearchRoute(
         onOpenVideo = onOpenVideo,
         onOpenChannel = onOpenChannel,
+        onBack = onBack,
         modifier = modifier,
     )
 }
@@ -40,6 +42,7 @@ fun YouTubeSearch(
 internal fun YouTubeSearchRoute(
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: YouTubeSearchViewModel = viewModel(),
 ) {
@@ -56,6 +59,7 @@ internal fun YouTubeSearchRoute(
         onIntent = viewModel::dispatch,
         onOpenVideo = onOpenVideo,
         onOpenChannel = onOpenChannel,
+        onBack = onBack,
         modifier = modifier,
     )
 }

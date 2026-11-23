@@ -11,13 +11,17 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.core.model.ChannelId
@@ -32,8 +36,8 @@ import kotlin.time.Instant
  * The Search YouTube screen: its title, the search field, and what the search found. It is
  * stateless: it shows [state], the field's [textFieldState], and time ago counted from [now] in
  * [zone], and reports what the user does through [onIntent], a tap on a video through
- * [onOpenVideo], and a tap on a channel through [onOpenChannel]. It shows the Unsubscribe dialog
- * while the state asks for it.
+ * [onOpenVideo], a tap on a channel through [onOpenChannel], and a tap on the back arrow through
+ * [onBack]. It shows the Unsubscribe dialog while the state asks for it.
  *
  * Its background fills the window behind the system bars. Its content sits inside the safe drawing
  * area, so nothing is under the system bars, the display cutout or the keyboard.
@@ -47,6 +51,7 @@ internal fun YouTubeSearchScreen(
     onIntent: (YouTubeSearchIntent) -> Unit,
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
@@ -55,12 +60,21 @@ internal fun YouTubeSearchScreen(
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(modifier = Modifier.widthIn(max = ReadableWidth).fillMaxWidth()) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.padding(horizontal = DewfallSpacing.xs),
+                ) {
+                    Icon(
+                        painter = painterResource(DesignR.drawable.ic_arrow_back),
+                        contentDescription = stringResource(R.string.youtube_search_back),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
                 ScreenTitle(
                     modifier =
                         Modifier.padding(
                             start = DewfallSpacing.margin,
                             end = DewfallSpacing.margin,
-                            top = DewfallSpacing.md,
                         ),
                 )
                 SearchField(

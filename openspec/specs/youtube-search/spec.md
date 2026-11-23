@@ -6,18 +6,11 @@ Lets a user search YouTube for videos to stream and channels to follow, and see 
 
 ## Requirements
 
-### Requirement: The app opens on Search YouTube
-The app SHALL open on the Search YouTube screen, until a later change makes another screen the home screen. The screen SHALL have no back arrow, because no screen comes before it.
-
-#### Scenario: Opening the app
-- **WHEN** the user opens the app
-- **THEN** the Search YouTube screen shows its title, a line saying it finds videos to stream, and an empty search field
-
 ### Requirement: The keyboard opens once
-The search field SHALL take focus and the on-screen keyboard SHALL open the first time the screen opens. It SHALL NOT open again by itself after a configuration change or when the user comes back to the screen. Sending a search with the on-screen keyboard's search key SHALL hide that keyboard, so the results show.
+The search field SHALL take focus and the on-screen keyboard SHALL open the first time the screen opens. Each time the user opens Search YouTube from the inbox counts as a first time, because it opens a new screen with an empty field. It SHALL NOT open again by itself after a configuration change or when the user comes back to the screen. Sending a search with the on-screen keyboard's search key SHALL hide that keyboard, so the results show.
 
 #### Scenario: First open
-- **WHEN** the screen opens with no saved state, such as when the app starts
+- **WHEN** the screen opens with no saved state, such as when the user opens it from the inbox
 - **THEN** the field has focus and the on-screen keyboard is open
 
 #### Scenario: After a search
@@ -333,3 +326,21 @@ Tapping a channel row anywhere but its button SHALL open that channel's page. Se
 #### Scenario: A double tap
 - **WHEN** the user taps the same channel row twice quickly
 - **THEN** one channel page opens, and one back gesture returns to the results
+
+### Requirement: Search YouTube opens from the inbox
+Search YouTube SHALL open from the inbox's search button, and from the "Search YouTube" button of the inbox's "No channels yet" state. It SHALL show its title, a line saying it finds videos to stream, and an empty search field. Tapping a second time while the screen opens SHALL NOT open it twice.
+
+#### Scenario: Opening Search YouTube
+- **WHEN** the user taps the inbox's search button
+- **THEN** Search YouTube shows its title, the line saying it finds videos to stream, an empty search field and a back arrow
+
+### Requirement: Search YouTube's back arrow returns to the inbox
+Search YouTube's top bar SHALL have a back arrow, which a screen reader SHALL hear as "Back". The back arrow and the back gesture SHALL return to the inbox. Tapping the back arrow twice SHALL return to the inbox and go no further.
+
+#### Scenario: Going back
+- **WHEN** Search YouTube shows results and the user taps the back arrow
+- **THEN** the inbox shows, and opening Search YouTube again shows an empty field
+
+#### Scenario: A double tap on the back arrow
+- **WHEN** the user taps Search YouTube's back arrow twice quickly
+- **THEN** the inbox shows, and the app stays open

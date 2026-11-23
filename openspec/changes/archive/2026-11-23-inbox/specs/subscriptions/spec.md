@@ -7,7 +7,7 @@ The channel page SHALL save the uploads it loaded, whole and as YouTube gave the
 
 #### Scenario: Subscribing from a channel page
 - **WHEN** the user subscribes on the page of a channel whose uploads show, and goes back to the inbox
-- **THEN** the inbox shows that channel's 2 latest videos, with no new request to YouTube
+- **THEN** the inbox shows those of that channel's 2 latest videos that aren't marked watched, with no new request to YouTube
 
 #### Scenario: Opening a subscribed channel's page
 - **WHEN** the user subscribed to a channel last week, under the ID YouTube answers for, and opens its page today, which loads a video published yesterday

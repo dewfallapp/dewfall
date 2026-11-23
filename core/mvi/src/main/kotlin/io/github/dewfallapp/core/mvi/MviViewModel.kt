@@ -25,6 +25,15 @@ abstract class MviViewModel<S : MviState, I : MviIntent, E : MviEffect>(
     /** The screen's state. */
     val state: StateFlow<S> = mutableState.asStateFlow()
 
+    /**
+     * How many collectors [state] has now. A ViewModel that reads a stream, such as a database
+     * query, can read it only while its screen collects the state, with
+     * `SharingStarted.WhileSubscribed`, as Android's state production guide does. A screen that
+     * collects with `collectAsStateWithLifecycle` stops collecting while it is stopped or leaves
+     * the composition.
+     */
+    protected val stateSubscriptionCount: StateFlow<Int> = mutableState.subscriptionCount
+
     private val mutablePendingEffects = MutableStateFlow<List<PendingEffect<E>>>(emptyList())
 
     /**
