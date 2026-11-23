@@ -25,7 +25,7 @@ class NavKeysTest {
 
     @Test
     fun `entries opened for the same video get content keys without the ID, and different ones`() {
-        val backStack = mutableListOf<NavKey>(SearchKey)
+        val backStack = mutableListOf<NavKey>(InboxKey)
 
         backStack.openVideo(VideoId(ID))
         val first = backStack.last() as PlayerKey
@@ -45,7 +45,15 @@ class NavKeysTest {
         val saved = Json.encodeToString(PlayerKey.serializer(), key)
 
         assertEquals(key, Json.decodeFromString(PlayerKey.serializer(), saved))
-        assertEquals(SearchKey, Json.decodeFromString(SearchKey.serializer(), "{}"))
+        assertEquals(InboxKey, Json.decodeFromString(InboxKey.serializer(), "{}"))
+        val search = SearchKey(entryId = "6f1c0d4e-0000-4000-8000-000000000001")
+        assertEquals(
+            search,
+            Json.decodeFromString(
+                SearchKey.serializer(),
+                Json.encodeToString(SearchKey.serializer(), search),
+            ),
+        )
     }
 
     @Test

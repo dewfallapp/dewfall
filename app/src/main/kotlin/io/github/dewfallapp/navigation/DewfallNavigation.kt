@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -25,6 +26,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.github.dewfallapp.feature.channelpage.ui.ChannelPage
+import io.github.dewfallapp.feature.inbox.ui.Inbox
 import io.github.dewfallapp.feature.player.ui.MiniPlayer
 import io.github.dewfallapp.feature.player.ui.PlayerRoute
 import io.github.dewfallapp.feature.youtubesearch.ui.YouTubeSearch
@@ -53,7 +55,7 @@ private const val FILLS_WINDOW = "io.github.dewfallapp.navigation.fillsWindow"
  */
 @Composable
 internal fun DewfallNavigation(modifier: Modifier = Modifier) {
-    val backStack = rememberNavBackStack(SearchKey)
+    val backStack = rememberNavBackStack(InboxKey)
     val showsMiniPlayer = backStack.showsMiniPlayer()
     // The mini player's box's last measured height, which the screens keep at their bottom.
     val miniPlayerHeight = remember { mutableStateOf(0.dp) }
@@ -69,34 +71,7 @@ internal fun DewfallNavigation(modifier: Modifier = Modifier) {
                     rememberViewModelStoreNavEntryDecorator(),
                     remember { keepRoomForMiniPlayer(miniPlayerHeight) },
                 ),
-            entryProvider =
-                entryProvider {
-                    entry<SearchKey> {
-                        YouTubeSearch(
-                            onOpenVideo = { videoId -> backStack.openVideo(videoId) },
-                            onOpenChannel = { channelId ->
-                                backStack.openChannel(SearchKey, channelId)
-                            },
-                        )
-                    }
-                    entry<PlayerKey>(
-                        clazzContentKey = { key -> key.entryId },
-                        metadata = mapOf(FILLS_WINDOW to true),
-                    ) { key ->
-                        PlayerRoute(
-                            videoId = key.videoId,
-                            onMinimize = { backStack.close(key) },
-                            onOpenChannel = { channelId -> backStack.openChannel(key, channelId) },
-                        )
-                    }
-                    entry<ChannelKey>(clazzContentKey = { key -> key.entryId }) { key ->
-                        ChannelPage(
-                            channelId = key.channelId,
-                            onOpenVideo = { videoId -> backStack.openVideo(videoId) },
-                            onBack = { backStack.close(key) },
-                        )
-                    }
-                },
+            entryProvider = entryProvider { screens(backStack) },
         )
         if (showsMiniPlayer) {
             // The box reports 0 when the mini player draws nothing, such as after it closes, so
@@ -109,6 +84,45 @@ internal fun DewfallNavigation(modifier: Modifier = Modifier) {
                 MiniPlayer(onOpenVideo = { videoId -> backStack.openVideo(videoId) })
             }
         }
+    }
+}
+
+/**
+ * The screens on the back stack, and the actions that move between them. Only :app sees Navigation
+ * 3, so each screen gets plain actions. The video screen's entry fills the window, so
+ * [keepRoomForMiniPlayer] leaves it out. See docs/architecture.md#navigation.
+ */
+private fun EntryProviderScope<NavKey>.screens(backStack: MutableList<NavKey>) {
+    entry<InboxKey> {
+        Inbox(
+            onOpenVideo = { videoId -> backStack.openVideo(videoId) },
+            onOpenChannel = { channelId -> backStack.openChannelFromInbox(channelId) },
+            onOpenSearch = { backStack.openSearch() },
+        )
+    }
+    entry<SearchKey>(clazzContentKey = { key -> key.entryId }) { key ->
+        YouTubeSearch(
+            onOpenVideo = { videoId -> backStack.openVideo(videoId) },
+            onOpenChannel = { channelId -> backStack.openChannel(key, channelId) },
+            onBack = { backStack.close(key) },
+        )
+    }
+    entry<PlayerKey>(
+        clazzContentKey = { key -> key.entryId },
+        metadata = mapOf(FILLS_WINDOW to true),
+    ) { key ->
+        PlayerRoute(
+            videoId = key.videoId,
+            onMinimize = { backStack.close(key) },
+            onOpenChannel = { channelId -> backStack.openChannel(key, channelId) },
+        )
+    }
+    entry<ChannelKey>(clazzContentKey = { key -> key.entryId }) { key ->
+        ChannelPage(
+            channelId = key.channelId,
+            onOpenVideo = { videoId -> backStack.openVideo(videoId) },
+            onBack = { backStack.close(key) },
+        )
     }
 }
 

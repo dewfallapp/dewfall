@@ -131,6 +131,7 @@ private fun Preview(state: YouTubeSearchState, text: String = "", dynamicColor: 
                 onIntent = {},
                 onOpenVideo = {},
                 onOpenChannel = {},
+                onBack = {},
             )
         }
     }

@@ -72,6 +72,7 @@ class VideoScreenBackgroundTest {
 
     @Test
     fun backgroundAndMinimizeButtonShowOverThePicture() {
+        compose.openSearchFromInbox()
         compose.onNode(hasSetTextAction()).performTextInput(TestVideo.QUERY)
         compose.onNode(hasSetTextAction()).performImeAction()
         waitForNode(hasText(TestVideo.TITLE))

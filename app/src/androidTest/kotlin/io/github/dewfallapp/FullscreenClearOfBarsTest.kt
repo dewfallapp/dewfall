@@ -81,6 +81,8 @@ class FullscreenClearOfBarsTest {
         val play = compose.activity.getString(PlayerR.string.player_video_play)
         val show = compose.activity.getString(PlayerR.string.player_show_controls)
 
+        compose.openSearchFromInbox()
+
         compose.onNode(hasSetTextAction()).performTextInput(TestVideo.QUERY)
         compose.onNode(hasSetTextAction()).performImeAction()
         waitForNode(hasText(TestVideo.TITLE))

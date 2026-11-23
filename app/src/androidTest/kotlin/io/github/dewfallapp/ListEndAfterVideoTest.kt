@@ -97,6 +97,7 @@ class ListEndAfterVideoTest {
 
     @Test
     fun theEndOfTheResultsKeepsItsPlaceWhenTheVideoScreenCloses() {
+        compose.openSearchFromInbox()
         compose.onNode(hasSetTextAction()).performTextInput(TestVideo.LONG_QUERY)
         compose.onNode(hasSetTextAction()).performImeAction()
         waitForNode(hasText(TestVideo.OTHER_TITLE))

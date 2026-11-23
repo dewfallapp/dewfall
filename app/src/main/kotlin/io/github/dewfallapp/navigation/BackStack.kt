@@ -6,10 +6,11 @@ import io.github.dewfallapp.core.model.VideoId
 import java.util.UUID
 
 /**
- * Opens the video screen for [videoId], from search results, a channel page or the mini player,
- * unless a video screen is already on top. A second tap that lands while the video screen opens
- * finds a PlayerKey on top, so it opens nothing. So the back stack holds at most one PlayerKey,
- * always on top, because opening a channel from a video screen removes that screen first.
+ * Opens the video screen for [videoId], from the inbox, search results, a channel page or the mini
+ * player, unless a video screen is already on top. A second tap that lands while the video screen
+ * opens finds a PlayerKey on top, so it opens nothing. So the back stack holds at most one
+ * PlayerKey, always on top, because opening a channel from a video screen removes that screen
+ * first.
  */
 internal fun MutableList<NavKey>.openVideo(videoId: VideoId) {
     if (lastOrNull() !is PlayerKey) {
@@ -33,14 +34,30 @@ internal fun MutableList<NavKey>.openChannel(from: NavKey, channelId: ChannelId)
 }
 
 /**
+ * Opens Search YouTube from the inbox, only while the inbox is on top, so a second tap while it
+ * opens adds nothing.
+ */
+internal fun MutableList<NavKey>.openSearch() {
+    if (lastOrNull() == InboxKey) add(SearchKey(entryId = UUID.randomUUID().toString()))
+}
+
+/**
+ * Opens the channel page for [channelId] from one of the inbox's cards, only while the inbox is on
+ * top, so a second tap while it opens adds nothing.
+ */
+internal fun MutableList<NavKey>.openChannelFromInbox(channelId: ChannelId) {
+    if (lastOrNull() == InboxKey) add(ChannelKey(channelId, entryId = UUID.randomUUID().toString()))
+}
+
+/**
  * Closes the screen of [key], if it is still on the back stack, as the video screen's minimize
- * button and the channel page's back arrow do. A video's playback goes on in the mini player. A
- * second tap on the button, or one during the back gesture, finds it gone and does nothing, so
- * Search YouTube always stays. An empty back stack would crash, because NavDisplay requires at
- * least one entry.
+ * button and the back arrows of the channel page and Search YouTube do. A video's playback goes on
+ * in the mini player. A second tap on the button, or one during the back gesture, finds it gone and
+ * does nothing, so the inbox always stays. An empty back stack would crash, because NavDisplay
+ * requires at least one entry.
  */
 internal fun MutableList<NavKey>.close(key: NavKey) {
-    if (key != SearchKey) remove(key)
+    if (key != InboxKey) remove(key)
 }
 
 /** Goes back one screen for the system's back gesture, but never past the first one. */
