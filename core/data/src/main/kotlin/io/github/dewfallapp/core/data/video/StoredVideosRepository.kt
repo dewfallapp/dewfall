@@ -1,15 +1,16 @@
 package io.github.dewfallapp.core.data.video
 
 import io.github.dewfallapp.core.model.ChannelUploads
+import io.github.dewfallapp.core.model.VideoSummary
+import kotlinx.coroutines.flow.Flow
 
 /**
- * The videos Dewfall keeps on the phone. Reads come with the tasks that need them, such as the
- * inbox (#49). See docs/architecture.md#the-database-repositories.
+ * The videos Dewfall keeps on the phone. See docs/architecture.md#the-database-repositories.
  *
  * Main-safe. A write finishes even when the caller's coroutine is cancelled while it runs. The
  * videos are user data, so never log them.
  */
-fun interface StoredVideosRepository {
+interface StoredVideosRepository {
     /**
      * Saves [uploads]' videos, merged with what is saved, as the subscriptions spec says: a later,
      * vaguer publish time, a missing length or missing thumbnails never replace saved ones, the
@@ -18,4 +19,13 @@ fun interface StoredVideosRepository {
      * channel that isn't subscribed stays that way, and no saved video is removed.
      */
     suspend fun saveUploads(uploads: ChannelUploads)
+
+    /**
+     * The inbox's videos, as the inbox spec defines them and docs/architecture.md#database-tables
+     * describes: videos that can be watched from start to end, of subscribed channels, not marked
+     * watched, and new or started since subscribing. Newest first across every channel, with
+     * YouTube's order for equal times. It emits again when a save, a subscription or a watch state
+     * changes what it holds.
+     */
+    fun inboxVideos(): Flow<List<VideoSummary>>
 }

@@ -7,7 +7,9 @@ import io.github.dewfallapp.core.database.WatchStateEntity
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelUploads
+import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.SubscribedChannel
+import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.model.WatchState
 import kotlin.time.Duration.Companion.milliseconds
@@ -64,6 +66,19 @@ internal fun VideoSummary.toEntity(now: Instant, listPosition: Int): VideoEntity
         firstSeenAt = now,
         listingNumber = null,
         listPosition = listPosition,
+    )
+
+/** The saved video as a list shows it. A row with no publish time has no PublishedTime. */
+internal fun VideoEntity.toSummary(): VideoSummary =
+    VideoSummary(
+        id = VideoId(id),
+        title = title,
+        channelId = ChannelId(channelId),
+        channelName = channelName,
+        duration = durationMs?.milliseconds,
+        published = publishedAt?.let { PublishedTime(it, isApproximate = publishedApproximate) },
+        thumbnails = thumbnails,
+        kind = kind,
     )
 
 internal fun WatchStateEntity.toWatchState(): WatchState =
