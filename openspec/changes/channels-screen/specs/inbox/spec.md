@@ -75,7 +75,7 @@ A configuration change, such as a theme change, a fold or a resized window, SHAL
 
 #### Scenario: Process death on a page opened from the inbox
 - **WHEN** the system ends the app's process while a video screen or channel page opened from the inbox shows
-- **THEN** the state Android saved holds that page's own video or channel ID, as the player spec and the subscriptions spec allow, nothing from the inbox, and from the Channels destination only the IDs of its open channel pages and the text of its open Search YouTube screen
+- **THEN** the state Android saved holds that page's own video or channel ID, as the player spec and the subscriptions spec allow, nothing from the inbox, and from the Channels destination only the IDs of its open channel pages and the text of its open Search YouTube screen. The Channels destination holds no video screen then, because the navigation bar hides on the video screen, so a video screen is only ever the last screen of the destination that shows
 
 ### Requirement: The inbox fits any window
 On a phone the inbox SHALL stay in portrait. In any window wider than a phone in portrait, such as a tablet, an unfolded foldable, landscape on a large screen or split screen, it SHALL keep its content in one column of readable width, centered, and its background SHALL fill the window. No text or control SHALL sit under the navigation bar.

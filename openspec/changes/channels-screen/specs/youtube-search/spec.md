@@ -25,7 +25,7 @@ Search YouTube SHALL open from the search button of the inbox and of the Channel
 Search YouTube's top bar SHALL have a back arrow, which a screen reader SHALL hear as "Back". The back arrow and the back gesture SHALL return to the screen Search YouTube opened from, the inbox or the Channels screen. Tapping the back arrow twice SHALL return to that screen and go no further.
 
 #### Scenario: Going back
-- **WHEN** Search YouTube shows results and the user taps the back arrow
+- **WHEN** the user opened Search YouTube from the inbox, it shows results, and the user taps the back arrow
 - **THEN** the inbox shows, and opening Search YouTube again shows an empty field
 
 #### Scenario: Going back to the Channels screen
