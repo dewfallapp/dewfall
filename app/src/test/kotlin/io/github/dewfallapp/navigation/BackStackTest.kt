@@ -163,7 +163,7 @@ class BackStackTest {
 
     @Test
     fun `a channel opened from search sits on search, and back returns to it`() {
-        backStack.openSearch()
+        backStack.openSearch(InboxKey)
         val search = assertIs<SearchKey>(backStack.last())
         backStack.openChannel(search, CHANNEL)
 
@@ -178,7 +178,7 @@ class BackStackTest {
 
     @Test
     fun `a second tap on a channel in search opens nothing more`() {
-        backStack.openSearch()
+        backStack.openSearch(InboxKey)
         val search = assertIs<SearchKey>(backStack.last())
         backStack.openChannel(search, CHANNEL)
         backStack.openChannel(search, CHANNEL)
@@ -197,8 +197,8 @@ class BackStackTest {
 
     @Test
     fun `search opens from the inbox once, and its back arrow stops at the inbox`() {
-        backStack.openSearch()
-        backStack.openSearch()
+        backStack.openSearch(InboxKey)
+        backStack.openSearch(InboxKey)
         val search = assertIs<SearchKey>(backStack.last())
         assertEquals(2, backStack.size)
 
@@ -212,25 +212,25 @@ class BackStackTest {
     fun `search opens only while the inbox is on top`() {
         backStack.openVideo(VIDEO)
 
-        backStack.openSearch()
+        backStack.openSearch(InboxKey)
 
         assertIs<PlayerKey>(backStack.last())
     }
 
     @Test
     fun `search opened again gets a new entry`() {
-        backStack.openSearch()
+        backStack.openSearch(InboxKey)
         val first = backStack.last() as SearchKey
         backStack.close(first)
-        backStack.openSearch()
+        backStack.openSearch(InboxKey)
 
         assertTrue(first.entryId != (backStack.last() as SearchKey).entryId)
     }
 
     @Test
     fun `a card opens its channel page once, only while the inbox is on top`() {
-        backStack.openChannelFromInbox(CHANNEL)
-        backStack.openChannelFromInbox(OTHER_CHANNEL)
+        backStack.openChannel(InboxKey, CHANNEL)
+        backStack.openChannel(InboxKey, OTHER_CHANNEL)
 
         assertEquals(2, backStack.size)
         assertEquals(CHANNEL, assertIs<ChannelKey>(backStack.last()).channelId)
@@ -238,15 +238,44 @@ class BackStackTest {
 
     @Test
     fun `a video opens from search and from a channel page`() {
-        backStack.openSearch()
+        backStack.openSearch(InboxKey)
         backStack.openVideo(VIDEO)
         assertIs<PlayerKey>(backStack.last())
         backStack.close(backStack.last())
         backStack.close(backStack.last())
 
-        backStack.openChannelFromInbox(CHANNEL)
+        backStack.openChannel(InboxKey, CHANNEL)
         backStack.openVideo(OTHER)
 
         assertEquals(OTHER, assertIs<PlayerKey>(backStack.last()).videoId)
+    }
+
+    @Test
+    fun `search opens from the Channels screen, and close keeps the Channels screen`() {
+        val channels = mutableListOf<NavKey>(ChannelsKey)
+        channels.openSearch(InboxKey)
+        assertEquals(listOf<NavKey>(ChannelsKey), channels)
+
+        channels.openSearch(ChannelsKey)
+        val search = assertIs<SearchKey>(channels.last())
+        channels.close(search)
+        channels.close(ChannelsKey)
+
+        assertEquals(listOf<NavKey>(ChannelsKey), channels)
+    }
+
+    @Test
+    fun `the navigation bar shows on the inbox, the Channels screen and channel pages only`() {
+        assertTrue(backStack.showsNavigationBar())
+        assertTrue(listOf<NavKey>(ChannelsKey).showsNavigationBar())
+
+        backStack.openChannel(InboxKey, CHANNEL)
+        assertTrue(backStack.showsNavigationBar())
+
+        backStack.openVideo(VIDEO)
+        assertFalse(backStack.showsNavigationBar())
+
+        val search = listOf(InboxKey, SearchKey(entryId = "e"))
+        assertFalse(search.showsNavigationBar())
     }
 }
