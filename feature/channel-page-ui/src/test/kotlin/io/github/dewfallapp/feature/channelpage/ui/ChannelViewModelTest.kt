@@ -4,6 +4,7 @@ import io.github.dewfallapp.core.data.channel.ChannelUploadsRepository
 import io.github.dewfallapp.core.data.subscriptions.SubscriptionsRepository
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.SubscribedChannel
 import io.github.dewfallapp.core.model.YouTubeError
@@ -65,6 +66,11 @@ private class FakeSubscriptions : SubscriptionsRepository {
 
     override fun subscribedChannels(): Flow<List<SubscribedChannel>> = kept.map {
         it.values.toList()
+    }
+
+    // The channel page never reads the Channels screen's list.
+    override fun channelOverviews(): Flow<List<ChannelOverview>> = kept.map { channels ->
+        channels.values.map { ChannelOverview(it, lastUpload = null) }
     }
 
     override fun subscribedChannel(channelId: ChannelId): Flow<SubscribedChannel?> {

@@ -2,10 +2,12 @@ package io.github.dewfallapp.core.data.database
 
 import io.github.dewfallapp.core.database.ChannelDetails
 import io.github.dewfallapp.core.database.ChannelEntity
+import io.github.dewfallapp.core.database.ChannelOverviewRow
 import io.github.dewfallapp.core.database.VideoEntity
 import io.github.dewfallapp.core.database.WatchStateEntity
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.SubscribedChannel
@@ -29,6 +31,16 @@ internal fun ChannelEntity.toSubscribedChannel(): SubscribedChannel =
                 description = description,
             ),
         subscribedAt = subscribedAt,
+    )
+
+/** A row of ChannelDao's channelOverviews: the subscription, and its last upload's time if any. */
+internal fun ChannelOverviewRow.toChannelOverview(): ChannelOverview =
+    ChannelOverview(
+        subscription = channel.toSubscribedChannel(),
+        lastUpload =
+            lastPublishedAt?.let { instant ->
+                PublishedTime(instant, isApproximate = lastPublishedApproximate ?: false)
+            },
     )
 
 internal fun Channel.toEntity(subscribedAt: Instant): ChannelEntity =
