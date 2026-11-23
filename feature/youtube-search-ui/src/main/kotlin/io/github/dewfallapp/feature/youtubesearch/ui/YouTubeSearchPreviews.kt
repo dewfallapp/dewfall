@@ -5,10 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalCursorBlinkEnabled
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
+import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.YouTubeError
+import io.github.dewfallapp.feature.youtubesearch.logic.ChannelRow
 import io.github.dewfallapp.feature.youtubesearch.logic.ResultsArea
 import io.github.dewfallapp.feature.youtubesearch.logic.SearchRequest
 import io.github.dewfallapp.feature.youtubesearch.logic.VideoRow
@@ -82,6 +84,38 @@ private val previewRows =
         ),
     )
 
+private val kettleId = ChannelId("UCaaaaaaaaaaaaaaaaaaaaaa")
+
+private val previewChannels =
+    listOf(
+        ChannelRow(
+            kettleId,
+            "Kettle and Crumb",
+            "Bread, fermentation and old recipes",
+            emptyList(),
+        ),
+        ChannelRow(
+            ChannelId("UCbbbbbbbbbbbbbbbbbbbbbb"),
+            "The Starter Jar",
+            "Sourdough, start to finish. A starter fed every morning, a loaf every weekend, and " +
+                "everything that went wrong along the way",
+            emptyList(),
+        ),
+    )
+
+/** The user subscribes to Kettle and Crumb, as in the "Search YouTube, results" frames. */
+private val previewSubscribed = setOf(kettleId)
+
+private fun results(
+    channels: List<ChannelRow> = previewChannels,
+    videos: List<VideoRow> = previewRows,
+) =
+    YouTubeSearchState(
+        lastRequestNumber = 1,
+        results = ResultsArea.Results(sourdough, channels, videos),
+        subscribedIds = previewSubscribed,
+    )
+
 @Composable
 private fun Preview(state: YouTubeSearchState, text: String = "", dynamicColor: Boolean = false) {
     // The search field takes focus, and its cursor blinks with the clock, so a screenshot would
@@ -96,6 +130,7 @@ private fun Preview(state: YouTubeSearchState, text: String = "", dynamicColor: 
                 zone = previewZone,
                 onIntent = {},
                 onOpenVideo = {},
+                onOpenChannel = {},
             )
         }
     }
@@ -103,16 +138,22 @@ private fun Preview(state: YouTubeSearchState, text: String = "", dynamicColor: 
 
 @Composable
 internal fun ResultsPreview() {
-    Preview(YouTubeSearchState(1, ResultsArea.Results(sourdough, previewRows)), text = "sourdough")
+    Preview(results(), text = "sourdough")
 }
 
 @Composable
 internal fun ResultsDynamicPreview() {
-    Preview(
-        YouTubeSearchState(1, ResultsArea.Results(sourdough, previewRows)),
-        text = "sourdough",
-        dynamicColor = true,
-    )
+    Preview(results(), text = "sourdough", dynamicColor = true)
+}
+
+@Composable
+internal fun OnlyChannelsPreview() {
+    Preview(results(videos = emptyList()), text = "sourdough")
+}
+
+@Composable
+internal fun UnsubscribeDialogPreview() {
+    Preview(results().copy(confirmingUnsubscribe = kettleId), text = "sourdough")
 }
 
 @Composable

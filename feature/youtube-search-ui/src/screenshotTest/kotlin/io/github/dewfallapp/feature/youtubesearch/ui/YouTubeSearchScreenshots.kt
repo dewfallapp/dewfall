@@ -29,6 +29,23 @@ private fun ResultsDynamicScreenshot() = ResultsDynamicPreview()
 
 @PreviewTest
 @Preview(name = "Light")
+@Preview(name = "LargeFont", fontScale = 2f)
+@Composable
+private fun OnlyChannelsScreenshot() = OnlyChannelsPreview()
+
+// Only the dark image, as for the channel page's dialog: Material 3 draws a dialog in a window of
+// its own, whose light image came out slightly different on the CI runners. See
+// docs/testing.md#screenshot-tests.
+@PreviewTest
+@Preview(
+    name = "Dark",
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+)
+@Composable
+private fun UnsubscribeDialogScreenshot() = UnsubscribeDialogPreview()
+
+@PreviewTest
+@Preview(name = "Light")
 @Preview(
     name = "Dark",
     uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,

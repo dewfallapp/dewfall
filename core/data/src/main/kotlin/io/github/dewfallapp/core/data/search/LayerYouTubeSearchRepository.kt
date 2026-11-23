@@ -6,8 +6,9 @@ import io.github.dewfallapp.core.youtube.SearchRemoteDataSource
 import javax.inject.Inject
 
 /**
- * Searches through the YouTube layer, and returns its result unchanged. Phase 5 gives it work of
- * its own, such as marking the channels that the user follows.
+ * Searches through the YouTube layer, and returns its result unchanged. The Search YouTube screen
+ * marks the channels that the user follows itself, from SubscriptionsRepository, so a row follows a
+ * subscription that changes after the search.
  */
 internal class LayerYouTubeSearchRepository
 @Inject

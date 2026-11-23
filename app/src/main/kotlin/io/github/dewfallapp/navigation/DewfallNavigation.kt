@@ -59,7 +59,12 @@ internal fun DewfallNavigation(modifier: Modifier = Modifier) {
             entryProvider =
                 entryProvider {
                     entry<SearchKey> {
-                        YouTubeSearch(onOpenVideo = { videoId -> backStack.openVideo(videoId) })
+                        YouTubeSearch(
+                            onOpenVideo = { videoId -> backStack.openVideo(videoId) },
+                            onOpenChannel = { channelId ->
+                                backStack.openChannel(SearchKey, channelId)
+                            },
+                        )
                     }
                     entry<PlayerKey>(clazzContentKey = { key -> key.entryId }) { key ->
                         PlayerRoute(

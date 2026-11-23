@@ -20,7 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
+import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.VideoId
+import io.github.dewfallapp.core.ui.UnsubscribeDialog
 import io.github.dewfallapp.feature.youtubesearch.logic.YouTubeSearchIntent
 import io.github.dewfallapp.feature.youtubesearch.logic.YouTubeSearchState
 import java.time.ZoneId
@@ -29,8 +31,9 @@ import kotlin.time.Instant
 /**
  * The Search YouTube screen: its title, the search field, and what the search found. It is
  * stateless: it shows [state], the field's [textFieldState], and time ago counted from [now] in
- * [zone], and reports what the user does through [onIntent], and a tap on a video through
- * [onOpenVideo].
+ * [zone], and reports what the user does through [onIntent], a tap on a video through
+ * [onOpenVideo], and a tap on a channel through [onOpenChannel]. It shows the Unsubscribe dialog
+ * while the state asks for it.
  *
  * Its background fills the window behind the system bars. Its content sits inside the safe drawing
  * area, so nothing is under the system bars, the display cutout or the keyboard.
@@ -43,6 +46,7 @@ internal fun YouTubeSearchScreen(
     zone: ZoneId,
     onIntent: (YouTubeSearchIntent) -> Unit,
     onOpenVideo: (VideoId) -> Unit,
+    onOpenChannel: (ChannelId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
@@ -70,14 +74,24 @@ internal fun YouTubeSearchScreen(
                 )
                 SearchResultsArea(
                     results = state.results,
+                    subscribedIds = state.subscribedIds,
                     now = now,
                     zone = zone,
                     onIntent = onIntent,
                     onOpenVideo = onOpenVideo,
+                    onOpenChannel = onOpenChannel,
                     modifier = Modifier.weight(1f),
                 )
             }
         }
+    }
+    val dialogRow = state.unsubscribeDialogRow
+    if (dialogRow != null) {
+        UnsubscribeDialog(
+            channelName = dialogRow.name,
+            onConfirm = { onIntent(YouTubeSearchIntent.UnsubscribeConfirmed(dialogRow.id)) },
+            onDismiss = { onIntent(YouTubeSearchIntent.UnsubscribeCancelled) },
+        )
     }
 }
 
