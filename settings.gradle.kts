@@ -52,6 +52,10 @@ include(":feature:channel-page-logic")
 
 include(":feature:channel-page-ui")
 
+include(":feature:inbox-logic")
+
+include(":feature:inbox-ui")
+
 include(":feature:player-logic")
 
 include(":feature:player-ui")

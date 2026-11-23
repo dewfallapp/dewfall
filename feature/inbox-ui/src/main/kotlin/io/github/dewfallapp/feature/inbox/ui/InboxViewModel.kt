@@ -1,0 +1,81 @@
+package io.github.dewfallapp.feature.inbox.ui
+
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.dewfallapp.core.data.subscriptions.SubscriptionsRepository
+import io.github.dewfallapp.core.data.video.StoredVideosRepository
+import io.github.dewfallapp.core.model.VideoSummary
+import io.github.dewfallapp.core.mvi.MviViewModel
+import io.github.dewfallapp.feature.inbox.logic.InboxIntent
+import io.github.dewfallapp.feature.inbox.logic.InboxReducer
+import io.github.dewfallapp.feature.inbox.logic.InboxState
+import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingCommand
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+
+/**
+ * How long the inbox goes on reading after the screen stops collecting its state, so a
+ * configuration change doesn't start the reads again, as Android's state production guide does.
+ */
+private const val STOP_TIMEOUT_MS = 5_000L
+
+/**
+ * Reads the inbox from the phone: the number of subscribed channels and the inbox's videos, and
+ * dispatches each pair as [InboxIntent.Loaded]. It reads only while the screen collects its state,
+ * and for [STOP_TIMEOUT_MS] after, so the query doesn't run again for every change while another
+ * screen covers the inbox. The state keeps the last answer for the way back.
+ *
+ * A read that throws, such as on a damaged database, shows Unreadable instead of crashing the app,
+ * which opens on the inbox. The reads start again the next time the inbox shows after they stopped.
+ * It never collects its own state, which would keep its collector count above 0.
+ *
+ * It takes no dispatcher, because the repositories' Flows are main-safe. It has no Logger, as
+ * PlayerViewModel has none, and logs nothing.
+ */
+@HiltViewModel
+internal class InboxViewModel
+@Inject
+constructor(
+    private val subscriptions: SubscriptionsRepository,
+    private val storedVideos: StoredVideosRepository,
+) : MviViewModel<InboxState, InboxIntent, Nothing>(InboxState(), InboxReducer) {
+
+    init {
+        readWhileShown()
+    }
+
+    override fun runSideEffects(intent: InboxIntent) = Unit
+
+    // flatMapLatest is still marked experimental.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun readWhileShown() {
+        viewModelScope.launch {
+            SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS)
+                .command(stateSubscriptionCount)
+                .distinctUntilChanged()
+                .flatMapLatest { command ->
+                    if (command == SharingCommand.START) inbox() else emptyFlow()
+                }
+                .collect(::dispatch)
+        }
+    }
+
+    private fun inbox(): Flow<InboxIntent> =
+        combine<Int, List<VideoSummary>, InboxIntent>(
+                subscriptions.subscribedChannels().map { it.size }.distinctUntilChanged(),
+                storedVideos.inboxVideos(),
+            ) { count, videos ->
+                InboxIntent.Loaded(count, videos)
+            }
+            // The inbox is the first screen, so a read that throws must not crash the app.
+            .catch { emit(InboxIntent.ReadFailed) }
+}

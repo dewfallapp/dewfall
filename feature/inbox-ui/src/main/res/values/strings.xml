@@ -1,0 +1,37 @@
+<resources>
+    <!-- The inbox, the app's home screen. See the inbox spec in openspec/. -->
+    <string name="inbox_app_name">Dewfall</string>
+    <string name="inbox_title">Inbox</string>
+    <!-- The top bar's search button, for screen readers. Until subtitle search, it opens Search YouTube. -->
+    <string name="inbox_search">Search YouTube</string>
+
+    <!-- What a screen reader says that tapping a row or a card's channel row does. -->
+    <string name="inbox_open_video">Open video</string>
+    <string name="inbox_open_channel">Open channel</string>
+    <!-- A card's count of its videos in the inbox. -->
+    <plurals name="inbox_card_count">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videos</item>
+    </plurals>
+    <string name="inbox_end">That\'s everything for now.</string>
+
+    <string name="inbox_no_channels_title">No channels yet</string>
+    <string name="inbox_no_channels_body">Find channels with Search YouTube. Their new videos show here.</string>
+    <!-- The content description of the glyph above "No channels yet". -->
+    <string name="inbox_no_channels_icon">Channels</string>
+    <string name="inbox_search_button">Search YouTube</string>
+
+    <string name="inbox_caught_up_title">You\'re all caught up</string>
+    <!-- %1$d is the number of channels the user subscribes to, at least 1. -->
+    <plurals name="inbox_caught_up_body">
+        <item quantity="one">Nothing new from your channel.</item>
+        <item quantity="other">Nothing new from your %1$d channels.</item>
+    </plurals>
+    <!-- The content description of the glyph above "You're all caught up". -->
+    <string name="inbox_caught_up_icon">Done</string>
+
+    <string name="inbox_unreadable_title">Your inbox can\'t be shown</string>
+    <string name="inbox_unreadable_body">Dewfall couldn\'t read what it keeps on this phone. Restarting the app may help.</string>
+    <!-- The content description of the error glyph above "Your inbox can't be shown". -->
+    <string name="inbox_unreadable_icon">Couldn\'t read the inbox</string>
+</resources>

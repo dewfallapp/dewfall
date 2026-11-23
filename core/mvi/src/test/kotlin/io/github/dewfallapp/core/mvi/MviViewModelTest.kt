@@ -13,13 +13,24 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+
+/** The counter's ViewModel, with its state's collector count in view. */
+private class CountedViewModel :
+    MviViewModel<CounterState, CounterIntent, CounterEffect>(CounterState(), CounterReducer) {
+    val collectors: StateFlow<Int> = stateSubscriptionCount
+
+    override fun runSideEffects(intent: CounterIntent) = Unit
+}
 
 /** Tests MviViewModel through the counter example in the counter package. */
 // setMain, resetMain, UnconfinedTestDispatcher and advanceUntilIdle are still marked experimental.
@@ -118,4 +129,23 @@ class MviViewModelTest {
 
     private fun CounterViewModel.incrementToLimit() =
         repeat(CounterReducer.LIMIT) { dispatch(CounterIntent.Increment) }
+
+    @Test
+    fun `the collector count follows the state's collectors`() = runTest {
+        val viewModel = CountedViewModel()
+        assertEquals(0, viewModel.collectors.value)
+
+        val first = launch { viewModel.state.collect {} }
+        val second = launch { viewModel.state.collect {} }
+        runCurrent()
+        assertEquals(2, viewModel.collectors.value)
+
+        first.cancel()
+        runCurrent()
+        assertEquals(1, viewModel.collectors.value)
+
+        second.cancel()
+        runCurrent()
+        assertEquals(0, viewModel.collectors.value)
+    }
 }
