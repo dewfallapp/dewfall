@@ -24,25 +24,31 @@ import okhttp3.Call
 
 /**
  * Replaces the YouTube layer in every emulator test with fakes that know only [TestVideo]'s two
- * videos and their channel, and the player's media clients with [AssetMedia]. Nothing builds
- * NewPipeYouTube, so no request reaches YouTube or googlevideo.com. The repositories in
- * `:core:data` are the real ones. While [FakeNetwork] has YouTube off, the details, the stream
- * links and the channel answer NETWORK. See docs/testing.md#emulator-tests.
+ * videos and their channel, plus the filler videos that [TestVideo.LONG_QUERY] finds but nothing
+ * can open, and the player's media clients with [AssetMedia]. Nothing builds NewPipeYouTube, so no
+ * request reaches YouTube or googlevideo.com. The repositories in `:core:data` are the real ones.
+ * While [FakeNetwork] has YouTube off, the details, the stream links and the channel answer
+ * NETWORK. See docs/testing.md#emulator-tests.
  */
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [YouTubeModule::class])
 object FakeYouTubeModule {
     @Provides
     fun provideSearch(): SearchRemoteDataSource = SearchRemoteDataSource { query ->
-        if (query == TestVideo.QUERY) {
-            YouTubeResult.Success(
-                SearchResults(
-                    channels = listOf(TestVideo.searchChannel),
-                    videos = listOf(TestVideo.summary, TestVideo.otherSummary),
-                ),
-            )
-        } else {
-            YouTubeResult.Success(SearchResults(channels = emptyList(), videos = emptyList()))
+        when (query) {
+            TestVideo.QUERY ->
+                YouTubeResult.Success(
+                    SearchResults(
+                        channels = listOf(TestVideo.searchChannel),
+                        videos = listOf(TestVideo.summary, TestVideo.otherSummary),
+                    ),
+                )
+            TestVideo.LONG_QUERY ->
+                YouTubeResult.Success(
+                    SearchResults(channels = emptyList(), videos = TestVideo.longResults),
+                )
+            else ->
+                YouTubeResult.Success(SearchResults(channels = emptyList(), videos = emptyList()))
         }
     }
 

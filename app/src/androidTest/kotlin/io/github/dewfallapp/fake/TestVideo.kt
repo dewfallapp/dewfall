@@ -20,8 +20,20 @@ import kotlin.time.Duration.Companion.seconds
  * tone in the test APK's assets. See docs/testing.md#emulator-tests.
  */
 object TestVideo {
-    /** What the test types into the search field. Any other search finds nothing. */
+    /**
+     * What the test types into the search field. Any other search but [LONG_QUERY] finds nothing.
+     */
     const val QUERY = "test pattern"
+
+    /**
+     * A search that finds a list long enough to scroll on any phone: the second video first, then
+     * [FILLER_COUNT] filler videos of the test channel, then the test video last. The fillers can't
+     * be opened.
+     */
+    const val LONG_QUERY = "long test pattern"
+
+    /** How many filler videos [LONG_QUERY] finds between the two test videos. */
+    const val FILLER_COUNT = 20
 
     const val TITLE = "Dewfall test pattern"
     const val CHANNEL_NAME = "Dewfall test channel"
@@ -109,6 +121,19 @@ object TestVideo {
                 avatars = emptyList(),
                 description = CHANNEL_EXCERPT,
             )
+
+    /** What [LONG_QUERY] finds, in order. The fillers' IDs are made up, in VideoId's shape. */
+    val longResults: List<VideoSummary>
+        get() {
+            val fillers =
+                (1..FILLER_COUNT).map { number ->
+                    summary.copy(
+                        id = VideoId("dewfallF" + number.toString().padStart(3, '0')),
+                        title = "Dewfall filler $number",
+                    )
+                }
+            return listOf(otherSummary) + fillers + summary
+        }
 
     /** The test channel, as its channel page shows it, with both videos. */
     val uploads: ChannelUploads
