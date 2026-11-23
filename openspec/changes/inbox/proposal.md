@@ -57,5 +57,3 @@ On November 23, 2026, in the same session's question dialog, after the maintaine
 Later that day, after the maintainer subagent's plan check asked what the inbox does when its read fails, the maintainer answered a sixth question in the same session's question dialog:
 
 6. "If Dewfall can't read its own saved data when the inbox opens (rare: a damaged database or full storage), what should the inbox show instead of crashing the app?" Answer: "An error message (Recommended)". The option said: "The inbox shows the error glyph, "Your inbox can't be shown" and "Dewfall couldn't read what it keeps on this phone. Restarting the app may help." The search button still works." The inbox spec's "The inbox says when it can't be read" follows it.
-
-On the same day, the coordinating session relayed the maintainer's standing instruction for open questions, given in the coordinating session: "For the sessions that need my input,  can you go with the recommended options for them?" It matches answer 6, which the maintainer had already given in this session's dialog.

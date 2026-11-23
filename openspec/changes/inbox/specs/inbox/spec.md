@@ -83,7 +83,7 @@ A video SHALL count as new when its publish time is at or after the time the use
 
 #### Scenario: Subscribing again
 - **WHEN** the user subscribes to a channel again, the first save after that brings no video Dewfall didn't already keep, and the next save brings 3 videos published before subscribing again
-- **THEN** the first save brought no video Dewfall didn't already keep, so those 3 are the first videos saved since subscribing again, and the inbox shows the 2 latest of the channel's videos, not the third of those 3
+- **THEN** the inbox shows the channel's 2 latest videos, not the third of those 3
 
 #### Scenario: An estimated time from before subscribing
 - **WHEN** a video came out after the user subscribed, YouTube gave only an estimate such as "2 days ago", the estimate falls before the time of subscribing, and a save after the one that first brought the channel's videos since subscribing first saved it
