@@ -1,12 +1,15 @@
 package io.github.dewfallapp.core.data.subscriptions
 
 import io.github.dewfallapp.core.data.database.ApplicationScope
+import io.github.dewfallapp.core.data.database.toChannelOverview
 import io.github.dewfallapp.core.data.database.toEntity
 import io.github.dewfallapp.core.data.database.toSubscribedChannel
 import io.github.dewfallapp.core.database.ChannelDao
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.SubscribedChannel
+import java.util.Locale
 import javax.inject.Inject
 import kotlin.time.Clock
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +30,12 @@ constructor(
         channelDao
             .subscribedChannels()
             .map { rows -> rows.map { it.toSubscribedChannel() } }
+            .distinctUntilChanged()
+
+    override fun channelOverviews(): Flow<List<ChannelOverview>> =
+        channelDao
+            .channelOverviews()
+            .map { rows -> sortedByName(rows.map { it.toChannelOverview() }, Locale.getDefault()) }
             .distinctUntilChanged()
 
     override fun subscribedChannel(channelId: ChannelId): Flow<SubscribedChannel?> =

@@ -2,6 +2,7 @@ package io.github.dewfallapp.core.data.subscriptions
 
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.SubscribedChannel
 import kotlinx.coroutines.flow.Flow
 
@@ -15,6 +16,13 @@ import kotlinx.coroutines.flow.Flow
 interface SubscriptionsRepository {
     /** Every subscribed channel, by name. It emits again when one is added, changed or removed. */
     fun subscribedChannels(): Flow<List<SubscribedChannel>>
+
+    /**
+     * Every subscribed channel with the publish time of its last upload, by name as the phone's
+     * language sorts it, ignoring case, then by channel ID. It emits again when a subscription or a
+     * saved video changes, and reads the phone's language at each emission.
+     */
+    fun channelOverviews(): Flow<List<ChannelOverview>>
 
     /** The subscribed channel with [channelId], or null while it isn't subscribed. */
     fun subscribedChannel(channelId: ChannelId): Flow<SubscribedChannel?>

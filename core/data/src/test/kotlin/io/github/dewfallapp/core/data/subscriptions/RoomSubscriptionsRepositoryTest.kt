@@ -3,8 +3,11 @@ package io.github.dewfallapp.core.data.subscriptions
 import io.github.dewfallapp.core.data.database.FixedClock
 import io.github.dewfallapp.core.database.ChannelDao
 import io.github.dewfallapp.core.database.ChannelEntity
+import io.github.dewfallapp.core.database.ChannelOverviewRow
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.ChannelOverview
+import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.SubscribedChannel
 import io.github.dewfallapp.core.model.Thumbnail
 import kotlin.test.Test
@@ -40,6 +43,7 @@ private val ROW =
 private class FakeChannelDao(
     private val all: Flow<List<ChannelEntity>> = flowOf(emptyList()),
     private val one: Flow<ChannelEntity?> = flowOf(null),
+    private val overviews: Flow<List<ChannelOverviewRow>> = flowOf(emptyList()),
     private val gate: CompletableDeferred<Unit>? = null,
 ) : ChannelDao {
     val subscribed = mutableListOf<ChannelEntity>()
@@ -47,6 +51,8 @@ private class FakeChannelDao(
     val askedFor = mutableListOf<String>()
 
     override fun subscribedChannels(): Flow<List<ChannelEntity>> = all
+
+    override fun channelOverviews(): Flow<List<ChannelOverviewRow>> = overviews
 
     override fun subscribedChannel(id: String): Flow<ChannelEntity?> {
         askedFor += id
@@ -95,6 +101,46 @@ class RoomSubscriptionsRepositoryTest {
         assertEquals(
             listOf(listOf(SubscribedChannel(CHANNEL, NOW)), emptyList()),
             repository.subscribedChannels().toList(),
+        )
+    }
+
+    @Test
+    fun `overview rows come back with their last upload, sorted, without repeats`() = runTest {
+        val tea = ROW.copy(id = "UCbbbbbbbbbbbbbbbbbbbbbb", name = "afternoon Tea")
+        val rows =
+            listOf(
+                ChannelOverviewRow(ROW, lastPublishedAt = NOW, lastPublishedApproximate = true),
+                ChannelOverviewRow(tea, lastPublishedAt = null, lastPublishedApproximate = null),
+            )
+        val dao = FakeChannelDao(overviews = flowOf(rows, rows.reversed(), emptyList()))
+        val repository = RoomSubscriptionsRepository(dao, FixedClock(NOW), backgroundScope)
+
+        val teaChannel =
+            CHANNEL.copy(id = ChannelId("UCbbbbbbbbbbbbbbbbbbbbbb"), name = "afternoon Tea")
+        assertEquals(
+            listOf(
+                listOf(
+                    ChannelOverview(SubscribedChannel(teaChannel, NOW), lastUpload = null),
+                    ChannelOverview(
+                        SubscribedChannel(CHANNEL, NOW),
+                        lastUpload = PublishedTime(NOW, isApproximate = true),
+                    ),
+                ),
+                emptyList(),
+            ),
+            repository.channelOverviews().toList(),
+        )
+    }
+
+    @Test
+    fun `an exact last upload stays exact`() = runTest {
+        val row = ChannelOverviewRow(ROW, lastPublishedAt = NOW, lastPublishedApproximate = false)
+        val dao = FakeChannelDao(overviews = flowOf(listOf(row)))
+        val repository = RoomSubscriptionsRepository(dao, FixedClock(NOW), backgroundScope)
+
+        assertEquals(
+            PublishedTime(NOW, isApproximate = false),
+            repository.channelOverviews().toList().single().single().lastUpload,
         )
     }
 
