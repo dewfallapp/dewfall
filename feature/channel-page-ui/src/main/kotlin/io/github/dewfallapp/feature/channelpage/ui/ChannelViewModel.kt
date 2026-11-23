@@ -46,9 +46,9 @@ internal class ChannelArgs(val channelId: ChannelId)
  *
  * While the user subscribes to the channel, it saves the uploads the page shows, so they reach the
  * inbox with no request of their own: through SubscribeWithUploads when Subscribe is tapped, and
- * once for each load that finishes while the channel is subscribed. A channel that isn't subscribed
- * is never saved. See the subscriptions spec's "The channel page saves the uploads of a subscribed
- * channel".
+ * once for each load that finishes while the channel is subscribed. A page whose card doesn't say
+ * Subscribed saves nothing. See the subscriptions spec's "The channel page saves the uploads of a
+ * subscribed channel".
  *
  * It takes no dispatcher, because the repositories' calls are main-safe.
  */
