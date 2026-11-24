@@ -856,7 +856,7 @@ scripts/pre_push_gate.py checks every commit that a push would send, before the 
 python3 scripts/pre_push_gate.py
 ```
 
-It fetches origin, then checks every commit in origin/main..HEAD, not just the last one, then the build. Two of its checks run scans of their own: scripts/scan_saved_responses.py on the saved YouTube responses, and scripts/scan_screenshot_tests.py on the screenshot test folders. It ends with PASS only when every check passed. It prints the names of the rules that failed, with each commit's hash and subject, and never an identity or a value it found.
+It fetches origin, then checks every commit in origin/main..HEAD, not just the last one, then the build, then the build's manifest merge reports. Two of its checks run scans of their own: scripts/scan_saved_responses.py on the saved YouTube responses, and scripts/scan_screenshot_tests.py on the screenshot test folders. It ends with PASS only when every check passed. It prints the names of the rules that failed, with each commit's hash and subject, and never an identity or a value it found.
 
 | Check | Fails when |
 |---|---|
@@ -869,10 +869,35 @@ It fetches origin, then checks every commit in origin/main..HEAD, not just the l
 | Screenshot tests | A commit adds or changes a file in a src/screenshotTest* folder, and its own copy of those folders fails scripts/scan_screenshot_tests.py. See [Screenshot tests](#screenshot-tests). |
 | Nothing uncommitted | The folder has a change or a file that no commit holds, which the build would check although the push doesn't send it. |
 | The build | The pull request workflow's command, with `--continue` and `-Pandroid.builder.sdkDownload=false`, fails, or changes a file, such as a Room schema. |
+| Manifest merge reports | After a build that passed, a module's manifest merge report or blame file names a path outside the checkout and outside Gradle's user home, or the gate finds no report or no path to check. See [Manifest merge reports](#manifest-merge-reports). |
 
 `--no-build` skips the build for a quick look. The gate then ends INCOMPLETE, with exit code 3, when every other check passed, and FAIL, with exit code 1, when one didn't, never PASS. A `--remote-branch` that doesn't start with origin/, or that holds `..`, stops the gate with exit code 2. With no commit to push, it says so and ends with exit code 0. It needs Python 3.9 or later.
 
-The gate reads each commit's saved responses from Git's objects, not from an archive, so `export-ignore` and other settings in the commit's .gitattributes can't leave a file out. A commit that deletes the folder has nothing to scan. Its tests in scripts/tests build small repositories of their own, without the user's Git configuration, to check merges, the Renovate exemption, the scan of saved responses and the exit codes.
+The gate reads each commit's saved responses from Git's objects, not from an archive, so `export-ignore` and other settings in the commit's .gitattributes can't leave a file out. A commit that deletes the folder has nothing to scan. Its tests in scripts/tests build small repositories of their own, without the user's Git configuration, to check merges, the Renovate exemption, the scan of saved responses and the exit codes. The tests of the manifest merge reports write reports into plain temporary folders.
+
+### Manifest merge reports
+
+Checkouts on one machine share Gradle's build cache. AGP once restored a manifest merge from it with another checkout's absolute paths in the merge report, and lint then checked that checkout's manifest (#230). PR #231 keeps the merge out of the cache, as [Build settings](architecture.md#build-settings) in docs/architecture.md describes. This check makes sure it stays that way, for example after an AGP update moves the report to another task (#232).
+
+After a build that passed, the gate reads every module's `build/outputs/logs/manifest-merger-*-report.txt` and every file under `build/intermediates/manifest_merge_blame_file/`. In the reports it reads the location after `ADDED from`, `MERGED from [<library>]` and the like, and in the blame files the location after `<line>-->`, never the merged manifest's XML. It reads no report below a folder with its own .git, because that folder is another checkout.
+
+The gate judges each absolute path by where it leads, with its `..` parts removed and its symbolic links resolved, so a link inside the checkout can't hide another checkout. It resolves the checkout's and Gradle's user home's paths too, because macOS's /tmp is a link to /private/tmp. The path passes when it leads inside the checkout or inside Gradle's user home, and not inside another checkout within this one, such as a worktree in the main checkout's .claude/worktrees/, nor inside the checkout's .git folder, where the maintainer subagent's worktrees live, in .git/maintainer-check/.
+
+Gradle's user home is the folder that a `-Dgradle.user.home=` option for gradlew's JVM names, else GRADLE_USER_HOME, else ~/.gradle. The gate reads that option where Java does, in the order Java applies it: JAVA_TOOL_OPTIONS, which the JVM puts before all other options ([JVM TI](https://docs.oracle.com/en/java/javase/17/docs/specs/jvmti.html#tooloptions)), then JDK_JAVA_OPTIONS, which the java launcher puts before its command line ([java](https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#using-the-jdk_java_options-launcher-environment-variable)), then JAVA_OPTS and GRADLE_OPTS, which gradlew puts on that command line in this order. The last one wins. Both pages were checked on November 24, 2026. Like Gradle, the gate expands no `~` in these values, and reads a relative or empty one from the checkout, where gradlew runs. Gradle 9.9.2 looks in the same order ([BuildLayoutParameters.java](https://github.com/gradle/gradle/blob/v9.9.2/platforms/core-runtime/build-discovery/src/main/java/org/gradle/initialization/BuildLayoutParameters.java#L61-L66), checked on November 24, 2026). The gate runs `./gradlew` without `--gradle-user-home`.
+
+It fails with:
+
+- `FOREIGN_PATH <report>:<line>` for each line that names another path. It names the report and the line, never the path, which holds a user's folder.
+- `NO_MANIFEST_MERGE_REPORT` when it finds no `manifest-merger-*-report.txt`, even if blame files are there. The build always merges the app's manifest, and lint reads that report, so AGP must have moved or renamed it, and the check would miss the file that matters.
+- `NO_PATH_READ` when the reports hold no absolute path. The app's report always names its own manifest, so the reports' format must have changed.
+
+A build that failed may not have merged the manifests, so the gate checks the reports only after a build that passed.
+
+The check reads every variant's reports, not only those that the gate's build writes. Release reports from a build before #231 can still name another checkout, and the gate's build never runs the release merge, so they stay. They no longer reach lint, because #231's extra input makes the merge run again before lint reads them. Still, the gate fails on them. Remove them once, in a checkout that was built before #231:
+
+```bash
+./gradlew clean
+```
 
 ### The scan of saved responses
 
