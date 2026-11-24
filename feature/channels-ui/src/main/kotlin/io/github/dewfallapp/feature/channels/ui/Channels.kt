@@ -12,16 +12,23 @@ import kotlin.time.Clock
 
 /**
  * The Channels screen, with its ViewModel: the subscribed channels, each opening its page.
- * [onOpenChannel] runs when the user taps a channel, and [onOpenSearch] when they tap a search
- * button. See the subscriptions spec in openspec/.
+ * [onOpenChannel] runs when the user taps a channel, [onOpenSearch] when they tap a search button,
+ * and [onImportFromTakeout] when they tap "Import from Google Takeout". See the subscriptions spec
+ * in openspec/.
  */
 @Composable
 fun Channels(
     onOpenChannel: (ChannelId) -> Unit,
     onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    ChannelsRoute(onOpenChannel = onOpenChannel, onOpenSearch = onOpenSearch, modifier = modifier)
+    ChannelsRoute(
+        onOpenChannel = onOpenChannel,
+        onOpenSearch = onOpenSearch,
+        onImportFromTakeout = onImportFromTakeout,
+        modifier = modifier,
+    )
 }
 
 /**
@@ -33,6 +40,7 @@ fun Channels(
 internal fun ChannelsRoute(
     onOpenChannel: (ChannelId) -> Unit,
     onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ChannelsViewModel = viewModel(),
 ) {
@@ -47,6 +55,7 @@ internal fun ChannelsRoute(
         zone = zone,
         onOpenChannel = onOpenChannel,
         onOpenSearch = onOpenSearch,
+        onImportFromTakeout = onImportFromTakeout,
         modifier = modifier,
     )
 }

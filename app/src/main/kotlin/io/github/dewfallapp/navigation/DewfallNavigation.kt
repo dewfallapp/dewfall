@@ -272,6 +272,7 @@ private fun EntryProviderScope<NavKey>.screens(navigation: AppNavigation) {
         Channels(
             onOpenChannel = { channelId -> navigation.openChannel(ChannelsKey, channelId) },
             onOpenSearch = { navigation.openSearch(ChannelsKey) },
+            onImportFromTakeout = { navigation.openTakeoutImport(ChannelsKey) },
         )
     }
     entry<SearchKey>(clazzContentKey = { key -> key.entryId }) { key ->
