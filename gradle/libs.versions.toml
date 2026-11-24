@@ -20,6 +20,9 @@ animalsniffer = "2.0.1"
 gummyBears = "0.16.0"
 composeBom = "2026.09.00"
 activityCompose = "1.13.0"
+# Android KTX for core, such as String.toUri, which lint asks for in place of Uri.parse. The app
+# already shipped this version through other AndroidX libraries before :core:data declared it.
+androidxCore = "1.18.0"
 startup = "1.2.0"
 hilt = "2.60.1"
 ksp = "2.3.12"
@@ -78,6 +81,7 @@ androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = 
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-startup-runtime = { module = "androidx.startup:startup-runtime", version.ref = "startup" }
 
@@ -143,6 +147,8 @@ androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidxTestEspresso" }
+# Answers the system file picker in TakeoutImportTest, an emulator test. Test only, never ships.
+androidx-test-espresso-intents = { module = "androidx.test.espresso:espresso-intents", version.ref = "androidxTestEspresso" }
 hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
 
 # The @PreviewTest annotation for screenshot tests. dewfall.android.screenshots adds it to the

@@ -164,6 +164,10 @@ When a breakage is NewPipeExtractor's to fix and nobody has reported it, the mai
 
 An agent may collect what the maintainer needs: which calls fail and since when, the NewPipeExtractor version, the class names of the exceptions and the lines of NewPipeExtractor's code that throw them, with links. A report never holds user data, such as an IP address, the network's country, or what anyone watched.
 
+## When the Takeout import finds no channels
+
+The Takeout import reads a subscriptions table by its shape, not its names: three fields, a channel ID first ([architecture.md](architecture.md#the-takeout-import)). If people report that a real export gives "This file holds no channels", Google may have changed that shape, such as by adding a column. Ask for the shape only: the number of fields in the subscriptions file's header, whether its first field looks like "UC" and 22 characters, and the file's folder names, never its rows. Then change TakeoutReader's line rule and add a made-up test file in the new shape to TakeoutReaderTest.
+
 ## Phone brands and background limits
 
 TODO: Phase 7 adds the overnight downloads and fills this in. The roadmap asks to test on as many phone brands as possible, and to note here which settings each one needs so that background jobs run.

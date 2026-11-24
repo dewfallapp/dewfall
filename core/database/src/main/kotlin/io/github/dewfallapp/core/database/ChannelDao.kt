@@ -68,6 +68,15 @@ interface ChannelDao {
     /** Subscribes to [channel], or changes nothing if it is already subscribed. */
     @Insert(onConflict = OnConflictStrategy.IGNORE) suspend fun subscribe(channel: ChannelEntity)
 
+    /**
+     * Subscribes to each of [channels] that isn't subscribed yet, all in one transaction, which
+     * Room's generated code opens for an insert. It gives each row's row ID, in order, or -1 for a
+     * channel that was already subscribed, which keeps its row. See
+     * docs/architecture.md#the-takeout-import.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun subscribeAll(channels: List<ChannelEntity>): List<Long>
+
     /** Unsubscribes from the channel with [id]. Its videos and their watch state stay. */
     @Query("DELETE FROM channels WHERE id = :id") suspend fun unsubscribe(id: String)
 }

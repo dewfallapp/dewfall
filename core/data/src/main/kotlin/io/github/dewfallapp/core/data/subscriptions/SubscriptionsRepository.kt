@@ -37,6 +37,13 @@ interface SubscriptionsRepository {
     suspend fun subscribe(channel: Channel)
 
     /**
+     * Subscribes to every one of [channels] in one step, all with the same time of subscribing,
+     * now, and returns how many weren't subscribed before. A channel that is already subscribed
+     * keeps its details and its first time. Used by the Takeout import.
+     */
+    suspend fun subscribeAll(channels: List<Channel>): Int
+
+    /**
      * Unsubscribes from the channel with [channelId]. Its saved videos and what the user watched of
      * them stay. A channel that isn't subscribed stays that way.
      */

@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,8 +64,8 @@ private val MessageBadgeSize = 64.dp
 /**
  * The inbox: its top bar, then the cards of new videos, or an empty state. It is stateless: it
  * shows [state], with time ago counted from [now] in [zone], and reports taps through
- * [onOpenVideo], [onOpenChannel] and [onOpenSearch]. Before the phone's first answer it shows only
- * the top bar.
+ * [onOpenVideo], [onOpenChannel], [onOpenSearch] and [onImportFromTakeout]. Before the phone's
+ * first answer it shows only the top bar.
  *
  * Its background fills the window behind the system bars. Its content sits in one centered column
  * at most ReadableWidth wide, inside the safe drawing area, so nothing is under the system bars,
@@ -78,6 +79,7 @@ internal fun InboxScreen(
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
     onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
@@ -100,15 +102,11 @@ internal fun InboxScreen(
                         )
                     }
                     InboxContent.NoChannels -> {
-                        Message(
-                            glyph = DesignR.drawable.ic_subscriptions,
-                            glyphDescription = stringResource(R.string.inbox_no_channels_icon),
-                            title = stringResource(R.string.inbox_no_channels_title),
-                            body = stringResource(R.string.inbox_no_channels_body),
+                        NoChannels(
+                            onOpenSearch = onOpenSearch,
+                            onImportFromTakeout = onImportFromTakeout,
                             modifier = Modifier.weight(1f),
-                        ) {
-                            SearchButton(onOpenSearch = onOpenSearch)
-                        }
+                        )
                     }
                     is InboxContent.CaughtUp -> {
                         Message(
@@ -336,6 +334,39 @@ private fun Message(
             textAlign = TextAlign.Center,
         )
         action()
+    }
+}
+
+/**
+ * "No channels yet", with its buttons: "Search YouTube", and under it "Import from Google Takeout",
+ * as in the "Inbox, no channels yet" frame.
+ */
+@Composable
+private fun NoChannels(
+    onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Message(
+        glyph = DesignR.drawable.ic_subscriptions,
+        glyphDescription = stringResource(R.string.inbox_no_channels_icon),
+        title = stringResource(R.string.inbox_no_channels_title),
+        body = stringResource(R.string.inbox_no_channels_body),
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.padding(top = DewfallSpacing.sm),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
+        ) {
+            SearchButton(onOpenSearch = onOpenSearch)
+            TextButton(onClick = onImportFromTakeout) {
+                Text(
+                    text = stringResource(R.string.inbox_import_button),
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 }
 

@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,8 +65,8 @@ private val MessageBadgeSize = 64.dp
 /**
  * The Channels screen: its top bar, then the count and the card of channels, or the empty state. It
  * is stateless: it shows [state], with the last upload counted from [now] in [zone], and reports
- * taps through [onOpenChannel] and [onOpenSearch]. Before the phone's first answer it shows only
- * the top bar.
+ * taps through [onOpenChannel], [onOpenSearch] and [onImportFromTakeout]. Before the phone's first
+ * answer it shows only the top bar.
  *
  * Its background fills the window behind the system bars. Its content sits in one centered column
  * at most ReadableWidth wide, inside the safe drawing area, so nothing is under the system bars,
@@ -78,6 +79,7 @@ internal fun ChannelsScreen(
     zone: ZoneId,
     onOpenChannel: (ChannelId) -> Unit,
     onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize()) {
@@ -99,7 +101,11 @@ internal fun ChannelsScreen(
                         )
                     }
                     ChannelsList.NoChannels -> {
-                        NoChannels(onOpenSearch = onOpenSearch, modifier = Modifier.weight(1f))
+                        NoChannels(
+                            onOpenSearch = onOpenSearch,
+                            onImportFromTakeout = onImportFromTakeout,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                     ChannelsList.Unreadable -> Unreadable(modifier = Modifier.weight(1f))
                 }
@@ -236,10 +242,15 @@ private fun ChannelRow(
 
 /**
  * "No channels yet", as in the "Channels, no channels yet" frame: the channels glyph in a round
- * badge, the title, the body and the "Search YouTube" button.
+ * badge, the title, the body, the "Search YouTube" button, and under it "Import from Google
+ * Takeout".
  */
 @Composable
-private fun NoChannels(onOpenSearch: () -> Unit, modifier: Modifier = Modifier) {
+private fun NoChannels(
+    onOpenSearch: () -> Unit,
+    onImportFromTakeout: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Message(
         glyph = DesignR.drawable.ic_subscriptions,
         glyphDescription = stringResource(R.string.channels_no_channels_icon),
@@ -248,20 +259,32 @@ private fun NoChannels(onOpenSearch: () -> Unit, modifier: Modifier = Modifier) 
         body = stringResource(R.string.channels_no_channels_body),
         modifier = modifier,
     ) {
-        Button(
-            onClick = onOpenSearch,
-            contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+        Column(
+            modifier = Modifier.padding(top = DewfallSpacing.sm),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
         ) {
-            Icon(
-                painter = painterResource(DesignR.drawable.ic_search),
-                // The button's own text names it, so the glyph has no description of its own.
-                contentDescription = null,
-                modifier = Modifier.size(ButtonDefaults.IconSize),
-            )
-            Text(
-                text = stringResource(R.string.channels_search_button),
-                modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
-            )
+            Button(
+                onClick = onOpenSearch,
+                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+            ) {
+                Icon(
+                    painter = painterResource(DesignR.drawable.ic_search),
+                    // The button's own text names it, so the glyph has no description of its own.
+                    contentDescription = null,
+                    modifier = Modifier.size(ButtonDefaults.IconSize),
+                )
+                Text(
+                    text = stringResource(R.string.channels_search_button),
+                    modifier = Modifier.padding(start = ButtonDefaults.IconSpacing),
+                )
+            }
+            TextButton(onClick = onImportFromTakeout) {
+                Text(
+                    text = stringResource(R.string.channels_import_button),
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

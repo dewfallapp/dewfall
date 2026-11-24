@@ -52,6 +52,13 @@ constructor(
         externalScope.async { channelDao.subscribe(row) }.await()
     }
 
+    override suspend fun subscribeAll(channels: List<Channel>): Int {
+        if (channels.isEmpty()) return 0
+        val now = clock.now()
+        val rows = channels.map { it.toEntity(subscribedAt = now) }
+        return externalScope.async { channelDao.subscribeAll(rows).count { it != -1L } }.await()
+    }
+
     override suspend fun unsubscribe(channelId: ChannelId) {
         externalScope.async { channelDao.unsubscribe(channelId.value) }.await()
     }

@@ -91,6 +91,44 @@ class ChannelDaoTest {
     }
 
     @Test
+    fun subscribingToManyGivesMinusOneForThoseAlreadySubscribed() = runTest {
+        channels.subscribe(channel(id = CHANNEL_B, name = "Old name", subscribedAt = MONDAY))
+
+        val ids =
+            channels.subscribeAll(
+                listOf(
+                    channel(id = CHANNEL_A, subscribedAt = TUESDAY),
+                    channel(id = CHANNEL_B, name = "New name", subscribedAt = TUESDAY),
+                ),
+            )
+
+        assertEquals(1, ids.count { it != -1L })
+        assertEquals(-1L, ids[1])
+        val b = channels.subscribedChannel(CHANNEL_B).first()
+        assertEquals("Old name", b?.name)
+        assertEquals(MONDAY, b?.subscribedAt)
+        assertEquals(TUESDAY, channels.subscribedChannel(CHANNEL_A).first()?.subscribedAt)
+    }
+
+    @Test
+    fun subscribingToMoreThan999ChannelsAtOnceWorks() = runTest {
+        val many = (1..1200).map { channel(id = "UCmany" + it.toString().padStart(18, '0')) }
+
+        val ids = channels.subscribeAll(many)
+
+        assertEquals(1200, ids.count { it != -1L })
+        assertEquals(1200, channels.subscribedChannels().first().size)
+    }
+
+    @Test
+    fun subscribingToNoChannelsChangesNothing() = runTest {
+        channels.subscribe(channel())
+
+        assertEquals(emptyList(), channels.subscribeAll(emptyList()))
+        assertEquals(listOf(channel()), channels.subscribedChannels().first())
+    }
+
+    @Test
     fun channelsComeByNameIgnoringCase() = runTest {
         // By code point, "T" comes before "l", so only a case-insensitive order gives this one.
         channels.subscribe(channel(id = CHANNEL_A, name = "Tidewater Woodshop"))

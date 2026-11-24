@@ -26,6 +26,14 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable data class SearchKey(val entryId: String) : NavKey
 
 /**
+ * The Takeout import screen, which opens from the "No channels yet" state of the inbox or of the
+ * Channels screen. [entryId] is a random UUID's text, the entry's content key, as SearchKey's is,
+ * so a quick reopen during the closing screen's exit animation gets a new entry, with a new
+ * ViewModel that hasn't imported yet.
+ */
+@Serializable data class TakeoutImportKey(val entryId: String) : NavKey
+
+/**
  * The video screen for [videoId]. [entryId] is a random UUID's text, made when the key is created
  * and saved with it. It is the entry's content key, which keeps each entry's saved state and
  * ViewModels apart, even for two entries of the same video, and says nothing about the video.

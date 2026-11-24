@@ -76,6 +76,7 @@ private fun Preview(state: ChannelsState, dynamicColor: Boolean = false) {
             zone = previewZone,
             onOpenChannel = {},
             onOpenSearch = {},
+            onImportFromTakeout = {},
         )
     }
 }

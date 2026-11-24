@@ -49,6 +49,7 @@ dependencies {
     implementation(project(":feature:channels-ui"))
     implementation(project(":feature:inbox-ui"))
     implementation(project(":feature:player-ui"))
+    implementation(project(":feature:takeout-import-ui"))
     implementation(project(":feature:youtube-search-ui"))
 
     implementation(libs.androidx.activity.compose)
@@ -81,6 +82,8 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     // Newer than the Espresso that Compose's test rules bring, which fails on Android 17.
     androidTestImplementation(libs.androidx.test.espresso.core)
+    // Answers the system file picker with a made-up file in TakeoutImportTest.
+    androidTestImplementation(libs.androidx.test.espresso.intents)
     androidTestImplementation(libs.hilt.android.testing)
     androidTestImplementation(libs.kotlin.test.junit)
     // The test rule's dispatcher. See SearchThenPlayTest.

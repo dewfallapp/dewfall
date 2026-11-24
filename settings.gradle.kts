@@ -44,6 +44,10 @@ include(":core:mvi")
 
 include(":core:playback")
 
+// The reader of Google Takeout files, for the subscriptions import. See
+// docs/architecture.md#the-takeout-import.
+include(":core:takeout")
+
 include(":core:ui")
 
 include(":core:youtube")
@@ -63,6 +67,10 @@ include(":feature:inbox-ui")
 include(":feature:player-logic")
 
 include(":feature:player-ui")
+
+include(":feature:takeout-import-logic")
+
+include(":feature:takeout-import-ui")
 
 include(":feature:youtube-debug-logic")
 

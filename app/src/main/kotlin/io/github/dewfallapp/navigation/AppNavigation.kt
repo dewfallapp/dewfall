@@ -67,6 +67,8 @@ internal class AppNavigation(
 
     fun openSearch(from: NavKey) = current.openSearch(from)
 
+    fun openTakeoutImport(from: NavKey) = current.openTakeoutImport(from)
+
     /**
      * Closes the screen of [key] on whichever stack holds it, as a back arrow or the minimize
      * button does. Neither stack's first key is ever removed.

@@ -100,6 +100,9 @@ private class FakeSubscriptions : SubscriptionsRepository {
             channel.id to SubscribedChannel(channel, Instant.parse("2026-11-22T08:00:00Z"))
     }
 
+    override suspend fun subscribeAll(channels: List<Channel>): Int =
+        error("The channel page subscribes to one channel at a time")
+
     override suspend fun unsubscribe(channelId: ChannelId) {
         unsubscribed += channelId
         kept.value -= channelId

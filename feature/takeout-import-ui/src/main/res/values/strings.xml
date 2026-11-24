@@ -1,0 +1,45 @@
+<resources>
+    <!-- The Takeout import screen, after the design's "Onboarding 2, import channels" and
+         "Flow 1: channels imported" frames. See openspec/specs/subscriptions/spec.md. -->
+    <string name="takeout_import_back">Back</string>
+    <string name="takeout_import_title">Bring your channels</string>
+    <string name="takeout_import_intro">Import the channels you follow on YouTube from a Google Takeout file. Dewfall only needs the list of channels.</string>
+    <string name="takeout_import_steps_title">Getting the file</string>
+    <string name="takeout_import_step_1">Open takeout.google.com and choose only YouTube and YouTube Music.</string>
+    <string name="takeout_import_step_2">Tap All YouTube data included and tick only subscriptions.</string>
+    <string name="takeout_import_step_3">Create the export, then download the .zip file to this phone.</string>
+    <string name="takeout_import_labels_note">Google\'s labels can differ with your language.</string>
+    <string name="takeout_import_choose">Choose Takeout file</string>
+    <string name="takeout_import_reading">Reading the file</string>
+
+    <plurals name="takeout_import_found">
+        <item quantity="one">%d channel found</item>
+        <item quantity="other">%d channels found</item>
+    </plurals>
+    <string name="takeout_import_from_file">From your Takeout file. You can add or remove channels at any time in Channels.</string>
+    <!-- The counts that follow are joined with spaces into one line, such as
+         "35 new. 5 were already in Dewfall. 2 lines couldn't be read." Each count that is zero is
+         left out. -->
+    <plurals name="takeout_import_new">
+        <item quantity="one">%d new.</item>
+        <item quantity="other">%d new.</item>
+    </plurals>
+    <plurals name="takeout_import_already">
+        <item quantity="one">%d was already in Dewfall.</item>
+        <item quantity="other">%d were already in Dewfall.</item>
+    </plurals>
+    <plurals name="takeout_import_unreadable">
+        <item quantity="one">%d line couldn\'t be read.</item>
+        <item quantity="other">%d lines couldn\'t be read.</item>
+    </plurals>
+    <!-- What joins the counts' sentences in that line: one space in English. -->
+    <string name="takeout_import_counts_separator">"\u0020"</string>
+    <string name="takeout_import_done">Done</string>
+
+    <!-- The content description of the error glyph in a failed import's banner. -->
+    <string name="takeout_import_error_glyph">Error</string>
+    <string name="takeout_import_no_channels">This file holds no channels. Choose the .zip file from Google Takeout, or the subscriptions file inside it.</string>
+    <string name="takeout_import_not_readable">Dewfall couldn\'t read this file. It may be damaged. Download it from Takeout again, or choose another file.</string>
+    <string name="takeout_import_too_large">This file is too large. Export only your subscriptions from Takeout, then choose that file.</string>
+    <string name="takeout_import_choose_another">Choose another file</string>
+</resources>

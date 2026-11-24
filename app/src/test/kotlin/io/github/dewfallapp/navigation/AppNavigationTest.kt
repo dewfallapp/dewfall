@@ -125,6 +125,26 @@ class AppNavigationTest {
     }
 
     @Test
+    fun `the import opens from either destination once, hides the bar, and closes back`() {
+        navigation.openTakeoutImport(InboxKey)
+        navigation.openTakeoutImport(InboxKey)
+        val fromInbox = assertIs<TakeoutImportKey>(inbox.last())
+        assertEquals(2, inbox.size)
+        assertFalse(navigation.showsNavigationBar())
+        navigation.close(fromInbox)
+        assertEquals(listOf<NavKey>(InboxKey), inbox)
+
+        navigation.select(Destination.CHANNELS)
+        navigation.openTakeoutImport(ChannelsKey)
+        val fromChannels = assertIs<TakeoutImportKey>(channels.last())
+        assertFalse(navigation.showsNavigationBar())
+        navigation.close(fromChannels)
+
+        assertEquals(listOf<NavKey>(ChannelsKey), channels)
+        assertTrue(navigation.showsNavigationBar())
+    }
+
+    @Test
     fun `search in both destinations gets two entries`() {
         navigation.openSearch(InboxKey)
         val inboxSearch = assertIs<SearchKey>(inbox.last())

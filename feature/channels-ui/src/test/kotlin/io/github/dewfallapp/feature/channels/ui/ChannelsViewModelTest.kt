@@ -67,6 +67,8 @@ private class FakeSubscriptions : SubscriptionsRepository {
 
     override suspend fun subscribe(channel: Channel) = error("Not used")
 
+    override suspend fun subscribeAll(channels: List<Channel>): Int = error("Not used")
+
     override suspend fun unsubscribe(channelId: ChannelId) = error("Not used")
 }
 

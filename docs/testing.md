@@ -12,6 +12,7 @@ Fast tests run on every change. They cover:
 - Use cases.
 - Repositories with fake data sources, and the database's repositories with fake DAOs.
 - The YouTube layer against saved responses.
+- The Takeout reader against made-up files. See [The Takeout import](#the-takeout-import).
 - The database's column converters and its merge rule for saved videos. The Room queries themselves run on an emulator, as [Database tests](#database-tests) explains.
 - The theme against the design tokens. [architecture.md](architecture.md#the-theme) explains the check.
 - Dewfall's lint checks, with lint-tests. See [Dewfall's lint checks](#dewfalls-lint-checks).
@@ -550,7 +551,7 @@ Record the sets again:
 
 ## Emulator tests
 
-Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are twelve: SearchThenPlayTest (#46), TryAgainOfflineTest (#212), VideoScreenBackgroundTest (#211), FullscreenClearOfBarsTest (#218), ChannelSubscribeTest (#47), ResumeTest (#50), ChannelInitialTest (#213), SearchChannelTest (#222), ListEndAfterVideoTest (#241), InboxFromChannelTest (#49), ChannelsNavigationTest (#115) and NavigationBarLargeFontTest (#115). The app opens on the inbox, so every test that searches first taps the inbox's search button through `openSearchFromInbox` in OpenSearch.kt, which finds it by its content description, "Search YouTube". ChannelInitialTest is the one that starts no screen: it calls a function of the app in the app's process, on the device's own Android. The database's DAO tests run on an emulator too, from core/database/src/androidTest/, as [Database tests](#database-tests) explains.
+Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are thirteen: SearchThenPlayTest (#46), TryAgainOfflineTest (#212), VideoScreenBackgroundTest (#211), FullscreenClearOfBarsTest (#218), ChannelSubscribeTest (#47), ResumeTest (#50), ChannelInitialTest (#213), SearchChannelTest (#222), ListEndAfterVideoTest (#241), InboxFromChannelTest (#49), ChannelsNavigationTest (#115), NavigationBarLargeFontTest (#115) and TakeoutImportTest (#51). The app opens on the inbox, so every test that searches first taps the inbox's search button through `openSearchFromInbox` in OpenSearch.kt, which finds it by its content description, "Search YouTube". ChannelInitialTest is the one that starts no screen: it calls a function of the app in the app's process, on the device's own Android. The database's DAO tests run on an emulator too, from core/database/src/androidTest/, as [Database tests](#database-tests) explains.
 
 ### What search then play checks
 
@@ -642,6 +643,14 @@ ListEndAfterVideoTest (#241) checks that a list scrolled to its end keeps its pl
 
 - **What it guards.** When a video opened, the mini player used to leave DewfallNavigation's Column, so NavDisplay grew and the outgoing screen got the full height for its exit transition. Its list, at its end, clamped its scroll back, and saved that place. Before the fix, the test failed with "The last row scrolled out of view".
 - **What it leaves out.** A list scrolled to its end while the mini player shows no video, before the first video or after its close button, was measured at full height, so its last rows end up under the mini player when it next appears. That is a different case, which #241 doesn't cover. Both test videos have short one-line titles from the same channel, so the mini player has the same height for each.
+
+### What Takeout import checks
+
+TakeoutImportTest starts on the empty inbox, taps "Import from Google Takeout", and taps "Choose Takeout file". Espresso-Intents ([Espresso-Intents](https://developer.android.com/training/testing/espresso/intents)) answers the system file picker's ACTION_OPEN_DOCUMENT with a file:// link to a made-up .csv file that the test writes to the app's cache folder, so no other app opens. The file has Takeout's header, three made-up channels and one line that holds no channel. The test waits for "3 channels found", checks the counts line "3 new. 1 line couldn't be read." and the three names, and checks through SubscriptionsRepository that the database keeps exactly those three channels. Then it taps Done and waits for the inbox's "Nothing new from your 3 channels.". It deletes the file after. The import never calls the YouTube layer, and TestDatabaseModule's database is empty for every test.
+
+Its second test taps "Channels" in the navigation bar, finds the Channels screen's own "No channels yet" line, taps its "Import from Google Takeout", checks that the import screen shows without the navigation bar, taps the back arrow, and checks that the Channels screen shows again with "Channels" selected.
+
+- **What it leaves out.** The real picker, a content:// link from another app, and a .zip file. The reader's tests in `:core:takeout` cover the .zip, and the hand checks in [The Takeout import](#the-takeout-import) cover the picker.
 
 ### The fakes
 
@@ -1006,6 +1015,16 @@ The task often prints "WARN: Slow render action 0/3" with a TimeoutException's s
 The images are recorded on a Mac with Apple silicon, and the pull request workflow checks them on Ubuntu on x86-64. Google's page warns that the two can render differently. The suite sets no tolerance, so the check stays pixel for pixel. Any tolerance above zero, set with `imageDifferenceThreshold` in dewfall.android.screenshots, needs the maintainer's approval first. It is a fraction, so 0.0001f allows 0.01 percent of the pixels to differ. A real change can be that small: one digit of the position text is about 0.008 percent of a phone image. Recording the images only on Linux instead, which Google's page calls taking screenshots on a server, would fail the gate on the Mac whenever the two render differently, because the gate runs the same check. While they match, as below, images recorded on either one pass on both.
 
 On November 21, 2026, #45's first run on the runners ([run 44936455307](https://github.com/dewfallapp/dewfall/actions/runs/44936455307), on an earlier push of #45, commit 755fe20, ubuntu-26.04) matched all 41 images recorded on the Mac pixel for pixel, so no tolerance was needed. The images didn't change after that push, and every later run of the pull request workflow on #45 that finished passed the same check. Layoutlib's text and shapes come out the same on both. Its native code comes from a file of layoutlib-runtime for each system, such as layoutlib-runtime-16.1.0-jdk17-linux.jar and -mac-arm.jar, which AGP picks by the host. If a later update makes the two differ, the check fails on one of them, and the maintainer decides what to do, as above. On November 22, 2026, the channel page's unsubscribe dialog, which Material 3 draws in a window of its own, came out under 0.01 percent different on the runners in light mode and at a large font size, while its dark image matched ([run 45051919193](https://github.com/dewfallapp/dewfall/actions/runs/45051919193), on commit 4cfe326 of #234, where only UnsubscribeDialogScreenshot_Light and UnsubscribeDialogScreenshot_LargeFont failed, with "<0.01% difference"). Asked in #47's session's question dialog, the maintainer chose "Keep only the dark picture (Recommended)", so the dialog has only a dark screenshot test, and its light look is part of the channel page's hand checks.
+
+## The Takeout import
+
+TakeoutReaderTest in `:core:takeout` builds every file it reads in the test: .csv text, and .zip files made with ZipOutputStream, which writes a data descriptor after each deflated entry. Its channels are made up. Each ID is "UCtakeouttest" and 11 digits, 24 characters like a real one and no real channel's. Never put a real Takeout file, or a row, ID, name or count from one, in a test, a commit or a report, because it is someone's list of subscriptions. TakeoutFiles.kt has the helpers, including a stream that makes a .zip larger than 256 MiB as it is read, and one with a name byte that isn't UTF-8.
+
+ReaderTakeoutImportRepositoryTest in `:core:data` uses a fake DocumentOpener and a fake SubscriptionsRepository, and checks each failure, the counts, that a cancelled read stops and writes nothing, and that nothing logged holds a made-up ID, name or file link. ChannelDaoTest covers `subscribeAll` on an emulator, with more than 999 rows. TakeoutImportTest, an emulator test, imports a made-up .csv file from the empty inbox to the report and back, as [What Takeout import checks](#what-takeout-import-checks) describes.
+
+To check the reader against a real export, keep the file outside the repository, write a JVM test that reads its path from a system property and asserts only counts, run it with `--no-build-cache --no-configuration-cache`, then delete the test and the module's build output. Report counts only, and only in the hand-off, never in the repository.
+
+**By hand.** On one emulator, push a made-up .csv file and a made-up .zip file to Downloads with `adb push <file> /sdcard/Download/`, open the import from the empty inbox and from the empty Channels screen, pick each, and check the report, Back and Done, in light, dark and the largest font. Pick a file that isn't from Takeout and see "This file holds no channels". To check leaving while reading, push a made-up .zip of about 200 MiB, such as one large stored entry of zeros next to a subscriptions table, pick it, and leave while the screen says "Reading the file", once with the back arrow and once with the back gesture. The inbox must still say "No channels yet".
 
 ## Database tests
 

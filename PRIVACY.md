@@ -7,6 +7,7 @@ Dewfall collects no data about you.
 - Everything the app stores stays on your device. This includes your channels, watch history, downloaded videos and saved subtitles.
 - Android's backups to Google Drive and transfers to a new phone leave all of it out.
 - If you export your data, it goes to a file you pick. The app sends it nowhere else.
+- If you import your channels from a Google Takeout file, the app reads the file you pick once, on your device, and keeps only the channels' IDs and names. It keeps no copy of the file and sends it nowhere.
 
 ## The media notification
 
