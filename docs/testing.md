@@ -550,7 +550,7 @@ Record the sets again:
 
 ## Emulator tests
 
-Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are ten: SearchThenPlayTest (#46), TryAgainOfflineTest (#212), VideoScreenBackgroundTest (#211), FullscreenClearOfBarsTest (#218), ChannelSubscribeTest (#47), ResumeTest (#50), ChannelInitialTest (#213), SearchChannelTest (#222), ListEndAfterVideoTest (#241) and InboxFromChannelTest (#49). The app opens on the inbox, so every test that searches first taps the inbox's search button through `openSearchFromInbox` in OpenSearch.kt, which finds it by its content description, "Search YouTube". ChannelInitialTest is the one that starts no screen: it calls a function of the app in the app's process, on the device's own Android. The database's DAO tests run on an emulator too, from core/database/src/androidTest/, as [Database tests](#database-tests) explains.
+Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are twelve: SearchThenPlayTest (#46), TryAgainOfflineTest (#212), VideoScreenBackgroundTest (#211), FullscreenClearOfBarsTest (#218), ChannelSubscribeTest (#47), ResumeTest (#50), ChannelInitialTest (#213), SearchChannelTest (#222), ListEndAfterVideoTest (#241), InboxFromChannelTest (#49), ChannelsNavigationTest (#115) and NavigationBarLargeFontTest (#115). The app opens on the inbox, so every test that searches first taps the inbox's search button through `openSearchFromInbox` in OpenSearch.kt, which finds it by its content description, "Search YouTube". ChannelInitialTest is the one that starts no screen: it calls a function of the app in the app's process, on the device's own Android. The database's DAO tests run on an emulator too, from core/database/src/androidTest/, as [Database tests](#database-tests) explains.
 
 ### What search then play checks
 
@@ -608,6 +608,21 @@ SearchChannelTest searches for the test video, whose search also finds the test 
 ### What inbox from channel checks
 
 InboxFromChannelTest opens the test video's channel page as ChannelSubscribeTest does, taps "Subscribe", and goes back to the inbox with the back arrows of the channel page and Search YouTube. The page saved the test channel's two videos when the subscription was kept, with no request of its own, so the inbox shows the channel's card with "2 videos", the two latest. Then it opens a video from the inbox, waits for the video screen, and minimizes it back to the inbox. Last, it asks the activity to save its state, as Android does before it ends the process in the background, and checks every value in the Bundle, at any depth: it must hold the back stack, by InboxKey's name, so an empty Bundle can't pass, and no video or channel ID, title or name, as the inbox spec promises. That comes last because saving the state moves the activity's lifecycle back to CREATED, after which Compose's test finds no screen to tap. TestDatabaseModule's database is empty for every test, so it starts with no subscription.
+
+### What channels navigation checks
+
+ChannelsNavigationTest subscribes to the test channel through SubscriptionsRepository before each test, and finds the navigation bar's items by their label and their selectable role. Its tests follow the inbox spec's navigation bar requirements and the subscriptions spec's Channels screen requirements:
+
+- **History and back.** It taps "Channels", opens the channel from its row, taps "Inbox" and "Channels" again, and finds the same channel page. The back gesture returns to the Channels screen, and again to the inbox, with "Inbox" selected.
+- **Tapping Channels again** on a channel page shows the Channels screen.
+- **Search YouTube from Channels** hides the bar, and its back arrow returns to the Channels screen with "Channels" selected.
+- **A Search YouTube in each destination.** It searches from the inbox and opens a video and its channel, then searches something else from Channels and opens the channel row. Back in each destination, the back gesture shows that destination's own search text.
+- **Recreation.** With a channel page opened from Channels, it recreates the activity, which saves and restores the state as a configuration change does, and finds the same page, "Channels" selected, and the Channels screen under it.
+- **Saved state.** With the Channels list showing, it saves the activity's state to a Bundle as InboxFromChannelTest does, checks that it holds the back stacks, by ChannelsKey's name, and that no value holds the channel's ID or name.
+
+The Channels list shows "1 channel" for the one test channel, which the tests use to know it shows, because the inbox shows the channel's name too once the channel page saved its videos.
+
+NavigationBarLargeFontTest sets the device's font scale to 2 through the shell user, the largest that Android 14 and later offer in their settings and the scale the screenshot tests' large font previews use (Android 10's settings stop at 1.3), starts the app, and puts the scale back after. It checks that each label of the navigation bar lies inside its item, has no ellipsis, fits its height, and is no wider than its box. It doesn't use TextLayoutResult's `hasVisualOverflow`, because a label laid out in a box wider than it needs reports `didOverflowWidth` although every glyph shows, as the first run found on November 24, 2026. `:app` has no screenshot tests, so this is the bar's check at large font sizes. Its colors and glyphs are hand checks.
 
 ### What resume checks
 
@@ -803,6 +818,21 @@ The search reducer, ViewModel and screenshot tests cover the channel rows' decis
 - **TalkBack.** With TalkBack on, where the emulator has it, the button reads "Subscribe to" or "Subscribed to" and the channel's name. After a tap, TalkBack says the new state once, and not again after a rotation or a theme change.
 - **Layout.** Check light, dark and the largest font size, a tablet-sized window and split screen: at the largest font the button moves under the name, text wraps, and nothing is cut off.
 - **The log.** Check that `adb logcat` shows no channel ID, name or excerpt after searching, subscribing and unsubscribing.
+
+## Checking the Channels screen by hand
+
+The Channels screen's reducer, ViewModel and screenshot tests cover its rules and its look, the DAO tests its read, and ChannelsNavigationTest and NavigationBarLargeFontTest the navigation bar on an emulator. A change to the Channels screen, its read or the navigation bar gets these checks too, on emulators with Android 10 (API 29) and the newest Android. Install a debug build with `./gradlew :app:installDebug`.
+
+- **The bar.** The bar shows "Inbox" and "Channels" on the inbox, the Channels screen and channel pages, and hides on Search YouTube and the video screen. Check its colors in light, dark and dynamic color: the bar's background is the surface container color, the selected destination has its filled glyph on the indicator pill with its label in the strong text color, and the other destination has its outlined glyph and label in the weaker text color. At the largest font size the bar grows and no label is cut off.
+- **The list.** With a few subscriptions, including one with an accented name, the Channels screen shows the count, the channels by name with the accented one among its plain letter, and "Last upload ..." for each channel whose videos were saved. A channel subscribed to with no saved video, such as from an import, has no such line. The line comes from saved videos only, so it can be older than the channel's real last upload until a refresh saves its uploads again; that is expected.
+- **Taps.** Tap a row: its channel page opens, with "Channels" selected. Tap "Inbox", then "Channels": the same page. Tap "Channels" on it: the list. Tap a row twice quickly: one page opens.
+- **Back.** The back gesture on the Channels screen shows the inbox, and on the inbox it leaves the app.
+- **Search.** The search button opens Search YouTube with no bar, and its back arrow returns to the Channels screen.
+- **The mini player.** Minimize a video, then tap "Channels": the video plays on in the mini player, just above the bar, and the last row scrolls fully above both.
+- **No channels.** Unsubscribe from everything: "No channels yet" with a "Search YouTube" button.
+- **Layout.** Check a tablet-sized window and split screen: the card sits in one centered column, and nothing sits under the system bars, the display cutout, the mini player or the bar.
+- **Process death.** Close the mini player first. Open a channel from Channels, go home, end the process with `adb shell am kill io.github.dewfallapp`, check that `adb shell pidof io.github.dewfallapp` prints nothing, and come back through the recent apps: the same channel page, "Channels" selected, and the back gesture shows the Channels screen. Do the same with the Channels list scrolled down: the same scroll position.
+- **The log.** Check that `adb logcat` shows no channel ID or name.
 
 ## Checking the inbox by hand
 

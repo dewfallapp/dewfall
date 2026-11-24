@@ -46,6 +46,7 @@ dependencies {
     // MainActivity tells the player whether the app can be seen, and the notification opens it.
     implementation(project(":core:playback"))
     implementation(project(":feature:channel-page-ui"))
+    implementation(project(":feature:channels-ui"))
     implementation(project(":feature:inbox-ui"))
     implementation(project(":feature:player-ui"))
     implementation(project(":feature:youtube-search-ui"))

@@ -7,10 +7,10 @@ Lets a user search YouTube for videos to stream and channels to follow, and see 
 ## Requirements
 
 ### Requirement: The keyboard opens once
-The search field SHALL take focus and the on-screen keyboard SHALL open the first time the screen opens. Each time the user opens Search YouTube from the inbox counts as a first time, because it opens a new screen with an empty field. It SHALL NOT open again by itself after a configuration change or when the user comes back to the screen. Sending a search with the on-screen keyboard's search key SHALL hide that keyboard, so the results show.
+The search field SHALL take focus and the on-screen keyboard SHALL open the first time the screen opens. Each time the user opens Search YouTube from the inbox or the Channels screen counts as a first time, because it opens a new screen with an empty field. It SHALL NOT open again by itself after a configuration change or when the user comes back to the screen. Sending a search with the on-screen keyboard's search key SHALL hide that keyboard, so the results show.
 
 #### Scenario: First open
-- **WHEN** the screen opens with no saved state, such as when the user opens it from the inbox
+- **WHEN** the screen opens with no saved state, such as when the user opens it from the inbox or the Channels screen
 - **THEN** the field has focus and the on-screen keyboard is open
 
 #### Scenario: After a search
@@ -199,7 +199,7 @@ On a phone the screen SHALL stay in portrait. In any window wider than a phone i
 - **THEN** the rows sit in one centered column no wider than the readable width, and nothing is cut off
 
 ### Requirement: Search text stays private
-The app SHALL never log the search text, or the titles, channel names, descriptions and IDs of results, and SHALL send them nowhere but YouTube. It SHALL keep no search history. The only copies kept outside the screen SHALL be the field's text, and the ID of a video or a channel the user opened from the results, in the state Android saves for a process that it ends in the background. The player spec's "Video details stay private" covers the opened video.
+The app SHALL never log the search text, or the titles, channel names, descriptions and IDs of results, and SHALL send them nowhere but YouTube. It SHALL keep no search history. The only copies kept outside the screen SHALL be the text of each open Search YouTube's field, at most one per destination, and the ID of a video or a channel opened from the results, in the state Android saves before ending the process. The player spec's "Video details stay private" covers the opened video.
 
 #### Scenario: Logs after a search
 - **WHEN** the user searches and results show
@@ -327,20 +327,28 @@ Tapping a channel row anywhere but its button SHALL open that channel's page. Se
 - **WHEN** the user taps the same channel row twice quickly
 - **THEN** one channel page opens, and one back gesture returns to the results
 
-### Requirement: Search YouTube opens from the inbox
-Search YouTube SHALL open from the inbox's search button, and from the "Search YouTube" button of the inbox's "No channels yet" state. It SHALL show its title, a line saying it finds videos to stream, and an empty search field. Tapping a second time while the screen opens SHALL NOT open it twice.
+### Requirement: Search YouTube opens from the inbox and the Channels screen
+Search YouTube SHALL open from the search button of the inbox and of the Channels screen, and from the "Search YouTube" button of their "No channels yet" states. It SHALL show its title, the line "Videos to stream and channels to follow", and an empty search field. Tapping a second time while the screen opens SHALL NOT open it twice.
 
 #### Scenario: Opening Search YouTube
 - **WHEN** the user taps the inbox's search button
-- **THEN** Search YouTube shows its title, the line saying it finds videos to stream, an empty search field and a back arrow
+- **THEN** Search YouTube shows its title, the line "Videos to stream and channels to follow", an empty search field and a back arrow
 
-### Requirement: Search YouTube's back arrow returns to the inbox
-Search YouTube's top bar SHALL have a back arrow, which a screen reader SHALL hear as "Back". The back arrow and the back gesture SHALL return to the inbox. Tapping the back arrow twice SHALL return to the inbox and go no further.
+#### Scenario: Opening Search YouTube from the Channels screen
+- **WHEN** the user taps the Channels screen's search button
+- **THEN** Search YouTube shows an empty search field and a back arrow, and no navigation bar
+
+### Requirement: Search YouTube's back arrow returns to the screen it opened from
+Search YouTube's top bar SHALL have a back arrow, which a screen reader SHALL hear as "Back". The back arrow and the back gesture SHALL return to the screen Search YouTube opened from, the inbox or the Channels screen. Tapping the back arrow twice SHALL return to that screen and go no further.
 
 #### Scenario: Going back
-- **WHEN** Search YouTube shows results and the user taps the back arrow
+- **WHEN** the user opened Search YouTube from the inbox, it shows results, and the user taps the back arrow
 - **THEN** the inbox shows, and opening Search YouTube again shows an empty field
 
+#### Scenario: Going back to the Channels screen
+- **WHEN** the user opened Search YouTube from the Channels screen and makes the back gesture
+- **THEN** the Channels screen shows, with "Channels" selected
+
 #### Scenario: A double tap on the back arrow
-- **WHEN** the user taps Search YouTube's back arrow twice quickly
+- **WHEN** the user opened Search YouTube from the inbox and taps its back arrow twice quickly
 - **THEN** the inbox shows, and the app stays open

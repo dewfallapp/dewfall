@@ -19,11 +19,12 @@ internal fun MutableList<NavKey>.openVideo(videoId: VideoId) {
 }
 
 /**
- * Opens the channel page for [channelId] from the screen of [from], such as a video screen or
- * Search YouTube, only while that screen is on top, so a second tap, which finds the channel page
- * on top, opens nothing. From a video screen it removes that screen, as its minimize button does,
- * so the video goes on in the mini player. When the screen under it is then already a page for the
- * same channel ID, that page shows again and no second one opens.
+ * Opens the channel page for [channelId] from the screen of [from], such as a video screen, Search
+ * YouTube, an inbox card or a row of the Channels screen, only while that screen is on top, so a
+ * second tap, which finds the channel page on top, opens nothing. From a video screen it removes
+ * that screen, as its minimize button does, so the video goes on in the mini player. When the
+ * screen under it is then already a page for the same channel ID, that page shows again and no
+ * second one opens.
  */
 internal fun MutableList<NavKey>.openChannel(from: NavKey, channelId: ChannelId) {
     if (lastOrNull() != from) return
@@ -34,30 +35,22 @@ internal fun MutableList<NavKey>.openChannel(from: NavKey, channelId: ChannelId)
 }
 
 /**
- * Opens Search YouTube from the inbox, only while the inbox is on top, so a second tap while it
- * opens adds nothing.
+ * Opens Search YouTube from the screen of [from], the inbox or the Channels screen, only while that
+ * screen is on top, so a second tap while it opens adds nothing.
  */
-internal fun MutableList<NavKey>.openSearch() {
-    if (lastOrNull() == InboxKey) add(SearchKey(entryId = UUID.randomUUID().toString()))
-}
-
-/**
- * Opens the channel page for [channelId] from one of the inbox's cards, only while the inbox is on
- * top, so a second tap while it opens adds nothing.
- */
-internal fun MutableList<NavKey>.openChannelFromInbox(channelId: ChannelId) {
-    if (lastOrNull() == InboxKey) add(ChannelKey(channelId, entryId = UUID.randomUUID().toString()))
+internal fun MutableList<NavKey>.openSearch(from: NavKey) {
+    if (lastOrNull() == from) add(SearchKey(entryId = UUID.randomUUID().toString()))
 }
 
 /**
  * Closes the screen of [key], if it is still on the back stack, as the video screen's minimize
  * button and the back arrows of the channel page and Search YouTube do. A video's playback goes on
  * in the mini player. A second tap on the button, or one during the back gesture, finds it gone and
- * does nothing, so the inbox always stays. An empty back stack would crash, because NavDisplay
- * requires at least one entry.
+ * does nothing, so the first screen, the inbox or the Channels screen, always stays. An empty back
+ * stack would crash, because NavDisplay requires at least one entry.
  */
 internal fun MutableList<NavKey>.close(key: NavKey) {
-    if (key != InboxKey) remove(key)
+    if (key != InboxKey && key != ChannelsKey) remove(key)
 }
 
 /** Goes back one screen for the system's back gesture, but never past the first one. */
@@ -70,3 +63,16 @@ internal fun MutableList<NavKey>.goBack() {
  * nothing itself while the player has no video.
  */
 internal fun List<NavKey>.showsMiniPlayer(): Boolean = lastOrNull() !is PlayerKey
+
+/**
+ * Whether the navigation bar shows under the back stack: while the inbox, the Channels screen or a
+ * channel page is on top, and not on Search YouTube or the video screen, as the design's frames
+ * have it.
+ */
+internal fun List<NavKey>.showsNavigationBar(): Boolean =
+    when (lastOrNull()) {
+        InboxKey,
+        ChannelsKey,
+        is ChannelKey -> true
+        else -> false
+    }

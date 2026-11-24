@@ -1,0 +1,54 @@
+<resources>
+    <!-- The Channels screen: the subscribed channels. See the subscriptions spec in openspec/. -->
+    <string name="channels_app_name">Dewfall</string>
+    <string name="channels_title">Channels</string>
+    <!-- The top bar's search button, for screen readers. Until subtitle search, it opens Search YouTube. -->
+    <string name="channels_search">Search YouTube</string>
+
+    <!-- The count above the list. -->
+    <plurals name="channels_count">
+        <item quantity="one">%1$d channel</item>
+        <item quantity="other">%1$d channels</item>
+    </plurals>
+    <!-- What a screen reader says that tapping a row does. -->
+    <string name="channels_open_channel">Open channel</string>
+
+    <!-- When the channel's newest saved video came out. -->
+    <plurals name="channels_last_upload_minutes">
+        <item quantity="one">Last upload %d minute ago</item>
+        <item quantity="other">Last upload %d minutes ago</item>
+    </plurals>
+    <plurals name="channels_last_upload_hours">
+        <item quantity="one">Last upload %d hour ago</item>
+        <item quantity="other">Last upload %d hours ago</item>
+    </plurals>
+    <string name="channels_last_upload_today">Last upload today</string>
+    <string name="channels_last_upload_yesterday">Last upload yesterday</string>
+    <plurals name="channels_last_upload_days">
+        <item quantity="one">Last upload %d day ago</item>
+        <item quantity="other">Last upload %d days ago</item>
+    </plurals>
+    <plurals name="channels_last_upload_weeks">
+        <item quantity="one">Last upload %d week ago</item>
+        <item quantity="other">Last upload %d weeks ago</item>
+    </plurals>
+    <plurals name="channels_last_upload_months">
+        <item quantity="one">Last upload %d month ago</item>
+        <item quantity="other">Last upload %d months ago</item>
+    </plurals>
+    <plurals name="channels_last_upload_years">
+        <item quantity="one">Last upload %d year ago</item>
+        <item quantity="other">Last upload %d years ago</item>
+    </plurals>
+
+    <string name="channels_no_channels_title">No channels yet</string>
+    <string name="channels_no_channels_body">Find channels with Search YouTube. Their new videos show in your inbox.</string>
+    <!-- The content description of the glyph above "No channels yet". -->
+    <string name="channels_no_channels_icon">Channels</string>
+    <string name="channels_search_button">Search YouTube</string>
+
+    <string name="channels_unreadable_title">Your channels can\'t be shown</string>
+    <string name="channels_unreadable_body">Dewfall couldn\'t read what it keeps on this phone. Restarting the app may help.</string>
+    <!-- The content description of the error glyph above "Your channels can't be shown". -->
+    <string name="channels_unreadable_icon">Couldn\'t read the channels</string>
+</resources>

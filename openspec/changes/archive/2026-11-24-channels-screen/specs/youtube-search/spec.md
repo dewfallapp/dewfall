@@ -11,11 +11,11 @@
 ## MODIFIED Requirements
 
 ### Requirement: Search YouTube opens from the inbox and the Channels screen
-Search YouTube SHALL open from the search button of the inbox and of the Channels screen, and from the "Search YouTube" button of their "No channels yet" states. It SHALL show its title, a line saying it finds videos to stream, and an empty search field. Tapping a second time while the screen opens SHALL NOT open it twice.
+Search YouTube SHALL open from the search button of the inbox and of the Channels screen, and from the "Search YouTube" button of their "No channels yet" states. It SHALL show its title, the line "Videos to stream and channels to follow", and an empty search field. Tapping a second time while the screen opens SHALL NOT open it twice.
 
 #### Scenario: Opening Search YouTube
 - **WHEN** the user taps the inbox's search button
-- **THEN** Search YouTube shows its title, the line saying it finds videos to stream, an empty search field and a back arrow
+- **THEN** Search YouTube shows its title, the line "Videos to stream and channels to follow", an empty search field and a back arrow
 
 #### Scenario: Opening Search YouTube from the Channels screen
 - **WHEN** the user taps the Channels screen's search button
@@ -37,15 +37,23 @@ Search YouTube's top bar SHALL have a back arrow, which a screen reader SHALL he
 - **THEN** the inbox shows, and the app stays open
 
 ### Requirement: Search text stays private
-The app SHALL never log the search text, or the titles, channel names and IDs of results, and SHALL send them nowhere but YouTube. It SHALL keep no search history. The only copies kept outside the screen SHALL be the field's text of each open Search YouTube, at most one under the inbox and one under the Channels screen, and the ID of a result the user opened, in the state Android saves for a process that it ends in the background. The player spec's "Video details stay private" covers the opened video.
+The app SHALL never log the search text, or the titles, channel names, descriptions and IDs of results, and SHALL send them nowhere but YouTube. It SHALL keep no search history. The only copies kept outside the screen SHALL be the text of each open Search YouTube's field, at most one per destination, and the ID of a video or a channel opened from the results, in the state Android saves before ending the process. The player spec's "Video details stay private" covers the opened video.
 
 #### Scenario: Logs after a search
 - **WHEN** the user searches and results show
-- **THEN** the app's log lines name the search and its outcome category and count, and hold no search text, title, channel name or ID
+- **THEN** the app's log lines name the search and its outcome category and count, and hold no search text, title, channel name, description or ID
 
 #### Scenario: Opening a result
 - **WHEN** the user opens a result and the system later ends the app's process in the background
 - **THEN** the state Android saved holds the field's text and that video's ID, and no title, channel name or other result
+
+#### Scenario: Opening a channel
+- **WHEN** the user opens a channel from the results and the system later ends the app's process in the background
+- **THEN** the state Android saved holds the field's text and that channel's ID, and no channel name, description or other result
+
+#### Scenario: Subscribing from a channel row
+- **WHEN** the user subscribes from a channel row
+- **THEN** no request leaves the phone, nothing about the channel is written to the app's log, and the channel is kept only as the subscriptions spec's "What Dewfall keeps stays on the phone" says
 
 ### Requirement: The keyboard opens once
 The search field SHALL take focus and the on-screen keyboard SHALL open the first time the screen opens. Each time the user opens Search YouTube from the inbox or the Channels screen counts as a first time, because it opens a new screen with an empty field. It SHALL NOT open again by itself after a configuration change or when the user comes back to the screen. Sending a search with the on-screen keyboard's search key SHALL hide that keyboard, so the results show.
