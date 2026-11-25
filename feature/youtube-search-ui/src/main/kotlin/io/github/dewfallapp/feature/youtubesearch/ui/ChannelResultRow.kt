@@ -32,9 +32,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
-import io.github.dewfallapp.core.designsystem.component.ChannelEmblem
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
-import io.github.dewfallapp.core.model.initialOf
+import io.github.dewfallapp.core.ui.ChannelAvatar
 import io.github.dewfallapp.feature.youtubesearch.logic.ChannelRow
 
 /** The channel's emblem in a row, as in the "Search YouTube, results" frames. */
@@ -78,7 +77,7 @@ internal fun ChannelResultRow(
             horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ChannelEmblem(initial = initialOf(row.name), size = EmblemSize)
+            ChannelAvatar(name = row.name, avatars = row.avatars, size = EmblemSize)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = row.name,

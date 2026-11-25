@@ -19,8 +19,8 @@ private const val IMAGE_CACHE_BYTES = 64L * 1024 * 1024
 /**
  * The app's image loader: [ImageLinkRule] before anything else, no fetcher that Coil finds on its
  * own, the network fetcher with [imageClient], a disk cache of 64 MiB in the app's cache folder,
- * and Coil's default memory cache. It sets no logger, so Coil writes nothing to logcat. See ADR
- * 0011.
+ * and Coil's default memory cache. It sets no logger, so Coil writes nothing to logcat. See
+ * ADR 0011.
  */
 internal fun dewfallImageLoader(context: PlatformContext): ImageLoader =
     ImageLoader.Builder(context)

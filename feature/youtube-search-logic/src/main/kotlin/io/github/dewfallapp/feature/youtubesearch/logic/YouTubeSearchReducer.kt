@@ -115,4 +115,5 @@ private fun toRow(video: VideoSummary): VideoRow =
         duration = video.duration,
         kind = video.kind,
         published = video.published,
+        thumbnails = video.thumbnails,
     )

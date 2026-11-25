@@ -248,6 +248,7 @@ private fun ResultList(
                     channelName = row.channelName,
                     duration = row.duration,
                     kind = row.kind,
+                    thumbnails = row.thumbnails,
                     published = row.published,
                     now = now,
                     zone = zone,

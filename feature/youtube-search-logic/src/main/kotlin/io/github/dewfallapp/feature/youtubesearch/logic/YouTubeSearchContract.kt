@@ -20,8 +20,9 @@ import kotlin.time.Duration
 data class SearchRequest(val text: String, val number: Long)
 
 /**
- * A video as a row of results shows it. It keeps the ID, so a row can open the video. The title and
- * channel name are user data, so never log them.
+ * A video as a row of results shows it. It keeps the ID, so a row can open the video, and every
+ * size of its thumbnail, so the row picks the one that fits. The title, the channel name and the
+ * thumbnail links are user data, so never log them.
  */
 data class VideoRow(
     val id: VideoId,
@@ -32,6 +33,7 @@ data class VideoRow(
     val kind: VideoKind,
     /** When it was published, or is scheduled to start, or null if YouTube gave no time. */
     val published: PublishedTime?,
+    val thumbnails: List<Thumbnail>,
 )
 
 /**
