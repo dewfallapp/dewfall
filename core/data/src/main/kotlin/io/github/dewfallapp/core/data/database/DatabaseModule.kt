@@ -8,6 +8,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.dewfallapp.core.database.ChannelDao
 import io.github.dewfallapp.core.database.DewfallDatabase
+import io.github.dewfallapp.core.database.DownloadDao
+import io.github.dewfallapp.core.database.DownloadQueueDao
 import io.github.dewfallapp.core.database.VideoDao
 import io.github.dewfallapp.core.database.WatchStateDao
 import io.github.dewfallapp.core.database.buildDewfallDatabase
@@ -39,6 +41,13 @@ object DatabaseModule {
 
     @Provides
     fun provideWatchStateDao(database: DewfallDatabase): WatchStateDao = database.watchStateDao()
+
+    @Provides
+    fun provideDownloadDao(database: DewfallDatabase): DownloadDao = database.downloadDao()
+
+    @Provides
+    fun provideDownloadQueueDao(database: DewfallDatabase): DownloadQueueDao =
+        database.downloadQueueDao()
 
     @Provides fun provideClock(): Clock = Clock.System
 
