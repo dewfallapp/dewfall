@@ -73,6 +73,7 @@ graph TD
     playerUi --> model
     playerUi --> mvi
     playerUi --> playback
+    playerUi --> coreUi
     playerLogic -->|api| mvi
     playerLogic -->|api| model
     app --> channelUi
@@ -354,7 +355,7 @@ A 1080p run of a 2 h 31 min video on November 20, 2026, with a seek near its end
 
 - **Hosts.** Only HTTPS links with no user info and the default port to exactly i.ytimg.com, yt3.ggpht.com and yt3.googleusercontent.com, as `isYouTubeImageLink` in `:core:model` decides. ImageLinkRule, a Coil interceptor, runs first for every request and refuses any other link, a `file:`, `content:`, `data:` or `android.resource:` one included, before Coil's own fetchers see it. It lets a `java.io.File` through, which only the app's code makes, for #256. The image client's ImageHostRule checks each request's URL again, before DNS or a connection. Both refuse with constant text.
 - **The client.** An OkHttpClient apart from the layer's, which follows no redirects, keeps no cookies and no cache of its own, and sends OkHttp's own User-Agent.
-- **Language.** Every request sends `Accept-Language: en-GB` and no country: an image's bytes hold no text, and the image hosts take no country.
+- **Language.** Every request sends `Accept-Language: en-GB` and no country: an image's bytes hold no text, and the image links need no country.
 - **What Coil does on its own.** Nothing: Coil sends no analytics or reports, and reaches the network only through a network fetcher. The loader turns off Coil's discovery of fetchers (`serviceLoaderEnabled(false)`, [imageLoaders.kt at 3.6.3](https://github.com/coil-kt/coil/blob/3.6.3/coil-core/src/commonMain/kotlin/coil3/imageLoaders.kt), checked on November 26, 2026), and adds only the network fetcher with the image client. It sets no logger.
 - **The cache.** Up to 64 MiB of images in the app's cache folder, cacheDir/images, which Android may clear and backups leave out, and Coil's default memory cache. Coil 3 ignores the hosts' Cache-Control headers by default ([Network images](https://coil-kt.github.io/coil/network/), checked on November 26, 2026), so an image stays until the cache drops it.
 

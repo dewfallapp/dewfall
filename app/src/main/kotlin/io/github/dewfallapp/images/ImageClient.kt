@@ -23,7 +23,7 @@ internal object ImageHostRule : Interceptor {
 
 /**
  * Asks for British English, as every request to YouTube does, and names no country: an image's
- * bytes hold no text, and the image hosts take no country. See ADR 0009 and ADR 0011.
+ * bytes hold no text, and the image links need no country. See ADR 0009 and ADR 0011.
  */
 internal object BritishEnglish : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response =
