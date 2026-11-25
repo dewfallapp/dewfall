@@ -89,8 +89,13 @@ interface ChannelDao {
      * another one, in one transaction. The new row takes [to]'s ID, name, description and avatars,
      * and the old row's time of subscribing, which [to]'s own time doesn't replace. If [to]'s ID is
      * already subscribed, that row stays as it is. The videos saved under [fromId] move to [to]'s
-     * ID, so they stay in the inbox as they were. Either way the old row goes. If [fromId] isn't
-     * subscribed, such as after the user unsubscribed during a check, nothing changes.
+     * ID, where the inbox judges them with the videos already saved under it, by the time of
+     * subscribing of the row that stays: the old row's time when there was no row under [to]'s ID,
+     * else that row's own. So, for example, a video the user started since then stays, one that was
+     * in the inbox only as one of the channel's 2 latest can give way to newer videos saved under
+     * [to]'s ID, and a moved video that wasn't in the inbox can join it. Either way the old row
+     * goes. If [fromId] isn't subscribed, such as after the user unsubscribed during a check,
+     * nothing changes.
      */
     @Transaction
     suspend fun moveSubscription(fromId: String, to: ChannelEntity) {
