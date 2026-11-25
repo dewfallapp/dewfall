@@ -18,7 +18,7 @@ The app SHALL let the user download a video that isn't a live stream and isn't w
 - **THEN** the download keeps the 720 pixel one
 
 ### Requirement: Downloads run one at a time without any screen
-Downloads SHALL run in a background job that no screen owns, one video at a time, in the order the user asked for them. A download SHALL go on after the user leaves the screen it started from, leaves the app or turns the screen off. A download that stopped because the app's process ended, the phone restarted or the connection dropped SHALL go on by itself from the bytes it already has, once the phone is connected again. A download that Android refused to schedule, such as one asked for just as the app left the screen, SHALL go on the next time the app shows. When the user stops Dewfall itself, such as with the Stop button in Android's Task Manager or Force stop in its settings, every download that was waiting or running SHALL count as paused, and SHALL go on only when the user taps its download control; on Android 10, which can't tell the app such a stop apart, it SHALL go on the next time the app shows. While no download can run, its video SHALL say "Waiting to download".
+Downloads SHALL run in a background job that no screen owns, one video at a time, in the order the user asked for them. A download SHALL go on after the user leaves the screen it started from, leaves the app or turns the screen off. A download that stopped because the app's process ended, the phone restarted or the connection dropped SHALL go on by itself from the bytes it already has, once the phone is connected again. A download that Android refused to schedule, such as one asked for just as the app left the screen, SHALL go on the next time the app shows. When the user stops Dewfall while a download runs, such as with the Stop button in Android's Task Manager or Force stop in its settings, every download that was waiting or running SHALL count as paused, and SHALL go on only when the user taps its download control; on Android 10, which can't tell the app such a stop apart, it SHALL go on the next time the app shows. Swiping Dewfall away from Android's recent apps, and updating the app, SHALL NOT pause a download. While no download can run, its video SHALL say "Waiting to download".
 
 #### Scenario: Leaving the screen
 - **WHEN** the user taps "Download", goes back to the inbox and opens another video
@@ -35,6 +35,10 @@ Downloads SHALL run in a background job that no screen owns, one video at a time
 #### Scenario: Stopped from the Task Manager
 - **WHEN** a download is at 40 percent and the user stops Dewfall from Android's Task Manager, then opens the app again
 - **THEN** the video says "Paused, 40%", and goes on from about 40 percent only when the user taps its download button
+
+#### Scenario: Swiped away from the recent apps
+- **WHEN** a download waits for a connection and the user swipes Dewfall away from the recent apps, then the connection comes back
+- **THEN** the download goes on by itself, and the video never says "Paused"
 
 #### Scenario: The phone restarts
 - **WHEN** a download is at 40 percent and the phone restarts
