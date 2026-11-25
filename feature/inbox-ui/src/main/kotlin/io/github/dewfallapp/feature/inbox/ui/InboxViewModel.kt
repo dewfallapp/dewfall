@@ -5,6 +5,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.dewfallapp.core.data.subscriptions.SubscriptionsRepository
 import io.github.dewfallapp.core.data.subscriptions.UploadsChecker
 import io.github.dewfallapp.core.data.video.StoredVideosRepository
+import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.mvi.MviViewModel
 import io.github.dewfallapp.feature.inbox.logic.InboxContent
@@ -94,11 +96,19 @@ constructor(
     }
 
     private fun inbox(): Flow<InboxIntent> =
-        combine<Int, List<VideoSummary>, InboxIntent>(
-                subscriptions.subscribedChannels().map { it.size }.distinctUntilChanged(),
+        combine<Subscribed, List<VideoSummary>, InboxIntent>(
+                subscriptions
+                    .subscribedChannels()
+                    .map { channels ->
+                        Subscribed(
+                            count = channels.size,
+                            avatars = channels.associate { it.channel.id to it.channel.avatars },
+                        )
+                    }
+                    .distinctUntilChanged(),
                 storedVideos.inboxVideos(),
-            ) { count, videos ->
-                InboxIntent.Loaded(count, videos)
+            ) { subscribed, videos ->
+                InboxIntent.Loaded(subscribed.count, subscribed.avatars, videos)
             }
             // The inbox is the first screen, so a read that throws must not crash the app.
             .catch { emit(InboxIntent.ReadFailed) }
@@ -106,3 +116,9 @@ constructor(
     /** The check's state, which is a StateFlow, so it never throws and starts with its value. */
     private fun check(): Flow<InboxIntent> = checker.state.map(InboxIntent::CheckChanged)
 }
+
+/**
+ * What the inbox reads of the subscriptions: how many there are, and each channel's saved avatars,
+ * for its card. A change of anything else, such as a description, reads nothing again.
+ */
+private data class Subscribed(val count: Int, val avatars: Map<ChannelId, List<Thumbnail>>)

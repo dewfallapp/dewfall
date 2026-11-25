@@ -44,13 +44,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
-import io.github.dewfallapp.core.designsystem.component.ChannelEmblem
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.UploadsCheckFailure
 import io.github.dewfallapp.core.model.VideoId
-import io.github.dewfallapp.core.model.initialOf
+import io.github.dewfallapp.core.ui.ChannelAvatar
 import io.github.dewfallapp.core.ui.VideoRowItem
 import io.github.dewfallapp.feature.inbox.logic.InboxContent
 import io.github.dewfallapp.feature.inbox.logic.InboxGroup
@@ -312,6 +311,7 @@ private fun Card(
                 channelName = null,
                 duration = video.duration,
                 kind = video.kind,
+                thumbnails = video.thumbnails,
                 published = video.published,
                 now = now,
                 zone = zone,
@@ -344,7 +344,7 @@ private fun ChannelRow(
         horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ChannelEmblem(initial = initialOf(group.channelName), size = EmblemSize)
+        ChannelAvatar(name = group.channelName, avatars = group.channelAvatars, size = EmblemSize)
         Column(modifier = Modifier.weight(1f)) {
             Text(text = group.channelName, style = MaterialTheme.typography.titleSmall)
             Text(

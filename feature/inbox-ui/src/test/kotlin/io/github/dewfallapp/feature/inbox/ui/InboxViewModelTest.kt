@@ -8,6 +8,7 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.SubscribedChannel
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.UploadsCheck
 import io.github.dewfallapp.core.model.UploadsCheckFailure
 import io.github.dewfallapp.core.model.VideoId
@@ -149,7 +150,29 @@ class InboxViewModelTest {
         storedVideos.inbox.value = listOf(VIDEO)
         runCurrent()
         assertEquals(
-            InboxContent.Videos(listOf(InboxGroup(KETTLE.id, KETTLE.name, listOf(VIDEO)))),
+            InboxContent.Videos(
+                listOf(InboxGroup(KETTLE.id, KETTLE.name, emptyList(), listOf(VIDEO))),
+            ),
+            viewModel.state.value.content,
+        )
+    }
+
+    @Test
+    fun `a saved avatar reaches the channel's card when it changes`() = runTest {
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
+        backgroundScope.launch { viewModel.state.collect {} }
+        subscriptions.channels.value = listOf(SubscribedChannel(KETTLE, SUBSCRIBED_AT))
+        storedVideos.inbox.value = listOf(VIDEO)
+        runCurrent()
+
+        val avatars =
+            listOf(Thumbnail("https://images.example.invalid/kettle.jpg", width = 88, height = 88))
+        subscriptions.channels.value =
+            listOf(SubscribedChannel(KETTLE.copy(avatars = avatars), SUBSCRIBED_AT))
+        runCurrent()
+
+        assertEquals(
+            InboxContent.Videos(listOf(InboxGroup(KETTLE.id, KETTLE.name, avatars, listOf(VIDEO)))),
             viewModel.state.value.content,
         )
     }
@@ -174,7 +197,9 @@ class InboxViewModelTest {
         runCurrent()
         assertEquals(2, readers())
         assertEquals(
-            InboxContent.Videos(listOf(InboxGroup(KETTLE.id, KETTLE.name, listOf(VIDEO)))),
+            InboxContent.Videos(
+                listOf(InboxGroup(KETTLE.id, KETTLE.name, emptyList(), listOf(VIDEO))),
+            ),
             viewModel.state.value.content,
         )
     }

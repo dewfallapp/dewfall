@@ -1,6 +1,7 @@
 package io.github.dewfallapp.feature.inbox.logic
 
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.mvi.Next
 import io.github.dewfallapp.core.mvi.Reducer
@@ -29,18 +30,29 @@ object InboxReducer : Reducer<InboxState, InboxIntent, Nothing> {
 
 private fun content(loaded: InboxIntent.Loaded): InboxContent =
     when {
-        loaded.videos.isNotEmpty() -> InboxContent.Videos(grouped(loaded.videos))
+        loaded.videos.isNotEmpty() -> InboxContent.Videos(grouped(loaded.videos, loaded.avatars))
         loaded.subscribedCount <= 0 -> InboxContent.NoChannels
         else -> InboxContent.CaughtUp(loaded.subscribedCount)
     }
 
-/** [videos] grouped by channel, each group where its channel's first video was. */
-private fun grouped(videos: List<VideoSummary>): List<InboxGroup> {
+/**
+ * [videos] grouped by channel, each group where its channel's first video was, with the channel's
+ * [avatars], or none when it has no saved ones.
+ */
+private fun grouped(
+    videos: List<VideoSummary>,
+    avatars: Map<ChannelId, List<Thumbnail>>,
+): List<InboxGroup> {
     val groups = LinkedHashMap<ChannelId, MutableList<VideoSummary>>()
     for (video in videos) {
         groups.getOrPut(video.channelId) { mutableListOf() } += video
     }
     return groups.map { (channelId, channelVideos) ->
-        InboxGroup(channelId, channelVideos.first().channelName, channelVideos)
+        InboxGroup(
+            channelId = channelId,
+            channelName = channelVideos.first().channelName,
+            channelAvatars = avatars[channelId].orEmpty(),
+            videos = channelVideos,
+        )
     }
 }
