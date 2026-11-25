@@ -55,6 +55,10 @@ The app SHALL load an image only from a link that the YouTube layer gave, only o
 - **WHEN** an image link points to any host other than the three, or uses plain HTTP
 - **THEN** the app sends no request for it, and the row keeps its placeholder
 
+#### Scenario: A link to something on the phone
+- **WHEN** an image link is a `file://`, `content://`, `data:` or `android.resource://` link
+- **THEN** the app loads nothing for it, and the row keeps its placeholder
+
 #### Scenario: A redirect
 - **WHEN** an image host answers with a redirect
 - **THEN** the app doesn't follow it, and the row keeps its placeholder
