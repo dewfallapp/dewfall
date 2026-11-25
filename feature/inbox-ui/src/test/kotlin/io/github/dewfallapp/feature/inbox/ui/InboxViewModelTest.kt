@@ -223,6 +223,25 @@ class InboxViewModelTest {
     }
 
     @Test
+    fun `after a failed read, the inbox reads again when it shows again within 5 seconds`() =
+        runTest {
+            storedVideos.fails = true
+            val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
+            val shown = backgroundScope.launch { viewModel.state.collect {} }
+            runCurrent()
+            assertEquals(InboxContent.Unreadable, viewModel.state.value.content)
+
+            shown.cancel()
+            advanceTimeBy(1_000)
+            runCurrent()
+            storedVideos.fails = false
+            backgroundScope.launch { viewModel.state.collect {} }
+            runCurrent()
+
+            assertEquals(InboxContent.NoChannels, viewModel.state.value.content)
+        }
+
+    @Test
     fun `check for new videos starts the app's check`() = runTest {
         val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
 

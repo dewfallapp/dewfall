@@ -7,6 +7,7 @@ import io.github.dewfallapp.core.data.subscriptions.UploadsChecker
 import io.github.dewfallapp.core.data.video.StoredVideosRepository
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.mvi.MviViewModel
+import io.github.dewfallapp.feature.inbox.logic.InboxContent
 import io.github.dewfallapp.feature.inbox.logic.InboxIntent
 import io.github.dewfallapp.feature.inbox.logic.InboxReducer
 import io.github.dewfallapp.feature.inbox.logic.InboxState
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -40,8 +42,10 @@ private const val STOP_TIMEOUT_MS = 5_000L
  * back.
  *
  * A read that throws, such as on a damaged database, shows Unreadable instead of crashing the app,
- * which opens on the inbox. The reads start again the next time the inbox shows after they stopped.
- * It never collects its own state, which would keep its collector count above 0.
+ * which opens on the inbox. The reads start again the next time the inbox shows after they stopped,
+ * and also when it shows again within [STOP_TIMEOUT_MS] while it is Unreadable, because the failed
+ * read has ended by then. It never collects its own state, which would keep its collector count
+ * above 0.
  *
  * It takes no dispatcher, because the repositories' Flows are main-safe. It has no Logger, as
  * PlayerViewModel has none, and logs nothing.
@@ -63,16 +67,28 @@ constructor(
         if (intent == InboxIntent.CheckForNewVideos) checker.start()
     }
 
+    /**
+     * Reads while the screen shows, and for [STOP_TIMEOUT_MS] after. A read that failed has ended,
+     * and a collector that comes back within [STOP_TIMEOUT_MS] doesn't change the sharing command,
+     * so each return of a collector while the inbox is Unreadable starts new reads too. A read that
+     * works keeps its grace period.
+     */
     // flatMapLatest is still marked experimental.
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun readWhileShown() {
         viewModelScope.launch {
-            SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS)
-                .command(stateSubscriptionCount)
-                .distinctUntilChanged()
-                .flatMapLatest { command ->
-                    if (command == SharingCommand.START) merge(inbox(), check()) else emptyFlow()
-                }
+            val command =
+                SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS)
+                    .command(stateSubscriptionCount)
+                    .distinctUntilChanged()
+                    .map { it == SharingCommand.START }
+            val returnAfterFailure =
+                stateSubscriptionCount
+                    .map { it > 0 }
+                    .distinctUntilChanged()
+                    .filter { shown -> shown && state.value.content == InboxContent.Unreadable }
+            merge(command, returnAfterFailure)
+                .flatMapLatest { read -> if (read) merge(inbox(), check()) else emptyFlow() }
                 .collect(::dispatch)
         }
     }
