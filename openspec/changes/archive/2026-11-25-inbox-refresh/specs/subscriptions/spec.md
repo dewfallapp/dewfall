@@ -48,7 +48,7 @@ When YouTube closed a channel, can't show it, or sends an answer for it that the
 - **THEN** the other 2 channels' uploads are saved, and the check ends with no failure
 
 ### Requirement: A check follows a channel that moved
-When YouTube answers for a subscribed channel with another channel's ID, a check SHALL move the subscription to that ID, keeping the time the user subscribed, and save the uploads under it. If the user already subscribes under the new ID, the old subscription SHALL go and the new one SHALL keep its own time. Videos saved under the old ID SHALL move to the new ID with the subscription, so they stay in the inbox as they were, and what the user watched of them SHALL stay.
+When YouTube answers for a subscribed channel with another channel's ID, a check SHALL move the subscription to that ID, keeping the time the user subscribed, and save the uploads under it. If the user already subscribes under the new ID, the old subscription SHALL go and the new one SHALL keep its own time. Videos saved under the old ID SHALL move to the new ID with the subscription, and what the user watched of them SHALL stay.
 
 #### Scenario: A moved channel
 - **WHEN** the user subscribed last month under an ID that YouTube now sends on to another, and a check runs
@@ -56,10 +56,10 @@ When YouTube answers for a subscribed channel with another channel's ID, a check
 
 #### Scenario: Subscribed under both IDs
 - **WHEN** the user subscribes under a moved channel's old ID and under its new one, and a check runs
-- **THEN** only the subscription under the new ID stays, with its own time of subscribing
+- **THEN** only the subscription under the new ID stays, with its own time of subscribing, and the old ID's videos are under the new ID, where the inbox judges them by that time
 
 #### Scenario: A started video under the old ID
-- **WHEN** the user half watched a video saved under a moved channel's old ID, YouTube's latest uploads under the new ID no longer list it, and a check runs
+- **WHEN** the user half watched a video saved under a moved channel's old ID, isn't subscribed under the new ID, YouTube's latest uploads under the new ID no longer list it, and a check runs
 - **THEN** the video is under the new ID and still in the inbox, at the same position
 
 ### Requirement: A check survives a failure on the phone
