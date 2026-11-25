@@ -49,7 +49,7 @@ For each image, the app SHALL ask for the smallest size that YouTube gave that i
 - **THEN** the app asks for the 480-pixel one
 
 ### Requirement: Images load only from YouTube's image hosts
-The app SHALL load an image only from a link that the YouTube layer gave, only over HTTPS, and only from i.ytimg.com, yt3.ggpht.com or yt3.googleusercontent.com. It SHALL send no cookies, follow no redirect, and load nothing from any other host, which leaves the placeholder. Image requests SHALL go straight to those hosts, with no Dewfall server between.
+The app SHALL load an image only from a link that the YouTube layer gave, only over HTTPS, and only from i.ytimg.com, yt3.ggpht.com or yt3.googleusercontent.com. It SHALL ask for British English, name no country, send no cookies, follow no redirect, and load nothing from any other host, which leaves the placeholder. Image requests SHALL go straight to those hosts, with no Dewfall server between.
 
 #### Scenario: A link to another host
 - **WHEN** an image link points to any host other than the three, or uses plain HTTP

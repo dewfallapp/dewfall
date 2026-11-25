@@ -10,7 +10,7 @@ Every list in Dewfall shows a plain box where a video's thumbnail goes, and a ci
 - **Channel avatars.** The channel rows of Search YouTube, the inbox's cards, the Channels screen and the channel page's header show the channel's picture in the circle, with the ring the design gives it. The video screen's channel row does too.
 - **While loading and on failure.** The design's placeholders stay: the plain `surface-container-highest` box and the emblem with the channel's initial. The image covers them once it has loaded. A missing, slow or failed image leaves the placeholder, with no error mark, and the rest of the row works as before. A channel with no saved avatar, such as one imported from a Takeout file before its first refresh, keeps its emblem.
 - **Which size.** Each image asks for the smallest size that is at least as wide as the space it fills on the screen, in pixels, or the largest when none is that wide, as docs/architecture.md already plans.
-- **Where images come from.** Images load only from the links that the YouTube layer gave, only over HTTPS, and only from YouTube's image hosts: i.ytimg.com, yt3.ggpht.com and yt3.googleusercontent.com. A link to any other host loads nothing. These requests go straight from the phone to those hosts, outside the YouTube layer, which the maintainer approved on November 22, 2026. They carry no cookies and no account, and nothing about the user beyond what any request carries, such as the phone's IP address.
+- **Where images come from.** Images load only from the links that the YouTube layer gave, only over HTTPS, and only from YouTube's image hosts: i.ytimg.com, yt3.ggpht.com and yt3.googleusercontent.com. A link to any other host loads nothing. These requests go straight from the phone to those hosts, outside the YouTube layer, which the maintainer approved on November 22, 2026. They ask for British English, as every request to YouTube does (ADR 0009), and name no country. They carry no cookies and no account, and nothing about the user beyond what any request carries, such as the phone's IP address.
 - **On the phone.** Loaded images are kept in the app's cache folder, up to a fixed size, so a list shown again doesn't load them again. Android may clear that folder, and backups leave it out, as they leave out all app data.
 - **The image library.** Coil 3, a new dependency. design.md records the license, release dates and every artifact it brings.
 
@@ -22,7 +22,12 @@ Every list in Dewfall shows a plain box where a video's thumbnail goes, and a ci
 
 ### Modified Capabilities
 
-None. The specs of `inbox`, `subscriptions`, `youtube-search` and `player` describe a "thumbnail box" and a "round emblem with the first character of the channel's name". Both stay, as the placeholder under the image, so none of their requirements change. The new capability says what covers them.
+The emblem with the initial and the thumbnail box stay, as placeholders, and these requirements now say that the image covers them once it loads. Their scenarios stay true for a channel or video whose image hasn't loaded.
+
+- `player`: "The video screen shows the channel", the channel row's emblem.
+- `subscriptions`: "The channel page shows the channel", the header's emblem, and "The Channels screen lists the subscribed channels", each row's emblem.
+- `youtube-search`: "Results list the matching channels first", each channel row's emblem.
+- `inbox`: "Videos are grouped by channel", the card's emblem and the rows' thumbnail box.
 
 ## Impact
 
@@ -31,12 +36,12 @@ None. The specs of `inbox`, `subscriptions`, `youtube-search` and `player` descr
 - `:core:ui`: VideoRowItem takes the video's thumbnails and draws the image in its box, and a new ChannelAvatar draws a channel's picture over the design system's ChannelEmblem. A preview helper gives every preview a fixed, made-up image, so screenshots never need the network.
 - `:app`: the app-wide image loader, with an HTTP client that refuses any host but the three above, follows no redirect and keeps no cookies, and a disk cache in the app's cache folder. JVM tests for the host rule.
 - Feature modules: Search YouTube's video rows, the channel page's upload rows, the inbox's cards and the video screen's page carry thumbnails or avatars from the models, with reducer and ViewModel tests. The Channels screen already has them. Every changed screen's previews and screenshot tests show the fixed image in light, dark, large font and dynamic color.
-- Docs: PRIVACY.md (image requests and the cache), docs/vision.md and AGENTS.md (the image hosts next to the YouTube layer in the network rule), docs/architecture.md (images, the dependency, the helper), a new ADR for image loading, and docs/testing.md (the hand check of real images).
+- Docs: PRIVACY.md (image requests and the cache), AGENTS.md (the image hosts next to the YouTube layer in the network rule, and image requests in the en-GB rule), openspec/config.yaml's context, docs/roadmap.md (a Phase 6 task line), docs/architecture.md (images, the dependency, the helper), a new ADR for image loading, with a note on ADR 0009, and docs/testing.md (the hand check of real images).
 - Offline: thumbnails of downloaded videos on the phone are #54's. The loader reads local files as well as links, so #54 can hand a row a saved file later without a new library.
 
 ## The maintainer's answers
 
-On November 22, 2026, in the coordinating session, the maintainer answered "no I agree with you" to the coordinating session's recommendation: "#176, thumbnails, moves to Phase 6. Thumbnails may load from i.ytimg.com, counted as "YouTube" under the product rule, as long as the YouTube layer supplies the links." The coordinating session's brief for this change adds that the same answer covers the avatar hosts. That settles two of #176's open questions: the phase, and the image hosts.
+On November 22, 2026, in the coordinating session, the maintainer answered "no I agree with you" to the coordinating session's recommendation: "#176, thumbnails, moves to Phase 6. Thumbnails may load from i.ytimg.com, counted as "YouTube" under the product rule, as long as the YouTube layer supplies the links." That settles two of #176's open questions: the phase, and the image hosts. The answers of November 26 below name all three hosts.
 
 On November 26, 2026, in this change's session's question dialog, the maintainer answered three questions:
 
