@@ -15,7 +15,13 @@ const val DATABASE_NAME = "dewfall.db"
  * before then needs no migration. See docs/architecture.md#database-tables.
  */
 @Database(
-    entities = [ChannelEntity::class, VideoEntity::class, WatchStateEntity::class],
+    entities =
+        [
+            ChannelEntity::class,
+            VideoEntity::class,
+            WatchStateEntity::class,
+            DownloadEntity::class,
+        ],
     version = 1,
     exportSchema = true,
 )
@@ -26,6 +32,10 @@ abstract class DewfallDatabase : RoomDatabase() {
     abstract fun videoDao(): VideoDao
 
     abstract fun watchStateDao(): WatchStateDao
+
+    abstract fun downloadDao(): DownloadDao
+
+    abstract fun downloadQueueDao(): DownloadQueueDao
 }
 
 /**
