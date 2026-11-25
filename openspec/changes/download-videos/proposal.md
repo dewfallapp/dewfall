@@ -18,7 +18,7 @@ Phase 6's goal is "Download a video and watch it without internet" ([roadmap](..
 
 ### New Capabilities
 
-- `downloads`: downloading a video to the phone, the queue, pausing and going on, failures, where the files live, what a download sends and logs, and the download notification. The roadmap names `downloads` as one of the living specs' areas.
+- `downloads`: downloading a video to the phone, the queue, pausing and going on, failures, where the files live, what a download sends and logs, and the download notification. ADR 0004 names `downloads` as one of the living specs' areas.
 
 ### Modified Capabilities
 
