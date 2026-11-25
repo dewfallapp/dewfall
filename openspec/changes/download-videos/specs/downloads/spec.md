@@ -7,7 +7,7 @@ The app SHALL let the user download a video that isn't a live stream and isn't w
 
 #### Scenario: Downloading from the video screen
 - **WHEN** the user taps "Download" on a video's screen, and the phone stays connected
-- **THEN** the video downloads, and the screen says "Downloaded" once both files are on the phone
+- **THEN** the video downloads, and the screen says "Downloaded" once every file it keeps is on the phone
 
 #### Scenario: Asking twice
 - **WHEN** the user taps "Download" for a video in the inbox, then opens the video and taps the chip while it downloads

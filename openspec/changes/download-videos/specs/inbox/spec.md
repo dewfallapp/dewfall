@@ -41,7 +41,7 @@ The inbox SHALL never log a video's ID or title, or a channel's ID or name, and 
 
 #### Scenario: Checking for new videos
 - **WHEN** the user taps "Check for new videos"
-- **THEN** the only requests that leave the phone go to YouTube, for the subscribed channels' uploads, and the app's log holds no channel or video ID, name or title
+- **THEN** the check's requests go to YouTube, for the subscribed channels' uploads, no request leaves the phone for anywhere but YouTube, and the app's log holds no channel or video ID, name or title
 
 #### Scenario: Downloading a video
 - **WHEN** the user taps a row's download button

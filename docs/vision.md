@@ -27,7 +27,7 @@ The first version has four parts.
 
 ### Overnight downloads
 
-Downloads run as background jobs, and only while the phone is on Wi-Fi and charging. If a job fails, it retries on its own. The app does not run constantly.
+Downloads run as background jobs, and only while the phone is on Wi-Fi and charging. If a job fails, it retries on its own. The app does not run constantly. A video you download by hand starts right away.
 
 ### Cleanup
 
