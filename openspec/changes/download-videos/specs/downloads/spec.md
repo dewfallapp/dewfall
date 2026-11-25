@@ -67,11 +67,15 @@ A download SHALL fail, keep no partial files, and say "Download failed" when You
 - **THEN** the app fetches new links and goes on from where it stopped
 
 ### Requirement: A notification shows while a download runs
-While a download runs, Android SHALL show Dewfall's download notification, in its own notification channel named "Downloads", with the words "Downloading a video" and its progress. It SHALL hold no video title, channel name or ID. The notification SHALL go when no download runs. Tapping it SHALL open the app.
+While a download runs in a job that Android gave a notification to, the app SHALL give it Dewfall's download notification, in its own notification channel named "Downloads", with the words "Downloading a video" and its progress. Android SHALL show it in the notification shade when the user allows Dewfall's notifications. The app SHALL NOT ask for that permission, so on Android 13 and later, where a new install starts without it, Android shows the download only in its Task Manager. A download that WorkManager starts while the app is in the background on Android 12 or 13, such as after a reboot, may run with no notification, because Android may refuse it a foreground service there. The notification SHALL hold no video title, channel name or ID, SHALL go when no download runs, and tapping it SHALL open the app.
 
-#### Scenario: While downloading
-- **WHEN** a video downloads and the user pulls down the notification shade
+#### Scenario: While downloading, notifications allowed
+- **WHEN** the user allowed Dewfall's notifications, a video downloads, and the user pulls down the notification shade
 - **THEN** a notification says "Downloading a video" with a progress bar, and shows no title
+
+#### Scenario: While downloading, notifications not allowed
+- **WHEN** Dewfall's notifications aren't allowed on Android 14 or later, and a video downloads
+- **THEN** the download runs, the notification shade shows nothing for it, and Android's Task Manager lists Dewfall as running
 
 #### Scenario: Nothing left to download
 - **WHEN** the last download finishes

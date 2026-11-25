@@ -10,7 +10,7 @@ Once the details show, unless the video is live or waiting to start, the video s
 - Downloading: "Downloading, 42%", with a small progress ring, or "Downloading" while the size is unknown. A tap pauses it.
 - Paused: "Paused, 42%", with the `download` glyph. A tap goes on.
 - Failed: "Download failed", or "Not enough space on this phone", with the `error` glyph in the error color. A tap tries again.
-- Downloaded: "Downloaded", selected, with a check. A tap does nothing, because removing a download comes with the Downloads screen (#55).
+- Downloaded: "Downloaded", selected, with a check. The chip isn't clickable, and a screen reader announces no action, because removing a download comes with the Downloads screen (#55).
 
 A screen reader SHALL read the chip's words, and the glyph or ring SHALL add nothing. The chip SHALL show in the row even while the watch state can't be read. When the video's download state can't be read, no download chip SHALL show, and the rest of the screen SHALL work.
 
