@@ -18,7 +18,7 @@ The app SHALL let the user download a video that isn't a live stream and isn't w
 - **THEN** the download keeps the 720 pixel one
 
 ### Requirement: Downloads run one at a time without any screen
-Downloads SHALL run in a background job that no screen owns, one video at a time, in the order the user asked for them. A download SHALL go on after the user leaves the screen it started from, leaves the app or turns the screen off. A download that stopped because the app's process ended, the phone restarted or the connection dropped SHALL go on by itself from the bytes it already has, once the phone is connected again. While no download can run, its video SHALL say "Waiting to download".
+Downloads SHALL run in a background job that no screen owns, one video at a time, in the order the user asked for them. A download SHALL go on after the user leaves the screen it started from, leaves the app or turns the screen off. A download that stopped because the app's process ended, the phone restarted or the connection dropped SHALL go on by itself from the bytes it already has, once the phone is connected again. A download that Android stopped and won't run again by itself, such as one the user stopped from Android's Task Manager, or one that Android refused to schedule, SHALL go on the next time the app shows. While no download can run, its video SHALL say "Waiting to download".
 
 #### Scenario: Leaving the screen
 - **WHEN** the user taps "Download", goes back to the inbox and opens another video
@@ -31,6 +31,10 @@ Downloads SHALL run in a background job that no screen owns, one video at a time
 #### Scenario: The connection drops
 - **WHEN** a download is at 40 percent and the phone loses its connection, then gets it back
 - **THEN** the video says "Waiting to download" while the phone has no connection, and goes on from about 40 percent once it is back, without fetching the first 40 percent again
+
+#### Scenario: Stopped from the Task Manager
+- **WHEN** a download is at 40 percent and the user stops Dewfall from Android's Task Manager, then opens the app again
+- **THEN** the video says "Waiting to download" or "Downloading", and goes on from about 40 percent
 
 #### Scenario: The phone restarts
 - **WHEN** a download is at 40 percent and the phone restarts
