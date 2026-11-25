@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: The user can download a video
-The app SHALL let the user download a video that isn't a live stream and isn't waiting to start, from the video screen and from the inbox. A download SHALL keep one video format and one audio format of the video in the app's own storage, or one format that has both, chosen as the player chooses the formats on an unmetered network, but with a shorter side of at most 720 pixels, and only formats the phone can decode. A download SHALL start on any connection, mobile data included, because the user asked for it. A video whose formats the phone can't decode SHALL fail with "Download failed". Asking again for a video that is waiting, downloading or downloaded SHALL change nothing.
+The app SHALL let the user download a video that isn't a live stream and isn't waiting to start, from the video screen and from the inbox. A download SHALL keep one video format and one audio format of the video in the app's own storage, or one format that has both, chosen as the player chooses the formats on an unmetered network, but with a shorter side of at most 720 pixels, and only formats the phone can decode. A download SHALL start right away on any connection, mobile data included, whether or not the phone charges, because the user asked for it. A video whose formats the phone can't decode SHALL fail with "Download failed". Asking again for a video that is waiting, downloading or downloaded SHALL change nothing.
 
 #### Scenario: Downloading from the video screen
 - **WHEN** the user taps "Download" on a video's screen, and the phone stays connected
@@ -18,7 +18,7 @@ The app SHALL let the user download a video that isn't a live stream and isn't w
 - **THEN** the download keeps the 720 pixel one
 
 ### Requirement: Downloads run one at a time without any screen
-Downloads SHALL run in a background job that no screen owns, one video at a time, in the order the user asked for them. A download SHALL go on after the user leaves the screen it started from, leaves the app or turns the screen off. A download that stopped because the app's process ended, the phone restarted or the connection dropped SHALL go on by itself from the bytes it already has, once the phone is connected again. A download that Android stopped and won't run again by itself, such as one the user stopped from Android's Task Manager, or one that Android refused to schedule, SHALL go on the next time the app shows. While no download can run, its video SHALL say "Waiting to download".
+Downloads SHALL run in a background job that no screen owns, one video at a time, in the order the user asked for them. A download SHALL go on after the user leaves the screen it started from, leaves the app or turns the screen off. A download that stopped because the app's process ended, the phone restarted or the connection dropped SHALL go on by itself from the bytes it already has, once the phone is connected again. A download that Android refused to schedule, such as one asked for just as the app left the screen, SHALL go on the next time the app shows. When the user stops Dewfall itself, such as with the Stop button in Android's Task Manager or Force stop in its settings, every download that was waiting or running SHALL count as paused, and SHALL go on only when the user taps its download control; on Android 10, which can't tell the app such a stop apart, it SHALL go on the next time the app shows. While no download can run, its video SHALL say "Waiting to download".
 
 #### Scenario: Leaving the screen
 - **WHEN** the user taps "Download", goes back to the inbox and opens another video
@@ -34,7 +34,7 @@ Downloads SHALL run in a background job that no screen owns, one video at a time
 
 #### Scenario: Stopped from the Task Manager
 - **WHEN** a download is at 40 percent and the user stops Dewfall from Android's Task Manager, then opens the app again
-- **THEN** the video says "Waiting to download" or "Downloading", and goes on from about 40 percent
+- **THEN** the video says "Paused, 40%", and goes on from about 40 percent only when the user taps its download button
 
 #### Scenario: The phone restarts
 - **WHEN** a download is at 40 percent and the phone restarts
@@ -52,7 +52,7 @@ Tapping a running download's control SHALL pause it, and the files it has so far
 - **THEN** it says "Waiting to download" or "Downloading, 42%", and goes on from there
 
 ### Requirement: A download that can't finish says why
-A download SHALL fail, keep no partial files, and say "Download failed" when YouTube says the video can't be watched, when the phone decodes none of its formats, or when YouTube can't be read for it after three tries. It SHALL say "Not enough space on this phone" and keep its partial files when the phone's free storage can't hold the rest of the files. A failed download SHALL show the download button, and a tap SHALL try again from the start, or from the kept bytes after a lack of space. A link that YouTube refuses because it expired SHALL be fetched again without failing the download.
+A download SHALL fail, keep no partial files, and say "Download failed" when YouTube says the video can't be watched, or when the phone decodes none of its formats. It SHALL say "Download failed" and keep its partial files when YouTube can't be read for it after three tries in a row, because that may pass. It SHALL say "Not enough space on this phone" and keep its partial files when the phone's free storage can't hold the rest of the files. A failed download SHALL show the download button, and a tap SHALL try again, from the kept bytes when there are any. A link that YouTube refuses because it expired SHALL be fetched again without failing the download.
 
 #### Scenario: A private video
 - **WHEN** the user downloads a video that becomes private before its download starts

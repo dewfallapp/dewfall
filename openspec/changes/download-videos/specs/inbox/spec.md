@@ -33,7 +33,7 @@ Tapping the row anywhere else SHALL still open the video. The row's text SHALL r
 ## MODIFIED Requirements
 
 ### Requirement: The inbox keeps videos private
-The inbox SHALL never log a video's ID or title, or a channel's ID or name, and SHALL send nothing to any server, apart from the requests of a check for new videos that the user started, and of a download that the user started, which go only to YouTube, through the YouTube layer. Showing the inbox SHALL send no request to YouTube.
+The inbox SHALL never log a video's ID or title, or a channel's ID or name, and SHALL send nothing to any server, apart from the requests of a check for new videos that the user started, and of a download that the user started, which go only to YouTube, through the YouTube layer. Showing the inbox SHALL send no request to YouTube, apart from going on with a download the user started that Android couldn't schedule while the app didn't show, as the downloads spec says.
 
 #### Scenario: Opening the inbox offline
 - **WHEN** the phone has no connection and the user opens the app
