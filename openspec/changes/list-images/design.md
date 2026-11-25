@@ -31,18 +31,17 @@ See proposal.md for why. What this change builds on:
 
 ## Decisions
 
-The ADR this change writes takes the next free number when it is written: 0010 is claimed by PR #255 (#54's download engine), so this change's ADR is 0011, unless #255 drops its ADR before this change merges. This design calls it "the new ADR". The #54 session knows.
-
+The ADR this change writes takes the next free number when it is written: 0010 is claimed by PR #255 (#54's download engine), so this change's ADR is 0011, unless #255 drops its ADR before this change merges. This design calls it "the new ADR".
 
 ### Coil 3 as the image library
 
-Compose has no image loader of its own. Coil is one of the two loaders that Android's own guidance names for Compose, with Glide ([Loading images](https://developer.android.com/develop/ui/compose/graphics/images/loading), checked on November 26, 2026), is written in Kotlin with coroutines, and loads links, files and content URIs through one API, so #54 can hand it a saved file later.
+Compose has no image loader of its own. Coil is one of the two loaders that Android's own guidance names for Compose, with Glide ([Loading images](https://developer.android.com/develop/ui/compose/graphics/images/loading), checked on November 26, 2026), is written in Kotlin with coroutines, and loads links, files and content URIs through one API, so #256 can hand it a saved file later.
 
 - Version 3.6.3, released on September 18, 2026, by the Last-Modified date of its POM on Maven Central, 69 days before November 26, 2026. Apache 2.0.
-- Artifacts: `io.coil-kt.coil3:coil-compose` in `:core:ui`, and `io.coil-kt.coil3:coil-network-okhttp` in `:app`. Their POMs bring coil-core, coil-android, coil-compose-core, coil-network-core, Okio, kotlinx-coroutines, OkHttp (which the app already ships at 5.5.1, and Gradle keeps the higher version), Accompanist's drawablepainter, and AndroidX artifacts (lifecycle-runtime, core-ktx, annotation, appcompat-resources, exifinterface, profileinstaller), plus JetBrains' Compose wrappers at 1.12.0 (foundation, foundation-layout, animation, runtime, ui, ui-text, ui-util), which depend on the AndroidX Compose artifacts of the same version. The Compose BOM 2026.09.00 pins AndroidX Compose at 1.12.1, so the app's Compose doesn't change, but the wrappers are new artifacts. Every one is Apache 2.0. The pull request lists each artifact that `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` shows as new, and each version that Coil raises, with its license and release date for the 14-day rule, under "New dependencies".
+- Artifacts: `io.coil-kt.coil3:coil-compose` in `:core:ui`, and `io.coil-kt.coil3:coil-network-okhttp` in `:app`. Their POMs bring coil-core, coil-android, coil-compose-core, coil-network-core, Okio, kotlinx-coroutines, OkHttp (which the app already ships at 5.5.1, and Gradle keeps the higher version), Accompanist's drawablepainter, and AndroidX artifacts (lifecycle-runtime, core-ktx, annotation, appcompat-resources, exifinterface, profileinstaller), plus JetBrains' Compose wrappers at 1.12.0, among them foundation, foundation-layout, animation, runtime, ui, ui-text and ui-util, and the artifacts they bring in turn, such as ui-geometry, ui-graphics, ui-unit, runtime-saveable and androidx.window, which depend on the AndroidX Compose artifacts of the same version. The Compose BOM 2026.09.00 pins AndroidX Compose at 1.12.1, so the app's Compose doesn't change, but the wrappers are new artifacts. Every one is Apache 2.0. The pull request lists each artifact that `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` shows as new, and each version that Coil raises, with its license and release date for the 14-day rule, under "New dependencies".
 - Coil sends nothing anywhere on its own: no analytics, no reporting. It reaches the network only through the fetcher that the app gives it.
 
-Alternatives: Glide (Java, View-first, its Compose integration is still beta), Landscapist (a wrapper over Coil or Glide, one more layer), or a hand-written loader with OkHttp and BitmapFactory (sizing, caching, memory and cancellation are the hard parts, and Coil already does them).
+Alternatives: Glide (Java, View-first, its Compose integration is still beta), Landscapist (its README offers a wrapper over Coil or Glide, and, as `landscapist-core`, a Kotlin Multiplatform loading engine of its own with memory and disk caching, checked on November 26, 2026 at github.com/skydoves/landscapist; Coil is the one Android's guidance names, and has the larger user base and track record on Android), or a hand-written loader with OkHttp and BitmapFactory (sizing, caching, memory and cancellation are the hard parts, and Coil already does them).
 
 ### The image loader lives in `:app`, with its own HTTP client
 
@@ -59,7 +58,7 @@ An App Startup initializer in `:app`, ImageLoaderInitializer, sets Coil's single
 - A disk cache of 64 MiB in `cacheDir/images`, and Coil's default memory cache. Coil's default cache policy keeps an image until the cache drops it, whatever headers the host sends, which suits thumbnails that don't change.
 - No Coil logger, so Coil writes nothing to logcat, and no image URL can reach a log (ADR 0007). A failed image needs no line of its own: the placeholder already shows it, and the YouTube layer's lines cover the calls that gave the links.
 
-ImageHostRule and the language interceptor are plain classes in `:app` with JVM tests that run them against made-up requests through a fake Interceptor.Chain, with no network. ImageLinkRule's decision is a plain function of the request's data, tested the same way, and an emulator test checks that the app's singleton loader, under HiltTestApplication, refuses a link to another host and a `content://` link without loading anything.
+ImageHostRule and the language interceptor are plain classes in `:app` with JVM tests that run them against made-up requests through a fake Interceptor.Chain, with no network. ImageLinkRule's decision is a plain function of the request's data, tested the same way. It fails a refused request with its own exception type, RefusedImageLink, whose message is constant text. An emulator test checks the wiring under HiltTestApplication with links that Coil's default loader would load: a `file://` string to a small image that the test writes in cacheDir, and an `android.resource://` link to one of the app's drawables. Both must end in an ErrorResult whose throwable is RefusedImageLink, and the singleton's disk cache folder must be cacheDir/images, so the test fails if the default loader is in use.
 
 Alternatives: putting the loader in `:core:data` (it builds no HTTP client of its own today, and only hands the player MediaRequests' Call.Factory, and the rule is app-wide configuration, like the logger's writers in `:app`), or routing images through the YouTube layer's downloader (that would make `:core:ui` depend on the layer, or need a repository for each image; the maintainer's answer allows direct image requests when the layer supplies the links).
 
@@ -76,7 +75,7 @@ The image draws on top of the existing placeholder instead of replacing it:
 - Both images have `contentDescription = null`. The emblem already clears its semantics, and the row's merged text is what screen readers read.
 - No crossfade. A fade adds motion to every row on every scroll, and the design gives none.
 
-When the list is empty, the composable asks Coil for nothing.
+When the list is empty, the composable asks Coil for nothing: a pure function in `:core:ui`, `imageLink(thumbnails, widthPx)`, returns the chosen size's link or null, with a JVM test for the empty list, and the composable adds an AsyncImage only for a link.
 
 ### Data for each screen
 
@@ -94,7 +93,7 @@ The previews' sample data gives image links on a made-up host, `https://images.e
 
 ### Offline, later
 
-Coil loads a `java.io.File` or a `file://` or `content://` URI without the network fetcher, so ImageHostRule doesn't apply to them. #54 stores no image files: its downloads table keeps a JSON snapshot of the video's thumbnail links, as the `videos` table does, so a downloaded video's row passes those links to the same loader, and the disk cache serves them offline when it still holds them. When #256 saves thumbnail files, the row can take the file first and fall back to the links. This change leaves VideoRowItem's image source behind one private function, so such a task adds a parameter without touching the box or the tag. #54 will add a download status slot at the end of the row's meta line, apart from the box, and builds on this change's `thumbnails` parameter, as the two sessions agreed.
+Coil loads a `java.io.File` without the network fetcher, so ImageHostRule doesn't apply to it, and ImageLinkRule lets a File through. `file://` and `content://` strings stay refused by ImageLinkRule, so a saved file reaches Coil only as a File that code made. #54 stores no image files: its downloads table keeps a JSON snapshot of the video's thumbnail links, as the `videos` table does, so a downloaded video's row passes those links to the same loader, and the disk cache serves them offline when it still holds them. When #256 saves thumbnail files, the row can take the file first and fall back to the links. This change leaves VideoRowItem's image source behind one private function, so such a task adds a parameter without touching the box or the tag. #54 will add a download status slot at the end of the row's meta line, apart from the box, and builds on this change's `thumbnails` parameter, as the two sessions agreed.
 
 ## Risks / Trade-offs
 
