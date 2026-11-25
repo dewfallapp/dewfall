@@ -100,4 +100,5 @@ private fun toRow(video: VideoSummary): UploadRow =
         duration = video.duration,
         kind = video.kind,
         published = video.published,
+        thumbnails = video.thumbnails,
     )

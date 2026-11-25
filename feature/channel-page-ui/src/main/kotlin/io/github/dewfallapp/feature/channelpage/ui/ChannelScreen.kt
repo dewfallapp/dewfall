@@ -40,13 +40,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.core.designsystem.component.Banner
-import io.github.dewfallapp.core.designsystem.component.ChannelEmblem
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
-import io.github.dewfallapp.core.model.initialOf
+import io.github.dewfallapp.core.ui.ChannelAvatar
 import io.github.dewfallapp.core.ui.UnsubscribeDialog
 import io.github.dewfallapp.core.ui.VideoRowItem
 import io.github.dewfallapp.core.ui.rowGroupShape
@@ -183,8 +182,9 @@ private fun Header(
         modifier = modifier.fillMaxWidth().padding(top = DewfallSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(DewfallSpacing.md),
     ) {
-        ChannelEmblem(
-            initial = initialOf(channel.name),
+        ChannelAvatar(
+            name = channel.name,
+            avatars = channel.avatars,
             size = EmblemSize,
             textStyle = MaterialTheme.typography.headlineMedium,
         )
@@ -271,6 +271,7 @@ private fun LazyListScope.uploads(
             channelName = null,
             duration = row.duration,
             kind = row.kind,
+            thumbnails = row.thumbnails,
             published = row.published,
             now = now,
             zone = zone,

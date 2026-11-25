@@ -4,6 +4,7 @@ import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.PublishedTime
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
@@ -39,13 +40,21 @@ private fun video(id: String, kind: VideoKind = VideoKind.VIDEO) =
         channelName = "Kettle and Crumb",
         duration = 54.minutes,
         published = PublishedTime(Instant.parse("2026-11-21T08:00:00Z"), isApproximate = false),
-        thumbnails = emptyList(),
+        thumbnails =
+            listOf(Thumbnail("https://images.example.invalid/$id.jpg", width = 336, height = 188)),
         kind = kind,
     )
 
 private fun row(id: String, kind: VideoKind = VideoKind.VIDEO): UploadRow {
     val video = video(id, kind)
-    return UploadRow(video.id, video.title, video.duration, video.kind, video.published)
+    return UploadRow(
+        video.id,
+        video.title,
+        video.duration,
+        video.kind,
+        video.published,
+        video.thumbnails,
+    )
 }
 
 private fun success(channel: Channel = channel(), videos: List<VideoSummary> = emptyList()) =

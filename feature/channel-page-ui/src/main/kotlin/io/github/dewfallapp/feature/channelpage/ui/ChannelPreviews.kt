@@ -5,8 +5,10 @@ import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
+import io.github.dewfallapp.core.ui.PreviewImages
 import io.github.dewfallapp.feature.channelpage.logic.ChannelState
 import io.github.dewfallapp.feature.channelpage.logic.LoadArea
 import io.github.dewfallapp.feature.channelpage.logic.UploadRow
@@ -19,7 +21,9 @@ import kotlin.time.Instant
 // and a fixed clock, so they don't change with the date. The @PreviewTest wrappers in
 // src/screenshotTest carry their @Preview annotations and render them as screenshot tests. They
 // use Dewfall's own palette, so the images don't depend on a wallpaper, except the dynamic color
-// preview, whose wrappers name a fixed one. See docs/testing.md#screenshot-tests.
+// preview, whose wrappers name a fixed one. Image links are on a made-up host, and PreviewImages
+// draws each as a plain fill, so screenshots never load or show a real image. See
+// docs/testing.md#screenshot-tests.
 
 internal val previewNow = Instant.parse("2027-03-15T10:30:00Z")
 internal val previewZone = ZoneId.of("UTC")
@@ -31,7 +35,7 @@ internal val previewChannel =
     Channel(
         id = previewId,
         name = "Kettle and Crumb",
-        avatars = emptyList(),
+        avatars = previewImage("kettle-and-crumb"),
         description =
             "Bread, fermentation and the history of everyday food. New videos most weeks.",
     )
@@ -42,6 +46,10 @@ private const val LONG_DESCRIPTION =
         "the weather and the people who made it. New videos most weeks.\n\n" +
         "Recipes for every episode are in the description of its video."
 
+/** A made-up image link for [name], which PreviewImages draws as a plain fill. */
+private fun previewImage(name: String) =
+    listOf(Thumbnail("https://images.example.invalid/$name.jpg", width = 336, height = 188))
+
 private fun row(id: String, title: String, length: Int?, daysAgo: Int, kind: VideoKind) =
     UploadRow(
         id = VideoId(id),
@@ -49,6 +57,8 @@ private fun row(id: String, title: String, length: Int?, daysAgo: Int, kind: Vid
         duration = length?.minutes,
         kind = kind,
         published = PublishedTime(previewNow - daysAgo.days, isApproximate = true),
+        // The live row keeps the placeholder in the screenshots.
+        thumbnails = if (kind == VideoKind.LIVE) emptyList() else previewImage(id),
     )
 
 private val previewRows =
@@ -82,14 +92,16 @@ internal fun loaded(rows: List<UploadRow> = previewRows) =
 @Composable
 internal fun ChannelPreview(state: ChannelState, dynamicColor: Boolean = false) {
     DewfallTheme(dynamicColor = dynamicColor) {
-        ChannelScreen(
-            state = state,
-            now = previewNow,
-            zone = previewZone,
-            onIntent = {},
-            onOpenVideo = {},
-            onBack = {},
-        )
+        PreviewImages {
+            ChannelScreen(
+                state = state,
+                now = previewNow,
+                zone = previewZone,
+                onIntent = {},
+                onOpenVideo = {},
+                onBack = {},
+            )
+        }
     }
 }
 
@@ -117,7 +129,8 @@ internal fun UnsubscribeDialogPreview() {
 
 @Composable
 internal fun LongDescriptionPreview() {
-    val channel = previewChannel.copy(description = LONG_DESCRIPTION)
+    // No picture, so the header's emblem with its initial stays in the screenshots.
+    val channel = previewChannel.copy(description = LONG_DESCRIPTION, avatars = emptyList())
     ChannelPreview(
         loaded().copy(shownChannel = channel, reads = mapOf(previewId to channel)),
     )
