@@ -51,10 +51,10 @@
         </activity>
 
         <!--
-            Removes emoji2's startup initializer, which Compose brings in. It would ask the
-            system's downloadable font provider for a newer emoji font, and network calls go only
-            to YouTube and to services the user turns on. See
-            docs/architecture.md#network-access.
+            App Startup's provider. It removes emoji2's startup initializer, which Compose brings
+            in. It would ask the system's downloadable font provider for a newer emoji font, and
+            network calls go only to YouTube and to services the user turns on. See
+            docs/architecture.md#network-access. It also runs Dewfall's ImageLoaderInitializer.
         -->
         <provider
             android:name="androidx.startup.InitializationProvider"
@@ -64,6 +64,9 @@
             <meta-data
                 android:name="androidx.emoji2.text.EmojiCompatInitializer"
                 tools:node="remove" />
+            <meta-data
+                android:name="io.github.dewfallapp.images.ImageLoaderInitializer"
+                android:value="androidx.startup" />
         </provider>
     </application>
 
