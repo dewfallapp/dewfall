@@ -2,6 +2,10 @@
 
 Pull request 1, the download code, covers sections 1 to 5. Pull request 2, the buttons, covers sections 6 to 8, closes #54, and archives this change as its last commit.
 
+## 0. First check
+
+- [ ] 0.1 Before any other code: on an Android 14 or later emulator with the notification permission denied, schedule a throwaway UIDT job with a notification and check that it runs and shows in the Task Manager. If it doesn't run, stop and bring the design back to the maintainer. Write the result in pull request 1
+
 ## 1. Models
 
 - [ ] 1.1 Add DownloadStatus, DownloadProgress (bytes on disk, total, percentage) and DownloadFailure to `:core:model`, with tests for the percentage at 0, part way, the total, and an unknown total; verify `./gradlew :core:model:test` passes
@@ -26,12 +30,12 @@ Pull request 1, the download code, covers sections 1 to 5. Pull request 2, the b
 
 ## 5. Docs and checks for the download code
 
-- [ ] 5.0 Update AGENTS.md: the Modules rule names `:core:download` and what it holds; the line "Background jobs run only on unmetered networks while charging" says this binds automatic background jobs, and that a download the user taps runs on any connection, in a user-initiated data transfer job on Android 14 and later, with a dated note quoting the maintainer's answers 2 and 4 of November 26, 2026; the Room 3 rule points to ADR 0010 for the Room 2 that WorkManager ships. Add the same dated note under docs/roadmap.md's decision 7
+- [ ] 5.0 Update AGENTS.md: the Modules rule names `:core:download` and what it holds; the line "Background jobs run only on unmetered networks while charging" says this binds automatic background jobs, and that a download the user taps runs right away on any connection, charging or not, in a user-initiated data transfer job on Android 14 and later, with a dated note quoting the maintainer's answers 2 and 4 of November 26, 2026; the Room 3 rule points to ADR 0010 for the Room 2 that WorkManager ships. Add the same dated note under docs/roadmap.md's decision 7, and one line under docs/vision.md's "Overnight downloads" saying a video the user downloads by hand starts right away
 
 - [ ] 5.1 Write ADR 0010, the download engine, from docs/adr/0000-template.md
-- [ ] 5.2 Fill docs/architecture.md's "Downloads and cleanup" section (the engine, the writer, the queue, the failure table, the API and what #55 to #58 add), the module graph and tables for `:core:download`, the database tables, Network access for downloads' requests, and the error handling TODO for downloads; update PRIVACY.md for the files and the table
+- [ ] 5.2 Fill docs/architecture.md's "Downloads and cleanup" section (the engine, the writer, the queue, the failure table, the API and what #55 to #58 add, and what Phase 7's retries still add), the module graph and tables for `:core:download`, the database tables, Network access for downloads' requests, and the error handling TODO for downloads; update PRIVACY.md for the files and the table
 - [ ] 5.3 Add DownloadTest to `:app`'s androidTest: it launches MainActivity through the Compose test rule first, so the app is visible when it schedules, as a UIDT job needs on Android 14 and later; then, with the fake YouTube layer and its asset media, it downloads a video through DownloadsRepository and checks the files' bytes, and pauses and goes on part way; update docs/testing.md; verify `ANDROID_SERIAL=<serial> ./gradlew :app:connectedDebugAndroidTest` passes on Android 17 and 10
-- [ ] 5.4 Hand checks on Android 10, 12L and 17 with a real video: a download finishes, survives `am kill`, waits without a connection and goes on, and a reboot goes on; logcat, WorkManager's lines included, holds no ID, title, link or file name; on Android 14 or later with the notification permission denied, a download runs (checked first, before 4.2, on an emulator: if it doesn't, stop and bring the design back to the maintainer); a stop from the Task Manager goes on when the app opens again; the files are under noBackupFilesDir. Write the results in the PR
+- [ ] 5.4 Hand checks on Android 10, 12L and 17 with a real video: a download finishes, survives its process being ended (with `adb shell am kill`, or `kill -9` through `run-as` when `am kill` leaves a process with a running job or foreground service alone, and the process ID checked to have changed), waits without a connection and goes on, and a reboot goes on; logcat, WorkManager's lines included, holds no ID, title, link or file name; on Android 14 or later with the notification permission denied, a real download runs, as 0.1 found for a throwaway job; a stop from the Task Manager goes on when the app opens again; the files are under noBackupFilesDir. Write the results in the PR
 - [ ] 5.5 Run `./gradlew spotlessApply`, the pull request workflow's all-checks command and `python3 scripts/scan_screenshot_tests.py`; reviewer until Ready; the pre-push gate until PASS; open pull request 1
 
 ## 6. The video screen
