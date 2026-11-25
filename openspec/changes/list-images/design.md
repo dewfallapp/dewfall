@@ -10,7 +10,7 @@ See proposal.md for why. What this change builds on:
 - What each screen's state carries today: Search YouTube's ChannelRow has `avatars`, its VideoRow has no thumbnails. The channel page's `shownChannel` is a Channel with avatars, its UploadRow has no thumbnails. The inbox's InboxGroup has the channel's ID and name, and its videos are VideoSummary with thumbnails. The Channels screen has ChannelOverview, whose Channel has avatars. The video screen's VideoPage drops the avatars, as PlayerReducer's KDoc says.
 - The design system: VideoRow's thumbnail "shows the cached thumbnail image; the placeholder is a plain `surface-container-highest` fill", and the `tertiary-container` token is the "channel emblem placeholder (the initial avatar) when no channel image is cached". The brief keeps real thumbnails, faces and channels out of public designs, and screenshot references in this repository are public.
 - The saved YouTube responses in `core/youtube/src/test/resources/youtube/` hold image links on three hosts only: i.ytimg.com for video thumbnails, and yt3.ggpht.com and yt3.googleusercontent.com for avatars. NewPipeExtractor gives them as HTTPS links.
-- #54, running in parallel, adds a download button to the video row and the video screen, and later keeps thumbnails of downloaded videos on the phone.
+- #54, running in parallel, adds a download button to the video row and the video screen. Its download engine (PR #255) keeps each download's thumbnail links as JSON, as the `videos` table does, and saves no image file. Neither plan keeps thumbnails of downloaded videos on the phone: [#256](https://github.com/dewfallapp/dewfall/issues/256), filed on November 26, 2026 with the Phase 7 milestone and on the board, tracks that.
 
 ## Goals / Non-Goals
 
@@ -19,17 +19,20 @@ See proposal.md for why. What this change builds on:
 - Real images in every list the proposal names, with the design's placeholders unchanged underneath.
 - A host rule that one place enforces and a JVM test pins.
 - Screenshot tests that never touch the network and never hold a real thumbnail.
-- A loader that #54 can point at a file on the phone without a new library.
+- A loader that #256 can point at a file on the phone without a new library.
 
 **Non-Goals:**
 
-- Thumbnails of downloaded videos when offline, beyond what the cache happens to hold. #54 saves them.
+- Thumbnails of downloaded videos when offline, beyond what the cache happens to hold. Nobody saves them yet; #256 tracks it.
 - A large thumbnail on the video screen, such as a poster before playback starts. The player already shows the video.
 - The Takeout import report's rows. Their channels were just imported and have no avatars yet, so they keep the emblem.
 - A setting to turn images off or limit them to Wi-Fi. No spec asks for one, and the rows are small.
 - Prefetching images ahead of the visible rows beyond what the lazy lists compose.
 
 ## Decisions
+
+The ADR this change writes takes the next free number when it is written: 0010 is claimed by PR #255 (#54's download engine), so this change's ADR is 0011, unless #255 drops its ADR before this change merges. This design calls it "the new ADR". The #54 session knows.
+
 
 ### Coil 3 as the image library
 
@@ -52,7 +55,7 @@ An App Startup initializer in `:app`, ImageLoaderInitializer, sets Coil's single
 - The OkHttp client checks again, as a second line: an application interceptor, ImageHostRule, lets a request through only when `isYouTubeImageLink` is true for its URL. Any other request fails with an IOException whose message is constant text and names no URL, before DNS or a connection. Exact names, not suffixes, because the saved responses show only these three, and a wider rule would let a forged link reach any Google host.
 - `followRedirects(false)` and `followSslRedirects(false)`, so a redirect can't lead the request elsewhere. Coil treats the 3xx as a failure, and the placeholder stays.
 - An `Accept-Language: en-GB` header on every request, from a second interceptor, because the maintainer counts the image hosts as YouTube, and AGENTS.md and ADR 0009 say every request to YouTube asks for British English. It names no country, as MediaRequests and the subtitle download don't (ADR 0009's notes): the bytes hold no text, and the links already carry what the call that made them asked for.
-- No cookie jar (OkHttp's default keeps none), no cache of OkHttp's own, and OkHttp's own User-Agent. It is a separate client from the YouTube layer's, which `:app`'s main code doesn't see, and which carries YouTube's API headers that image hosts don't need. ADR 0009 says that changing the layer's HTTP client needs a new ADR, so ADR 0010 records this second client outside the layer, why the maintainer's answer of November 22, 2026 allows it, and that the layer's own client decision stands.
+- No cookie jar (OkHttp's default keeps none), no cache of OkHttp's own, and OkHttp's own User-Agent. It is a separate client from the YouTube layer's, which `:app`'s main code doesn't see, and which carries YouTube's API headers that image hosts don't need. ADR 0009 says that changing the layer's HTTP client needs a new ADR, so the new ADR records this second client outside the layer, why the maintainer's answer of November 22, 2026 allows it, and that the layer's own client decision stands.
 - A disk cache of 64 MiB in `cacheDir/images`, and Coil's default memory cache. Coil's default cache policy keeps an image until the cache drops it, whatever headers the host sends, which suits thumbnails that don't change.
 - No Coil logger, so Coil writes nothing to logcat, and no image URL can reach a log (ADR 0007). A failed image needs no line of its own: the placeholder already shows it, and the YouTube layer's lines cover the calls that gave the links.
 
@@ -91,13 +94,13 @@ The previews' sample data gives image links on a made-up host, `https://images.e
 
 ### Offline, later
 
-Coil loads a `java.io.File` or a `file://` or `content://` URI without the network fetcher, so ImageHostRule doesn't apply to them. #54 stores no image files: its downloads table keeps a JSON snapshot of the video's thumbnail links, as the `videos` table does, so a downloaded video's row passes those links to the same loader, and the disk cache serves them offline when it still holds them. If a later task saves thumbnail files, the row can take the file first and fall back to the links. This change leaves VideoRowItem's image source behind one private function, so such a task adds a parameter without touching the box or the tag. #54 will add a download status slot at the end of the row's meta line, apart from the box, and builds on this change's `thumbnails` parameter, as the two sessions agreed.
+Coil loads a `java.io.File` or a `file://` or `content://` URI without the network fetcher, so ImageHostRule doesn't apply to them. #54 stores no image files: its downloads table keeps a JSON snapshot of the video's thumbnail links, as the `videos` table does, so a downloaded video's row passes those links to the same loader, and the disk cache serves them offline when it still holds them. When #256 saves thumbnail files, the row can take the file first and fall back to the links. This change leaves VideoRowItem's image source behind one private function, so such a task adds a parameter without touching the box or the tag. #54 will add a download status slot at the end of the row's meta line, apart from the box, and builds on this change's `thumbnails` parameter, as the two sessions agreed.
 
 ## Risks / Trade-offs
 
-- [AGENTS.md's architecture rule says features reach YouTube only through `:core:data`'s repositories] → Image loads become its one exception, written into that rule, ADR 0010 and docs/architecture.md's Network access: a screen hands `:core:ui` links that the layer gave, and `:app`'s loader fetches them, behind ImageLinkRule and ImageHostRule. Coil makes no request of its own, which that section's list of libraries says.
+- [AGENTS.md's architecture rule says features reach YouTube only through `:core:data`'s repositories] → Image loads become its one exception, written into that rule, the new ADR and docs/architecture.md's Network access: a screen hands `:core:ui` links that the layer gave, and `:app`'s loader fetches them, behind ImageLinkRule and ImageHostRule. Coil makes no request of its own, which that section's list of libraries says.
 
-- [YouTube moves images to another host] → The rule refuses it and rows show placeholders. The daily YouTube check counts thumbnails, not hosts, so the hand check in docs/testing.md looks at real images, and breakage.md's steps apply. Adding a host is a one-line change with its test.
+- [YouTube moves images to another host] → The rule refuses it and rows show placeholders. The live YouTube check fails with a reason of its own when a set's thumbnail or avatar link isn't on the three hosts, so the daily check catches it for search and uploads, the hand run for video details, and breakage.md's steps apply. Adding a host is a one-line change with its test.
 - [Images on mobile data] → A thumbnail at 72dp asks for the smallest size that fits the phone's density, usually one of YouTube's small sizes of a few KB, and the disk cache avoids loading it twice.
 - [The cache reveals what the user browsed] → It stays in the app's private cache folder, which other apps can't read and backups leave out. PRIVACY.md says so.
 - [Coil's OkHttp is 4.12.0 and the app ships 5.5.1] → No source says that Coil 3.6.3 was tested with OkHttp 5. The build resolves one OkHttp, 5.5.1, the app's JVM test builds the real client, and the hand check on a phone loads real images through it. A failure there would show as placeholders, and the hand check would catch it.

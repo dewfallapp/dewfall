@@ -37,7 +37,7 @@ The emblem with the initial and the thumbnail box stay, as placeholders, and the
 - `:app`: the app-wide image loader, with an HTTP client that refuses any host but the three above, follows no redirect and keeps no cookies, and a disk cache in the app's cache folder. JVM tests for the host rule.
 - Feature modules: Search YouTube's video rows, the channel page's upload rows, the inbox's cards and the video screen's page carry thumbnails or avatars from the models, with reducer and ViewModel tests. The Channels screen already has them. Every changed screen's previews and screenshot tests show the fixed image in light, dark, large font and dynamic color.
 - Docs: PRIVACY.md (image requests and the cache), AGENTS.md (the image hosts next to the YouTube layer in the network rule, and image requests in the en-GB rule), openspec/config.yaml's context, docs/roadmap.md (a Phase 6 task line), docs/architecture.md (images, the dependency, the helper), a new ADR for image loading, with a note on ADR 0009, and docs/testing.md (the hand check of real images).
-- Offline: thumbnails of downloaded videos on the phone are #54's. The loader reads local files as well as links, so #54 can hand a row a saved file later without a new library.
+- Offline: no plan keeps thumbnails of downloaded videos on the phone yet. #54 keeps only their links, and [#256](https://github.com/dewfallapp/dewfall/issues/256) (Phase 7) tracks saving the images. The loader reads local files as well as links, so #256 can hand a row a saved file later without a new library.
 
 ## The maintainer's answers
 
