@@ -14,7 +14,7 @@ The first version has four parts: overnight downloads with automatic cleanup, a 
 
 ## Current status
 
-The current phase is Phase 5: subscriptions and the inbox. Its goal is that opening the app shows new videos from the user's channels. Add modules and code only when a Phase 5 task asks for them, and only what that task asks for.
+The current phase is Phase 6: manual downloads. Its goal is that the user can download a video and watch it without internet. Add modules and code only when a Phase 6 task asks for them, and only what that task asks for.
 
 docs/roadmap.md holds the plan: every phase and its tasks. The [Dewfall roadmap](https://github.com/orgs/dewfallapp/projects/1) project board shows what is done and what is next, with one milestone per phase and one issue per task.
 
