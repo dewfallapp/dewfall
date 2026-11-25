@@ -18,9 +18,10 @@ import javax.inject.Inject
 /**
  * Says how the phone decodes a format, with the same check that ExoPlayer's renderers make, so the
  * format choice and the renderer agree: the codec's sample MIME type, the decoders for it, and
- * whether one of them supports a Format with the codec, size and frame rate.
+ * whether one of them supports a Format with the codec, size and frame rate. Downloads use it too,
+ * so a download keeps only formats that the player can play (ADR 0010).
  */
-internal class Decoders @Inject constructor(@ApplicationContext private val context: Context) {
+class Decoders @Inject constructor(@ApplicationContext private val context: Context) {
     fun videoDecoding(format: VideoFormat): Decoding {
         val supporting =
             supporting(format.codec, MimeTypes::isVideo) { builder ->

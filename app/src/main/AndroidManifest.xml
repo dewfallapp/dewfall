@@ -54,7 +54,8 @@
             App Startup's provider. It removes emoji2's startup initializer, which Compose brings
             in. It would ask the system's downloadable font provider for a newer emoji font, and
             network calls go only to YouTube and to services the user turns on. See
-            docs/architecture.md#network-access. It also runs Dewfall's ImageLoaderInitializer.
+            docs/architecture.md#network-access. It also runs Dewfall's ImageLoaderInitializer,
+            and removes WorkManager's initializer.
         -->
         <provider
             android:name="androidx.startup.InitializationProvider"
@@ -67,6 +68,13 @@
             <meta-data
                 android:name="io.github.dewfallapp.images.ImageLoaderInitializer"
                 android:value="androidx.startup" />
+            <!--
+                WorkManager starts on demand with DewfallApplication's configuration, as
+                WorkManager's custom configuration guide says. See ADR 0010.
+            -->
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                tools:node="remove" />
         </provider>
     </application>
 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The download notification channel's name, which Android's settings show. -->
+    <string name="download_channel_name">Downloads</string>
+    <!-- The download notification's title. It never names the video. -->
+    <string name="download_notification_title">Downloading a video</string>
+    <!-- How far the download is, such as "42%". -->
+    <string name="download_notification_percent">%1$d%%</string>
+</resources>

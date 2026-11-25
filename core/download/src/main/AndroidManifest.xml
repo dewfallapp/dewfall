@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+        A download the user starts runs in a user-initiated data transfer job on Android 14 and
+        later, which needs RUN_USER_INITIATED_JOBS, and is persisted so it survives a reboot, which
+        needs RECEIVE_BOOT_COMPLETED. On Android 10 to 13 it runs in a WorkManager worker with a
+        dataSync foreground service, which needs FOREGROUND_SERVICE_DATA_SYNC from Android 14 on.
+        All four are normal permissions, so Android doesn't ask the user. See ADR 0010.
+    -->
+    <uses-permission android:name="android.permission.RUN_USER_INITIATED_JOBS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <!--
+        Declared so that, on Android 13 and later, the user can allow Dewfall's notifications in
+        the system settings and see the download notification in the shade. The app never asks for
+        it, and an app that targets Android 13 or later gets no automatic prompt, so without the
+        user's choice Android shows a running download only in its Task Manager. See ADR 0010.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <!--
+            Only JobScheduler may bind to it. Only Android 14 and later schedule it, because
+            user-initiated data transfer jobs came with Android 14, so it targets API 34.
+        -->
+        <service
+            android:name=".DownloadJobService"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            tools:targetApi="34" />
+
+        <!--
+            WorkManager's own foreground service, which runs the worker on Android 10 to 13, with
+            the type that downloads need, as WorkManager's guide to long-running workers says.
+        -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+    </application>
+</manifest>
