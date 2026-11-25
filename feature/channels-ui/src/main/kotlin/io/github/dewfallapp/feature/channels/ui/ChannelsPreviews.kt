@@ -7,8 +7,8 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.SubscribedChannel
-import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.ui.PreviewImages
+import io.github.dewfallapp.core.ui.previewImageLinks
 import io.github.dewfallapp.feature.channels.logic.ChannelsIntent
 import io.github.dewfallapp.feature.channels.logic.ChannelsList
 import io.github.dewfallapp.feature.channels.logic.ChannelsReducer
@@ -40,18 +40,7 @@ private fun overview(n: Int, name: String, lastUpload: PublishedTime?) =
                 name = name,
                 // A channel with no saved video yet, as after an import, has no avatar either, so
                 // its row keeps the emblem in the screenshots.
-                avatars =
-                    if (lastUpload == null) {
-                        emptyList()
-                    } else {
-                        listOf(
-                            Thumbnail(
-                                "https://images.example.invalid/channel-$n.jpg",
-                                width = 88,
-                                height = 88,
-                            ),
-                        )
-                    },
+                avatars = if (lastUpload == null) emptyList() else previewImageLinks("channel-$n"),
                 description = "",
             ),
             previewSubscribedAt,

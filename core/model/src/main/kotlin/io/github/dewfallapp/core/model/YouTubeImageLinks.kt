@@ -27,9 +27,9 @@ fun isYouTubeImageLink(link: String): Boolean {
         try {
             URI(link)
         } catch (_: URISyntaxException) {
-            return false
+            null
         }
-    val host = uri.host ?: return false
+    val host = uri?.host ?: return false
     return uri.isAbsolute &&
         uri.scheme.equals("https", ignoreCase = true) &&
         uri.rawUserInfo == null &&

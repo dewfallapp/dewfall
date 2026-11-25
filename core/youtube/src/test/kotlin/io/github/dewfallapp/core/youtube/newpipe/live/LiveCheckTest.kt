@@ -347,8 +347,11 @@ class LiveCheckTest {
                         results.copy(
                             videos =
                                 results.videos.mapIndexed { index, video ->
-                                    if (index < 2) video.copy(thumbnails = listOf(elsewhere))
-                                    else video
+                                    if (index < 2) {
+                                        video.copy(thumbnails = listOf(elsewhere))
+                                    } else {
+                                        video
+                                    }
                                 },
                         )
                     },

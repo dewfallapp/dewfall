@@ -4,11 +4,11 @@ import androidx.compose.runtime.Composable
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
-import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.ui.PreviewImages
+import io.github.dewfallapp.core.ui.previewImageLinks
 import io.github.dewfallapp.feature.inbox.logic.InboxContent
 import io.github.dewfallapp.feature.inbox.logic.InboxIntent
 import io.github.dewfallapp.feature.inbox.logic.InboxReducer
@@ -41,10 +41,6 @@ private const val HOURS_IN_A_DAY = 24
 private fun channelId(channel: Int) =
     ChannelId("UC" + channel.toString().padStart(CHANNEL_ID_TAIL, '0'))
 
-/** A made-up image link for [name], which PreviewImages draws as a plain fill. */
-private fun previewImage(name: String) =
-    listOf(Thumbnail("https://images.example.invalid/$name.jpg", width = 336, height = 188))
-
 /** The last preview video has no thumbnail, so its row keeps the placeholder in the screenshots. */
 private const val VIDEO_WITHOUT_IMAGE = "aaaaaaaaaa7"
 
@@ -56,7 +52,7 @@ private fun video(id: String, channel: Int, name: String, title: String, length:
         channelName = name,
         duration = length.minutes,
         published = PublishedTime(previewNow - ago.hours, isApproximate = ago >= HOURS_IN_A_DAY),
-        thumbnails = if (id == VIDEO_WITHOUT_IMAGE) emptyList() else previewImage(id),
+        thumbnails = if (id == VIDEO_WITHOUT_IMAGE) emptyList() else previewImageLinks(id),
         kind = VideoKind.VIDEO,
     )
 
@@ -64,7 +60,7 @@ private fun video(id: String, channel: Int, name: String, title: String, length:
  * The saved avatars of the first three preview channels. The fourth has none, so its card keeps the
  * emblem with its initial in the screenshots.
  */
-private val previewAvatars = (1..3).associate { channelId(it) to previewImage("channel-$it") }
+private val previewAvatars = (1..3).associate { channelId(it) to previewImageLinks("channel-$it") }
 
 internal val previewVideos =
     listOf(

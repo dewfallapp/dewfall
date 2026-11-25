@@ -328,16 +328,17 @@ internal class LiveCheck(
             return streamLinksResult(value as StreamLinks)
         }
         val wrong = value?.let { wrongContentOf(kind, it) }
-        if (wrong != null) return wrongContent(kind, wrong)
         val unknownHosts = imageLinksOf(value).count { !isYouTubeImageLink(it) }
-        return if (unknownHosts == 0) {
-            KindResult.passed(kind)
-        } else {
-            KindResult.failed(
-                kind,
-                FailedBecause.IMAGE_HOST_UNKNOWN,
-                ResultField.count("links", unknownHosts),
-            )
+        return when {
+            wrong != null -> wrongContent(kind, wrong)
+            unknownHosts > 0 -> {
+                KindResult.failed(
+                    kind,
+                    FailedBecause.IMAGE_HOST_UNKNOWN,
+                    ResultField.count("links", unknownHosts),
+                )
+            }
+            else -> KindResult.passed(kind)
         }
     }
 

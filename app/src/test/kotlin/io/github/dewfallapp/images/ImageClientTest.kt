@@ -70,7 +70,7 @@ class ImageClientTest {
     }
 
     @Test
-    fun `the client follows no redirects, keeps no cookies or cache, and runs the host rule first`() {
+    fun `the client follows no redirects, keeps no cookies or cache, and checks hosts first`() {
         val client = imageClient()
 
         assertFalse(client.followRedirects)

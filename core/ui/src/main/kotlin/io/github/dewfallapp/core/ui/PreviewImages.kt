@@ -10,6 +10,14 @@ import coil3.annotation.ExperimentalCoilApi
 import coil3.asImage
 import coil3.compose.AsyncImagePreviewHandler
 import coil3.compose.LocalAsyncImagePreviewHandler
+import io.github.dewfallapp.core.model.Thumbnail
+
+/**
+ * A made-up image link for [name], on a host that doesn't exist, for previews' sample data, which
+ * [PreviewImages] draws as a plain fill. Never a real video's or channel's link.
+ */
+fun previewImageLinks(name: String): List<Thumbnail> =
+    listOf(Thumbnail("https://images.example.invalid/$name.jpg", width = 336, height = 188))
 
 /**
  * Shows [content] with every image it loads replaced by a fixed, made-up one: a plain fill of the

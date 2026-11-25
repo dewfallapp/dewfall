@@ -7,11 +7,11 @@ import androidx.compose.ui.platform.LocalCursorBlinkEnabled
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
-import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.ui.PreviewImages
+import io.github.dewfallapp.core.ui.previewImageLinks
 import io.github.dewfallapp.feature.youtubesearch.logic.ChannelRow
 import io.github.dewfallapp.feature.youtubesearch.logic.ResultsArea
 import io.github.dewfallapp.feature.youtubesearch.logic.SearchRequest
@@ -25,18 +25,13 @@ import kotlin.time.Instant
 // Previews with made-up videos, never real ones, and a fixed clock, so they don't change with the
 // date. Their image links are on a made-up host, and PreviewImages draws each as a plain fill, so
 // screenshots never load or show a real image. The @PreviewTest wrappers in src/screenshotTest
-// carry their @Preview annotations and
-// render them as screenshot tests. They use Dewfall's own palette, so the images don't depend on a
-// wallpaper, except the dynamic color preview, whose wrappers name a fixed one. See
-// docs/testing.md#screenshot-tests.
+// carry their @Preview annotations and render them as screenshot tests. They use Dewfall's own
+// palette, so the images don't depend on a wallpaper, except the dynamic color preview, whose
+// wrappers name a fixed one. See docs/testing.md#screenshot-tests.
 
 private val previewNow = Instant.parse("2027-03-15T10:30:00Z")
 private val previewZone = ZoneId.of("UTC")
 private val sourdough = SearchRequest("sourdough", number = 1)
-
-/** A made-up image link for [name], which PreviewImages draws as a plain fill. */
-private fun previewImage(name: String) =
-    listOf(Thumbnail("https://images.example.invalid/$name.jpg", width = 336, height = 188))
 
 private fun row(
     id: String,
@@ -54,7 +49,7 @@ private fun row(
         duration = length?.minutes,
         kind = kind,
         published = daysAgo?.let { PublishedTime(previewNow - it.days, isApproximate = true) },
-        thumbnails = if (withImage) previewImage(id) else emptyList(),
+        thumbnails = if (withImage) previewImageLinks(id) else emptyList(),
     )
 
 private val previewRows =
@@ -104,7 +99,7 @@ private val previewChannels =
             kettleId,
             "Kettle and Crumb",
             "Bread, fermentation and old recipes",
-            previewImage("kettle-and-crumb"),
+            previewImageLinks("kettle-and-crumb"),
         ),
         ChannelRow(
             ChannelId("UCbbbbbbbbbbbbbbbbbbbbbb"),

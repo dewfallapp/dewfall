@@ -17,8 +17,8 @@ import com.google.common.util.concurrent.ListenableFuture
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
-import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.ui.PreviewImages
+import io.github.dewfallapp.core.ui.previewImageLinks
 import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.VideoPage
 import java.time.ZoneId
@@ -39,10 +39,7 @@ internal val previewPage =
         // A made-up ID in a channel ID's form, never a real channel's.
         channelId = ChannelId("UC" + "0".repeat(21) + "1"),
         channelName = "Larkspur Lectures",
-        channelAvatars =
-            listOf(
-                Thumbnail("https://images.example.invalid/larkspur.jpg", width = 88, height = 88),
-            ),
+        channelAvatars = previewImageLinks("larkspur"),
         description =
             "A walk through four nineteenth-century reading rooms and the ways their builders " +
                 "brought daylight deep inside: high clerestory windows, pale plaster, and desks " +
