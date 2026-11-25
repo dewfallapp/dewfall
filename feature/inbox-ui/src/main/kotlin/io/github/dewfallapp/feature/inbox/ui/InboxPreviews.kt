@@ -26,7 +26,7 @@ private val previewNow = Instant.parse("2027-03-15T07:30:00Z")
 private val previewZone = ZoneId.of("UTC")
 
 /** The channels the previews subscribe to, as in the "Inbox" frame. */
-private const val PREVIEW_CHANNELS = 4
+internal const val PREVIEW_CHANNELS = 4
 
 /** A channel ID is "UC" and 22 more characters. */
 private const val CHANNEL_ID_TAIL = 22
@@ -46,7 +46,7 @@ private fun video(id: String, channel: Int, name: String, title: String, length:
         kind = VideoKind.VIDEO,
     )
 
-private val previewVideos =
+internal val previewVideos =
     listOf(
         video(
             id = "aaaaaaaaaa1",
@@ -107,11 +107,12 @@ private val previewVideos =
     )
 
 /** The state the reducer makes from [videos] and [subscribed] channels. */
-private fun loaded(subscribed: Int, videos: List<VideoSummary>): InboxState =
+internal fun loaded(subscribed: Int, videos: List<VideoSummary>): InboxState =
     InboxReducer.reduce(InboxState(), InboxIntent.Loaded(subscribed, videos)).state
 
+/** The inbox showing [state], in Dewfall's palette or, with [dynamicColor], the wallpaper's. */
 @Composable
-private fun Preview(state: InboxState, dynamicColor: Boolean = false) {
+internal fun InboxPreview(state: InboxState, dynamicColor: Boolean = false) {
     DewfallTheme(dynamicColor = dynamicColor) {
         InboxScreen(
             state = state,
@@ -121,41 +122,44 @@ private fun Preview(state: InboxState, dynamicColor: Boolean = false) {
             onOpenChannel = {},
             onOpenSearch = {},
             onImportFromTakeout = {},
+            onCheck = {},
+            // A turning glyph would draw at its first frame anyway, so the images stay the same.
+            glyphTurns = false,
         )
     }
 }
 
 @Composable
 internal fun VideosPreview() {
-    Preview(loaded(PREVIEW_CHANNELS, previewVideos))
+    InboxPreview(loaded(PREVIEW_CHANNELS, previewVideos))
 }
 
 @Composable
 internal fun VideosDynamicPreview() {
-    Preview(loaded(PREVIEW_CHANNELS, previewVideos), dynamicColor = true)
+    InboxPreview(loaded(PREVIEW_CHANNELS, previewVideos), dynamicColor = true)
 }
 
 @Composable
 internal fun NoChannelsPreview() {
-    Preview(InboxState(InboxContent.NoChannels))
+    InboxPreview(InboxState(InboxContent.NoChannels))
 }
 
 @Composable
 internal fun NoChannelsDynamicPreview() {
-    Preview(InboxState(InboxContent.NoChannels), dynamicColor = true)
+    InboxPreview(InboxState(InboxContent.NoChannels), dynamicColor = true)
 }
 
 @Composable
 internal fun CaughtUpPreview() {
-    Preview(InboxState(InboxContent.CaughtUp(PREVIEW_CHANNELS)))
+    InboxPreview(InboxState(InboxContent.CaughtUp(PREVIEW_CHANNELS)))
 }
 
 @Composable
 internal fun CaughtUpDynamicPreview() {
-    Preview(InboxState(InboxContent.CaughtUp(PREVIEW_CHANNELS)), dynamicColor = true)
+    InboxPreview(InboxState(InboxContent.CaughtUp(PREVIEW_CHANNELS)), dynamicColor = true)
 }
 
 @Composable
 internal fun UnreadablePreview() {
-    Preview(InboxState(InboxContent.Unreadable))
+    InboxPreview(InboxState(InboxContent.Unreadable))
 }

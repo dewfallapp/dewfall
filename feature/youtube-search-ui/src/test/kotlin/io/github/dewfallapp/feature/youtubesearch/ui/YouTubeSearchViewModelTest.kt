@@ -111,6 +111,8 @@ private class FakeSubscriptions : SubscriptionsRepository {
         unsubscribed += channelId
         kept.value = kept.value.orEmpty().filterNot { it.channel.id == channelId }
     }
+
+    override suspend fun moveSubscription(from: ChannelId, to: Channel) = error("Not used")
 }
 
 /** One search the fake repository got. It waits until the test completes its answer. */

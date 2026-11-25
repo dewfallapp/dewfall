@@ -5,7 +5,7 @@ import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 
-/** Binds the repository of the subscribed channels, and subscribing with uploads. */
+/** Binds the repository of the subscribed channels, subscribing with uploads, and the check. */
 @Module
 @InstallIn(SingletonComponent::class)
 internal interface SubscriptionsModule {
@@ -15,4 +15,6 @@ internal interface SubscriptionsModule {
     fun bindSubscribeWithUploads(
         subscribe: RepositoriesSubscribeWithUploads,
     ): SubscribeWithUploads
+
+    @Binds fun bindUploadsChecker(checker: RepositoriesUploadsChecker): UploadsChecker
 }

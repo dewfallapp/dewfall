@@ -66,6 +66,9 @@ private class FakeSubscriptions(private val existing: Set<String> = emptySet()) 
     override suspend fun subscribe(channel: Channel) = error("Not used by the import")
 
     override suspend fun unsubscribe(channelId: ChannelId) = error("Not used by the import")
+
+    override suspend fun moveSubscription(from: ChannelId, to: Channel) =
+        error("Not used by the import")
 }
 
 /** Opens every file with [open], and remembers the streams it gave and whether they closed. */

@@ -1,17 +1,21 @@
 package io.github.dewfallapp.feature.inbox.ui
 
 import io.github.dewfallapp.core.data.subscriptions.SubscriptionsRepository
+import io.github.dewfallapp.core.data.subscriptions.UploadsChecker
 import io.github.dewfallapp.core.data.video.StoredVideosRepository
 import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.SubscribedChannel
+import io.github.dewfallapp.core.model.UploadsCheck
+import io.github.dewfallapp.core.model.UploadsCheckFailure
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.feature.inbox.logic.InboxContent
 import io.github.dewfallapp.feature.inbox.logic.InboxGroup
+import io.github.dewfallapp.feature.inbox.logic.InboxIntent
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -66,6 +70,8 @@ private class FakeSubscriptions : SubscriptionsRepository {
     override suspend fun subscribeAll(channels: List<Channel>): Int = error("Not used")
 
     override suspend fun unsubscribe(channelId: ChannelId) = error("Not used")
+
+    override suspend fun moveSubscription(from: ChannelId, to: Channel) = error("Not used")
 }
 
 /** The inbox's videos the test sets. Saving isn't used by the inbox. */
@@ -84,6 +90,17 @@ private class FakeStoredVideos : StoredVideosRepository {
         (if (fails) flow { error("Damaged database") } else inbox).onStart { starts++ }
 }
 
+/** A check the test sets, which counts its starts. */
+private class FakeChecker : UploadsChecker {
+    override val state = MutableStateFlow(UploadsCheck())
+
+    var starts = 0
+
+    override fun start() {
+        starts++
+    }
+}
+
 /**
  * Tests that the ViewModel turns the two reads into the inbox's state, and reads only while its
  * state has a collector, and for 5 seconds after. The reducer's own tests cover the grouping.
@@ -94,6 +111,7 @@ private class FakeStoredVideos : StoredVideosRepository {
 class InboxViewModelTest {
     private val subscriptions = FakeSubscriptions()
     private val storedVideos = FakeStoredVideos()
+    private val checker = FakeChecker()
 
     @BeforeTest
     fun setUp() {
@@ -110,7 +128,7 @@ class InboxViewModelTest {
 
     @Test
     fun `nothing is read while nothing shows the state`() = runTest {
-        val viewModel = InboxViewModel(subscriptions, storedVideos)
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
         runCurrent()
 
         assertEquals(0, readers())
@@ -119,7 +137,7 @@ class InboxViewModelTest {
 
     @Test
     fun `a shown inbox turns the reads into its content`() = runTest {
-        val viewModel = InboxViewModel(subscriptions, storedVideos)
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
         backgroundScope.launch { viewModel.state.collect {} }
         runCurrent()
         assertEquals(InboxContent.NoChannels, viewModel.state.value.content)
@@ -138,7 +156,7 @@ class InboxViewModelTest {
 
     @Test
     fun `reading stops 5 seconds after the last collector leaves and starts again`() = runTest {
-        val viewModel = InboxViewModel(subscriptions, storedVideos)
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
         val shown = backgroundScope.launch { viewModel.state.collect {} }
         runCurrent()
         assertEquals(2, readers())
@@ -163,7 +181,7 @@ class InboxViewModelTest {
 
     @Test
     fun `a collector that comes back within 5 seconds keeps the reads going`() = runTest {
-        val viewModel = InboxViewModel(subscriptions, storedVideos)
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
         val first = backgroundScope.launch { viewModel.state.collect {} }
         runCurrent()
 
@@ -180,7 +198,7 @@ class InboxViewModelTest {
     @Test
     fun `a read that throws shows unreadable instead of crashing`() = runTest {
         storedVideos.fails = true
-        val viewModel = InboxViewModel(subscriptions, storedVideos)
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
         backgroundScope.launch { viewModel.state.collect {} }
         runCurrent()
 
@@ -190,7 +208,7 @@ class InboxViewModelTest {
     @Test
     fun `after a failed read, the inbox reads again when it shows again`() = runTest {
         storedVideos.fails = true
-        val viewModel = InboxViewModel(subscriptions, storedVideos)
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
         val shown = backgroundScope.launch { viewModel.state.collect {} }
         runCurrent()
         shown.cancel()
@@ -202,5 +220,50 @@ class InboxViewModelTest {
         runCurrent()
 
         assertEquals(InboxContent.NoChannels, viewModel.state.value.content)
+    }
+
+    @Test
+    fun `check for new videos starts the app's check`() = runTest {
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
+
+        viewModel.dispatch(InboxIntent.CheckForNewVideos)
+
+        assertEquals(1, checker.starts)
+    }
+
+    @Test
+    fun `the check's state reaches the inbox only while it shows`() = runTest {
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
+        checker.state.value = UploadsCheck(running = true)
+        runCurrent()
+        assertEquals(0, checker.state.subscriptionCount.value)
+        assertEquals(UploadsCheck(), viewModel.state.value.check)
+
+        val shown = backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+        assertEquals(UploadsCheck(running = true), viewModel.state.value.check)
+        val offline = UploadsCheck(failure = UploadsCheckFailure.CANT_REACH_YOUTUBE)
+        checker.state.value = offline
+        runCurrent()
+        assertEquals(offline, viewModel.state.value.check)
+
+        shown.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+        assertEquals(0, checker.state.subscriptionCount.value)
+    }
+
+    @Test
+    fun `a failed read still lets the check's state through`() = runTest {
+        storedVideos.fails = true
+        val viewModel = InboxViewModel(subscriptions, storedVideos, checker)
+        backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+
+        checker.state.value = UploadsCheck(running = true)
+        runCurrent()
+
+        assertEquals(InboxContent.Unreadable, viewModel.state.value.content)
+        assertEquals(UploadsCheck(running = true), viewModel.state.value.check)
     }
 }

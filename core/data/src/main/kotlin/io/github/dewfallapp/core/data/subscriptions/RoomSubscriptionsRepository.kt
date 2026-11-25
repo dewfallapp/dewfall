@@ -62,4 +62,10 @@ constructor(
     override suspend fun unsubscribe(channelId: ChannelId) {
         externalScope.async { channelDao.unsubscribe(channelId.value) }.await()
     }
+
+    override suspend fun moveSubscription(from: ChannelId, to: Channel) {
+        // The DAO keeps the old row's time, so the clock's time here is never saved.
+        val row = to.toEntity(subscribedAt = clock.now())
+        externalScope.async { channelDao.moveSubscription(from.value, row) }.await()
+    }
 }

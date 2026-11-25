@@ -48,4 +48,12 @@ interface SubscriptionsRepository {
      * them stay. A channel that isn't subscribed stays that way.
      */
     suspend fun unsubscribe(channelId: ChannelId)
+
+    /**
+     * Moves the subscription with [from] to [to]'s ID, after YouTube sent the channel on to [to],
+     * keeping the time of subscribing. If [to] is already subscribed, it stays as it is, and the
+     * subscription with [from] goes. If [from] isn't subscribed, nothing changes, so this never
+     * subscribes to a channel the user left.
+     */
+    suspend fun moveSubscription(from: ChannelId, to: Channel)
 }
