@@ -28,7 +28,10 @@ data class StreamLinks(
 /** One format of a video's sound. */
 data class AudioFormat(
     val url: String,
-    /** YouTube's number for this format. The same itag is the same format of the same video. */
+    /**
+     * YouTube's number for this format. Each sound [track] of a video has its own format with the
+     * same itag, so the itag and the track together name one format of the video.
+     */
     val itag: Int,
     /** The container's MIME type, such as audio/mp4 or audio/webm. */
     val mimeType: String,
