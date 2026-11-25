@@ -35,14 +35,14 @@ fun ChannelAvatar(
     val scaledSize = size * LocalDensity.current.fontScale.coerceAtLeast(1f)
     Box(modifier = modifier.size(scaledSize).clearAndSetSemantics {}) {
         ChannelEmblem(initial = initialOf(name), size = size, textStyle = textStyle)
+        // The border draws over the picture, so the ring shows as the emblem's does. Without a
+        // picture, the emblem's own ring is the only one.
         RemoteImage(
             thumbnails = avatars,
             width = size,
-            modifier = Modifier.matchParentSize().clip(CircleShape),
-        )
-        Box(
             modifier =
                 Modifier.matchParentSize()
+                    .clip(CircleShape)
                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
         )
     }

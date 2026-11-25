@@ -2,7 +2,6 @@ package io.github.dewfallapp.feature.player.logic
 
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.YouTubeResult
-import io.github.dewfallapp.core.model.initialOf
 import io.github.dewfallapp.core.mvi.Next
 import io.github.dewfallapp.core.mvi.Reducer
 
@@ -63,15 +62,15 @@ private fun PlayerState.finished(intent: PlayerIntent.DetailsFinished): PlayerSt
 }
 
 /**
- * The page for [details]. It leaves out the thumbnails and avatars, which no image shows yet, and
- * the length, which the player shows in #42.
+ * The page for [details], with every size of the channel's picture, for the channel row. It leaves
+ * out the video's thumbnails, which the player covers, and the length, which the player shows.
  */
 private fun pageOf(details: VideoDetails): VideoPage =
     VideoPage(
         title = details.title,
         channelId = details.channelId,
         channelName = details.channelName,
-        channelInitial = initialOf(details.channelName),
+        channelAvatars = details.channelAvatars,
         description = details.description,
         published = details.published,
         isLive = details.isLive,

@@ -2,6 +2,7 @@ package io.github.dewfallapp.feature.player.logic
 
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.YouTubeError
@@ -14,13 +15,20 @@ import kotlin.time.Instant
 
 private val PUBLISHED = PublishedTime(Instant.parse("2026-11-19T08:00:00Z"), isApproximate = false)
 
+/** Every size of the channel's picture, made up. The page keeps all of them for the row. */
+private val AVATARS =
+    listOf(
+        Thumbnail("https://images.example.invalid/larkspur-88.jpg", width = 88, height = 88),
+        Thumbnail("https://images.example.invalid/larkspur-176.jpg", width = 176, height = 176),
+    )
+
 private fun details(isLive: Boolean = false) =
     VideoDetails(
         id = VideoId("aqz-KE-bpKQ"),
         title = "How reading rooms were lit before electric lamps",
         channelId = ChannelId("UCLA_DiR1FfKNvjuUpBHmylQ"),
         channelName = "Larkspur Lectures",
-        channelAvatars = emptyList(),
+        channelAvatars = AVATARS,
         description = "A walk through four reading rooms.\nRecorded on location.",
         duration = 74.minutes,
         published = PUBLISHED,
@@ -33,7 +41,7 @@ private val PAGE =
         title = "How reading rooms were lit before electric lamps",
         channelId = ChannelId("UCLA_DiR1FfKNvjuUpBHmylQ"),
         channelName = "Larkspur Lectures",
-        channelInitial = "L",
+        channelAvatars = AVATARS,
         description = "A walk through four reading rooms.\nRecorded on location.",
         published = PUBLISHED,
         isLive = false,

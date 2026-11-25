@@ -2,6 +2,7 @@ package io.github.dewfallapp.feature.player.logic
 
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.YouTubeResult
@@ -9,16 +10,16 @@ import io.github.dewfallapp.core.mvi.MviIntent
 import io.github.dewfallapp.core.mvi.MviState
 
 /**
- * What the video screen shows about a video. The title, names and description are user data, so
- * never log them.
+ * What the video screen shows about a video. The title, names, description and image links are user
+ * data, so never log them.
  */
 data class VideoPage(
     val title: String,
     /** The channel's ID, which opens its channel page. User data, so never log it. */
     val channelId: ChannelId,
     val channelName: String,
-    /** The channel name's first user-perceived character, or null when the name has none. */
-    val channelInitial: String?,
+    /** Every size of the channel's picture, or none when YouTube gave none. */
+    val channelAvatars: List<Thumbnail>,
     /** The description as plain text, or empty when the video has none. */
     val description: String,
     /** When it was published, or null if YouTube gave no time. */

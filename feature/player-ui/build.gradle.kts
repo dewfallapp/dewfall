@@ -18,6 +18,8 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:mvi"))
     implementation(project(":core:playback"))
+    // ChannelAvatar, the channel's picture over its emblem, which the lists use too.
+    implementation(project(":core:ui"))
 
     // The video's picture and the state holders of its controls, and Player.listen for loading and
     // live. See docs/architecture.md#the-player.

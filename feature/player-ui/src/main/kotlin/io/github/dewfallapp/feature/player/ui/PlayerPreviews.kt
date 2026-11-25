@@ -69,7 +69,8 @@ internal fun LiveWithNoDescriptionPreview() {
                     previewPage.copy(
                         title = "Baking along, live from the bakery",
                         channelName = "Kettle and Crumb",
-                        channelInitial = "K",
+                        // No picture, so the channel row keeps the emblem in the screenshots.
+                        channelAvatars = emptyList(),
                         description = "",
                         isLive = true,
                     ),

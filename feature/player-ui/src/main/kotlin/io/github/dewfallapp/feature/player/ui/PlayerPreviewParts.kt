@@ -17,6 +17,8 @@ import com.google.common.util.concurrent.ListenableFuture
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
+import io.github.dewfallapp.core.model.Thumbnail
+import io.github.dewfallapp.core.ui.PreviewImages
 import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.VideoPage
 import java.time.ZoneId
@@ -24,7 +26,9 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 
 // What PlayerPreviews.kt's previews share: a made-up video, never a real one, a fixed clock, so
-// they don't change with the date, a made-up player, and the screen in Dewfall's theme.
+// they don't change with the date, a made-up player, and the screen in Dewfall's theme. The
+// channel's picture link is on a made-up host, and PreviewImages draws it as a plain fill, so
+// screenshots never load or show a real image.
 
 private val previewNow = Instant.parse("2027-03-15T10:30:00Z")
 private val previewZone = ZoneId.of("UTC")
@@ -35,7 +39,10 @@ internal val previewPage =
         // A made-up ID in a channel ID's form, never a real channel's.
         channelId = ChannelId("UC" + "0".repeat(21) + "1"),
         channelName = "Larkspur Lectures",
-        channelInitial = "L",
+        channelAvatars =
+            listOf(
+                Thumbnail("https://images.example.invalid/larkspur.jpg", width = 88, height = 88),
+            ),
         description =
             "A walk through four nineteenth-century reading rooms and the ways their builders " +
                 "brought daylight deep inside: high clerestory windows, pale plaster, and desks " +
@@ -107,22 +114,24 @@ internal fun PlayerScreenPreview(
 ) {
     val content = remember { video() }
     DewfallTheme(dynamicColor = dynamicColor) {
-        PlayerScreen(
-            state = state,
-            now = previewNow,
-            zone = previewZone,
-            onIntent = {},
-            onMinimize = {},
-            onOpenChannel = {},
-            videoArea = { modifier ->
-                VideoArea(
-                    content = content,
-                    onPlay = {},
-                    onTryAgain = {},
-                    onFullscreen = {},
-                    modifier = modifier,
-                )
-            },
-        )
+        PreviewImages {
+            PlayerScreen(
+                state = state,
+                now = previewNow,
+                zone = previewZone,
+                onIntent = {},
+                onMinimize = {},
+                onOpenChannel = {},
+                videoArea = { modifier ->
+                    VideoArea(
+                        content = content,
+                        onPlay = {},
+                        onTryAgain = {},
+                        onFullscreen = {},
+                        modifier = modifier,
+                    )
+                },
+            )
+        }
     }
 }
