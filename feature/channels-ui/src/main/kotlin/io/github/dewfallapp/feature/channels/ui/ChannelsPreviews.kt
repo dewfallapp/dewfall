@@ -7,6 +7,8 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.SubscribedChannel
+import io.github.dewfallapp.core.model.Thumbnail
+import io.github.dewfallapp.core.ui.PreviewImages
 import io.github.dewfallapp.feature.channels.logic.ChannelsIntent
 import io.github.dewfallapp.feature.channels.logic.ChannelsList
 import io.github.dewfallapp.feature.channels.logic.ChannelsReducer
@@ -20,7 +22,8 @@ import kotlin.time.Instant
 // they don't change with the date. The @PreviewTest wrappers in src/screenshotTest carry their
 // @Preview annotations and render them as screenshot tests. They use Dewfall's own palette, so the
 // images don't depend on a wallpaper, except the dynamic color previews, whose wrappers name a
-// fixed one. See docs/testing.md#screenshot-tests.
+// fixed one. Image links are on a made-up host, and PreviewImages draws each as a plain fill, so
+// screenshots never load or show a real image. See docs/testing.md#screenshot-tests.
 
 private val previewNow = Instant.parse("2027-03-15T07:30:00Z")
 private val previewZone = ZoneId.of("UTC")
@@ -35,7 +38,20 @@ private fun overview(n: Int, name: String, lastUpload: PublishedTime?) =
             Channel(
                 id = ChannelId("UC" + n.toString().padStart(CHANNEL_ID_TAIL, '0')),
                 name = name,
-                avatars = emptyList(),
+                // A channel with no saved video yet, as after an import, has no avatar either, so
+                // its row keeps the emblem in the screenshots.
+                avatars =
+                    if (lastUpload == null) {
+                        emptyList()
+                    } else {
+                        listOf(
+                            Thumbnail(
+                                "https://images.example.invalid/channel-$n.jpg",
+                                width = 88,
+                                height = 88,
+                            ),
+                        )
+                    },
                 description = "",
             ),
             previewSubscribedAt,
@@ -70,14 +86,16 @@ private fun read(channels: List<ChannelOverview>): ChannelsState =
 @Composable
 private fun Preview(state: ChannelsState, dynamicColor: Boolean = false) {
     DewfallTheme(dynamicColor = dynamicColor) {
-        ChannelsScreen(
-            state = state,
-            now = previewNow,
-            zone = previewZone,
-            onOpenChannel = {},
-            onOpenSearch = {},
-            onImportFromTakeout = {},
-        )
+        PreviewImages {
+            ChannelsScreen(
+                state = state,
+                now = previewNow,
+                zone = previewZone,
+                onOpenChannel = {},
+                onOpenSearch = {},
+                onImportFromTakeout = {},
+            )
+        }
     }
 }
 

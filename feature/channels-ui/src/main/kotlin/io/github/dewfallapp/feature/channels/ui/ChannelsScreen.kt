@@ -43,13 +43,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
-import io.github.dewfallapp.core.designsystem.component.ChannelEmblem
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelOverview
-import io.github.dewfallapp.core.model.initialOf
 import io.github.dewfallapp.core.model.timeAgo
+import io.github.dewfallapp.core.ui.ChannelAvatar
 import io.github.dewfallapp.core.ui.rowGroupShape
 import io.github.dewfallapp.feature.channels.logic.ChannelsList
 import io.github.dewfallapp.feature.channels.logic.ChannelsState
@@ -219,7 +218,7 @@ private fun ChannelRow(
         horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ChannelEmblem(initial = initialOf(channel.name), size = EmblemSize)
+        ChannelAvatar(name = channel.name, avatars = channel.avatars, size = EmblemSize)
         Column(modifier = Modifier.weight(1f)) {
             Text(text = channel.name, style = MaterialTheme.typography.titleMedium)
             if (lastUpload != null) {
