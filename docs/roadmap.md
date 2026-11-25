@@ -243,6 +243,7 @@ Export your own YouTube data from takeout.google.com to get a real file for test
 - Play from the downloaded file when it exists.
 - Storage indicator showing how much space downloads use.
 - Emulator test: download, switch off the network, then play.
+- Thumbnails and channel pictures in lists, from YouTube's image hosts (#176).
 
 ### Your guide
 

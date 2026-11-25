@@ -113,6 +113,7 @@ It logs the same results, and exits with an error when a kind failed. The workfl
 | LINKS_EXPIRE_SOON | The stream links stop working within the hour. |
 | LINK_NOT_PLAYABLE | A link's first bytes didn't come back as a player needs them. `format`, `answer` and `status` say how. `status` is 0 when no answer came. |
 | LENGTH_MISMATCH | A link's answer gives another total length than the format's. |
+| IMAGE_HOST_UNKNOWN | The call worked and its content is as expected, but `links` of its thumbnail and avatar links aren't on YouTube's image hosts, so the app would show placeholders for them. Search, the uploads sets and video details check it. The fix is the new host in `:core:model`'s list of image hosts, with its test, as [ADR 0011](adr/0011-images-load-from-youtubes-image-hosts.md) says. |
 | EVERY_CALL_SKIPPED | NOTHING_CHECKED only: every call was skipped. `blocked` and `network` count them. |
 | SIMULATED | The run was asked to report the kind as failed. See [Testing the issues](#testing-the-issues). |
 | NO_RESULTS | DID_NOT_FINISH only: the workflow got no results. The build failed, the check stopped, or the job ran out of time. It also happens when simulate_failure isn't the name of a kind, and when the results file has a line that isn't a result. |
@@ -637,9 +638,15 @@ ResumeTest checks #50's resume end to end, through the real PlaybackService and 
 
 ChannelInitialTest checks the channel emblem's initial for names that start with an emoji of several code points: a flag, a family emoji joined by U+200D, an emoji with a skin tone, and a heart with the emoji variation selector U+FE0F. Each must come back whole, as openspec/specs/player/spec.md's "A name that starts with an emoji" scenario asks. Each case also checks that its expected initial has more than one code point, so a cut to the first code point fails all four. On November 23, 2026, with `initialOf` cut that way, all four failed on Android 10 and Android 17 emulators, and passed without the cut.
 
-- **What it calls.** `initialOf` in `:core:model`, the one function that the video screen, through PlayerReducer, and the channel page take the emblem's text from. The emblem hides its text from the semantics tree with `clearAndSetSemantics`, which a Compose test reads, so the test checks the function, not the screen. It starts no activity and needs no Hilt.
+- **What it calls.** `initialOf` in `:core:model`, the one function that the video screen and the channel page take the emblem's text from, through `:core:ui`'s ChannelAvatar. The emblem hides its text from the semantics tree with `clearAndSetSemantics`, which a Compose test reads, so the test checks the function, not the screen. It starts no activity and needs no Hilt.
 - **Why an emulator.** `initialOf` uses java.text.BreakIterator. Android backs it with its own ICU, which keeps these emoji whole from Android 10 on. JDK 17's BreakIterator follows Unicode's grapheme rules only from JDK 20 ([JDK-8291660](https://github.com/openjdk/jdk/pull/9991)), and splits flags and joined emoji into code points, so core/model's InitialOfTest leaves them out. The variation selector case may pass on JDK 17 too, because U+FE0F is a nonspacing mark.
 - **What it misses.** A screen that stopped taking its emblem's text from `initialOf` wouldn't fail it, and the workflow's path filter doesn't name feature/. Whether the phone's font draws the emoji is a separate question, which the emoji fonts note in [architecture.md](architecture.md#network-access) covers.
+
+### What image loader checks
+
+ImageLoaderTest checks that the emulator tests, which run under HiltTestApplication, use the app's image loader, which ImageLoaderInitializer sets from App Startup, and not Coil's default one. The singleton's disk cache must be in cacheDir/images. A `file://` link to a small image that the test writes in the cache folder, an `android.resource://` link to one of Android's own drawables, and an https link to a made-up host must each end in an error whose cause is RefusedImageLink. Coil's default loader would load the first two, so the test fails if the initializer stops running. Nothing in it reaches the network.
+
+- **What it leaves out.** A real image from YouTube's image hosts. The hand checks in [Checking images by hand](#checking-images-by-hand) cover that.
 
 ### What list end after video checks
 
@@ -665,6 +672,8 @@ Its second test taps "Channels" in the navigation bar, finds the Channels screen
 - **FakeNetwork** stands in for the network, one for each test. While its YouTube switch is off, the fake details, stream links and channel answer NETWORK. While its media switch is off, AssetMedia fails every request with an IOException, which Media3 reports as a network error, errorCode 2001. Both start on, so SearchThenPlayTest runs as with a network.
 - **TestVideo** has a video-only and an audio-only format, as most YouTube videos do, so the player merges two files, as it does for real videos. Its second video, with its own ID and title, uses the same files, so a test can open one video while the other is in the mini player. The same search finds both, and the test channel, with only an excerpt of its description, as YouTube's search gives. A second search, its long query, finds the second video, then 20 filler videos of the test channel, then the test video last, a list that scrolls on any phone, and no channel. The fillers can't be opened.
 - **HiltTestRunner** starts HiltTestApplication in place of DewfallApplication, which has no code of its own. Once DewfallApplication gets some, such as WorkManager's Configuration.Provider, the tests need Hilt's `@CustomTestApplication` instead, or they run without that code. `:app`'s build names it as the test runner, and passes it `disableAnalytics=true`. AndroidX Test's runner has a usage tracker that sends to Google Analytics only when a test turns it on, and that argument keeps it off.
+
+- **Image links.** The fakes give no image links today, so no emulator test loads an image. A fake that gives one uses a made-up host, such as `example.invalid`, which the app's image loader refuses, so no emulator test reaches YouTube's image hosts.
 
 ### The media files
 
@@ -862,6 +871,15 @@ The inbox's reducer, ViewModel, DAO and screenshot tests cover its rules and its
 - **The log.** Check that `adb logcat` shows no video ID or title, and no channel ID or name.
 - **Checking for new videos.** Turn the network back on with `adb shell svc wifi enable` and `adb shell svc data enable`. Subscribe to two channels, then tap "Check for new videos": the line under "Dewfall" reads "Checking for new videos", the glyph turns, a second tap does nothing, and the channels' new videos show once it ends, with "Inbox" again. Start a check and open Search YouTube while it runs, then come back: it still runs, or has ended with the videos saved. With airplane mode on, a check shows the connection banner with "Try again", which starts a check again. With animations off (`adb shell settings put global animator_duration_scale 0`), the glyph stays still and the words still change; put the scale back to 1 after. With TalkBack, the screen reader says "Checking for new videos" when a check starts. `adb logcat -s Dewfall.UploadsCheck` shows only counts and the failure's name.
 
+## Checking images by hand
+
+Screenshot tests show only made-up fills, and the unit and emulator tests send no image request, so a change to the image loader, its rules or a row's image gets these checks on an emulator or phone with a network, Android 10 (API 29) and the newest Android:
+
+- **Real images.** Search for a word, open a channel page from a result, subscribe, check for new videos in the inbox, open the Channels screen, and open a video: each row shows its video's thumbnail under the length tag, and each channel its picture with the emblem's ring. Images fill their boxes and circles, cut to their shape. Check light, dark and the largest font size.
+- **Placeholders.** With channels subscribed, clear only the app's cache, in Android's settings under Apps, Dewfall, Storage, "Clear cache", turn the network off with `adb shell svc wifi disable` and `adb shell svc data disable`, and open the app: the inbox's rows show the plain box with the length, and its cards the emblem with the initial, and taps open videos as before. Turn the network back on: once a list shows again, the images load.
+- **The cache.** With images loaded, turn the network off and open the same lists again: the images still show, from the cache in the app's cache folder.
+- **The log.** Check that `adb logcat` shows no image link.
+
 ## The pre-push gate
 
 scripts/pre_push_gate.py checks every commit that a push would send, before the push. Run it from the repository's folder:
@@ -975,6 +993,8 @@ Each @Preview annotation makes one image. Every screen has a light, a dark and a
 - The search field has focus, and a cursor blinks with the clock, so the Search YouTube previews turn blinking off with `LocalCursorBlinkEnabled`.
 
 A difference in text or content, such as a word, a comma, a moved element or an indicator's frame, is never settled with a tolerance. It means something like the above is still unfixed, and the fix goes there.
+
+**Images.** The previews' made-up data gives image links on a made-up host, `https://images.example.invalid/…`, never a real video ID or a YouTube host, because the reference images are public. Each preview wraps its screen in `:core:ui`'s PreviewImages, which draws every image as a plain fill of the theme's `primary` color, so an image never loads and the reference shows a fill where a real thumbnail or picture would be. Rows without image links keep the plain box and the emblem with its initial, so every screen's images show both. Only `:app` has a network fetcher, so a preview that forgot PreviewImages still loads nothing and shows the placeholder. See [ADR 0011](adr/0011-images-load-from-youtubes-image-hosts.md).
 
 **What the images can't show.** Layoutlib draws no system bars, even with `showSystemUi = true`, so the images can't show whether text sits under them. The insets stay checked by hand on a phone. The video area draws nothing in Layoutlib, so it shows as an empty box.
 
