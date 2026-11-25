@@ -229,7 +229,12 @@ private fun TopBar(
 /**
  * The cards, one per channel, after the [banner] of a check that stopped early, if any, then the
  * line that ends the list. The list and its scroll state live only here, so after process death the
- * list is first laid out with its cards, and the saved scroll position holds. The items hold no
+ * list is first laid out with its cards, and the saved scroll position holds. The banner's slot is
+ * always the first item, empty and of no height when there is no banner, because the saved position
+ * is an item's index: the banner is gone after process death, and as an item that comes and goes it
+ * would move every card's index. So the gaps sit in the items, not in the list's arrangement, and
+ * an empty slot adds none. The list's top padding keeps the empty slot the first visible item at
+ * the top, so a banner that comes while the list is at the top shows there. The items hold no
  * saveable state, so the state Android saves holds no channel or video ID.
  */
 @Composable
@@ -248,11 +253,16 @@ private fun Cards(
         modifier = modifier.fillMaxSize(),
         contentPadding =
             PaddingValues(horizontal = DewfallSpacing.margin, vertical = DewfallSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(DewfallSpacing.md),
     ) {
-        if (banner != null) {
-            // Channel IDs start with UC, so this key never meets a card's.
-            item(key = "banner") { CheckBanner(failure = banner, onTryAgain = onTryAgain) }
+        // Channel IDs start with UC, so this key never meets a card's.
+        item(key = "banner") {
+            if (banner != null) {
+                CheckBanner(
+                    failure = banner,
+                    onTryAgain = onTryAgain,
+                    modifier = Modifier.padding(bottom = DewfallSpacing.md),
+                )
+            }
         }
         items(items = groups, key = { it.channelId.value }) { group ->
             Card(
@@ -261,6 +271,7 @@ private fun Cards(
                 zone = zone,
                 onOpenVideo = onOpenVideo,
                 onOpenChannel = onOpenChannel,
+                modifier = Modifier.padding(bottom = DewfallSpacing.md),
             )
         }
         item(key = "end") {
