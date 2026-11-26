@@ -1,5 +1,5 @@
 <resources>
-    <!-- Text that several features share: a video row's length and how long ago it was published, and the Unsubscribe dialog. -->
+    <!-- Text that several features share: a video row's length and how long ago it was published, the Unsubscribe dialog, and a video's download status. -->
     <!-- The length tag on a video's thumbnail box. -->
     <string name="core_ui_length_hours">%1$dh %2$02dm</string>
     <string name="core_ui_length_minutes">%1$dm</string>
@@ -49,4 +49,20 @@
     <string name="core_ui_unsubscribe_body">Its new videos stop showing in your inbox.</string>
     <string name="core_ui_unsubscribe">Unsubscribe</string>
     <string name="core_ui_cancel">Cancel</string>
+    <!-- A video's download, in a row's meta line and on the video screen's chip. See openspec/specs/downloads/spec.md. -->
+    <string name="core_ui_download">Download</string>
+    <string name="core_ui_download_waiting">Waiting to download</string>
+    <string name="core_ui_downloading">Downloading</string>
+    <!-- %1$d is the percentage done, 0 to 100. -->
+    <string name="core_ui_downloading_percent">Downloading, %1$d%%</string>
+    <string name="core_ui_download_paused">Paused</string>
+    <!-- %1$d is the percentage done, 0 to 100. -->
+    <string name="core_ui_download_paused_percent">Paused, %1$d%%</string>
+    <string name="core_ui_download_failed">Download failed</string>
+    <string name="core_ui_download_no_space">Not enough space on this phone</string>
+    <string name="core_ui_downloaded">Downloaded</string>
+    <!-- What a screen reader says for a row's download buttons. -->
+    <string name="core_ui_download_pause">Pause download</string>
+    <string name="core_ui_download_go_on">Go on downloading</string>
+    <string name="core_ui_download_try_again">Try downloading again</string>
 </resources>
