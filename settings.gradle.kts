@@ -36,6 +36,8 @@ include(":core:database")
 
 include(":core:designsystem")
 
+include(":core:download")
+
 include(":core:logging")
 
 include(":core:model")

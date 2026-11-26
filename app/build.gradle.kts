@@ -42,6 +42,9 @@ android {
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:designsystem"))
+    // The download engine: DewfallApplication gives WorkManager its worker factory and starts the
+    // check after a stop by the user. See ADR 0010.
+    implementation(project(":core:download"))
     implementation(project(":core:logging"))
     // MainActivity tells the player whether the app can be seen, and the notification opens it.
     implementation(project(":core:playback"))
@@ -59,6 +62,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation(libs.kotlinx.serialization.core)
     implementation(libs.androidx.compose.material3)
+    // DewfallApplication provides WorkManager's Configuration, so WorkManager starts on demand.
+    implementation(libs.androidx.work.runtime)
     // The manifest names App Startup's InitializationProvider to remove emoji2's initializer.
     // Compose already brings App Startup in. Declaring it lets lint find the class.
     implementation(libs.androidx.startup.runtime)

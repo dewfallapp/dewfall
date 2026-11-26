@@ -33,3 +33,5 @@ Three questions shaped the rules.
 - The planned way to tell the user is a banner at the top of the inbox saying downloads are paused because the storage limit was reached, with buttons to manage downloads or raise the limit. The overnight download notification says the same thing. Videos that did not download stay in the inbox and stream when tapped. The exact wording and layout are decided in the Phase 7 OpenSpec change.
 - Search inside an old video still finds the moment. Tapping the result streams the video from there. Offline, the app shows the matching text with a few lines around it.
 - Cleanup runs in the overnight background job, so it shares the same conditions as downloads: Wi-Fi and charging.
+
+  Note, November 26, 2026: manual downloads don't share these conditions. A download the user taps runs right away on any connection, charging or not, as the maintainer chose for #54 and [ADR 0010](0010-download-engine.md) records. Cleanup still runs only in the overnight job.

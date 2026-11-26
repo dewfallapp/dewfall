@@ -12,6 +12,8 @@ import io.github.dewfallapp.core.data.database.ApplicationScope
 import io.github.dewfallapp.core.data.database.DatabaseModule
 import io.github.dewfallapp.core.database.ChannelDao
 import io.github.dewfallapp.core.database.DewfallDatabase
+import io.github.dewfallapp.core.database.DownloadDao
+import io.github.dewfallapp.core.database.DownloadQueueDao
 import io.github.dewfallapp.core.database.VideoDao
 import io.github.dewfallapp.core.database.WatchStateDao
 import javax.inject.Singleton
@@ -43,6 +45,13 @@ object TestDatabaseModule {
 
     @Provides
     fun provideWatchStateDao(database: DewfallDatabase): WatchStateDao = database.watchStateDao()
+
+    @Provides
+    fun provideDownloadDao(database: DewfallDatabase): DownloadDao = database.downloadDao()
+
+    @Provides
+    fun provideDownloadQueueDao(database: DewfallDatabase): DownloadQueueDao =
+        database.downloadQueueDao()
 
     @Provides fun provideClock(): Clock = Clock.System
 

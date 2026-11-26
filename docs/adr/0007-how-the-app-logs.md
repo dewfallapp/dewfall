@@ -125,4 +125,6 @@ The "Copy debug info" button in settings (#82) comes in Phase 9. It includes the
 
   Note, November 20, 2026: #42 turns Media3's logging off with `Log.setLogLevel(Log.LOG_LEVEL_OFF)`, in PlaybackService's `onCreate` and PlaybackConnection's constructor, before either makes another Media3 call. Media3's error lines append each throwable's message, which can name a host or carry a link. The player logs each failure itself, with its category as LogField.state and Media3's int error code as LogField.count, as the live check logs an HTTP status. This carries out the line above, so it needs no separate approval. See [The player](../architecture.md#the-player).
 
+  Note, November 26, 2026: #54 adds WorkManager. It writes log lines of its own, with work IDs and worker class names, that the app can't turn off, because its setup logs at DEBUG before `setMinimumLoggingLevel` applies. So the work the app gives it carries no user data, as [ADR 0010](0010-download-engine.md) records, and the hand checks of November 26, 2026 saw its DEBUG lines in Dewfall's process all through a download, on Android 10, 12L and 13, with work IDs and class names only. This carries out the line above, so it needs no separate approval.
+
 - Letting LogField take a new kind of value, or setting NewPipeExtractor's logger, needs a new ADR.

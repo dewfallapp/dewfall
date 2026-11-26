@@ -6,6 +6,12 @@ const val METERED_LIMIT = 480
 /** The largest shorter side of the picture on an unmetered network, such as Wi-Fi. */
 const val UNMETERED_LIMIT = 1080
 
+/**
+ * The largest shorter side of the picture that a download keeps, 720 pixels, as the maintainer
+ * chose on November 26, 2026 (openspec/changes/download-videos/proposal.md, answer 1).
+ */
+const val DOWNLOAD_LIMIT = 720
+
 /** How the phone decodes a format, which the player finds out from Android's decoders. */
 enum class Decoding {
     HARDWARE,
@@ -56,7 +62,44 @@ fun chooseFormats(
     if (links.videoFormats.isEmpty() && links.audioFormats.isEmpty() && manifest != null) {
         return FormatChoice.Live(manifest)
     }
-    val video = chooseVideo(links.videoFormats, pictureLimit(metered), videoDecoding)
+    return chooseFiles(links, pictureLimit(metered), metered, videoDecoding, audioDecodes)
+}
+
+/**
+ * The formats that a download keeps from [links]: the same rules as [chooseFormats] on an unmetered
+ * network, with [DOWNLOAD_LIMIT] in place of the network's limit, and without playback's fallback
+ * to a larger format, because the downloads spec allows at most 720 pixels. The result is
+ * [FormatChoice.Separate] or [FormatChoice.Combined], or [FormatChoice.NotDecodable] when the phone
+ * decodes no video format within the limit or no audio format, or when the links have only an HLS
+ * manifest, as a live stream's do, because a download keeps single files.
+ */
+fun chooseDownloadFormats(
+    links: StreamLinks,
+    videoDecoding: (VideoFormat) -> Decoding,
+    audioDecodes: (AudioFormat) -> Boolean,
+): FormatChoice =
+    chooseFiles(
+        links,
+        DOWNLOAD_LIMIT,
+        metered = false,
+        videoDecoding,
+        audioDecodes,
+        largerIfNone = false,
+    )
+
+/**
+ * A video format within [limit], or the smallest one when none is within it and [largerIfNone], and
+ * an audio format unless the video has the sound.
+ */
+private fun chooseFiles(
+    links: StreamLinks,
+    limit: Int,
+    metered: Boolean,
+    videoDecoding: (VideoFormat) -> Decoding,
+    audioDecodes: (AudioFormat) -> Boolean,
+    largerIfNone: Boolean = true,
+): FormatChoice {
+    val video = chooseVideo(links.videoFormats, limit, videoDecoding, largerIfNone)
     val needsAudio = video != null && !video.includesAudio
     val audio = if (needsAudio) chooseAudio(links.audioFormats, metered, audioDecodes) else null
     return when {
@@ -83,6 +126,7 @@ private fun chooseVideo(
     formats: List<VideoFormat>,
     limit: Int,
     decoding: (VideoFormat) -> Decoding,
+    largerIfNone: Boolean,
 ): VideoFormat? {
     val decodable = formats.mapNotNull { format ->
         val how = if (format.codec == null) Decoding.NONE else decoding(format)
@@ -93,6 +137,7 @@ private fun chooseVideo(
     }
     return when {
         decodable.isEmpty() -> null
+        within.isEmpty() && !largerIfNone -> null
         within.isEmpty() -> {
             decodable.minBy { (format, _) -> shorterSide(format) ?: Int.MAX_VALUE }.first
         }

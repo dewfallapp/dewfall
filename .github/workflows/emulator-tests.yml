@@ -9,7 +9,8 @@ on:
     branches: [main]
   # A pull request that changes the emulator tests, the database, the repositories in :core:data
   # that the channel page's test reaches the real database through, :core:model (the models its rows
-  # use, with the channel's initial that ChannelInitialTest checks), this workflow, the
+  # use, with the channel's initial that ChannelInitialTest checks), the download engine that
+  # DownloadTest runs, this workflow, the
   # dependencies, the Gradle wrapper or the build settings runs them before merging, so Renovate's
   # updates of Compose, Media3, Hilt, Room, AGP, androidx.test and Gradle do too.
   # Branch protection doesn't require this workflow, so its path filter can't leave a required
@@ -20,6 +21,7 @@ on:
       - "app/src/androidTest/**"
       - "core/database/**"
       - "core/data/**"
+      - "core/download/**"
       - "core/model/**"
       - ".github/workflows/emulator-tests.yml"
       - "gradle/libs.versions.toml"

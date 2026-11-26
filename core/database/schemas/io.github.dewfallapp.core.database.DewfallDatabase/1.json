@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "2db2cae8d48f958d8fc027b7579131a6",
+    "identityHash": "f597d7bad9a68ac3e8739425f56d736e",
     "entities": [
       {
         "tableName": "channels",
@@ -172,11 +172,163 @@
             "video_id"
           ]
         }
+      },
+      {
+        "tableName": "downloads",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`video_id` TEXT NOT NULL, `folder` TEXT NOT NULL, `title` TEXT NOT NULL, `channel_id` TEXT NOT NULL, `channel_name` TEXT NOT NULL, `duration_ms` INTEGER, `published_at` INTEGER, `published_approximate` INTEGER NOT NULL, `kind` TEXT NOT NULL, `thumbnails` TEXT NOT NULL, `state` TEXT NOT NULL, `failure` TEXT, `requested_at` INTEGER NOT NULL, `video_itag` INTEGER, `video_mime` TEXT, `video_bytes` INTEGER, `audio_itag` INTEGER, `audio_mime` TEXT, `audio_track` TEXT, `audio_bytes` INTEGER, `downloaded_bytes` INTEGER NOT NULL, `youtube_tries` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`video_id`))",
+        "fields": [
+          {
+            "fieldPath": "videoId",
+            "columnName": "video_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "folder",
+            "columnName": "folder",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "channelId",
+            "columnName": "channel_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "channelName",
+            "columnName": "channel_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationMs",
+            "columnName": "duration_ms",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "publishedAt",
+            "columnName": "published_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "publishedApproximate",
+            "columnName": "published_approximate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "thumbnails",
+            "columnName": "thumbnails",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "failure",
+            "columnName": "failure",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "requestedAt",
+            "columnName": "requested_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "videoItag",
+            "columnName": "video_itag",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "videoMime",
+            "columnName": "video_mime",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "videoBytes",
+            "columnName": "video_bytes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "audioItag",
+            "columnName": "audio_itag",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "audioMime",
+            "columnName": "audio_mime",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "audioTrack",
+            "columnName": "audio_track",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "audioBytes",
+            "columnName": "audio_bytes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "downloadedBytes",
+            "columnName": "downloaded_bytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "youtubeTries",
+            "columnName": "youtube_tries",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "video_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_downloads_state_requested_at",
+            "unique": false,
+            "columnNames": [
+              "state",
+              "requested_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_downloads_state_requested_at` ON `${TABLE_NAME}` (`state`, `requested_at`)"
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2db2cae8d48f958d8fc027b7579131a6')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f597d7bad9a68ac3e8739425f56d736e')"
     ]
   }
 }
