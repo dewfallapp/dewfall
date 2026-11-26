@@ -2,6 +2,7 @@ package io.github.dewfallapp.feature.inbox.ui
 
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.dewfallapp.core.data.download.DownloadsRepository
 import io.github.dewfallapp.core.data.subscriptions.SubscriptionsRepository
 import io.github.dewfallapp.core.data.subscriptions.UploadsChecker
 import io.github.dewfallapp.core.data.video.StoredVideosRepository
@@ -14,6 +15,7 @@ import io.github.dewfallapp.feature.inbox.logic.InboxIntent
 import io.github.dewfallapp.feature.inbox.logic.InboxReducer
 import io.github.dewfallapp.feature.inbox.logic.InboxState
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingCommand
@@ -49,6 +51,10 @@ private const val STOP_TIMEOUT_MS = 5_000L
  * read has ended by then. It never collects its own state, which would keep its collector count
  * above 0.
  *
+ * It reads every video's download status with the rest, as [InboxIntent.DownloadsChanged], and
+ * starts or pauses a download for a row's taps. A read of the statuses that throws leaves the rows
+ * without a control, and the inbox as it is. A write that throws leaves the row as it was.
+ *
  * It takes no dispatcher, because the repositories' Flows are main-safe. It has no Logger, as
  * PlayerViewModel has none, and logs nothing.
  */
@@ -59,14 +65,29 @@ constructor(
     private val subscriptions: SubscriptionsRepository,
     private val storedVideos: StoredVideosRepository,
     private val checker: UploadsChecker,
+    private val downloads: DownloadsRepository,
 ) : MviViewModel<InboxState, InboxIntent, Nothing>(InboxState(), InboxReducer) {
+
+    /**
+     * A download write that throws leaves the row as it was: its status shows what the phone holds.
+     */
+    private val writeFailed = CoroutineExceptionHandler { _, _ -> }
 
     init {
         readWhileShown()
     }
 
     override fun runSideEffects(intent: InboxIntent) {
-        if (intent == InboxIntent.CheckForNewVideos) checker.start()
+        when (intent) {
+            InboxIntent.CheckForNewVideos -> checker.start()
+            is InboxIntent.Download -> {
+                viewModelScope.launch(writeFailed) { downloads.download(intent.video) }
+            }
+            is InboxIntent.PauseDownload -> {
+                viewModelScope.launch(writeFailed) { downloads.pause(intent.videoId) }
+            }
+            else -> Unit
+        }
     }
 
     /**
@@ -90,7 +111,9 @@ constructor(
                     .distinctUntilChanged()
                     .filter { shown -> shown && state.value.content == InboxContent.Unreadable }
             merge(command, returnAfterFailure)
-                .flatMapLatest { read -> if (read) merge(inbox(), check()) else emptyFlow() }
+                .flatMapLatest { read ->
+                    if (read) merge(inbox(), check(), downloadStatuses()) else emptyFlow()
+                }
                 .collect(::dispatch)
         }
     }
@@ -112,6 +135,12 @@ constructor(
             }
             // The inbox is the first screen, so a read that throws must not crash the app.
             .catch { emit(InboxIntent.ReadFailed) }
+
+    /** Every video's download status. A read that throws leaves the rows without a control. */
+    private fun downloadStatuses(): Flow<InboxIntent> =
+        downloads.statuses().map<_, InboxIntent>(InboxIntent::DownloadsChanged).catch {
+            emit(InboxIntent.DownloadsUnreadable)
+        }
 
     /** The check's state, which is a StateFlow, so it never throws and starts with its value. */
     private fun check(): Flow<InboxIntent> = checker.state.map(InboxIntent::CheckChanged)

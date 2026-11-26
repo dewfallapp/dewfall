@@ -12,8 +12,9 @@ import io.github.dewfallapp.core.mvi.Reducer
  * channels and the videos come from two reads, which can disagree for a moment, such as a count of
  * 0 with the last videos while the user unsubscribes. The videos win: any video shows the cards,
  * and only an empty list looks at the count. The check for new videos is copied as it comes, and a
- * tap on "Check for new videos" changes nothing here: the ViewModel starts the check. The inbox has
- * no effects, so its effect type is Nothing.
+ * tap on "Check for new videos" changes nothing here: the ViewModel starts the check. The
+ * downloads' statuses are copied as they come too, and a row's download taps change nothing until
+ * they come. The inbox has no effects, so its effect type is Nothing.
  */
 object InboxReducer : Reducer<InboxState, InboxIntent, Nothing> {
     override fun reduce(state: InboxState, intent: InboxIntent): Next<InboxState, Nothing> =
@@ -24,6 +25,11 @@ object InboxReducer : Reducer<InboxState, InboxIntent, Nothing> {
                 // The ViewModel starts the check. The state follows from the check's own state.
                 InboxIntent.CheckForNewVideos -> state
                 is InboxIntent.CheckChanged -> state.copy(check = intent.check)
+                is InboxIntent.DownloadsChanged -> state.copy(downloads = intent.statuses)
+                InboxIntent.DownloadsUnreadable -> state.copy(downloads = null)
+                // The ViewModel writes the download, and the phone's answer changes the state.
+                is InboxIntent.Download,
+                is InboxIntent.PauseDownload -> state
             },
         )
 }

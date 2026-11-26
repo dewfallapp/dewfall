@@ -1,9 +1,11 @@
 package io.github.dewfallapp.feature.inbox.logic
 
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.DownloadStatus
 import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.UploadsCheck
 import io.github.dewfallapp.core.model.UploadsCheckFailure
+import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.mvi.MviIntent
 import io.github.dewfallapp.core.mvi.MviState
@@ -41,12 +43,22 @@ sealed interface InboxContent {
 /**
  * The inbox's state. [content] is null until the phone's first answer, for the moment before Room
  * answers, so the screen draws nothing yet. [check] is the app's check for new videos, as the
- * ViewModel last read it.
+ * ViewModel last read it. [downloads] is every video's download status, or null while the phone
+ * hasn't answered or can't read them, when the rows show no download control.
  */
 data class InboxState(
     val content: InboxContent? = null,
     val check: UploadsCheck = UploadsCheck(),
+    val downloads: Map<VideoId, DownloadStatus>? = null,
 ) : MviState {
+    /**
+     * The download status that the row of the video with [videoId] shows, or null for none while
+     * the statuses can't be read. A video with no download is NotDownloaded.
+     */
+    fun downloadOf(videoId: VideoId): DownloadStatus? = downloads?.let {
+        it[videoId] ?: DownloadStatus.NotDownloaded
+    }
+
     /**
      * Whether the top bar shows "Check for new videos": only while the user subscribes to a channel
      * and the inbox could be read.
@@ -67,8 +79,8 @@ data class InboxState(
 }
 
 /**
- * What happens to the inbox. [CheckForNewVideos] comes from the user, and the others are results of
- * the ViewModel's reads.
+ * What happens to the inbox. [CheckForNewVideos], [Download] and [PauseDownload] come from the
+ * user, and the others are results of the ViewModel's reads.
  */
 sealed interface InboxIntent : MviIntent {
     /** The user tapped "Check for new videos", or "Try again" on the banner. */
@@ -90,4 +102,22 @@ sealed interface InboxIntent : MviIntent {
 
     /** One of the two reads threw, such as on a damaged database. */
     data object ReadFailed : InboxIntent
+
+    /** The phone answered that the videos' downloads stand at [statuses]. */
+    data class DownloadsChanged(val statuses: Map<VideoId, DownloadStatus>) : InboxIntent
+
+    /** The read of the downloads threw. The rows show no download control. */
+    data object DownloadsUnreadable : InboxIntent
+
+    /**
+     * The user tapped a row's download button, to start, go on with or try again the download of
+     * [video]. The answer comes back as DownloadsChanged.
+     */
+    data class Download(val video: VideoSummary) : InboxIntent
+
+    /**
+     * The user tapped the progress ring of the video with [videoId], to pause its download. The
+     * answer comes back as DownloadsChanged.
+     */
+    data class PauseDownload(val videoId: VideoId) : InboxIntent
 }

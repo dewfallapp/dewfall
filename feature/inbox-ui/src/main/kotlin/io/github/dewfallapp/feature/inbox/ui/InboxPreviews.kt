@@ -3,6 +3,9 @@ package io.github.dewfallapp.feature.inbox.ui
 import androidx.compose.runtime.Composable
 import io.github.dewfallapp.core.designsystem.theme.DewfallTheme
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.DownloadFailure
+import io.github.dewfallapp.core.model.DownloadProgress
+import io.github.dewfallapp.core.model.DownloadStatus
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
@@ -122,6 +125,20 @@ internal val previewVideos =
         ),
     )
 
+/**
+ * One of every download status, by preview video: the first isn't downloaded, then waiting,
+ * downloading, paused, failed, failed for space, and downloaded.
+ */
+private val previewDownloads: Map<VideoId, DownloadStatus> =
+    mapOf(
+        VideoId("aaaaaaaaaa2") to DownloadStatus.Waiting(DownloadProgress(0, null)),
+        VideoId("aaaaaaaaaa3") to DownloadStatus.Downloading(DownloadProgress(42, 100)),
+        VideoId("aaaaaaaaaa4") to DownloadStatus.Paused(DownloadProgress(42, 100)),
+        VideoId("aaaaaaaaaa5") to DownloadStatus.Failed(DownloadFailure.YOUTUBE),
+        VideoId("aaaaaaaaaa6") to DownloadStatus.Failed(DownloadFailure.NO_SPACE),
+        VideoId("aaaaaaaaaa7") to DownloadStatus.Downloaded(bytes = 100),
+    )
+
 /** The state the reducer makes from [videos] and [subscribed] channels. */
 internal fun loaded(subscribed: Int, videos: List<VideoSummary>): InboxState =
     InboxReducer.reduce(InboxState(), InboxIntent.Loaded(subscribed, previewAvatars, videos)).state
@@ -140,6 +157,7 @@ internal fun InboxPreview(state: InboxState, dynamicColor: Boolean = false) {
                 onOpenSearch = {},
                 onImportFromTakeout = {},
                 onCheck = {},
+                downloads = RowDownloads(state::downloadOf, onDownload = {}, onPause = {}),
                 // A turning glyph would draw at its first frame anyway, so the images stay the
                 // same.
                 glyphTurns = false,
@@ -150,12 +168,15 @@ internal fun InboxPreview(state: InboxState, dynamicColor: Boolean = false) {
 
 @Composable
 internal fun VideosPreview() {
-    InboxPreview(loaded(PREVIEW_CHANNELS, previewVideos))
+    InboxPreview(loaded(PREVIEW_CHANNELS, previewVideos).copy(downloads = previewDownloads))
 }
 
 @Composable
 internal fun VideosDynamicPreview() {
-    InboxPreview(loaded(PREVIEW_CHANNELS, previewVideos), dynamicColor = true)
+    InboxPreview(
+        loaded(PREVIEW_CHANNELS, previewVideos).copy(downloads = previewDownloads),
+        dynamicColor = true,
+    )
 }
 
 @Composable
