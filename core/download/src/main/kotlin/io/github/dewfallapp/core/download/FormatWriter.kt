@@ -68,13 +68,19 @@ internal fun interface WriteProgress {
 internal class FormatWriter(
     private val dispatcher: CoroutineDispatcher,
     private val rangeBytes: Long = RANGE_BYTES,
+    /**
+     * Makes the file's bytes durable before the caller renames it complete. A file renamed without
+     * it can be empty after a sudden power loss while the row says DOWNLOADED, as a hand check on
+     * Android 12L showed after an emulator's hard stop. Tests record it.
+     */
+    private val sync: (FileOutputStream) -> Unit = { it.fd.sync() },
 ) {
     /**
      * Writes the format at [url] into [part] until it has [knownLength] bytes, or, when YouTube
      * gave no length, as many as an answer's Content-Range says, or until a 416 after the last
-     * byte, and returns the file's length. Throws [LinkRefused] for 403 or 410, [UnexpectedAnswer]
-     * for an answer that doesn't fit, any IOException that [calls] or the file throws, and
-     * CancellationException.
+     * byte, and returns the file's length once its bytes are synced to the disk. Throws
+     * [LinkRefused] for 403 or 410, [UnexpectedAnswer] for an answer that doesn't fit, any
+     * IOException that [calls] or the file throws, and CancellationException.
      */
     suspend fun write(
         url: String,
@@ -102,6 +108,7 @@ internal class FormatWriter(
                         throw UnexpectedAnswer(PARTIAL_CONTENT)
                     }
                 }
+                sync(out)
             }
             offset
         }

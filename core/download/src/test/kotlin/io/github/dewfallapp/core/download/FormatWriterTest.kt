@@ -245,6 +245,32 @@ class FormatWriterTest {
     }
 
     @Test
+    fun `a finished file is synced once, with every byte, before write returns`() = runTest {
+        val bytes = fileOf(250 * 1024)
+        val synced = mutableListOf<Long>()
+        val syncing = FormatWriter(Dispatchers.IO, rangeBytes = RANGE) { synced += part.length() }
+
+        syncing.write(LINK, part, bytes.size.toLong(), FakeMedia(bytes).calls) { _, _ -> }
+
+        assertEquals(listOf(bytes.size.toLong()), synced)
+    }
+
+    @Test
+    fun `a stopped write isn't synced, because the file isn't complete`() = runTest {
+        val bytes = fileOf(250 * 1024)
+        val synced = mutableListOf<Long>()
+        val syncing = FormatWriter(Dispatchers.IO, rangeBytes = RANGE) { synced += part.length() }
+
+        assertFailsWith<CancellationException> {
+            syncing.write(LINK, part, bytes.size.toLong(), FakeMedia(bytes).calls) { written, _ ->
+                if (written >= 150_000) throw CancellationException("Paused")
+            }
+        }
+
+        assertEquals(emptyList(), synced)
+    }
+
+    @Test
     fun `progress comes at most one buffer at a time`() = runTest {
         val bytes = fileOf(250 * 1024)
         val seen = mutableListOf<Long>()
