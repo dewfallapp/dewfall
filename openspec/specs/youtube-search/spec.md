@@ -233,7 +233,7 @@ Tapping a video row SHALL open that video's video screen, for a video, a live st
 - **THEN** one video screen opens, and one back gesture returns to the results
 
 ### Requirement: Results list the matching channels first
-A successful search SHALL list the channels that YouTube returned under a "Channels" heading, above the videos under a "Videos" heading, in YouTube's order, showing a channel that YouTube lists twice only once, at its first place. Each row SHALL show a round emblem with the first character of the channel's name, hidden from screen readers, the name, and the excerpt of its description that YouTube gave, if any. A heading SHALL show only above a list that has rows.
+A successful search SHALL list the channels that YouTube returned under a "Channels" heading, above the videos under a "Videos" heading, in YouTube's order, showing a channel that YouTube lists twice only once, at its first place. Each row SHALL show a round emblem with the first character of the channel's name, or the channel's picture, hidden from screen readers, the name, and the excerpt of its description that YouTube gave, if any. A heading SHALL show only above a list that has rows.
 
 #### Scenario: Channels and videos found
 - **WHEN** a search for "sourdough" returns the channels "Kettle and Crumb" and "The Starter Jar", and three videos
