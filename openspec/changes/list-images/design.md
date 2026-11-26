@@ -107,4 +107,4 @@ Coil loads a `java.io.File` without the network fetcher, so ImageHostRule wouldn
 
 ## Migration Plan
 
-No data migration. The tables already hold the image lists. Rolling back removes the images and the cache folder's use. Android clears an unused cache folder on its own.
+No data migration. The tables already hold the image lists. Rolling back removes the images and the cache folder's use, but not the folder. Its files stay in the app's private cache until Android deletes cache files when the phone needs space, which it doesn't promise for any folder ([App-specific storage](https://developer.android.com/training/data-storage/app-specific), checked on November 26, 2026), or until the user clears the app's cache in Android's settings. A rollback that must remove them deletes `cacheDir/images` when the app starts.
