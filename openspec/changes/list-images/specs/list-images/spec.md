@@ -67,5 +67,5 @@ The app SHALL load an image only from a link that the YouTube layer gave, only o
 The app SHALL keep loaded images in its own cache folder on the phone, up to a fixed size, dropping the least recently used first, so a list shown again doesn't load its images again. Nothing else SHALL read or send that cache.
 
 #### Scenario: Returning to a list
-- **WHEN** the user opens a channel page, goes back, and opens it again later without a connection
-- **THEN** the images that loaded the first time show again, if the cache still holds them
+- **WHEN** the user opens the inbox, closes the app, and opens the inbox again later without a connection
+- **THEN** the thumbnails and channel pictures that loaded the first time show again, if the cache still holds them

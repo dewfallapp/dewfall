@@ -113,7 +113,7 @@ It logs the same results, and exits with an error when a kind failed. The workfl
 | LINKS_EXPIRE_SOON | The stream links stop working within the hour. |
 | LINK_NOT_PLAYABLE | A link's first bytes didn't come back as a player needs them. `format`, `answer` and `status` say how. `status` is 0 when no answer came. |
 | LENGTH_MISMATCH | A link's answer gives another total length than the format's. |
-| IMAGE_HOST_UNKNOWN | The call worked and its content is as expected, but `links` of its thumbnail and avatar links aren't on YouTube's image hosts, so the app would show placeholders for them. Search, the uploads sets and video details check it. The fix is the new host in `:core:model`'s list of image hosts, with its test, as [ADR 0011](adr/0011-images-load-from-youtubes-image-hosts.md) says. |
+| IMAGE_HOST_UNKNOWN | The call worked and its content is as expected, but some of its thumbnail and avatar links aren't on YouTube's image hosts, so the app would show placeholders for them. `links` says how many. Search, the uploads sets and video details check it. The fix is the new host in `:core:model`'s list of image hosts, with its test, as [ADR 0011](adr/0011-images-load-from-youtubes-image-hosts.md) says. |
 | EVERY_CALL_SKIPPED | NOTHING_CHECKED only: every call was skipped. `blocked` and `network` count them. |
 | SIMULATED | The run was asked to report the kind as failed. See [Testing the issues](#testing-the-issues). |
 | NO_RESULTS | DID_NOT_FINISH only: the workflow got no results. The build failed, the check stopped, or the job ran out of time. It also happens when simulate_failure isn't the name of a kind, and when the results file has a line that isn't a result. |

@@ -71,7 +71,7 @@ The call sent other requests than its set lists. The log names each request, in 
 
 ### IMAGE_HOST_UNKNOWN
 
-The call worked and its content is as expected, but `links` of its thumbnail and avatar links aren't on YouTube's three image hosts. The app refuses those links, so its rows show placeholders for them. Run the check by hand to see whether it fails from a home network too. Then find the new host in the saved responses after [recording them again](#recording-the-saved-responses-again), or with the YouTube layer's debug screen, and add it to the list of image hosts in `:core:model`, with its test, as [ADR 0011](adr/0011-images-load-from-youtubes-image-hosts.md) says. Name it in [Network access](architecture.md#network-access) and PRIVACY.md in the same pull request.
+The call worked and its content is as expected, but some of its thumbnail and avatar links aren't on YouTube's three image hosts. `links` says how many. The app refuses those links, so its rows show placeholders for them. Run the check by hand to see whether it fails from a home network too. Then find the new host in the saved responses after [recording them again](#recording-the-saved-responses-again), or with the YouTube layer's debug screen, and add it to the list of image hosts in `:core:model`, with its test, as [ADR 0011](adr/0011-images-load-from-youtubes-image-hosts.md) says. Name it in [Network access](architecture.md#network-access) and PRIVACY.md in the same pull request.
 
 ### LINKS_EXPIRE_SOON, LINK_NOT_PLAYABLE and LENGTH_MISMATCH
 
