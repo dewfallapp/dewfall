@@ -48,10 +48,12 @@ import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.timeAgo
 import io.github.dewfallapp.core.ui.ChannelAvatar
 import io.github.dewfallapp.feature.player.logic.DetailsArea
+import io.github.dewfallapp.feature.player.logic.DownloadChip
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.SavedWatch
 import io.github.dewfallapp.feature.player.logic.VideoPage
+import io.github.dewfallapp.feature.player.logic.shownDownload
 import java.time.ZoneId
 import kotlin.time.Instant
 
@@ -112,6 +114,7 @@ internal fun PlayerScreen(
                         Details(
                             page = details.page,
                             saved = state.saved,
+                            download = state.shownDownload,
                             now = now,
                             zone = zone,
                             onOpenChannel = { onOpenChannel(details.page.channelId) },
@@ -146,15 +149,16 @@ private fun Loading(modifier: Modifier = Modifier) {
 }
 
 /**
- * The video's details, after the "Player" frames: the title, the publish line, the watched chip
- * once the database has answered with what it holds, [saved], the channel and the description,
- * which the user can select and copy. They scroll, so a long description or a large font never cuts
- * anything off.
+ * The video's details, after the "Player" frames: the title, the publish line, the download chip
+ * for [download], if it shows, and the watched chip once the database has answered with what it
+ * holds, [saved], the channel and the description, which the user can select and copy. They scroll,
+ * so a long description or a large font never cuts anything off.
  */
 @Composable
 private fun Details(
     page: VideoPage,
     saved: SavedWatch,
+    download: DownloadChip?,
     now: Instant,
     zone: ZoneId,
     onOpenChannel: () -> Unit,
@@ -184,12 +188,28 @@ private fun Details(
                 )
             }
         }
-        if (saved is SavedWatch.Known) {
-            // A row of chips, where Phase 6's "Downloaded" and Phase 7's "Keep" join it later.
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm)) {
-                val tap =
-                    if (saved.watched) PlayerIntent.MarkUnwatched else PlayerIntent.MarkWatched
-                WatchedChip(watched = saved.watched, onClick = { onIntent(tap) })
+        if (saved is SavedWatch.Known || download != null) {
+            // A row of chips, where Phase 7's "Keep" joins them later. Each shows once the
+            // database has answered, and on its own when the other can't be read.
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
+                verticalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
+                // The clickable chips keep a 48dp touch target around their 32dp shape, which
+                // the chips that aren't buttons don't, so the row centers them.
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (download != null) {
+                    DownloadChipView(
+                        chip = download,
+                        onDownload = { onIntent(PlayerIntent.Download) },
+                        onPause = { onIntent(PlayerIntent.PauseDownload) },
+                    )
+                }
+                if (saved is SavedWatch.Known) {
+                    val tap =
+                        if (saved.watched) PlayerIntent.MarkUnwatched else PlayerIntent.MarkWatched
+                    WatchedChip(watched = saved.watched, onClick = { onIntent(tap) })
+                }
             }
         }
         Channel(name = page.channelName, avatars = page.channelAvatars, onOpen = onOpenChannel)

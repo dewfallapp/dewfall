@@ -236,4 +236,40 @@ class PlayerReducerTest {
         assertEquals(Next(known), PlayerReducer.reduce(known, PlayerIntent.MarkWatched))
         assertEquals(Next(known), PlayerReducer.reduce(known, PlayerIntent.MarkUnwatched))
     }
+
+    @Test
+    fun `the database's answer sets the download chip, and a later one replaces it`() {
+        val shown = PlayerState(details = DetailsArea.Shown(PAGE))
+
+        val waiting = reduce(shown, PlayerIntent.DownloadChanged(DownloadChip.Waiting))
+        assertEquals(shown.copy(download = DownloadChip.Waiting), waiting)
+        assertEquals(
+            DownloadChip.Downloading(percent = 42),
+            reduce(waiting, PlayerIntent.DownloadChanged(DownloadChip.Downloading(42))).download,
+        )
+    }
+
+    @Test
+    fun `a download that can't be read hides the chip and leaves the rest`() {
+        val state =
+            PlayerState(
+                details = DetailsArea.Shown(PAGE),
+                saved = SavedWatch.Known(watched = true),
+                download = DownloadChip.Waiting,
+            )
+
+        assertEquals(state.copy(download = null), reduce(state, PlayerIntent.DownloadUnreadable))
+    }
+
+    @Test
+    fun `the download chip's taps change nothing until the database answers`() {
+        val state =
+            PlayerState(
+                details = DetailsArea.Shown(PAGE),
+                download = DownloadChip.Downloading(percent = 10),
+            )
+
+        assertEquals(state, reduce(state, PlayerIntent.Download))
+        assertEquals(state, reduce(state, PlayerIntent.PauseDownload))
+    }
 }
