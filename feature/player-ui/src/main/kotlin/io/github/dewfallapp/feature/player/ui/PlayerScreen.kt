@@ -40,12 +40,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.core.designsystem.component.Banner
-import io.github.dewfallapp.core.designsystem.component.ChannelEmblem
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.timeAgo
+import io.github.dewfallapp.core.ui.ChannelAvatar
 import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.PlayerState
@@ -191,7 +192,7 @@ private fun Details(
                 WatchedChip(watched = saved.watched, onClick = { onIntent(tap) })
             }
         }
-        Channel(name = page.channelName, initial = page.channelInitial, onOpen = onOpenChannel)
+        Channel(name = page.channelName, avatars = page.channelAvatars, onOpen = onOpenChannel)
         if (page.description.isNotEmpty()) {
             SelectionContainer {
                 Text(text = page.description, style = MaterialTheme.typography.bodyLarge)
@@ -260,14 +261,15 @@ private fun publishLine(page: VideoPage, now: Instant, zone: ZoneId): String? =
     }
 
 /**
- * The channel, in a rounded box: its emblem with the initial, its name, and a chevron that shows
- * that the box opens the channel's page through [onOpen], as in the "Player" frames. The emblem and
- * the chevron are hidden from screen readers, which read the name and hear that a tap opens it.
+ * The channel, in a rounded box: its picture from [avatars] over its emblem with the initial, its
+ * name, and a chevron that shows that the box opens the channel's page through [onOpen], as in the
+ * "Player" frames. The picture, the emblem and the chevron are hidden from screen readers, which
+ * read the name and hear that a tap opens it.
  */
 @Composable
 private fun Channel(
     name: String,
-    initial: String?,
+    avatars: List<Thumbnail>,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -283,7 +285,7 @@ private fun Channel(
         horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ChannelEmblem(initial = initial, size = EmblemSize)
+        ChannelAvatar(name = name, avatars = avatars, size = EmblemSize)
         Text(
             text = name,
             style = MaterialTheme.typography.titleSmall,

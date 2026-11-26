@@ -6,6 +6,7 @@ import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.SearchResults
 import io.github.dewfallapp.core.model.StreamLinks
 import io.github.dewfallapp.core.model.SubtitleLine
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
@@ -333,6 +334,48 @@ class LiveCheckTest {
                 .run()
 
         assertTrue(results.all { it.verdict == Verdict.PASSED })
+    }
+
+    @Test
+    fun `an image link on another host fails IMAGE_HOST_UNKNOWN with the count`() = runTest {
+        val elsewhere = Thumbnail("https://images.example.invalid/a.jpg", width = 120, height = 90)
+        val cases =
+            mapOf<Enum<*>, (Any?) -> Any>(
+                SavedSet.SEARCH_NASA to
+                    { value ->
+                        val results = value as SearchResults
+                        results.copy(
+                            videos =
+                                results.videos.mapIndexed { index, video ->
+                                    if (index < 2) {
+                                        video.copy(thumbnails = listOf(elsewhere))
+                                    } else {
+                                        video
+                                    }
+                                },
+                        )
+                    },
+                SavedSet.UPLOADS_JAWED to
+                    { value ->
+                        val uploads = value as ChannelUploads
+                        uploads.copy(channel = uploads.channel.copy(avatars = listOf(elsewhere)))
+                    },
+                SavedSet.VIDEO_BIG_BUCK_BUNNY to
+                    { value ->
+                        val details = value as VideoDetails
+                        details.copy(channelAvatars = details.channelAvatars + elsewhere)
+                    },
+            )
+        for ((kind, change) in cases) {
+            val results =
+                liveCheck(replacing(kind) { success(change(it.result.valueOrFail()), it.requests) })
+                    .run()
+            val expected = if (kind == SavedSet.SEARCH_NASA) 2 else 1
+            assertEquals(
+                "${kind.name} FAILED IMAGE_HOST_UNKNOWN links=$expected",
+                results.single { it.kind == kind }.line,
+            )
+        }
     }
 
     @Test

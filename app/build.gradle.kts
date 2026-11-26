@@ -62,6 +62,11 @@ dependencies {
     // The manifest names App Startup's InitializationProvider to remove emoji2's initializer.
     // Compose already brings App Startup in. Declaring it lets lint find the class.
     implementation(libs.androidx.startup.runtime)
+    // The app-wide image loader: Coil with an OkHttp client of its own that loads images only from
+    // YouTube's image hosts. See ADR 0011 and docs/architecture.md#network-access.
+    implementation(libs.coil)
+    implementation(libs.coil.network.okhttp)
+    implementation(libs.okhttp)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
 

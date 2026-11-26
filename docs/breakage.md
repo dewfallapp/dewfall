@@ -21,7 +21,7 @@ The daily workflow keeps one issue for each kind that fails, titled "Daily YouTu
 
 Start every time with step 1 of the playbook: run the check by hand, and see whether the same kind fails from a home network. Then find the reason below.
 
-The check reports the first problem it finds for each kind, in this order: how the call ended, its requests, its warnings, then its content. So fixing one reason can reveal the next, such as READ_IN_PART after REQUESTS_CHANGED.
+The check reports the first problem it finds for each kind, in this order: how the call ended, its requests, its warnings, its content, then the hosts of its image links. So fixing one reason can reveal the next, such as READ_IN_PART after REQUESTS_CHANGED.
 
 Never fix a failing kind by loosening its check. When the content of a target really changed, replace the target, as [WRONG_CONTENT](#wrong_content) says.
 
@@ -68,6 +68,10 @@ The call worked, but returned content that the check doesn't expect. `what` name
 ### REQUESTS_CHANGED
 
 The call sent other requests than its set lists. The log names each request, in order. After a NewPipeExtractor update, the new version usually asks differently: change SavedSet.kt, record the set again, and check the counts in [What each function sends](architecture.md#what-each-function-sends). On main, find out why first. NewPipeExtractor falls back to another request when one fails, such as YouTube's search page when sw.js_data fails ([Network access](architecture.md#network-access)), and recording that fallback into SavedSet would hide a breakage.
+
+### IMAGE_HOST_UNKNOWN
+
+The call worked and its content is as expected, but some of its thumbnail and avatar links aren't on YouTube's three image hosts. `links` says how many. The app refuses those links, so its rows show placeholders for them. Run the check by hand to see whether it fails from a home network too. Then find the new host in the saved responses after [recording them again](#recording-the-saved-responses-again), or with the YouTube layer's debug screen, and add it to the list of image hosts in `:core:model`, with its test, as [ADR 0011](adr/0011-images-load-from-youtubes-image-hosts.md) says. Name it in [Network access](architecture.md#network-access) and PRIVACY.md in the same pull request.
 
 ### LINKS_EXPIRE_SOON, LINK_NOT_PLAYABLE and LENGTH_MISMATCH
 

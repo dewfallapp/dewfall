@@ -1,6 +1,7 @@
 package io.github.dewfallapp.feature.inbox.logic
 
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.UploadsCheck
 import io.github.dewfallapp.core.model.UploadsCheckFailure
 import io.github.dewfallapp.core.model.VideoId
@@ -47,34 +48,34 @@ class InboxReducerTest {
 
     @Test
     fun `no subscriptions show no channels yet`() {
-        val state = reduce(InboxState(), InboxIntent.Loaded(0, emptyList()))
+        val state = reduce(InboxState(), InboxIntent.Loaded(0, emptyMap(), emptyList()))
 
         assertEquals(InboxContent.NoChannels, state.content)
     }
 
     @Test
     fun `one channel and nothing new is caught up with 1 channel`() {
-        val state = reduce(InboxState(), InboxIntent.Loaded(1, emptyList()))
+        val state = reduce(InboxState(), InboxIntent.Loaded(1, emptyMap(), emptyList()))
 
         assertEquals(InboxContent.CaughtUp(1), state.content)
     }
 
     @Test
     fun `four channels and nothing new is caught up with 4 channels`() {
-        val state = reduce(InboxState(), InboxIntent.Loaded(4, emptyList()))
+        val state = reduce(InboxState(), InboxIntent.Loaded(4, emptyMap(), emptyList()))
 
         assertEquals(InboxContent.CaughtUp(4), state.content)
     }
 
     @Test
     fun `videos group by channel in the order each channel first appears`() {
-        val state = reduce(InboxState(), InboxIntent.Loaded(2, listOf(a1, b1, a2)))
+        val state = reduce(InboxState(), InboxIntent.Loaded(2, emptyMap(), listOf(a1, b1, a2)))
 
         assertEquals(
             InboxContent.Videos(
                 listOf(
-                    InboxGroup(KETTLE, "Kettle and Crumb", listOf(a1, a2)),
-                    InboxGroup(ORBIT, "Orbit Hour", listOf(b1)),
+                    InboxGroup(KETTLE, "Kettle and Crumb", emptyList(), listOf(a1, a2)),
+                    InboxGroup(ORBIT, "Orbit Hour", emptyList(), listOf(b1)),
                 ),
             ),
             state.content,
@@ -82,9 +83,21 @@ class InboxReducerTest {
     }
 
     @Test
+    fun `a card has its channel's saved avatars, or none`() {
+        val avatars =
+            listOf(Thumbnail("https://images.example.invalid/kettle.jpg", width = 88, height = 88))
+        val state =
+            reduce(InboxState(), InboxIntent.Loaded(2, mapOf(KETTLE to avatars), listOf(a1, b1)))
+
+        val groups = (state.content as InboxContent.Videos).groups
+        assertEquals(avatars, groups.single { it.channelId == KETTLE }.channelAvatars)
+        assertEquals(emptyList(), groups.single { it.channelId == ORBIT }.channelAvatars)
+    }
+
+    @Test
     fun `a card takes its name from its newest video`() {
         val renamed = a2.copy(channelName = "Kettle & Crumb")
-        val state = reduce(InboxState(), InboxIntent.Loaded(1, listOf(a1, renamed)))
+        val state = reduce(InboxState(), InboxIntent.Loaded(1, emptyMap(), listOf(a1, renamed)))
 
         val group = (state.content as InboxContent.Videos).groups.single()
         assertEquals("Kettle and Crumb", group.channelName)
@@ -92,19 +105,19 @@ class InboxReducerTest {
 
     @Test
     fun `videos win over a count of 0 while the two reads disagree`() {
-        val state = reduce(InboxState(), InboxIntent.Loaded(0, listOf(b1)))
+        val state = reduce(InboxState(), InboxIntent.Loaded(0, emptyMap(), listOf(b1)))
 
         assertEquals(
-            InboxContent.Videos(listOf(InboxGroup(ORBIT, "Orbit Hour", listOf(b1)))),
+            InboxContent.Videos(listOf(InboxGroup(ORBIT, "Orbit Hour", emptyList(), listOf(b1)))),
             state.content,
         )
     }
 
     @Test
     fun `a new answer replaces the last one`() {
-        val shown = reduce(InboxState(), InboxIntent.Loaded(2, listOf(a1, b1)))
+        val shown = reduce(InboxState(), InboxIntent.Loaded(2, emptyMap(), listOf(a1, b1)))
 
-        val state = reduce(shown, InboxIntent.Loaded(2, emptyList()))
+        val state = reduce(shown, InboxIntent.Loaded(2, emptyMap(), emptyList()))
 
         assertEquals(InboxContent.CaughtUp(2), state.content)
     }
@@ -114,7 +127,7 @@ class InboxReducerTest {
         val failed = reduce(InboxState(InboxContent.CaughtUp(1)), InboxIntent.ReadFailed)
         assertEquals(InboxContent.Unreadable, failed.content)
 
-        val state = reduce(failed, InboxIntent.Loaded(1, emptyList()))
+        val state = reduce(failed, InboxIntent.Loaded(1, emptyMap(), emptyList()))
 
         assertEquals(InboxContent.CaughtUp(1), state.content)
     }
@@ -122,7 +135,7 @@ class InboxReducerTest {
     private val running = UploadsCheck(running = true)
     private val offline = UploadsCheck(failure = UploadsCheckFailure.CANT_REACH_YOUTUBE)
     private val videos =
-        InboxContent.Videos(listOf(InboxGroup(KETTLE, "Kettle and Crumb", listOf(a1))))
+        InboxContent.Videos(listOf(InboxGroup(KETTLE, "Kettle and Crumb", emptyList(), listOf(a1))))
 
     @Test
     fun `a check's state is copied in, and the content stays`() {
@@ -137,7 +150,7 @@ class InboxReducerTest {
     fun `a new answer keeps the check`() {
         val before = InboxState(content = InboxContent.CaughtUp(2), check = running)
 
-        val state = reduce(before, InboxIntent.Loaded(2, listOf(a1)))
+        val state = reduce(before, InboxIntent.Loaded(2, emptyMap(), listOf(a1)))
 
         assertEquals(running, state.check)
         assertEquals(videos, state.content)

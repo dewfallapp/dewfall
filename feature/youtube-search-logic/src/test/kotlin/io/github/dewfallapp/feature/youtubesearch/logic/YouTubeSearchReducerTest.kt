@@ -23,7 +23,15 @@ private fun video(id: String, kind: VideoKind = VideoKind.VIDEO) =
         channelName = "A channel",
         duration = 12.minutes,
         published = null,
-        thumbnails = emptyList(),
+        thumbnails =
+            listOf(
+                Thumbnail("https://images.example.invalid/$id-small.jpg", width = 168, height = 94),
+                Thumbnail(
+                    "https://images.example.invalid/$id-large.jpg",
+                    width = 336,
+                    height = 188,
+                ),
+            ),
         kind = kind,
     )
 
@@ -101,6 +109,8 @@ class YouTubeSearchReducerTest {
         assertEquals("Title of aaaaaaaaaaa", rows[0].title)
         assertEquals("A channel", rows[0].channelName)
         assertEquals(12.minutes, rows[0].duration)
+        // Every size, so the row picks the one that fits.
+        assertEquals(video("aaaaaaaaaaa").thumbnails, rows[0].thumbnails)
     }
 
     @Test

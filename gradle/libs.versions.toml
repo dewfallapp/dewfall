@@ -66,6 +66,10 @@ okhttp = "5.5.1"
 # NewPipeExtractor uses, 1.24.1 for v0.27.1. Renovate updates it like any other dependency, and
 # Gradle picks the higher version when this one and NewPipeExtractor's differ.
 jsoup = "1.24.1"
+# Coil loads thumbnails and channel avatars from YouTube's image hosts, through :app's ImageLoader,
+# which refuses every other link. Coil's artifacts share this version, so
+# Renovate moves them together. See ADR 0011 and docs/architecture.md#network-access.
+coil = "3.6.3"
 
 [libraries]
 desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", version.ref = "desugarJdkLibsNio" }
@@ -75,6 +79,11 @@ desugar-jdk-libs-nio = { module = "com.android.tools:desugar_jdk_libs_nio", vers
 newpipe-extractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", version.ref = "newpipeExtractor" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+
+# Images in lists. See ADR 0011.
+coil = { module = "io.coil-kt.coil3:coil", version.ref = "coil" }
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 
 # The Compose BOM sets the versions of the Compose libraries below it.
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }

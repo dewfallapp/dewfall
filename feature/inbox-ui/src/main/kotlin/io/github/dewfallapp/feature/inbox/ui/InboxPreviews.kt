@@ -7,6 +7,8 @@ import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
+import io.github.dewfallapp.core.ui.PreviewImages
+import io.github.dewfallapp.core.ui.previewImageLinks
 import io.github.dewfallapp.feature.inbox.logic.InboxContent
 import io.github.dewfallapp.feature.inbox.logic.InboxIntent
 import io.github.dewfallapp.feature.inbox.logic.InboxReducer
@@ -20,7 +22,8 @@ import kotlin.time.Instant
 // clock, so they don't change with the date. The @PreviewTest wrappers in src/screenshotTest carry
 // their @Preview annotations and render them as screenshot tests. They use Dewfall's own palette,
 // so the images don't depend on a wallpaper, except the dynamic color previews, whose wrappers
-// name a fixed one. See docs/testing.md#screenshot-tests.
+// name a fixed one. Image links are on a made-up host, and PreviewImages draws each as a plain
+// fill, so screenshots never load or show a real image. See docs/testing.md#screenshot-tests.
 
 private val previewNow = Instant.parse("2027-03-15T07:30:00Z")
 private val previewZone = ZoneId.of("UTC")
@@ -34,17 +37,30 @@ private const val CHANNEL_ID_TAIL = 22
 /** YouTube gives times from a day on as days ago, which Dewfall marks approximate. */
 private const val HOURS_IN_A_DAY = 24
 
+/** The made-up ID of preview channel [channel]. */
+private fun channelId(channel: Int) =
+    ChannelId("UC" + channel.toString().padStart(CHANNEL_ID_TAIL, '0'))
+
+/** The last preview video has no thumbnail, so its row keeps the placeholder in the screenshots. */
+private const val VIDEO_WITHOUT_IMAGE = "aaaaaaaaaa7"
+
 private fun video(id: String, channel: Int, name: String, title: String, length: Int, ago: Int) =
     VideoSummary(
         id = VideoId(id),
         title = title,
-        channelId = ChannelId("UC" + channel.toString().padStart(CHANNEL_ID_TAIL, '0')),
+        channelId = channelId(channel),
         channelName = name,
         duration = length.minutes,
         published = PublishedTime(previewNow - ago.hours, isApproximate = ago >= HOURS_IN_A_DAY),
-        thumbnails = emptyList(),
+        thumbnails = if (id == VIDEO_WITHOUT_IMAGE) emptyList() else previewImageLinks(id),
         kind = VideoKind.VIDEO,
     )
+
+/**
+ * The saved avatars of the first three preview channels. The fourth has none, so its card keeps the
+ * emblem with its initial in the screenshots.
+ */
+private val previewAvatars = (1..3).associate { channelId(it) to previewImageLinks("channel-$it") }
 
 internal val previewVideos =
     listOf(
@@ -108,24 +124,27 @@ internal val previewVideos =
 
 /** The state the reducer makes from [videos] and [subscribed] channels. */
 internal fun loaded(subscribed: Int, videos: List<VideoSummary>): InboxState =
-    InboxReducer.reduce(InboxState(), InboxIntent.Loaded(subscribed, videos)).state
+    InboxReducer.reduce(InboxState(), InboxIntent.Loaded(subscribed, previewAvatars, videos)).state
 
 /** The inbox showing [state], in Dewfall's palette or, with [dynamicColor], the wallpaper's. */
 @Composable
 internal fun InboxPreview(state: InboxState, dynamicColor: Boolean = false) {
     DewfallTheme(dynamicColor = dynamicColor) {
-        InboxScreen(
-            state = state,
-            now = previewNow,
-            zone = previewZone,
-            onOpenVideo = {},
-            onOpenChannel = {},
-            onOpenSearch = {},
-            onImportFromTakeout = {},
-            onCheck = {},
-            // A turning glyph would draw at its first frame anyway, so the images stay the same.
-            glyphTurns = false,
-        )
+        PreviewImages {
+            InboxScreen(
+                state = state,
+                now = previewNow,
+                zone = previewZone,
+                onOpenVideo = {},
+                onOpenChannel = {},
+                onOpenSearch = {},
+                onImportFromTakeout = {},
+                onCheck = {},
+                // A turning glyph would draw at its first frame anyway, so the images stay the
+                // same.
+                glyphTurns = false,
+            )
+        }
     }
 }
 

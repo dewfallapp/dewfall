@@ -96,7 +96,7 @@ The inbox SHALL show the change at once when a save of uploads, a subscription, 
 - **THEN** the inbox drops the watched video, or shows the new one, without the user doing anything
 
 ### Requirement: Videos are grouped by channel
-The inbox SHALL show one card for each channel that has videos in it. A card SHALL show the channel's emblem with its initial, its name, and "1 video" or the number of its videos, such as "3 videos", then its videos newest first, in the order the subscriptions spec's "Saved videos keep YouTube's order" gives. Each video row SHALL show what the channel page's rows show: a thumbnail box with the length, the title, and how long ago the video was published.
+The inbox SHALL show one card for each channel that has videos in it. A card SHALL show the channel's emblem with its initial or its picture, its name, and "1 video" or the number of its videos, such as "3 videos", then its videos newest first, in the order the subscriptions spec's "Saved videos keep YouTube's order" gives. Each video row SHALL show what the channel page's rows show: a thumbnail box or its image, with the length, the title, and how long ago the video was published.
 
 #### Scenario: A card
 - **WHEN** a channel has new videos published 2 hours and 3 days ago

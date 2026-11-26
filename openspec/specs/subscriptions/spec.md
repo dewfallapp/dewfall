@@ -165,10 +165,10 @@ When a channel page opens, it SHALL ask YouTube once for the channel and its lat
 - **THEN** the same channel and uploads show, and nothing is sent to YouTube again
 
 ### Requirement: The channel page shows the channel
-The page SHALL have a back arrow, named for screen readers, then a round emblem with the first user-perceived character of the channel's name, the name as a heading, and the channel's description. The emblem SHALL be hidden from screen readers, which read the name. The name SHALL wrap and never be cut off. A channel with no description SHALL show nothing in its place.
+The page SHALL have a back arrow, named for screen readers, then a round emblem with the first user-perceived character of the channel's name, which the channel's picture covers once it loads, as the list-images spec says, the name as a heading, and the channel's description. The emblem and the picture SHALL be hidden from screen readers, which read the name. The name SHALL wrap and never be cut off. A channel with no description SHALL show nothing in its place.
 
 #### Scenario: A channel
-- **WHEN** the channel is "Kettle and Crumb", with a two-line description
+- **WHEN** the channel is "Kettle and Crumb", with a two-line description, and its picture hasn't loaded
 - **THEN** the page shows an emblem with "K", the name, and both lines
 
 #### Scenario: No description
@@ -360,7 +360,7 @@ The channel page SHALL save the uploads it loaded, whole and as YouTube gave the
 - **THEN** none of its videos is saved
 
 ### Requirement: The Channels screen lists the subscribed channels
-The Channels screen SHALL list every subscribed channel in one card, ordered by name as the phone's language sorts it, ignoring case, with an accented letter next to its plain one, and channels with the same name in a fixed order. Above the card it SHALL say how many channels there are, such as "1 channel" or "4 channels". Each row SHALL show the channel's emblem, its name and a chevron.
+The Channels screen SHALL list every subscribed channel in one card, ordered by name as the phone's language sorts it, ignoring case, with an accented letter next to its plain one, and channels with the same name in a fixed order. Above the card it SHALL say how many channels there are, such as "1 channel" or "4 channels". Each row SHALL show the channel's emblem, or its picture once it loads, as the list-images spec says, its name and a chevron.
 
 #### Scenario: Four channels
 - **WHEN** the user subscribes to "orbit Hour", "Kettle and Crumb", "Tidewater Woodshop" and "Larkspur Lectures" and opens the Channels screen

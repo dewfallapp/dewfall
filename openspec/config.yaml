@@ -14,7 +14,9 @@ context: |
   one, stop and ask the maintainer.
   - No recommendation feed, accounts, ads, analytics or tracking.
   - Network calls go only to YouTube through the YouTube layer, plus optional
-    services the user turns on.
+    services the user turns on. The one exception, approved on November 22
+    and 26, 2026: thumbnails and channel pictures load from YouTube's image
+    hosts, from links that the YouTube layer gave. See ADR 0011.
   - User data stays on the device. Export and import go to a file the user picks.
     The one exception, approved on November 21, 2026: a playing or paused video's
     title and channel name are in Android's media session, for the notification.

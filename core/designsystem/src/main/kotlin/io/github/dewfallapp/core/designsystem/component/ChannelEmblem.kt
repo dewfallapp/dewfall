@@ -21,7 +21,9 @@ import androidx.compose.ui.unit.dp
  * A channel's emblem, after the design system's ChannelHeader: a circle on `tertiary-container`
  * with a 1dp `outline-variant` ring and the channel's [initial], or nothing when the name has none.
  * It is [size] wide at the default font size, and grows with the font size, so the initial always
- * fits. It is hidden from screen readers, which read the channel's name next to it.
+ * fits. It is hidden from screen readers, which read the channel's name next to it. `:core:ui`'s
+ * ChannelAvatar draws the channel's picture over it, so it is also the placeholder while the
+ * picture loads, when it can't, and when the channel has none.
  */
 @Composable
 fun ChannelEmblem(

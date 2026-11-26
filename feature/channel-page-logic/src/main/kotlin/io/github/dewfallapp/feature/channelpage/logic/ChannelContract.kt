@@ -4,6 +4,7 @@ import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelUploads
 import io.github.dewfallapp.core.model.PublishedTime
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.YouTubeError
@@ -14,7 +15,8 @@ import kotlin.time.Duration
 
 /**
  * One of the channel's latest uploads, as a row shows it, without the channel's name. It keeps the
- * ID, so a row can open the video. The title is user data, so never log it.
+ * ID, so a row can open the video, and every size of its thumbnail, so the row picks the one that
+ * fits. The title and the thumbnail links are user data, so never log them.
  */
 data class UploadRow(
     val id: VideoId,
@@ -24,6 +26,7 @@ data class UploadRow(
     val kind: VideoKind,
     /** When it was published, or is scheduled to start, or null if YouTube gave no time. */
     val published: PublishedTime?,
+    val thumbnails: List<Thumbnail>,
 )
 
 /** What the page shows in place of the uploads. */

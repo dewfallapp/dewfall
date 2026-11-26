@@ -56,6 +56,12 @@ internal enum class FailedBecause {
     /** The call succeeded with content that the check doesn't expect. */
     WRONG_CONTENT,
 
+    /**
+     * The call succeeded with the content the check expects, but some of its thumbnail or avatar
+     * links aren't on YouTube's image hosts, so the app would show placeholders for them.
+     */
+    IMAGE_HOST_UNKNOWN,
+
     /** The stream links expire sooner than a player needs them. */
     LINKS_EXPIRE_SOON,
 

@@ -1,6 +1,7 @@
 package io.github.dewfallapp.feature.inbox.logic
 
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.UploadsCheck
 import io.github.dewfallapp.core.model.UploadsCheckFailure
 import io.github.dewfallapp.core.model.VideoSummary
@@ -9,12 +10,14 @@ import io.github.dewfallapp.core.mvi.MviState
 
 /**
  * One card of the inbox: a channel and its videos in the inbox, newest first. The name is the one
- * its newest video was saved with, which every save refreshes. The IDs, name and titles are user
- * data, so never log them.
+ * its newest video was saved with, which every save refreshes. The avatars are the subscribed
+ * channel's saved ones, every size, or none before a save of its uploads brings them. The IDs,
+ * name, titles and image links are user data, so never log them.
  */
 data class InboxGroup(
     val channelId: ChannelId,
     val channelName: String,
+    val channelAvatars: List<Thumbnail>,
     val videos: List<VideoSummary>,
 )
 
@@ -75,10 +78,15 @@ sealed interface InboxIntent : MviIntent {
     data class CheckChanged(val check: UploadsCheck) : InboxIntent
 
     /**
-     * The phone answered: the user subscribes to [subscribedCount] channels, and [videos] are the
-     * inbox's videos, newest first across every channel.
+     * The phone answered: the user subscribes to [subscribedCount] channels, whose saved avatars
+     * are [avatars] by channel ID, and [videos] are the inbox's videos, newest first across every
+     * channel.
      */
-    data class Loaded(val subscribedCount: Int, val videos: List<VideoSummary>) : InboxIntent
+    data class Loaded(
+        val subscribedCount: Int,
+        val avatars: Map<ChannelId, List<Thumbnail>>,
+        val videos: List<VideoSummary>,
+    ) : InboxIntent
 
     /** One of the two reads threw, such as on a damaged database. */
     data object ReadFailed : InboxIntent

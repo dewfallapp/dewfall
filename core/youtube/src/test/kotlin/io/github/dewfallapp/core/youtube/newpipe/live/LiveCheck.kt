@@ -12,6 +12,7 @@ import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.YouTubeResult
+import io.github.dewfallapp.core.model.isYouTubeImageLink
 import io.github.dewfallapp.core.youtube.newpipe.languageTagOf
 import io.github.dewfallapp.core.youtube.newpipe.saved.AGE_RESTRICTED_CHANNEL_ID
 import io.github.dewfallapp.core.youtube.newpipe.saved.BIG_BUCK_BUNNY_DURATION
@@ -327,7 +328,18 @@ internal class LiveCheck(
             return streamLinksResult(value as StreamLinks)
         }
         val wrong = value?.let { wrongContentOf(kind, it) }
-        return if (wrong == null) KindResult.passed(kind) else wrongContent(kind, wrong)
+        val unknownHosts = imageLinksOf(value).count { !isYouTubeImageLink(it) }
+        return when {
+            wrong != null -> wrongContent(kind, wrong)
+            unknownHosts > 0 -> {
+                KindResult.failed(
+                    kind,
+                    FailedBecause.IMAGE_HOST_UNKNOWN,
+                    ResultField.count("links", unknownHosts),
+                )
+            }
+            else -> KindResult.passed(kind)
+        }
     }
 
     /**
@@ -513,6 +525,23 @@ private fun wrongContentOf(kind: Enum<*>, value: Any): WrongContent? =
         SavedSet.SUBTITLES_AUTO_DUBBED -> wrongAutoDubbedSubtitles(value as VideoSubtitles)
         else -> null
     }
+
+/**
+ * The image links that [value] holds: its videos' thumbnails and its channels' avatars, which the
+ * app loads only from YouTube's image hosts. None for a value without images.
+ */
+private fun imageLinksOf(value: Any?): List<String> {
+    val images =
+        when (value) {
+            is SearchResults -> {
+                value.channels.flatMap { it.avatars } + value.videos.flatMap { it.thumbnails }
+            }
+            is ChannelUploads -> value.channel.avatars + value.videos.flatMap { it.thumbnails }
+            is VideoDetails -> value.thumbnails + value.channelAvatars
+            else -> emptyList()
+        }
+    return images.map { it.url }
+}
 
 /** A search for NASA lists one of NASA's channels and at least one ordinary video. */
 private fun wrongSearch(results: SearchResults): WrongContent? =

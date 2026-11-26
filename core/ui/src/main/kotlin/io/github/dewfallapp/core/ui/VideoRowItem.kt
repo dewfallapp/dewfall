@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.dewfallapp.core.designsystem.theme.DewfallSpacing
 import io.github.dewfallapp.core.model.PublishedTime
+import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.lengthLabel
 import io.github.dewfallapp.core.model.timeAgo
@@ -46,11 +47,12 @@ private const val THUMBNAIL_ASPECT_RATIO = 16f / 9f
 private const val DURATION_SCRIM_ALPHA = 0.8f
 
 /**
- * One video, after the design system's VideoRow: a plain thumbnail box with the length of a video
- * of [duration] and [kind], then the [title], which wraps as far as it needs, and the
- * [channelName], if there is one, and how long ago it was [published], counted from [now] in
- * [zone]. A list of one channel's videos leaves the name out. The box stays plain until #176
- * decides how to load thumbnails. Its text reads as one node to a screen reader.
+ * One video, after the design system's VideoRow: a thumbnail box with the size of [thumbnails] that
+ * fits it, under the length of a video of [duration] and [kind], then the [title], which wraps as
+ * far as it needs, and the [channelName], if there is one, and how long ago it was [published],
+ * counted from [now] in [zone]. A list of one channel's videos leaves the name out. The box is the
+ * design's plain placeholder while the thumbnail loads, when it can't, and when [thumbnails] is
+ * empty. Its text reads as one node to a screen reader, and the image adds nothing to it.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -59,6 +61,7 @@ fun VideoRowItem(
     channelName: String?,
     duration: Duration?,
     kind: VideoKind,
+    thumbnails: List<Thumbnail>,
     published: PublishedTime?,
     now: Instant,
     zone: ZoneId,
@@ -71,7 +74,7 @@ fun VideoRowItem(
             ) {},
         horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.md),
     ) {
-        Thumbnail(duration, kind)
+        ThumbnailBox(duration, kind, thumbnails)
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm)) {
@@ -83,7 +86,12 @@ fun VideoRowItem(
 }
 
 @Composable
-private fun Thumbnail(duration: Duration?, kind: VideoKind, modifier: Modifier = Modifier) {
+private fun ThumbnailBox(
+    duration: Duration?,
+    kind: VideoKind,
+    thumbnails: List<Thumbnail>,
+    modifier: Modifier = Modifier,
+) {
     val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
     Box(
         modifier =
@@ -94,6 +102,11 @@ private fun Thumbnail(duration: Duration?, kind: VideoKind, modifier: Modifier =
                 .background(MaterialTheme.colorScheme.surfaceContainerHighest),
         contentAlignment = Alignment.BottomEnd,
     ) {
+        RemoteImage(
+            thumbnails = thumbnails,
+            width = ThumbnailWidth,
+            modifier = Modifier.matchParentSize(),
+        )
         val label = lengthLabel(duration, kind)
         if (label != null) {
             val spoken = spokenLength(label)
