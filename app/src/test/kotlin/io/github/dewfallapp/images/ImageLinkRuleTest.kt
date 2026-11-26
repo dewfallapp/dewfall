@@ -19,8 +19,8 @@ class ImageLinkRuleTest {
     }
 
     @Test
-    fun `a file passes`() {
-        assertTrue(isLoadableImageData(File("/data/data/io.github.dewfallapp/files/a.jpg")))
+    fun `a file fails`() {
+        assertFalse(isLoadableImageData(File("/data/data/io.github.dewfallapp/files/a.jpg")))
     }
 
     @Test
