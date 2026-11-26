@@ -7,11 +7,16 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.dewfallapp.core.data.download.DownloadsRepository
 import io.github.dewfallapp.core.data.video.VideoDetailsRepository
 import io.github.dewfallapp.core.data.watch.WatchStateRepository
 import io.github.dewfallapp.core.model.PlaybackFailure
+import io.github.dewfallapp.core.model.VideoDetails
 import io.github.dewfallapp.core.model.VideoId
+import io.github.dewfallapp.core.model.VideoKind
+import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.model.WatchState
+import io.github.dewfallapp.core.model.YouTubeResult
 import io.github.dewfallapp.core.mvi.MviViewModel
 import io.github.dewfallapp.core.playback.PictureHold
 import io.github.dewfallapp.core.playback.PlaybackConnection
@@ -21,6 +26,7 @@ import io.github.dewfallapp.feature.player.logic.PlayerReducer
 import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.StoredPosition
 import io.github.dewfallapp.feature.player.logic.WaitingPosition
+import io.github.dewfallapp.feature.player.logic.chipOf
 import io.github.dewfallapp.feature.player.logic.sharesFailure
 import io.github.dewfallapp.feature.player.logic.waitingPosition
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -72,6 +78,12 @@ internal fun playbackOfVideo(
  * that can't be read leaves the chip hidden, and WatchProgress in the playback service logs the
  * failure once the video is the player's item, through its own reads; a mark that can't be written
  * leaves the chip as it was, with no log line.
+ *
+ * It follows the video's download the same way, and starts or pauses it from the download chip. A
+ * download needs the video's summary, which it builds from the details it shows, so the chip's taps
+ * do nothing before the details arrive. A download state that can't be read leaves the download
+ * chip hidden, and one that can't be written leaves it as it was, with no log line, as the
+ * downloads repository's writes run in the app's scope.
  */
 @HiltViewModel(assistedFactory = PlayerViewModel.Factory::class)
 internal class PlayerViewModel
@@ -80,6 +92,7 @@ constructor(
     @Assisted private val args: PlayerArgs,
     private val repository: VideoDetailsRepository,
     private val watchStates: WatchStateRepository,
+    private val downloads: DownloadsRepository,
     /** The player, which the route reads and sends play, pause and seek to, never through state. */
     internal val playback: PlaybackConnection,
     private val savedState: SavedStateHandle,
@@ -101,8 +114,11 @@ constructor(
     /** Shows the picture while this screen exists, even while it turns to landscape. */
     private val picture: PictureHold = playback.holdPicture()
 
-    /** A mark that the database can't write leaves the chip as it was. */
-    private val markFailed = CoroutineExceptionHandler { _, _ ->
+    /** The details that the screen shows, which a download keeps as its summary, or null. */
+    private var shownDetails: VideoDetails? = null
+
+    /** A mark or a download that the database can't write leaves its chip as it was. */
+    private val writeFailed = CoroutineExceptionHandler { _, _ ->
         // Nothing to undo: the chip shows what the database holds, which didn't change.
     }
 
@@ -115,6 +131,14 @@ constructor(
                 .distinctUntilChanged()
                 .catch { dispatch(PlayerIntent.WatchStateUnreadable) }
                 .collect { dispatch(PlayerIntent.WatchStateChanged(it)) }
+        }
+        viewModelScope.launch {
+            downloads
+                .status(args.videoId)
+                .map(::chipOf)
+                .distinctUntilChanged()
+                .catch { dispatch(PlayerIntent.DownloadUnreadable) }
+                .collect { dispatch(PlayerIntent.DownloadChanged(it)) }
         }
     }
 
@@ -184,17 +208,34 @@ constructor(
         when (intent) {
             PlayerIntent.Load,
             PlayerIntent.TryAgain -> startNewRequest()
-            is PlayerIntent.DetailsFinished -> describePlayback()
+            is PlayerIntent.DetailsFinished -> {
+                // The reducer has already run, so the state holds this answer, and a late answer
+                // that it dropped keeps nothing.
+                val result = intent.result
+                if (result is YouTubeResult.Success && state.value.details is DetailsArea.Shown) {
+                    shownDetails = result.value
+                }
+                describePlayback()
+            }
             PlayerIntent.EnterFullscreen,
             PlayerIntent.ExitFullscreen -> savedState[FULLSCREEN_KEY] = state.value.fullscreen
             PlayerIntent.MarkWatched -> {
-                viewModelScope.launch(markFailed) { watchStates.markWatched(args.videoId) }
+                viewModelScope.launch(writeFailed) { watchStates.markWatched(args.videoId) }
             }
             PlayerIntent.MarkUnwatched -> {
-                viewModelScope.launch(markFailed) { watchStates.markUnwatched(args.videoId) }
+                viewModelScope.launch(writeFailed) { watchStates.markUnwatched(args.videoId) }
+            }
+            PlayerIntent.Download -> {
+                val summary = shownDetails?.let(::summaryOf) ?: return
+                viewModelScope.launch(writeFailed) { downloads.download(summary) }
+            }
+            PlayerIntent.PauseDownload -> {
+                viewModelScope.launch(writeFailed) { downloads.pause(args.videoId) }
             }
             is PlayerIntent.WatchStateChanged,
-            PlayerIntent.WatchStateUnreadable -> Unit
+            PlayerIntent.WatchStateUnreadable,
+            is PlayerIntent.DownloadChanged,
+            PlayerIntent.DownloadUnreadable -> Unit
         }
     }
 
@@ -280,3 +321,19 @@ constructor(
         fun create(args: PlayerArgs): PlayerViewModel
     }
 }
+
+/**
+ * The summary that a download of the video in [details] keeps. The video screen's details don't
+ * tell a Short from a video, so it is a video, or a live stream, which has no download chip.
+ */
+internal fun summaryOf(details: VideoDetails): VideoSummary =
+    VideoSummary(
+        id = details.id,
+        title = details.title,
+        channelId = details.channelId,
+        channelName = details.channelName,
+        duration = details.duration,
+        published = details.published,
+        thumbnails = details.thumbnails,
+        kind = if (details.isLive) VideoKind.LIVE else VideoKind.VIDEO,
+    )

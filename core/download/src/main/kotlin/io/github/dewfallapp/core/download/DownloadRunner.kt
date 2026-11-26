@@ -91,7 +91,10 @@ internal constructor(
             } catch (e: CancellationException) {
                 // Stopped while it waited for the run lock, which only a stopped run that puts
                 // its download back holds, because Android runs one job or work at a time: the
-                // pause waits for it, so it never pauses a row that a later run claimed.
+                // pause waits for it, so it never pauses a row that a later run claimed. Two
+                // limits: work that WorkManager kept across an update from Android 13 to 14 can
+                // run beside the job, and Phase 7's overnight job will call run() too. Either can
+                // make this wait last a whole run, so Phase 7 revisits it.
                 if (!marks.locked) {
                     withContext(NonCancellable) {
                         runState.runLock.withLock { pauseAfterUserStop(stoppedByUser, marks) }

@@ -53,6 +53,11 @@ private const val DURATION_SCRIM_ALPHA = 0.8f
  * counted from [now] in [zone]. A list of one channel's videos leaves the name out. The box is the
  * design's plain placeholder while the thumbnail loads, when it can't, and when [thumbnails] is
  * empty. Its text reads as one node to a screen reader, and the image adds nothing to it.
+ *
+ * The meta line ends with the video's download status, when a list gives one: [statusWords], such
+ * as DownloadStatusWords, which wrap with the rest of the meta line and read with the row's text,
+ * and [statusControl], such as DownloadStatusControl, right-aligned at the line's end, which is a
+ * focus target of its own.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -66,6 +71,8 @@ fun VideoRowItem(
     now: Instant,
     zone: ZoneId,
     modifier: Modifier = Modifier,
+    statusWords: (@Composable () -> Unit)? = null,
+    statusControl: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -77,9 +84,17 @@ fun VideoRowItem(
         ThumbnailBox(duration, kind, thumbnails)
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm)) {
-                if (channelName != null) MetaText(channelName)
-                timeAgo(published, now, zone)?.let { MetaText(timeAgoText(it)) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FlowRow(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(DewfallSpacing.sm),
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (channelName != null) MetaText(channelName)
+                    timeAgo(published, now, zone)?.let { MetaText(timeAgoText(it)) }
+                    statusWords?.invoke()
+                }
+                statusControl?.invoke()
             }
         }
     }

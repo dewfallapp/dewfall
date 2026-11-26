@@ -65,9 +65,9 @@ abstract class DownloadDao {
 
 /**
  * The `downloads` table as the download job runs it. Every function is main-safe. Every write but
- * the reset names the state it expects, `WHERE state = 'DOWNLOADING'`, so a late write never undoes
- * a pause or a stop, and returns the number of rows it changed. See
- * docs/architecture.md#downloads-and-cleanup.
+ * the reset names the state it expects: the claim `WHERE state = 'WAITING'`, and every later write
+ * `WHERE state = 'DOWNLOADING'`, so a late write never undoes a pause or a stop. Each returns the
+ * number of rows it changed. See docs/architecture.md#downloads-and-cleanup.
  */
 @Dao
 abstract class DownloadQueueDao {

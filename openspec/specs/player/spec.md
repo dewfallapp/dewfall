@@ -140,7 +140,7 @@ On a phone the screen SHALL stay in portrait, except in fullscreen. In any wider
 - **THEN** the details sit in one centered column no wider than the readable width, and nothing is cut off
 
 ### Requirement: Video details stay private
-The app SHALL never log the video's ID, title, channel name or description. It SHALL send them nowhere but YouTube, except the title and channel name, which it SHALL give only to Android's media session, for the media notification, while the video's playback lasts. The only copies kept outside the screen SHALL be the video's ID and its paused position, also user data, in the state Android saves for a process that it ends in the background; the video's watch state, and the details of videos saved with a channel's uploads, in the app's own database on the phone, which no backup or phone transfer copies; and, in memory while its playback lasts, the playing video's ID, title, channel name and stream links in the playback service, which it SHALL drop when that playback is replaced or stops, once that playback's last save of its position has run. The media session SHALL identify the video only by a random playback ID, and SHALL hold no video ID.
+The app SHALL never log the video's ID, title, channel name or description. It SHALL send them nowhere but YouTube, except the title and channel name, which it SHALL give only to Android's media session, for the media notification, while the video's playback lasts. The only copies kept outside the screen SHALL be the video's ID and its paused position, also user data, in the state Android saves for a process that it ends in the background; the video's watch state, the details of videos saved with a channel's uploads, and, for a video the user downloads, its summary (ID, title, channel ID and name, length, publish time, kind and thumbnail links) and its download's record (state, chosen formats, sizes and progress), in the app's own database on the phone, which no backup or phone transfer copies; the downloaded video's files, in the app's own storage, which no backup or phone transfer copies either; and, in memory while its playback lasts, the playing video's ID, title, channel name and stream links in the playback service, which it SHALL drop when that playback is replaced or stops, once that playback's last save of its position has run. The media session SHALL identify the video only by a random playback ID, and SHALL hold no video ID.
 
 #### Scenario: Logs after opening a video
 - **WHEN** the user opens a video, once with details showing and once with the network off
@@ -157,6 +157,10 @@ The app SHALL never log the video's ID, title, channel name or description. It S
 #### Scenario: A saved watch state
 - **WHEN** a video's position is saved or it is marked watched
 - **THEN** the app's database holds the video's ID, position and times, beside the copies this requirement already allows, and the app's log lines hold none of them
+
+#### Scenario: A downloaded video
+- **WHEN** the user downloads a video
+- **THEN** the app's database holds its summary and its download's record, its files sit in the app's own storage, and the app's log lines hold none of them
 
 ### Requirement: The video plays on the video screen
 The video screen SHALL show the video in a 16:9 area above the title, with a play and pause button, a seek bar, and the position and the length. Dragging the seek bar SHALL move playback to that point. While the player waits for data, the area SHALL show that it is loading.
@@ -874,3 +878,35 @@ Once the details show and the video's watch state has been read, the video scree
 #### Scenario: The watch state can't be read
 - **WHEN** the video screen shows a video's details and the app can't read the video's watch state
 - **THEN** no chip shows, and the rest of the screen works as before
+
+### Requirement: The video screen downloads the video
+Once the details show, unless the video is live or waiting to start, the video screen SHALL show a download chip in the chip row under the publish line, before the watched chip, following the video's download as the downloads spec describes:
+
+- Not downloaded: "Download", with the `download` glyph. A tap starts the download.
+- Waiting: "Waiting to download", with the `schedule` glyph. The chip isn't clickable, and a screen reader announces no action, as the inbox's waiting row has no control, after the design system's Queued state.
+- Downloading: "Downloading, 42%", with a small progress ring, or "Downloading" while the size is unknown. A tap pauses it.
+- Paused: "Paused, 42%", with the `download` glyph. A tap goes on.
+- Failed: "Download failed", or "Not enough space on this phone", with the `error` glyph in the error color. A tap tries again.
+- Downloaded: "Downloaded", selected, with a check. The chip isn't clickable, and a screen reader announces no action, because removing a download comes with the Downloads screen (#55).
+
+A screen reader SHALL read the chip's words, and the glyph or ring SHALL add nothing. The chip SHALL show in the row even while the watch state can't be read. When the video's download state can't be read, no download chip SHALL show, and the rest of the screen SHALL work.
+
+#### Scenario: Downloading from the video screen
+- **WHEN** the user taps "Download" on a video's screen
+- **THEN** the chip says "Waiting to download" or "Downloading, 0%", then counts up, and says "Downloaded", selected, with a check, when the download is done, even if the user left the screen and came back
+
+#### Scenario: A live stream
+- **WHEN** the video screen shows a live stream
+- **THEN** no download chip shows
+
+#### Scenario: Pausing from the video screen
+- **WHEN** the user taps "Downloading, 42%"
+- **THEN** the chip says "Paused, 42%", and a second tap goes on
+
+#### Scenario: Fullscreen and the mini player
+- **WHEN** the video shows in fullscreen or in the mini player
+- **THEN** no download chip shows
+
+#### Scenario: Large font
+- **WHEN** the font size is at its largest
+- **THEN** the chip's words show in full, wrapping if they need to, and the chips wrap onto a new line

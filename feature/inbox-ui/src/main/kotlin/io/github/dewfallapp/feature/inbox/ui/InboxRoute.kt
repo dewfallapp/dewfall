@@ -74,6 +74,12 @@ internal fun InboxRoute(
         onOpenSearch = onOpenSearch,
         onImportFromTakeout = onImportFromTakeout,
         onCheck = { viewModel.dispatch(InboxIntent.CheckForNewVideos) },
+        downloads =
+            RowDownloads(
+                statusOf = state::downloadOf,
+                onDownload = { viewModel.dispatch(InboxIntent.Download(it)) },
+                onPause = { viewModel.dispatch(InboxIntent.PauseDownload(it)) },
+            ),
         glyphTurns = glyphTurns,
         modifier = modifier,
     )

@@ -34,6 +34,20 @@
             tools:targetApi="34" />
 
         <!--
+            Starts the queue after a boot on Android 10 to 13, where WorkManager's own reschedule
+            can be lost after a quick reboot. Android delivers its boot broadcast to a receiver
+            that isn't exported. See BootReceiver.
+        -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="@bool/download_boot_receiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
             WorkManager's own foreground service, which runs the worker on Android 10 to 13, with
             the type that downloads need, as WorkManager's guide to long-running workers says.
         -->

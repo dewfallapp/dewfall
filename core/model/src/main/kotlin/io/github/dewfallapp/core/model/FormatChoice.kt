@@ -8,7 +8,8 @@ const val UNMETERED_LIMIT = 1080
 
 /**
  * The largest shorter side of the picture that a download keeps, 720 pixels, as the maintainer
- * chose on November 26, 2026 (openspec/changes/download-videos/proposal.md, answer 1).
+ * chose on November 26, 2026 (openspec/changes/archive/2026-11-26-download-videos/proposal.md,
+ * answer 1).
  */
 const val DOWNLOAD_LIMIT = 720
 

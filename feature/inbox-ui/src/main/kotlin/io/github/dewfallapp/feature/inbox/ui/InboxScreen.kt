@@ -50,6 +50,8 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.UploadsCheckFailure
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.ui.ChannelAvatar
+import io.github.dewfallapp.core.ui.DownloadStatusControl
+import io.github.dewfallapp.core.ui.DownloadStatusWords
 import io.github.dewfallapp.core.ui.VideoRowItem
 import io.github.dewfallapp.feature.inbox.logic.InboxContent
 import io.github.dewfallapp.feature.inbox.logic.InboxGroup
@@ -66,10 +68,10 @@ private val MessageBadgeSize = 64.dp
 /**
  * The inbox: its top bar, then the cards of new videos, or an empty state. It is stateless: it
  * shows [state], with time ago counted from [now] in [zone], and reports taps through
- * [onOpenVideo], [onOpenChannel], [onOpenSearch], [onImportFromTakeout], and [onCheck] for "Check
- * for new videos" and the banner's "Try again". The check button's glyph turns while a check runs
- * only when [glyphTurns], which is false when the phone's animations are off. Before the phone's
- * first answer it shows only the top bar.
+ * [onOpenVideo], [onOpenChannel], [onOpenSearch], [onImportFromTakeout], [onCheck] for "Check for
+ * new videos" and the banner's "Try again", and [downloads] for a row's download control. The check
+ * button's glyph turns while a check runs only when [glyphTurns], which is false when the phone's
+ * animations are off. Before the phone's first answer it shows only the top bar.
  *
  * Its background fills the window behind the system bars. Its content sits in one centered column
  * at most ReadableWidth wide, inside the safe drawing area, so nothing is under the system bars,
@@ -85,6 +87,7 @@ internal fun InboxScreen(
     onOpenSearch: () -> Unit,
     onImportFromTakeout: () -> Unit,
     onCheck: () -> Unit,
+    downloads: RowDownloads,
     glyphTurns: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -109,6 +112,7 @@ internal fun InboxScreen(
                     onOpenSearch = onOpenSearch,
                     onImportFromTakeout = onImportFromTakeout,
                     onCheck = onCheck,
+                    downloads = downloads,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -130,6 +134,7 @@ private fun Content(
     onOpenSearch: () -> Unit,
     onImportFromTakeout: () -> Unit,
     onCheck: () -> Unit,
+    downloads: RowDownloads,
     modifier: Modifier = Modifier,
 ) {
     when (val content = state.content) {
@@ -143,6 +148,7 @@ private fun Content(
                 onOpenVideo = onOpenVideo,
                 onOpenChannel = onOpenChannel,
                 onTryAgain = onCheck,
+                downloads = downloads,
                 modifier = modifier,
             )
         }
@@ -245,6 +251,7 @@ private fun Cards(
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
     onTryAgain: () -> Unit,
+    downloads: RowDownloads,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -270,6 +277,7 @@ private fun Cards(
                 zone = zone,
                 onOpenVideo = onOpenVideo,
                 onOpenChannel = onOpenChannel,
+                downloads = downloads,
                 modifier = Modifier.padding(bottom = DewfallSpacing.md),
             )
         }
@@ -285,7 +293,10 @@ private fun Cards(
     }
 }
 
-/** One channel's card: its channel row, which opens the channel, then its videos. */
+/**
+ * One channel's card: its channel row, which opens the channel, then its videos, each with its
+ * download status from [downloads], or none while the statuses can't be read.
+ */
 @Composable
 private fun Card(
     group: InboxGroup,
@@ -293,6 +304,7 @@ private fun Card(
     zone: ZoneId,
     onOpenVideo: (VideoId) -> Unit,
     onOpenChannel: (ChannelId) -> Unit,
+    downloads: RowDownloads,
     modifier: Modifier = Modifier,
 ) {
     val openVideo = stringResource(R.string.inbox_open_video)
@@ -306,6 +318,7 @@ private fun Card(
     ) {
         ChannelRow(group = group, onOpenChannel = onOpenChannel)
         for (video in group.videos) {
+            val status = downloads.statusOf(video.id)
             VideoRowItem(
                 title = video.title,
                 channelName = null,
@@ -318,6 +331,17 @@ private fun Card(
                 modifier =
                     Modifier.clip(MaterialTheme.shapes.medium).clickable(onClickLabel = openVideo) {
                         onOpenVideo(video.id)
+                    },
+                statusWords = status?.let { { DownloadStatusWords(it) } },
+                statusControl =
+                    status?.let {
+                        {
+                            DownloadStatusControl(
+                                status = it,
+                                onDownload = { downloads.onDownload(video) },
+                                onPause = { downloads.onPause(video.id) },
+                            )
+                        }
                     },
             )
         }

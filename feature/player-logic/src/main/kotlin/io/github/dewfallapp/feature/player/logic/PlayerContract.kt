@@ -65,12 +65,15 @@ sealed interface SavedWatch {
 /**
  * The video screen's state. Playback state never goes here. See ADR 0002. [fullscreen] says whether
  * the screen shows the fullscreen player. The ViewModel keeps it in its saved state too. [saved] is
- * whether the database marks the video watched, which isn't playback state.
+ * whether the database marks the video watched, which isn't playback state. [download] is the
+ * video's download as its chip shows it, or null while the database hasn't answered or can't be
+ * read; [shownDownload] says whether the chip shows.
  */
 data class PlayerState(
     val details: DetailsArea = DetailsArea.Loading(number = 0),
     val fullscreen: Boolean = false,
     val saved: SavedWatch = SavedWatch.Unknown,
+    val download: DownloadChip? = null,
 ) : MviState
 
 /** What happens on the video screen. */
@@ -104,4 +107,19 @@ sealed interface PlayerIntent : MviIntent {
      * The user tapped "Watched" to take the mark away. The answer comes back as WatchStateChanged.
      */
     data object MarkUnwatched : PlayerIntent
+
+    /** The database answered that the video's download stands at [chip]. */
+    data class DownloadChanged(val chip: DownloadChip) : PlayerIntent
+
+    /** The database couldn't read the video's download. */
+    data object DownloadUnreadable : PlayerIntent
+
+    /**
+     * The user tapped "Download", "Paused" or a failure to start or go on with the download. The
+     * answer comes back as DownloadChanged.
+     */
+    data object Download : PlayerIntent
+
+    /** The user tapped "Downloading" to pause it. The answer comes back as DownloadChanged. */
+    data object PauseDownload : PlayerIntent
 }
