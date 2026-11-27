@@ -111,9 +111,9 @@ sealed interface DownloadsEffect : MviEffect {
 ```
 
 - The reducer splits the list: every Downloaded one goes to `onPhone`, sorted by `finishedAt` descending, ties by queue order; every other one stays in `downloading`, in the repository's order. An empty list is NoDownloads. Pause, Resume and Remove change no state: the screen shows what the phone holds, which the next read brings. Removed gives ShowRemoved.
-- DownloadsViewModel extends MviViewModel. It reads `downloads()` only while the screen collects the state, with `stateSubscriptionCount`, as ChannelsViewModel does, so the screen reads again when it shows again after a failed read. A read that throws gives ReadFailed. Pause, Resume and Remove run in viewModelScope; a write that throws is caught, logged as its class name, and leaves the row as it was. Remove dispatches Removed only after a finished download's `remove` returns.
+- DownloadsViewModel extends MviViewModel. It reads `downloads()` only while the screen collects the state, with `stateSubscriptionCount`, as ChannelsViewModel does, so the screen reads again when it shows again after a failed read. A read that throws gives ReadFailed. Pause, Resume and Remove run in viewModelScope; a write that throws is caught and leaves the row as it was. Like InboxViewModel, it has no Logger, so it logs nothing. Remove dispatches Removed only after a finished download's `remove` returns.
 - Rows are keyed by video ID in the LazyColumn, so a row that moves from "Downloading" to "On this phone" keeps no stale state.
-- The screen shows "Download removed" in a SnackbarHost above the mini player and the navigation bar, and reports the effect handled when the snackbar ends, as other screens handle their effects.
+- The screen shows "Download removed" in a SnackbarHost above the mini player and the navigation bar, and reports the effect handled when the snackbar ends. No screen had an effect before, so `HandleEffects`, the sketch in docs/architecture.md#effects, is added in `:feature:downloads-ui`, and moves to a shared module when a second screen needs it.
 
 ### 4. The rows
 
@@ -121,6 +121,7 @@ sealed interface DownloadsEffect : MviEffect {
 - **The progress bar.** A 4dp LinearProgressIndicator in `primary` on `surfaceContainerHighest`, with round caps and no gap or stop dot, as the design draws it, shown once the total is known. It is hidden from screen readers, because the status line says the percentage.
 - **The status line.** Running: "42%, 344 of 820 MB", or "Downloading" while the total is unknown. Waiting: "Waiting to download". Paused: "Paused, 42%", or "Paused". Failed: the error glyph in `error` and "Download failed" or "Not enough space on this phone". The existing strings of `:core:ui` are reused, so the screen and the inbox use the same words.
 - **Finished.** VideoRowItem with the channel name and the size in the meta line, and a "Remove download" text button under it, at the end, outside the merged node.
+- **The rows show no publish time**, as the design's rows show none, so they pass VideoRowItem no publish time and a fixed clock it never reads.
 - **Sizes.** A pure function in `:core:ui`, `fileSize(bytes)`, picks the unit, kB, MB or GB, with 1,000 bytes to a kilobyte, as Android's own storage formatting has since Android 8.0 ([Formatter](https://developer.android.com/reference/android/text/format/Formatter#formatFileSize(android.content.Context,%20long))), and one decimal under 10 of the unit. "344 of 820 MB" puts both numbers in the total's unit. The numbers use the phone's locale, through `NumberFormat`. Unit tests cover the edges: 999 kB, 1 MB, 9.95 MB, 10 MB, 1 GB. #57 needs the same formatting, so it lives in `:core:ui`, where both screens can reach it; if #57 lands first with its own, this change uses that one instead.
 
 ### 5. The screen

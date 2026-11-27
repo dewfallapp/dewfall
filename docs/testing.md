@@ -925,6 +925,7 @@ The Downloads screen's reducer, ViewModel and screenshot tests cover its rules a
 - **Cancel while it runs.** Tap "Cancel" on a running download: its row goes within a few seconds, the next waiting download starts, its folder is gone, and the inbox row shows the download button again.
 - **Remove download.** On a finished download, "Remove download": "Download removed" shows, the row goes and so does its folder.
 - **Try again.** With the network off long enough, or a full phone, a failed download shows the error glyph, its words, "Try again" and "Cancel"; "Try again" goes on from its bytes.
+- **The playing video.** Play a downloaded video, minimize it, and tap its row on the Downloads screen: the video screen shows it playing on from where it was.
 - **Layout.** Check light, dark, dynamic color, the largest font size, a tablet-sized window and the mini player over the list's end: nothing is cut off, and the last button sits above the mini player and the bar.
 - **The log.** `adb logcat` holds no video ID, title or file name, and the sweep's line only counts.
 
