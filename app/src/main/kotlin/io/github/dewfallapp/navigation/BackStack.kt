@@ -56,11 +56,11 @@ internal fun MutableList<NavKey>.openTakeoutImport(from: NavKey) {
  * button, the back arrows of the channel page, Search YouTube and the Takeout import, and the
  * import's Done button do. A video's playback goes on in the mini player. A second tap on the
  * button, or one during the back gesture, finds it gone and does nothing, so the first screen, the
- * inbox or the Channels screen, always stays. An empty back stack would crash, because NavDisplay
- * requires at least one entry.
+ * inbox, the Channels screen or the Downloads screen, always stays. An empty back stack would
+ * crash, because NavDisplay requires at least one entry.
  */
 internal fun MutableList<NavKey>.close(key: NavKey) {
-    if (key != InboxKey && key != ChannelsKey) remove(key)
+    if (key != InboxKey && key != ChannelsKey && key != DownloadsKey) remove(key)
 }
 
 /** Goes back one screen for the system's back gesture, but never past the first one. */
@@ -75,14 +75,15 @@ internal fun MutableList<NavKey>.goBack() {
 internal fun List<NavKey>.showsMiniPlayer(): Boolean = lastOrNull() !is PlayerKey
 
 /**
- * Whether the navigation bar shows under the back stack: while the inbox, the Channels screen or a
- * channel page is on top, and not on Search YouTube or the video screen, as the design's frames
- * have it.
+ * Whether the navigation bar shows under the back stack: while the inbox, the Channels screen, the
+ * Downloads screen or a channel page is on top, and not on Search YouTube or the video screen, as
+ * the design's frames have it.
  */
 internal fun List<NavKey>.showsNavigationBar(): Boolean =
     when (lastOrNull()) {
         InboxKey,
         ChannelsKey,
+        DownloadsKey,
         is ChannelKey -> true
         else -> false
     }

@@ -17,16 +17,20 @@ private val VIDEO = VideoId("aqz-KE-bpKQ")
 private val CHANNEL = ChannelId("UC" + "0".repeat(21) + "1")
 private val OTHER_CHANNEL = ChannelId("UC" + "0".repeat(21) + "2")
 
-/** The rules of the navigation bar's two back stacks, in the inbox spec's navigation bar part. */
+/** The rules of the navigation bar's back stacks, in the inbox spec's navigation bar part. */
 class AppNavigationTest {
     private val inbox = mutableListOf<NavKey>(InboxKey)
     private val channels = mutableListOf<NavKey>(ChannelsKey)
-    private val navigation = AppNavigation(inbox, channels, mutableStateOf(Destination.INBOX))
+    private val downloads = mutableListOf<NavKey>(DownloadsKey)
+    private val navigation =
+        AppNavigation(inbox, channels, downloads, mutableStateOf(Destination.INBOX))
+
+    private fun shown() = navigation.shown(inbox, channels, downloads)
 
     @Test
     fun `the app starts on the inbox, with only the inbox shown`() {
         assertEquals(Destination.INBOX, navigation.selected)
-        assertEquals(listOf<NavKey>(InboxKey), navigation.shown(inbox, channels))
+        assertEquals(listOf<NavKey>(InboxKey), shown())
         assertTrue(navigation.showsNavigationBar())
     }
 
@@ -35,7 +39,7 @@ class AppNavigationTest {
         navigation.select(Destination.CHANNELS)
 
         assertEquals(Destination.CHANNELS, navigation.selected)
-        assertEquals(listOf<NavKey>(InboxKey, ChannelsKey), navigation.shown(inbox, channels))
+        assertEquals(listOf<NavKey>(InboxKey, ChannelsKey), shown())
     }
 
     @Test
@@ -68,10 +72,10 @@ class AppNavigationTest {
         val page = channels.last()
 
         navigation.select(Destination.INBOX)
-        assertEquals(listOf<NavKey>(InboxKey), navigation.shown(inbox, channels))
+        assertEquals(listOf<NavKey>(InboxKey), shown())
         navigation.select(Destination.CHANNELS)
 
-        assertEquals(listOf(InboxKey, ChannelsKey, page), navigation.shown(inbox, channels))
+        assertEquals(listOf(InboxKey, ChannelsKey, page), shown())
         navigation.goBack()
         assertEquals(listOf<NavKey>(ChannelsKey), channels)
     }
@@ -155,7 +159,7 @@ class AppNavigationTest {
         val channelsSearch = assertIs<SearchKey>(channels.last())
 
         assertNotEquals(inboxSearch.entryId, channelsSearch.entryId)
-        assertEquals(2, navigation.shown(inbox, channels).count { it is SearchKey })
+        assertEquals(2, shown().count { it is SearchKey })
     }
 
     @Test
@@ -183,5 +187,89 @@ class AppNavigationTest {
 
         assertEquals(listOf<NavKey>(ChannelsKey), channels)
         assertEquals(listOf<NavKey>(InboxKey), inbox)
+    }
+
+    @Test
+    fun `selecting Downloads shows it over the inbox, never over Channels`() {
+        navigation.select(Destination.CHANNELS)
+        navigation.select(Destination.DOWNLOADS)
+
+        assertEquals(Destination.DOWNLOADS, navigation.selected)
+        assertEquals(listOf<NavKey>(InboxKey, DownloadsKey), shown())
+        assertTrue(navigation.showsNavigationBar())
+    }
+
+    @Test
+    fun `each of the three destinations keeps its own history`() {
+        navigation.select(Destination.CHANNELS)
+        navigation.openChannel(ChannelsKey, CHANNEL)
+        val channelsPage = channels.last()
+        navigation.select(Destination.DOWNLOADS)
+        navigation.openVideo(VIDEO)
+        navigation.openChannel(downloads.last(), OTHER_CHANNEL)
+        val downloadsPage = downloads.last()
+
+        navigation.select(Destination.CHANNELS)
+        assertEquals(listOf(InboxKey, ChannelsKey, channelsPage), shown())
+        navigation.select(Destination.DOWNLOADS)
+        assertEquals(listOf(InboxKey, DownloadsKey, downloadsPage), shown())
+        assertEquals(OTHER_CHANNEL, assertIs<ChannelKey>(downloadsPage).channelId)
+        assertTrue(navigation.showsNavigationBar())
+    }
+
+    @Test
+    fun `back on the Downloads screen shows the inbox destination as it was`() {
+        navigation.openChannel(InboxKey, CHANNEL)
+        navigation.select(Destination.CHANNELS)
+        navigation.select(Destination.DOWNLOADS)
+
+        navigation.goBack()
+
+        assertEquals(Destination.INBOX, navigation.selected)
+        assertEquals(2, inbox.size)
+        assertEquals(listOf<NavKey>(DownloadsKey), downloads)
+    }
+
+    @Test
+    fun `reselecting Downloads returns to its first screen`() {
+        navigation.select(Destination.DOWNLOADS)
+        navigation.openVideo(VIDEO)
+        navigation.openChannel(downloads.last(), CHANNEL)
+
+        navigation.select(Destination.DOWNLOADS)
+        assertEquals(listOf<NavKey>(DownloadsKey), downloads)
+
+        navigation.select(Destination.DOWNLOADS)
+        assertEquals(listOf<NavKey>(DownloadsKey), downloads)
+    }
+
+    @Test
+    fun `a row opens one video screen, and search opens from Downloads once`() {
+        navigation.select(Destination.DOWNLOADS)
+
+        navigation.openVideo(VIDEO)
+        navigation.openVideo(VIDEO)
+        assertEquals(2, downloads.size)
+        assertIs<PlayerKey>(downloads.last())
+        assertFalse(navigation.showsNavigationBar())
+        assertFalse(navigation.showsMiniPlayer())
+        navigation.close(downloads.last())
+
+        navigation.openSearch(DownloadsKey)
+        navigation.openSearch(DownloadsKey)
+        assertEquals(2, downloads.size)
+        assertIs<SearchKey>(downloads.last())
+        assertFalse(navigation.showsNavigationBar())
+        navigation.close(downloads.last())
+        assertEquals(listOf<NavKey>(DownloadsKey), downloads)
+    }
+
+    @Test
+    fun `close never removes the Downloads screen`() {
+        navigation.select(Destination.DOWNLOADS)
+
+        navigation.close(DownloadsKey)
+
+        assertEquals(listOf<NavKey>(DownloadsKey), downloads)
     }
 }

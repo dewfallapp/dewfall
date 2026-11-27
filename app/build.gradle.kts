@@ -50,6 +50,7 @@ dependencies {
     implementation(project(":core:playback"))
     implementation(project(":feature:channel-page-ui"))
     implementation(project(":feature:channels-ui"))
+    implementation(project(":feature:downloads-ui"))
     implementation(project(":feature:inbox-ui"))
     implementation(project(":feature:player-ui"))
     implementation(project(":feature:takeout-import-ui"))

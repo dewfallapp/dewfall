@@ -297,9 +297,10 @@ class BackStackTest {
     }
 
     @Test
-    fun `the navigation bar shows on the inbox, the Channels screen and channel pages only`() {
+    fun `the navigation bar shows on the first screens and channel pages only`() {
         assertTrue(backStack.showsNavigationBar())
         assertTrue(listOf<NavKey>(ChannelsKey).showsNavigationBar())
+        assertTrue(listOf<NavKey>(DownloadsKey).showsNavigationBar())
 
         backStack.openChannel(InboxKey, CHANNEL)
         assertTrue(backStack.showsNavigationBar())

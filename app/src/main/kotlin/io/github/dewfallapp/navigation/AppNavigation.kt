@@ -11,22 +11,25 @@ import io.github.dewfallapp.core.model.VideoId
 internal enum class Destination {
     INBOX,
     CHANNELS,
+    DOWNLOADS,
 }
 
 /**
- * The app's two back stacks, one for each destination of the navigation bar, and which one shows.
- * It follows Navigation 3's multiple back stacks recipe
+ * The app's back stacks, one for each destination of the navigation bar, and which one shows. It
+ * follows Navigation 3's multiple back stacks recipe
  * (https://developer.android.com/guide/navigation/navigation-3/recipes/multiple-backstacks): each
- * destination keeps its own history while the other shows, and the user always leaves the app
- * through the inbox. The changes on one stack are BackStack.kt's functions, which this class calls
- * on the selected destination's stack. See docs/architecture.md#navigation.
+ * destination keeps its own history while another shows, and the user always leaves the app through
+ * the inbox. The changes on one stack are BackStack.kt's functions, which this class calls on the
+ * selected destination's stack. See docs/architecture.md#navigation.
  *
- * [inbox] starts with InboxKey and [channels] with ChannelsKey, and neither ever loses its first
- * key. [selection] holds the destination that shows, so the caller can save it.
+ * [inbox] starts with InboxKey, [channels] with ChannelsKey and [downloads] with DownloadsKey, and
+ * none ever loses its first key. [selection] holds the destination that shows, so the caller can
+ * save it.
  */
 internal class AppNavigation(
     val inbox: MutableList<NavKey>,
     val channels: MutableList<NavKey>,
+    val downloads: MutableList<NavKey>,
     selection: MutableState<Destination>,
 ) {
     /** The destination that shows. */
@@ -35,15 +38,27 @@ internal class AppNavigation(
 
     /** The selected destination's back stack. */
     val current: MutableList<NavKey>
-        get() = if (selected == Destination.INBOX) inbox else channels
+        get() = stackOf(selected)
+
+    private fun stackOf(destination: Destination): MutableList<NavKey> =
+        when (destination) {
+            Destination.INBOX -> inbox
+            Destination.CHANNELS -> channels
+            Destination.DOWNLOADS -> downloads
+        }
 
     /**
-     * What NavDisplay shows, in order, from [inboxItems] and [channelsItems], the two stacks' keys
-     * or their decorated entries: the inbox's, then the Channels ones while Channels is selected.
-     * So the inbox sits under the Channels screen, and going back from it shows the inbox.
+     * What NavDisplay shows, in order, from [inboxItems], [channelsItems] and [downloadsItems], the
+     * stacks' keys or their decorated entries: the inbox's, then those of the selected destination
+     * when it isn't the inbox. So the inbox sits under the Channels and Downloads screens, and
+     * going back from either shows the inbox.
      */
-    fun <T> shown(inboxItems: List<T>, channelsItems: List<T>): List<T> =
-        if (selected == Destination.INBOX) inboxItems else inboxItems + channelsItems
+    fun <T> shown(inboxItems: List<T>, channelsItems: List<T>, downloadsItems: List<T>): List<T> =
+        when (selected) {
+            Destination.INBOX -> inboxItems
+            Destination.CHANNELS -> inboxItems + channelsItems
+            Destination.DOWNLOADS -> inboxItems + downloadsItems
+        }
 
     /**
      * Shows [destination], as a tap on the navigation bar does. A tap on the destination that
@@ -71,22 +86,23 @@ internal class AppNavigation(
 
     /**
      * Closes the screen of [key] on whichever stack holds it, as a back arrow or the minimize
-     * button does. Neither stack's first key is ever removed.
+     * button does. No stack's first key is ever removed.
      */
     fun close(key: NavKey) {
-        inbox.close(key)
-        channels.close(key)
+        for (destination in Destination.entries) {
+            stackOf(destination).close(key)
+        }
     }
 
     /**
      * Goes back one screen for the system's back gesture: the selected stack's top screen, or, on
-     * the Channels screen itself, back to the inbox's destination as it was.
+     * the Channels or Downloads screen itself, back to the inbox's destination as it was.
      */
     fun goBack() {
         val stack = current
         if (stack.size > 1) {
             stack.removeAt(stack.lastIndex)
-        } else if (selected == Destination.CHANNELS) {
+        } else if (selected != Destination.INBOX) {
             selected = Destination.INBOX
         }
     }

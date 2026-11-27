@@ -17,11 +17,14 @@ import kotlinx.serialization.encoding.Encoder
 /** The Channels screen, the first screen of the navigation bar's Channels destination. */
 @Serializable data object ChannelsKey : NavKey
 
+/** The Downloads screen, the first screen of the navigation bar's Downloads destination. */
+@Serializable data object DownloadsKey : NavKey
+
 /**
- * Search YouTube, which opens from the inbox and the Channels screen. [entryId] is a random UUID's
- * text, made when the key is created, and the entry's content key, as PlayerKey's is, so a quick
- * reopen during the closing screen's exit animation gets a new entry, with a new ViewModel and an
- * empty field.
+ * Search YouTube, which opens from the inbox, the Channels screen and the Downloads screen.
+ * [entryId] is a random UUID's text, made when the key is created, and the entry's content key, as
+ * PlayerKey's is, so a quick reopen during the closing screen's exit animation gets a new entry,
+ * with a new ViewModel and an empty field.
  */
 @Serializable data class SearchKey(val entryId: String) : NavKey
 

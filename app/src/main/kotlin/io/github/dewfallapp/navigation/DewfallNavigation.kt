@@ -46,6 +46,7 @@ import io.github.dewfallapp.R
 import io.github.dewfallapp.core.designsystem.R as DesignR
 import io.github.dewfallapp.feature.channelpage.ui.ChannelPage
 import io.github.dewfallapp.feature.channels.ui.Channels
+import io.github.dewfallapp.feature.downloads.ui.Downloads
 import io.github.dewfallapp.feature.inbox.ui.Inbox
 import io.github.dewfallapp.feature.player.ui.MiniPlayer
 import io.github.dewfallapp.feature.player.ui.PlayerRoute
@@ -65,36 +66,38 @@ private const val FILLS_WINDOW = "io.github.dewfallapp.navigation.fillsWindow"
 private const val SHOWS_NAVIGATION_BAR = "io.github.dewfallapp.navigation.showsNavigationBar"
 
 /**
- * The app's screens, its two back stacks, the navigation bar and the mini player under them. Only
- * :app knows Navigation 3. Features take plain actions, such as opening a video, and never see each
+ * The app's screens, its back stacks, the navigation bar and the mini player under them. Only :app
+ * knows Navigation 3. Features take plain actions, such as opening a video, and never see each
  * other. The back stacks and the selected destination survive configuration changes and process
  * death, and each entry keeps its own saved state and ViewModels, which are cleared when it leaves
  * its back stack. See docs/architecture.md#navigation.
  *
- * Each destination of the navigation bar, Inbox and Channels, has its own back stack, decorated on
- * its own, so a hidden destination keeps its screens and their state. NavDisplay shows the inbox's
- * entries, then the Channels entries while Channels is selected, so going back from the Channels
- * screen shows the inbox, as Navigation 3's multiple back stacks recipe does.
+ * Each destination of the navigation bar, Inbox, Channels and Downloads, has its own back stack,
+ * decorated on its own, so a hidden destination keeps its screens and their state. NavDisplay shows
+ * the inbox's entries, then the selected destination's entries when it isn't the inbox, so going
+ * back from the Channels or Downloads screen shows the inbox, as Navigation 3's multiple back
+ * stacks recipe does.
  *
  * The navigation bar and the mini player lie over the bottom of NavDisplay, the mini player just
- * above the bar. The bar shows on the inbox, the Channels screen and channel pages, and the mini
- * player while no video screen is on top. The screens end at their top edge: every entry but the
- * video screen's keeps the mini player's height at its bottom, and the bar's too when it is one of
- * the bar's screens, and gives that height up from the window insets, so a screen's own safe
- * drawing padding leaves out the system's navigation bar, and keeps the part of the keyboard that
- * reaches above them. While the video screen is on top, neither is drawn but their last heights
- * stay, so a screen that leaves for the video screen keeps its size, and a list at its end keeps
- * its place (#241). The Box behind them draws the theme's surface color, so the strip a screen
- * keeps for them during a transition matches the screens.
+ * above the bar. The bar shows on the inbox, the Channels and Downloads screens and channel pages,
+ * and the mini player while no video screen is on top. The screens end at their top edge: every
+ * entry but the video screen's keeps the mini player's height at its bottom, and the bar's too when
+ * it is one of the bar's screens, and gives that height up from the window insets, so a screen's
+ * own safe drawing padding leaves out the system's navigation bar, and keeps the part of the
+ * keyboard that reaches above them. While the video screen is on top, neither is drawn but their
+ * last heights stay, so a screen that leaves for the video screen keeps its size, and a list at its
+ * end keeps its place (#241). The Box behind them draws the theme's surface color, so the strip a
+ * screen keeps for them during a transition matches the screens.
  */
 @Composable
 internal fun DewfallNavigation(modifier: Modifier = Modifier) {
     val inboxStack = rememberNavBackStack(InboxKey)
     val channelsStack = rememberNavBackStack(ChannelsKey)
+    val downloadsStack = rememberNavBackStack(DownloadsKey)
     val selection = rememberSaveable { mutableStateOf(Destination.INBOX) }
     val navigation =
-        remember(inboxStack, channelsStack, selection) {
-            AppNavigation(inboxStack, channelsStack, selection)
+        remember(inboxStack, channelsStack, downloadsStack, selection) {
+            AppNavigation(inboxStack, channelsStack, downloadsStack, selection)
         }
     // The last measured heights of the mini player's box and of the navigation bar, which the
     // screens keep at their bottom.
@@ -104,10 +107,11 @@ internal fun DewfallNavigation(modifier: Modifier = Modifier) {
     val provider = entryProvider { screens(navigation) }
     val inboxEntries = rememberDecoratedStack(inboxStack, keepRoom, provider)
     val channelsEntries = rememberDecoratedStack(channelsStack, keepRoom, provider)
+    val downloadsEntries = rememberDecoratedStack(downloadsStack, keepRoom, provider)
     val showsNavigationBar = navigation.showsNavigationBar()
     Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
         NavDisplay(
-            entries = navigation.shown(inboxEntries, channelsEntries),
+            entries = navigation.shown(inboxEntries, channelsEntries, downloadsEntries),
             onBack = { navigation.goBack() },
             modifier = Modifier.fillMaxSize(),
         )
@@ -235,6 +239,7 @@ private val Destination.label: Int
         when (this) {
             Destination.INBOX -> R.string.navigation_inbox
             Destination.CHANNELS -> R.string.navigation_channels
+            Destination.DOWNLOADS -> R.string.navigation_downloads
         }
 
 @get:DrawableRes
@@ -243,6 +248,7 @@ private val Destination.glyph: Int
         when (this) {
             Destination.INBOX -> DesignR.drawable.ic_inbox
             Destination.CHANNELS -> DesignR.drawable.ic_subscriptions
+            Destination.DOWNLOADS -> DesignR.drawable.ic_download_for_offline
         }
 
 @get:DrawableRes
@@ -251,6 +257,7 @@ private val Destination.filledGlyph: Int
         when (this) {
             Destination.INBOX -> DesignR.drawable.ic_inbox_filled
             Destination.CHANNELS -> DesignR.drawable.ic_subscriptions_filled
+            Destination.DOWNLOADS -> DesignR.drawable.ic_download_for_offline_filled
         }
 
 /**
@@ -273,6 +280,12 @@ private fun EntryProviderScope<NavKey>.screens(navigation: AppNavigation) {
             onOpenChannel = { channelId -> navigation.openChannel(ChannelsKey, channelId) },
             onOpenSearch = { navigation.openSearch(ChannelsKey) },
             onImportFromTakeout = { navigation.openTakeoutImport(ChannelsKey) },
+        )
+    }
+    entry<DownloadsKey>(metadata = mapOf(SHOWS_NAVIGATION_BAR to true)) {
+        Downloads(
+            onOpenVideo = { videoId -> navigation.openVideo(videoId) },
+            onOpenSearch = { navigation.openSearch(DownloadsKey) },
         )
     }
     entry<SearchKey>(clazzContentKey = { key -> key.entryId }) { key ->
