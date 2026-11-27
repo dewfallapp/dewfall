@@ -10,7 +10,7 @@ Phase 6's goal is "Download a video and watch it without internet" ([roadmap](..
 - **Anything less streams, as today.** A video that waits, downloads, is paused or failed streams, because its files are partial. So does a downloaded video whose files are missing or whose sizes don't match what the download recorded, or when the phone can't read its download. The download's status doesn't change in that case: it still says "Downloaded", and #55's Downloads screen can remove it.
 - **Quality.** A downloaded video plays at the quality it was downloaded at, at most 720p, on any network. The network's limits, 480p on mobile data and 1080p on Wi-Fi, apply only to streaming.
 - **When the choice is made.** The player picks the files or the stream when playback starts, as it picks formats today: when the video opens, after "Try again", and when expired links are fetched again. A video that streams while its download finishes goes on streaming until one of those.
-- **Files that go away while playing.** If the player can no longer read the files, such as after the user removes the download, the video area says the video stopped playing, with "Try again", which streams it once the files are gone. A file that is there but can't be read fails again on "Try again", until the download is removed.
+- **Files that go away while playing.** A file the player has open stays readable after it is deleted, such as by removing the download, so the video plays on from it. When the player has to open the file again, such as for a seek back past what it holds, the video area says the video stopped playing, with "Try again", which streams it once the file is gone. A file that is there but can't be read fails again on "Try again", until the download is removed.
 - **The details stay as they are.** The video screen's details still come from YouTube. Offline, the video plays from its files and the details area says that YouTube can't be reached, with "Try again", as the maintainer chose (answer 1). Because the media notification and the mini player take their title and channel name from those details, offline they show none, as the player spec already says when details fail. Showing the details saved with the download when YouTube can't be reached, there too, is [#262](https://github.com/dewfallapp/dewfall/issues/262), in Phase 6.
 - **Privacy.** The files stay in the app's own storage, and no log line, media session or notification holds their paths.
 
@@ -22,7 +22,7 @@ None.
 
 ### Modified Capabilities
 
-- `player`: a new requirement that a downloaded video plays from its files, the quality rule applies only to streaming, the failure requirement covers a downloaded video with the network off and files that go away, and the privacy requirement says a downloaded video's playback sends nothing.
+- `player`: a new requirement that a downloaded video plays from its files, the quality rule applies only to streaming, the failure requirement covers a downloaded video with the network off and files that go away, and the privacy requirements say a downloaded video's playback sends nothing and that the playback service holds the files' paths only while it plays.
 - `downloads`: the Purpose already says a download plays without internet. One requirement says that only a finished download, with all its files, plays, and that a partial one never does.
 
 ## Impact

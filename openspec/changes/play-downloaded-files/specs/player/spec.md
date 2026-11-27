@@ -7,7 +7,7 @@ When playback of a video starts and the video's download is done, with every fil
 
 #### Scenario: Opening a downloaded video
 - **WHEN** the user opens a video whose download says "Downloaded"
-- **THEN** the video plays from the files on the phone, and the app sends no request for its stream links or its bytes
+- **THEN** the video plays from the files on the phone, and the app asks YouTube for neither its stream links nor its bytes
 
 #### Scenario: Opening a downloaded video offline
 - **WHEN** the phone has no connection and the user opens a downloaded video from the inbox
@@ -77,7 +77,7 @@ On a metered network the player SHALL stream a picture whose shorter side is at 
 - **THEN** the player plays the 720p file from the phone
 
 ### Requirement: A playback failure says why
-When a video can't play, the video area SHALL say why in words, and SHALL offer "Try again" when trying again can help: when YouTube can't be reached, refuses to answer, can't be read, the network failed while playing, or playback stopped for another reason. When the phone can decode none of the video's formats, or its decoder fails while decoding, it SHALL say so with no "Try again". The details below SHALL stay. When the player can no longer read the downloaded files that a video plays from, such as after the user removed its download, the video area SHALL say that the video stopped playing, with "Try again", which streams it once a file is gone or has the wrong size.
+When a video can't play, the video area SHALL say why in words, and SHALL offer "Try again" when trying again can help: when YouTube can't be reached, refuses to answer, can't be read, the network failed while playing, or playback stopped for another reason. When the phone can decode none of the video's formats, or its decoder fails while decoding, it SHALL say so with no "Try again". The details below SHALL stay. When the player has to open a downloaded file again, such as for a seek, and can't, because the user removed the download or the file is gone, the video area SHALL say that the video stopped playing, with "Try again", which streams it once a file is gone or has the wrong size. While a file stays open, the video MAY play on from it after the file is deleted.
 
 #### Scenario: No connection while playing
 - **WHEN** the network goes away and the player runs out of data
@@ -100,7 +100,7 @@ When a video can't play, the video area SHALL say why in words, and SHALL offer 
 - **THEN** the screen says once that YouTube can't be reached, with one "Try again" that retries both the details and the video
 
 #### Scenario: Downloaded files that go away while playing
-- **WHEN** a video plays from its downloaded files and one of them is removed from the phone
+- **WHEN** a video plays from its downloaded files, one of them is removed from the phone, and the user seeks back to the start
 - **THEN** the video area says that the video stopped playing, with "Try again", and "Try again" streams the video from where it stopped
 
 ### Requirement: Playback stays private
@@ -125,3 +125,26 @@ The player SHALL fetch video only through the YouTube layer, which SHALL send it
 #### Scenario: The media session after a failure
 - **WHEN** a video failed to play and another app reads Android's media sessions
 - **THEN** the session's error message is the same constant text for every failure
+
+### Requirement: Video details stay private
+The app SHALL never log the video's ID, title, channel name or description. It SHALL send them nowhere but YouTube, except the title and channel name, which it SHALL give only to Android's media session, for the media notification, while the video's playback lasts. The only copies kept outside the screen SHALL be the video's ID and its paused position, also user data, in the state Android saves for a process that it ends in the background; the video's watch state, the details of videos saved with a channel's uploads, and, for a video the user downloads, its summary (ID, title, channel ID and name, length, publish time, kind and thumbnail links) and its download's record (state, chosen formats, sizes and progress), in the app's own database on the phone, which no backup or phone transfer copies; the downloaded video's files, in the app's own storage, which no backup or phone transfer copies either; and, in memory while its playback lasts, the playing video's ID, title, channel name and stream links, or the paths of its downloaded files, in the playback service, which it SHALL drop when that playback is replaced or stops, once that playback's last save of its position has run. The media session SHALL identify the video only by a random playback ID, and SHALL hold no video ID.
+
+#### Scenario: Logs after opening a video
+- **WHEN** the user opens a video, once with details showing and once with the network off
+- **THEN** the app's log lines hold no ID, title, channel name or description, and the failure's line names only the call and its category
+
+#### Scenario: After closing the video screen
+- **WHEN** the user minimizes the video screen, then closes the mini player
+- **THEN** Android's media session no longer holds the video's title or channel name
+
+#### Scenario: After minimizing a video that couldn't start
+- **WHEN** the user minimizes a video whose stream links failed to load
+- **THEN** the playback service holds nothing about that video
+
+#### Scenario: A saved watch state
+- **WHEN** a video's position is saved or it is marked watched
+- **THEN** the app's database holds the video's ID, position and times, beside the copies this requirement already allows, and the app's log lines hold none of them
+
+#### Scenario: A downloaded video
+- **WHEN** the user downloads a video
+- **THEN** the app's database holds its summary and its download's record, its files sit in the app's own storage, and the app's log lines hold none of them

@@ -15,7 +15,7 @@ One pull request covers every section, closes #56, and archives this change as i
 
 ## 3. Emulator tests
 
-- [ ] 3.1 Add PlayFromFilesTest to `:app`'s androidTest: download TestVideo through DownloadsRepository, wait for Downloaded, turn the fake network off with `setReachable(false)`, open the video and check that its position passes 2 seconds with no new AssetMedia request and that the details area says YouTube can't be reached; and a finished download whose audio file is deleted streams, with AssetMedia's counts going up and the status still Downloaded; update docs/testing.md; verify `ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest` passes on Android 17 and Android 10, with every existing test
+- [ ] 3.1 Add PlayFromFilesTest to `:app`'s androidTest: download TestVideo through DownloadsRepository, wait for Downloaded, turn the fake network off with `setReachable(false)`, open the video and check that its position passes 2 seconds with no new AssetMedia request and that the details area says YouTube can't be reached; a finished download whose audio file is deleted streams, with AssetMedia's counts going up and the status still Downloaded; and a video playing from its files whose audio file is deleted, then seeked to the start, says it stopped playing, and its "Try again" streams it; update docs/testing.md; verify `ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest` passes on Android 17 and Android 10, with every existing test
 
 ## 4. Docs and checks
 
