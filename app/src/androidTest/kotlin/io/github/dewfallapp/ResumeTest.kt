@@ -37,19 +37,31 @@ private const val SCREEN_TIMEOUT_MS = 10_000L
 
 /**
  * How long the test waits for the player: the service's start, the links and the first frames on a
- * cold emulator that draws in software, then the 10 seconds.
+ * cold emulator that draws in software, then the 13 seconds.
  */
 private const val PLAYBACK_TIMEOUT_MS = 60_000L
 
 /**
- * How far the video plays before the test leaves it: well past the start, where a start from zero
- * is, and well short of 27 of its 30 seconds, where it would count as watched.
+ * The smallest position that the close's save and the reopen must reach: well past the start, where
+ * a start from zero is. The test pauses the video further on, as [PLAYED_MARGIN_MS] says, and well
+ * short of 27 of its 30 seconds, where it would count as watched.
  */
 private const val PLAYED_MS = 10_000L
 
 /**
+ * How much further the video plays, as the test's MediaController reports it, before the test
+ * pauses it, so the position that the service saves is past [PLAYED_MS]. The controller adds the
+ * time since the session's last update to the position while the video plays. On a slow emulator,
+ * whose audio output can't keep up ("Hardware backing HAL too slow" in logcat), the player's own
+ * position can fall behind that. That is the likeliest reason why the wait for the close's save
+ * timed out on two CI runs of #263 on Android 10, with no error in logcat, while 25 runs on a
+ * faster emulator passed. Its 13 seconds are still well short of 27.
+ */
+private const val PLAYED_MARGIN_MS = 3_000L
+
+/**
  * The resume end to end, through the real PlaybackService and an in-memory database: play the test
- * video past 10 seconds, pause it, minimize it, close the mini player, open it again, and see it
+ * video past 13 seconds, pause it, minimize it, close the mini player, open it again, and see it
  * start where it was left. It reads the position at the player's first ready state after the reopen
  * with a listener, so a start from zero can't pass by playing on to 10 seconds. See
  * docs/testing.md#emulator-tests.
@@ -90,7 +102,9 @@ class ResumeTest {
         compose.onNode(hasSetTextAction()).performImeAction()
         waitForNode(hasText(TestVideo.TITLE))
         compose.onNodeWithText(TestVideo.TITLE).performClick()
-        compose.waitUntil(PLAYBACK_TIMEOUT_MS) { compose.runOnUiThread { playsPast(PLAYED_MS) } }
+        compose.waitUntil(PLAYBACK_TIMEOUT_MS) {
+            compose.runOnUiThread { playsPast(PLAYED_MS + PLAYED_MARGIN_MS) }
+        }
 
         // Pause, so it stays well short of 90 percent, then minimize and close the mini player.
         compose.runOnUiThread { playback.player.value?.pause() }
@@ -101,7 +115,7 @@ class ResumeTest {
         // The close's save has landed before the video opens again.
         compose.waitUntil(SCREEN_TIMEOUT_MS) { storedMs() >= PLAYED_MS }
         val stored = runBlocking { watchStates.watchState(TestVideo.id).first() }
-        assertNull(stored?.watchedAt, "Marked watched at 10 of 30 seconds")
+        assertNull(stored?.watchedAt, "Marked watched at about 13 of 30 seconds")
 
         // The first ready state of the reopened video says where it starts.
         var firstReadyMs: Long? = null

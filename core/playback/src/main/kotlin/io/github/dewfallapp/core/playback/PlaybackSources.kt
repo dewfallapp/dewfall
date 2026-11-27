@@ -9,6 +9,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.FileDataSource
 import androidx.media3.datasource.TransferListener
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.drm.DrmSessionManagerProvider
@@ -18,10 +19,12 @@ import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
+import io.github.dewfallapp.core.data.download.PlayableDownload
 import io.github.dewfallapp.core.data.media.LiveMediaCalls
 import io.github.dewfallapp.core.data.media.ProgressiveMediaCalls
 import io.github.dewfallapp.core.model.FormatChoice
 import io.github.dewfallapp.core.model.MediaRequestRefused
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
 import okhttp3.Call
@@ -30,13 +33,33 @@ import okhttp3.Call
 internal const val PLACEHOLDER_SCHEME = "dewfall-playback"
 
 /**
- * What a resolved item plays, kept in its MediaItem's tag. It is a plain class, so its text never
- * shows the links.
+ * What a resolved item plays, kept in its MediaItem's tag: the stream, or the downloaded files. Its
+ * kinds are plain classes, so their text never shows the links or the paths.
  */
-internal class PlaybackTag(val choice: FormatChoice, val metered: Boolean) {
+internal sealed interface PlaybackTag {
+    /** Whether the item is a live stream. */
     val live: Boolean
-        get() = choice is FormatChoice.Live
+
+    /** The formats that [choice] names, chosen on a network that was [metered] or not. */
+    class Streamed(val choice: FormatChoice, val metered: Boolean) : PlaybackTag {
+        override val live: Boolean
+            get() = choice is FormatChoice.Live
+    }
+
+    /** The finished download's [files] on the phone. A download is never live. */
+    class Downloaded(val files: PlayableDownload.Files) : PlaybackTag {
+        override val live: Boolean
+            get() = false
+    }
 }
+
+/**
+ * The player's wake mode for an item with [tag], its MediaItem's tag: the CPU only for downloaded
+ * files, which need no network, and the CPU and Wi-Fi for anything else, so streaming goes on with
+ * the screen off.
+ */
+internal fun wakeModeFor(tag: Any?): Int =
+    if (tag is PlaybackTag.Downloaded) C.WAKE_MODE_LOCAL else C.WAKE_MODE_NETWORK
 
 /** The media sources that an item becomes, by its tag. */
 internal sealed interface SourcePlan {
@@ -49,18 +72,35 @@ internal sealed interface SourcePlan {
     /** A live stream's HLS manifest. */
     data class Hls(val manifestUrl: String) : SourcePlan
 
+    /**
+     * A downloaded [video] file and its [audio] file, merged, or one file with both when [audio] is
+     * null. Paths are user data, so never log a plan.
+     */
+    data class Files(val video: File, val audio: File?) : SourcePlan
+
     /** An item without the tag, which fails without a request. */
     data object Refused : SourcePlan
 }
 
 /** The plan for an item with [tag], its MediaItem's tag. */
 internal fun sourcePlan(tag: Any?): SourcePlan =
-    when (val choice = (tag as? PlaybackTag)?.choice) {
+    when (tag) {
+        is PlaybackTag.Streamed -> streamPlan(tag.choice)
+        is PlaybackTag.Downloaded -> {
+            when (val files = tag.files) {
+                is PlayableDownload.Separate -> SourcePlan.Files(files.video, files.audio)
+                is PlayableDownload.Combined -> SourcePlan.Files(files.media, audio = null)
+            }
+        }
+        else -> SourcePlan.Refused
+    }
+
+private fun streamPlan(choice: FormatChoice): SourcePlan =
+    when (choice) {
         is FormatChoice.Separate -> SourcePlan.Merged(choice.video.url, choice.audio.url)
         is FormatChoice.Combined -> SourcePlan.Progressive(choice.video.url)
         is FormatChoice.Live -> SourcePlan.Hls(choice.manifestUrl)
-        FormatChoice.NotDecodable,
-        null -> SourcePlan.Refused
+        FormatChoice.NotDecodable -> SourcePlan.Refused
     }
 
 /**
@@ -81,8 +121,11 @@ internal class PlaybackLoadErrorPolicy : DefaultLoadErrorHandlingPolicy() {
 /**
  * Makes the ExoPlayer's media sources from each item's tag, with every request going through the
  * YouTube layer's MediaRequests: a new [progressiveCalls] factory for each progressive source, so
- * each numbers its requests from 0, and [liveCalls] for HLS. An item without the tag fails, and
- * never falls back to a default HTTP data source.
+ * each numbers its requests from 0, and [liveCalls] for HLS. A downloaded item's files are read
+ * with FileDataSource, which reads any URI's path as a local file and never opens a connection, so
+ * only the resolver's tag, which holds files that PlayableDownloads checked are inside the
+ * downloads' folder, decides what it reads. An item without the tag fails, and never falls back to
+ * a default HTTP data source.
  */
 internal class PlaybackSources
 @Inject
@@ -122,6 +165,19 @@ constructor(
                     .setLoadErrorHandlingPolicy(policy)
                     .createMediaSource(child(mediaItem, plan.manifestUrl, tag))
             }
+            is SourcePlan.Files -> {
+                val audio = plan.audio
+                if (audio == null) {
+                    local(child(mediaItem, plan.video, tag))
+                } else {
+                    MergingMediaSource(
+                        /* adjustPeriodTimeOffsets= */ true,
+                        /* clipDurations= */ true,
+                        local(child(mediaItem, plan.video, tag)),
+                        local(child(mediaItem, audio, tag)),
+                    )
+                }
+            }
             SourcePlan.Refused -> {
                 ProgressiveMediaSource.Factory { RefusingDataSource() }
                     .setLoadErrorHandlingPolicy(policy)
@@ -135,10 +191,19 @@ constructor(
             .setLoadErrorHandlingPolicy(policy)
             .createMediaSource(item)
 
+    /** A source that reads [item]'s downloaded file from the phone. */
+    private fun local(item: MediaItem): MediaSource =
+        ProgressiveMediaSource.Factory(FileDataSource.Factory())
+            .setLoadErrorHandlingPolicy(policy)
+            .createMediaSource(item)
+
+    private fun child(item: MediaItem, file: File, tag: Any?): MediaItem =
+        child(item, Uri.fromFile(file).toString(), tag)
+
     /**
-     * The item that one source loads: the playback ID, the link and the tag, which the service
-     * reads back from the player's current item. The media session never sees it, because
-     * SessionPlayer shows only the playback ID.
+     * The item that one source loads: the playback ID, the link or the file's URI, and the tag,
+     * which the service reads back from the player's current item. The media session never sees it,
+     * because SessionPlayer shows only the playback ID.
      */
     private fun child(item: MediaItem, url: String, tag: Any?): MediaItem =
         MediaItem.Builder().setMediaId(item.mediaId).setUri(url).setTag(tag).build()

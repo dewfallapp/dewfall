@@ -49,14 +49,15 @@ internal fun row(
     )
 
 /**
- * Records the repository's calls as text, answers its reads with [rows], and can hold a write until
- * the test lets it go. The engine's calls aren't used here.
+ * Records the repository's calls as text, answers its reads with [rows], or throws [rowError] from
+ * `row`, and can hold a write until the test lets it go. The engine's calls aren't used here.
  */
 internal class FakeDownloadDao(
     private val rows: List<DownloadEntity> = emptyList(),
     private val requested: Boolean = true,
     private val gate: CompletableDeferred<Unit>? = null,
     private val bytesInUse: Flow<Long> = flowOf(rows.sumOf { it.downloadedBytes }),
+    private val rowError: Throwable? = null,
 ) : DownloadDao() {
     val calls = mutableListOf<String>()
     var requestedRow: DownloadEntity? = null
@@ -89,7 +90,11 @@ internal class FakeDownloadDao(
 
     override suspend fun delete(videoId: String) = error("Not used")
 
-    override suspend fun row(videoId: String) = error("Not used")
+    override suspend fun row(videoId: String): DownloadEntity? {
+        gate?.await()
+        rowError?.let { throw it }
+        return rows.firstOrNull { it.videoId == videoId }
+    }
 
     override suspend fun insertIfAbsent(download: DownloadEntity) = error("Not used")
 

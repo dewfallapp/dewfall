@@ -1,5 +1,6 @@
 package io.github.dewfallapp.core.playback
 
+import io.github.dewfallapp.core.data.download.IncompleteReason
 import io.github.dewfallapp.core.logging.LogField
 import io.github.dewfallapp.core.logging.Logger
 import io.github.dewfallapp.core.model.PlaybackFailure
@@ -37,5 +38,23 @@ class PlaybackLog @Inject internal constructor(logger: Logger) {
      */
     internal fun watchStateFailed(error: Throwable) {
         logger.warn("Watch state failed", error = error)
+    }
+
+    /** One line when a video plays from its downloaded files. It names no video and no file. */
+    internal fun playingDownload() {
+        logger.info("Playing a download")
+    }
+
+    /**
+     * One line when a finished download's files can't play, for [reason], so the video streams. It
+     * names no video and no file.
+     */
+    internal fun downloadIncomplete(reason: IncompleteReason) {
+        logger.warn("Download can't play, streaming", LogField.state("reason", reason))
+    }
+
+    /** One line when the video's download couldn't be read, so the video streams. */
+    internal fun downloadUnreadable() {
+        logger.warn("Download unreadable, streaming")
     }
 }

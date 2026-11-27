@@ -77,6 +77,9 @@ class PlaybackErrorsTest {
                     PlaybackFailure.NOT_DECODABLE,
                 PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED to PlaybackFailure.OTHER,
                 PlaybackException.ERROR_CODE_IO_UNSPECIFIED to PlaybackFailure.OTHER,
+                // A downloaded file that is gone or can't be opened: "Try again" looks again.
+                PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND to PlaybackFailure.OTHER,
+                PlaybackException.ERROR_CODE_IO_NO_PERMISSION to PlaybackFailure.OTHER,
                 PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW to PlaybackFailure.OTHER,
                 PlaybackException.ERROR_CODE_UNSPECIFIED to PlaybackFailure.OTHER,
             )
