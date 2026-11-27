@@ -34,7 +34,7 @@ private val singleRange = Regex("""bytes=(\d+)-(\d*)""")
  * Its [calls] never reach the network: the interceptor answers every request itself and never calls
  * `chain.proceed`, and any other link fails with an IOException, as does every request while
  * [network] has the media off. It counts the requests for each file that it answers, so a test can
- * check that the player read both.
+ * check that the player read both, and every request it got, answered or not.
  */
 class AssetMedia(private val assets: AssetManager, private val network: FakeNetwork) {
     private val files =
@@ -44,6 +44,7 @@ class AssetMedia(private val assets: AssetManager, private val network: FakeNetw
         )
     private val contents = ConcurrentHashMap<String, ByteArray>()
     private val requests = ConcurrentHashMap<String, AtomicInteger>()
+    private val attempts = ConcurrentHashMap<String, AtomicInteger>()
 
     /** The client that the player's media sources use in place of the YouTube layer's. */
     val calls: Call.Factory = OkHttpClient.Builder().addInterceptor(::answer).build()
@@ -58,6 +59,12 @@ class AssetMedia(private val assets: AssetManager, private val network: FakeNetw
     /** How many requests [calls] answered for the file at [url]. */
     fun requestsFor(url: String): Int = requests[url]?.get() ?: 0
 
+    /**
+     * How many requests [calls] got for the file at [url], answered or failed because [network] had
+     * the media off, so a test with the network off can check that the player asked for none.
+     */
+    fun attemptsFor(url: String): Int = attempts[url]?.get() ?: 0
+
     /** Reads the whole file, on OkHttp's thread, the first time the player asks for it. */
     private fun bytes(url: String): ByteArray =
         contents.getOrPut(url) { assets.open(asset(url)).use { it.readBytes() } }
@@ -67,8 +74,9 @@ class AssetMedia(private val assets: AssetManager, private val network: FakeNetw
 
     private fun answer(chain: Interceptor.Chain): Response {
         val request = chain.request()
-        if (!network.mediaReachable) throw IOException("The fake network is off")
         val url = request.url.toString()
+        attempts.getOrPut(url) { AtomicInteger() }.incrementAndGet()
+        if (!network.mediaReachable) throw IOException("The fake network is off")
         val bytes = bytes(url)
         requests.getOrPut(url) { AtomicInteger() }.incrementAndGet()
         val builder =
