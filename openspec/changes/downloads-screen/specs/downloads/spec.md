@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: The Downloads screen lists every download
-The Downloads screen SHALL list every download in two sections, each in one card. "Downloading" SHALL hold every download that waits, runs, is paused or failed, in the order the user asked for them. "On this phone" SHALL hold every finished download, the most recently finished first. A section with no download SHALL not show. Showing the screen SHALL send no request to YouTube.
+The Downloads screen SHALL list every download in two sections, each in one card. "Downloading" SHALL hold every download that waits, runs, is paused or failed, in the order the user asked for them. "On this phone" SHALL hold every finished download, the most recently finished first. A section with no download SHALL not show. Showing the screen SHALL send no request to YouTube, apart from the thumbnails, as the list-images spec says.
 
 #### Scenario: Both sections
 - **WHEN** one video downloads, another waits, and two finished downloads are on the phone

@@ -34,6 +34,7 @@ None.
 - `downloads`: the Downloads screen, its sections, rows, buttons and messages; pausing a waiting download; cancelling and removing a download, and what happens to its files.
 - `inbox`: the navigation bar gets the Downloads destination, which shows the bar, keeps its own history, goes back to the inbox, and keeps nothing private in the state Android saves beyond what the player, subscriptions and youtube-search specs allow.
 - `list-images`: the Downloads screen's rows show thumbnails, as the other video rows do.
+- `player`: opening, from the Downloads screen, the video that already plays goes on with it.
 - `youtube-search`: Search YouTube also opens from the Downloads screen, its keyboard opens on each open from it, and its back arrow returns to it.
 
 ## Impact
