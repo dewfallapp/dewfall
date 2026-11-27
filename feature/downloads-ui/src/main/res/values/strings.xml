@@ -5,6 +5,9 @@
     <!-- The top bar's search button, for screen readers. Until subtitle search, it opens Search YouTube. -->
     <string name="downloads_search">Search YouTube</string>
 
+    <!-- The heading of the card at the top that says the space downloads take on this phone, such as "3.6 GB". -->
+    <string name="downloads_storage">Offline storage</string>
+
     <!-- The section of every download that isn't finished. -->
     <string name="downloads_section_downloading">Downloading</string>
     <!-- The section of every finished download. -->

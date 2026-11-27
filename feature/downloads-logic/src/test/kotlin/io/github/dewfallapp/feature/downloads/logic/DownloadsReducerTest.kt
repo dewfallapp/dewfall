@@ -169,4 +169,41 @@ class DownloadsReducerTest {
             reduce(state, DownloadsIntent.Removed),
         )
     }
+
+    @Test
+    fun `the space starts unread`() {
+        assertEquals(BytesInUse.Reading, DownloadsState().bytesInUse)
+    }
+
+    @Test
+    fun `a read of the space stores the bytes and changes nothing else`() {
+        val state = DownloadsState(DownloadsList.NoDownloads)
+
+        assertEquals(
+            Next(DownloadsState(DownloadsList.NoDownloads, BytesInUse.Read(3_600))),
+            reduce(state, DownloadsIntent.BytesInUseRead(3_600)),
+        )
+    }
+
+    @Test
+    fun `a failed read of the space shows no amount and changes nothing else`() {
+        val state = DownloadsState(DownloadsList.NoDownloads, BytesInUse.Read(3_600))
+
+        assertEquals(
+            Next(DownloadsState(DownloadsList.NoDownloads, BytesInUse.Unreadable)),
+            reduce(state, DownloadsIntent.BytesInUseUnreadable),
+        )
+    }
+
+    @Test
+    fun `a read of the list keeps the space`() {
+        val waiting = download(1, DownloadStatus.Waiting(progress))
+        val state = DownloadsState(bytesInUse = BytesInUse.Read(420))
+
+        val read = reduce(state, DownloadsIntent.DownloadsRead(listOf(waiting))).state
+        val failed = reduce(state, DownloadsIntent.ReadFailed).state
+
+        assertEquals(BytesInUse.Read(420), read.bytesInUse)
+        assertEquals(DownloadsState(DownloadsList.Unreadable, BytesInUse.Read(420)), failed)
+    }
 }

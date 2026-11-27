@@ -26,8 +26,23 @@ sealed interface DownloadsList {
     data object Unreadable : DownloadsList
 }
 
-/** The Downloads screen's state. */
-data class DownloadsState(val list: DownloadsList = DownloadsList.Loading) : MviState
+/** The space that downloads take on the phone, for the "Offline storage" card. */
+sealed interface BytesInUse {
+    /** Before the phone's first answer. */
+    data object Reading : BytesInUse
+
+    /** Downloads keep [bytes] on the phone: finished files and the parts the others keep. */
+    data class Read(val bytes: Long) : BytesInUse
+
+    /** The phone couldn't read the space, such as from a damaged database. */
+    data object Unreadable : BytesInUse
+}
+
+/** The Downloads screen's state: its [list], and the space downloads take, [bytesInUse]. */
+data class DownloadsState(
+    val list: DownloadsList = DownloadsList.Loading,
+    val bytesInUse: BytesInUse = BytesInUse.Reading,
+) : MviState
 
 /** What happens to the Downloads screen. */
 sealed interface DownloadsIntent : MviIntent {
@@ -36,6 +51,12 @@ sealed interface DownloadsIntent : MviIntent {
 
     /** The read threw, so the screen says it can't show the downloads instead of crashing. */
     data object ReadFailed : DownloadsIntent
+
+    /** The phone answered that downloads keep [bytes]. */
+    data class BytesInUseRead(val bytes: Long) : DownloadsIntent
+
+    /** The read of the space threw, so the card shows no amount instead of crashing the app. */
+    data object BytesInUseUnreadable : DownloadsIntent
 
     /** The user tapped "Pause" on a waiting or running download. */
     data class Pause(val videoId: VideoId) : DownloadsIntent
