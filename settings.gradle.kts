@@ -62,6 +62,10 @@ include(":feature:channels-logic")
 
 include(":feature:channels-ui")
 
+include(":feature:downloads-logic")
+
+include(":feature:downloads-ui")
+
 include(":feature:inbox-logic")
 
 include(":feature:inbox-ui")

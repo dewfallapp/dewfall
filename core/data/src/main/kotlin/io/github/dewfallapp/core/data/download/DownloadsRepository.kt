@@ -1,14 +1,15 @@
 package io.github.dewfallapp.core.data.download
 
+import io.github.dewfallapp.core.model.Download
 import io.github.dewfallapp.core.model.DownloadStatus
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoSummary
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Starts, pauses and follows downloads, for the screens. The downloads themselves run in the
- * background job of `:core:download`, which no screen owns, so leaving a screen never stops one.
- * See openspec/specs/downloads/spec.md and docs/architecture.md#downloads-and-cleanup.
+ * Starts, pauses, removes and follows downloads, for the screens. The downloads themselves run in
+ * the background job of `:core:download`, which no screen owns, so leaving a screen never stops
+ * one. See openspec/specs/downloads/spec.md and docs/architecture.md#downloads-and-cleanup.
  *
  * Main-safe. The Flows come from the database, so they emit again after every change and never
  * touch the network. Writes finish even when the caller is cancelled. The IDs and titles are user
@@ -30,4 +31,15 @@ interface DownloadsRepository {
 
     /** Pauses the video's download if it waits or runs, keeping its bytes. */
     suspend fun pause(videoId: VideoId)
+
+    /** Every download, in the queue's order, with the summary saved when it was asked for. */
+    fun downloads(): Flow<List<Download>>
+
+    /**
+     * Removes the video's download, whatever its state, and deletes its files: a cancel of an
+     * unfinished one, or a remove of a finished one. A running download stops within one buffer,
+     * and the download job deletes its files once its writer stopped. Removing a video with no
+     * download does nothing.
+     */
+    suspend fun remove(videoId: VideoId)
 }

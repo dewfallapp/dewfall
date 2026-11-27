@@ -1,5 +1,7 @@
 package io.github.dewfallapp.core.model
 
+import kotlin.time.Instant
+
 /** The most a percentage of a download can be. */
 private const val WHOLE = 100
 
@@ -59,3 +61,16 @@ sealed interface DownloadStatus {
     /** Every file is on the phone, [bytes] in all. */
     data class Downloaded(val bytes: Long) : DownloadStatus
 }
+
+/**
+ * A download as the Downloads screen lists it: the [video]'s summary, saved when the user asked for
+ * it, its [status], [requestedAt], when the user asked for it or last resumed it, which is the
+ * queue's order, and [finishedAt], when it finished, for a Downloaded one, else null. The video is
+ * user data, so never log it. See openspec/specs/downloads/spec.md.
+ */
+data class Download(
+    val video: VideoSummary,
+    val status: DownloadStatus,
+    val requestedAt: Instant,
+    val finishedAt: Instant?,
+)

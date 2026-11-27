@@ -13,6 +13,7 @@ import io.github.dewfallapp.core.data.database.DatabaseModule
 import io.github.dewfallapp.core.database.ChannelDao
 import io.github.dewfallapp.core.database.DewfallDatabase
 import io.github.dewfallapp.core.database.DownloadDao
+import io.github.dewfallapp.core.database.DownloadFolderDao
 import io.github.dewfallapp.core.database.DownloadQueueDao
 import io.github.dewfallapp.core.database.VideoDao
 import io.github.dewfallapp.core.database.WatchStateDao
@@ -52,6 +53,10 @@ object TestDatabaseModule {
     @Provides
     fun provideDownloadQueueDao(database: DewfallDatabase): DownloadQueueDao =
         database.downloadQueueDao()
+
+    @Provides
+    fun provideDownloadFolderDao(database: DewfallDatabase): DownloadFolderDao =
+        database.downloadFolderDao()
 
     @Provides fun provideClock(): Clock = Clock.System
 

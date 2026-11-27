@@ -133,7 +133,16 @@ internal abstract class RunnerFixture {
                 logger = logger,
                 time = clock,
             )
-        return DownloadRunner(queue, downloader, runState, stopCheck, logger, Dispatchers.IO)
+        return DownloadRunner(
+            queue,
+            downloader,
+            files,
+            queue,
+            runState,
+            stopCheck,
+            logger,
+            Dispatchers.IO,
+        )
     }
 
     protected val reports = mutableListOf<DownloadProgress>()

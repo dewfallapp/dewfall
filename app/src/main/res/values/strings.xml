@@ -3,4 +3,5 @@
     <!-- The navigation bar's destinations. -->
     <string name="navigation_inbox">Inbox</string>
     <string name="navigation_channels">Channels</string>
+    <string name="navigation_downloads">Downloads</string>
 </resources>

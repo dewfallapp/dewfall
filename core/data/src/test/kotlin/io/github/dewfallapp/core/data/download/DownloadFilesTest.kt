@@ -55,4 +55,14 @@ class DownloadFilesTest {
         assertFalse(files.folder("a").exists())
         assertTrue(files.part("b", DownloadFileKind.VIDEO).exists())
     }
+
+    @Test
+    fun `the folders are the root's directories only`() {
+        assertEquals(emptyList(), DownloadFiles(File(root, "missing")).folders())
+        File(root, "folder-1").mkdirs()
+        File(root, "folder-2").mkdirs()
+        File(root, "stray.part").writeText("x")
+
+        assertEquals(setOf("folder-1", "folder-2"), files.folders().toSet())
+    }
 }

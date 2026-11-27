@@ -11,8 +11,13 @@ import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
+import java.io.File
+import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.coroutines.CompletableDeferred
@@ -20,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 
@@ -52,8 +58,26 @@ private class CountingScheduler : DownloadScheduler {
 class RoomDownloadsRepositoryTest {
     private val scheduler = CountingScheduler()
 
+    private val root = Files.createTempDirectory("downloads").toFile()
+    private val files = DownloadFiles(root)
+
     private fun repository(dao: FakeDownloadDao, scope: CoroutineScope) =
-        RoomDownloadsRepository(dao, scheduler, FixedClock(NOW), { "folder-1" }, scope)
+        RoomDownloadsRepository(
+            dao,
+            scheduler,
+            FixedClock(NOW),
+            { "folder-1" },
+            files,
+            scope,
+            UnconfinedTestDispatcher(),
+        )
+
+    /** Makes the folder [name] with a file in it. */
+    private fun folderWithFile(name: String): File =
+        File(root, name).also {
+            it.mkdirs()
+            File(it, "video.part").writeText("bytes")
+        }
 
     @Test
     fun `a download keeps the whole summary in a waiting row, then starts a run`() = runTest {
@@ -182,5 +206,114 @@ class RoomDownloadsRepositoryTest {
             ),
             repository(FakeDownloadDao(rows), backgroundScope).statuses().first(),
         )
+    }
+
+    @Test
+    fun `downloads list every row with its summary and status, in the DAO's order`() = runTest {
+        val finished = Instant.parse("2026-11-26T11:00:00Z")
+        val rows =
+            listOf(
+                row("aaaaaaaaaaa", DownloadState.WAITING),
+                row("bbbbbbbbbbb", DownloadState.DOWNLOADED, downloadedBytes = 9)
+                    .copy(
+                        updatedAt = finished,
+                        publishedAt = PUBLISHED,
+                        publishedApproximate = true,
+                    ),
+            )
+
+        val downloads = repository(FakeDownloadDao(rows), backgroundScope).downloads().first()
+
+        assertEquals(listOf("aaaaaaaaaaa", "bbbbbbbbbbb"), downloads.map { it.video.id.value })
+        val waiting = downloads[0]
+        assertEquals(DownloadStatus.Waiting(DownloadProgress(0, null)), waiting.status)
+        assertEquals(Instant.parse("2026-11-26T09:00:00Z"), waiting.requestedAt)
+        assertNull(waiting.finishedAt)
+        assertEquals(
+            VideoSummary(
+                id = VideoId("aaaaaaaaaaa"),
+                title = "A video",
+                channelId = ChannelId("UCaaaaaaaaaaaaaaaaaaaaaa"),
+                channelName = "Kettle and Crumb",
+                duration = 10.minutes,
+                published = null,
+                thumbnails = emptyList(),
+                kind = VideoKind.VIDEO,
+            ),
+            waiting.video,
+        )
+        val done = downloads[1]
+        assertEquals(DownloadStatus.Downloaded(9), done.status)
+        assertEquals(finished, done.finishedAt)
+        assertEquals(PublishedTime(PUBLISHED, isApproximate = true), done.video.published)
+    }
+
+    @Test
+    fun `only a finished download has a finish time`() = runTest {
+        for (state in DownloadState.entries) {
+            val failure = if (state == DownloadState.FAILED) DownloadFailure.YOUTUBE else null
+            val download =
+                repository(
+                        FakeDownloadDao(listOf(row(state = state, failure = failure))),
+                        backgroundScope,
+                    )
+                    .downloads()
+                    .first()
+                    .single()
+            assertEquals(state == DownloadState.DOWNLOADED, download.finishedAt != null, "$state")
+        }
+    }
+
+    @Test
+    fun `removing a download that no writer uses deletes its folder`() = runTest {
+        for (state in DownloadState.entries - DownloadState.DOWNLOADING) {
+            val folder = folderWithFile("folder-$state")
+            val dao = FakeDownloadDao(listOf(row(state = state, folder = folder.name)))
+
+            repository(dao, backgroundScope).remove(VIDEO.id)
+
+            assertEquals(listOf("remove aaaaaaaaaaa"), dao.calls)
+            assertFalse(folder.exists(), "$state")
+        }
+    }
+
+    @Test
+    fun `removing a running download leaves its folder to the job`() = runTest {
+        val folder = folderWithFile("folder-1")
+        val dao = FakeDownloadDao(listOf(row(state = DownloadState.DOWNLOADING)))
+
+        repository(dao, backgroundScope).remove(VIDEO.id)
+
+        assertEquals(listOf("remove aaaaaaaaaaa"), dao.calls)
+        assertTrue(folder.exists())
+    }
+
+    @Test
+    fun `removing a video with no download deletes nothing`() = runTest {
+        val folder = folderWithFile("folder-1")
+        val dao = FakeDownloadDao()
+
+        repository(dao, backgroundScope).remove(VIDEO.id)
+
+        assertEquals(listOf("remove aaaaaaaaaaa"), dao.calls)
+        assertTrue(folder.exists())
+        assertEquals(0, scheduler.starts)
+    }
+
+    @Test
+    fun `a remove finishes after its caller is cancelled`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val folder = folderWithFile("folder-1")
+        val dao = FakeDownloadDao(listOf(row(state = DownloadState.PAUSED)), gate = gate)
+        val repository = repository(dao, backgroundScope)
+
+        val caller = launch { repository.remove(VIDEO.id) }
+        runCurrent()
+        caller.cancel()
+        gate.complete(Unit)
+        runCurrent()
+
+        assertEquals(listOf("remove aaaaaaaaaaa"), dao.calls)
+        assertFalse(folder.exists())
     }
 }

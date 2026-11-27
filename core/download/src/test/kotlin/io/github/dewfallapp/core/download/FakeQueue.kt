@@ -1,6 +1,7 @@
 package io.github.dewfallapp.core.download
 
 import io.github.dewfallapp.core.data.download.ChosenFormats
+import io.github.dewfallapp.core.data.download.DownloadFolders
 import io.github.dewfallapp.core.data.download.DownloadQueue
 import io.github.dewfallapp.core.data.download.QueueState
 import io.github.dewfallapp.core.data.download.QueuedDownload
@@ -28,7 +29,7 @@ internal data class FakeRow(
  * and every write but the reset and the pause changes only a DOWNLOADING row. It counts the
  * progress writes.
  */
-internal class FakeQueue : DownloadQueue {
+internal class FakeQueue : DownloadQueue, DownloadFolders {
     private val rows = MutableStateFlow<List<FakeRow>>(emptyList())
     var progressWrites = 0
 
@@ -51,6 +52,9 @@ internal class FakeQueue : DownloadQueue {
      */
     var afterClaim: (suspend () -> Unit)? = null
 
+    /** Runs at the start of [finish], before its write, as a remove that comes just then. */
+    var beforeFinish: (() -> Unit)? = null
+
     /** Like [afterClaim], after the reset of the rows left DOWNLOADING. */
     var afterReset: (suspend () -> Unit)? = null
 
@@ -59,6 +63,19 @@ internal class FakeQueue : DownloadQueue {
     }
 
     fun row(videoId: VideoId): FakeRow = rows.value.single { it.videoId == videoId }
+
+    /** Removes the video's download, as the user's cancel or remove does. */
+    fun remove(videoId: VideoId) {
+        rows.value = rows.value.filterNot { it.videoId == videoId }
+    }
+
+    /**
+     * Removes the video's download and asks for it again with [folder], in one change, as Room may
+     * report the two.
+     */
+    fun replace(videoId: VideoId, folder: String) {
+        rows.value = rows.value.filterNot { it.videoId == videoId } + FakeRow(videoId, folder)
+    }
 
     /** Pauses the video's download, as the user's tap does. */
     fun pause(videoId: VideoId) {
@@ -129,6 +146,15 @@ internal class FakeQueue : DownloadQueue {
         all.firstOrNull { it.videoId == videoId }?.state
     }
 
+    override fun folderOf(videoId: VideoId): Flow<String?> = rows.map { all ->
+        all.firstOrNull { it.videoId == videoId }?.folder
+    }
+
+    override suspend fun folders(): Set<String> = rows.value.map { it.folder }.toSet()
+
+    override suspend fun isFolderOwned(folder: String): Boolean =
+        rows.value.any { it.folder == folder }
+
     override suspend fun setFormats(videoId: VideoId, chosen: ChosenFormats): Boolean {
         if (failNextFormats) {
             failNextFormats = false
@@ -158,8 +184,10 @@ internal class FakeQueue : DownloadQueue {
             if (keepBytes) failed else failed.copy(chosen = null, downloadedBytes = 0)
         }
 
-    override suspend fun finish(videoId: VideoId, bytes: Long) =
-        update(videoId, QueueState.DOWNLOADING) {
+    override suspend fun finish(videoId: VideoId, bytes: Long): Boolean {
+        beforeFinish?.invoke()
+        return update(videoId, QueueState.DOWNLOADING) {
             it.copy(state = QueueState.DOWNLOADED, downloadedBytes = bytes, youtubeTries = 0)
         }
+    }
 }

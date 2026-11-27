@@ -8,6 +8,7 @@ import io.github.dewfallapp.core.model.Channel
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.ChannelOverview
 import io.github.dewfallapp.core.model.ChannelUploads
+import io.github.dewfallapp.core.model.Download
 import io.github.dewfallapp.core.model.DownloadStatus
 import io.github.dewfallapp.core.model.SubscribedChannel
 import io.github.dewfallapp.core.model.UploadsCheck
@@ -114,4 +115,8 @@ internal class FakeDownloads : DownloadsRepository {
         writes += "pause ${videoId.value}"
         check(!failWrites) { "The disk is full" }
     }
+
+    override fun downloads(): Flow<List<Download>> = error("The inbox doesn't list downloads")
+
+    override suspend fun remove(videoId: VideoId) = error("The inbox doesn't remove downloads")
 }

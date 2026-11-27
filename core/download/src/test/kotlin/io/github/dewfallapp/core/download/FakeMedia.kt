@@ -101,11 +101,17 @@ internal class RoutedMedia(private val routes: Map<String, FakeMedia>) {
 }
 
 /**
- * A 206 for the whole of a 1,000 byte file whose body never sends a byte, as a stalled server's
- * doesn't, until the call is cancelled, when its read fails as a socket's would, or for at most 10
- * seconds. It completes [reading] when the read starts.
+ * A 206 for the whole of a 1,000 byte file, or for [contentRange] of [length] bytes, whose body
+ * never sends a byte, as a stalled server's doesn't, until the call is cancelled, when its read
+ * fails as a socket's would, or for at most 10 seconds. It completes [reading] when the read
+ * starts.
  */
-internal fun stalled(chain: Interceptor.Chain, reading: CompletableDeferred<Unit>): Response {
+internal fun stalled(
+    chain: Interceptor.Chain,
+    reading: CompletableDeferred<Unit>,
+    contentRange: String = "bytes 0-999/1000",
+    length: Long = 1_000,
+): Response {
     val call = chain.call()
     val source =
         object : Source {
@@ -128,8 +134,8 @@ internal fun stalled(chain: Interceptor.Chain, reading: CompletableDeferred<Unit
         .protocol(Protocol.HTTP_1_1)
         .code(206)
         .message("Partial Content")
-        .header("Content-Range", "bytes 0-999/1000")
-        .body(source.buffer().asResponseBody("video/mp4".toMediaType(), 1_000))
+        .header("Content-Range", contentRange)
+        .body(source.buffer().asResponseBody("video/mp4".toMediaType(), length))
         .build()
 }
 

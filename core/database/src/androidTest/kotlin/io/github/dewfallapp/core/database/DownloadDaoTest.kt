@@ -48,6 +48,7 @@ class DownloadDaoTest {
     private val database = inMemoryDatabase()
     private val downloads = database.downloadDao()
     private val queue = database.downloadQueueDao()
+    private val folders = database.downloadFolderDao()
 
     @AfterTest fun closeDatabase() = database.close()
 
@@ -213,5 +214,68 @@ class DownloadDaoTest {
 
         downloads.pause(videoId(1), TUESDAY)
         assertEquals(DownloadState.PAUSED, downloads.download(videoId(1)).first()?.state)
+    }
+
+    @Test
+    fun removingReturnsTheRowAsItWasAndDeletesIt() = runTest {
+        downloads.request(waiting(videoId(1)))
+        queue.claimNext(TUESDAY)
+
+        val removed = downloads.remove(videoId(1))
+
+        assertEquals(DownloadState.DOWNLOADING, removed?.state)
+        assertEquals("f-${videoId(1)}", removed?.folder)
+        assertNull(downloads.row(videoId(1)))
+        assertEquals(emptyList(), downloads.downloads().first())
+        assertNull(downloads.download(videoId(1)).first())
+    }
+
+    @Test
+    fun removingAMissingDownloadReturnsNull() = runTest {
+        downloads.request(waiting(videoId(2)))
+
+        assertNull(downloads.remove(videoId(1)))
+        assertEquals(listOf(videoId(2)), downloads.downloads().first().map { it.videoId })
+    }
+
+    @Test
+    fun aRemovedWaitingDownloadIsNeverClaimed() = runTest {
+        downloads.request(waiting(videoId(1)))
+
+        downloads.remove(videoId(1))
+
+        assertNull(queue.claimNext(TUESDAY))
+    }
+
+    @Test
+    fun theFoldersAreTheRowsFolders() = runTest {
+        downloads.request(waiting(videoId(1)))
+        downloads.request(waiting(videoId(2)))
+
+        assertEquals(setOf("f-${videoId(1)}", "f-${videoId(2)}"), folders.folders().toSet())
+        assertTrue(folders.isFolderOwned("f-${videoId(1)}"))
+        assertFalse(folders.isFolderOwned("f-${videoId(3)}"))
+        assertEquals("f-${videoId(2)}", folders.folderOf(videoId(2)).first())
+        assertNull(folders.folderOf(videoId(3)).first())
+
+        downloads.remove(videoId(1))
+
+        assertEquals(listOf("f-${videoId(2)}"), folders.folders())
+        assertFalse(folders.isFolderOwned("f-${videoId(1)}"))
+    }
+
+    @Test
+    fun noPauseOrRequestChangesAFinishedRow() = runTest {
+        downloads.request(waiting(videoId(1), MONDAY))
+        queue.claimNext(MONDAY)
+        queue.finish(videoId(1), bytes = 500, TUESDAY)
+
+        assertEquals(0, downloads.pause(videoId(1), WEDNESDAY))
+        assertFalse(downloads.request(waiting(videoId(1), WEDNESDAY)))
+        assertEquals(0, downloads.pauseQueued(WEDNESDAY))
+
+        val row = downloads.row(videoId(1))!!
+        assertEquals(DownloadState.DOWNLOADED, row.state)
+        assertEquals(TUESDAY, row.updatedAt)
     }
 }

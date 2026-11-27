@@ -10,9 +10,13 @@ import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 
 /**
- * The `downloads` table as the screens and the repository use it: the downloads, a request and a
- * pause. Every function is main-safe: Room runs the queries on its own context. The download job
- * uses [DownloadQueueDao]. See docs/architecture.md#downloads-and-cleanup.
+ * The `downloads` table as the screens and the repository use it: the downloads, a request, a pause
+ * and a remove. Every function is main-safe: Room runs the queries on its own context. The download
+ * job uses [DownloadQueueDao]. See docs/architecture.md#downloads-and-cleanup.
+ *
+ * No write may change a DOWNLOADED row, because its `updated_at` is when it finished, which the
+ * Downloads screen orders by: [pause] and [requeue] name the states they change. A later write that
+ * must change a DOWNLOADED row adds a `finished_at` column first.
  */
 @Dao
 abstract class DownloadDao {
@@ -55,6 +59,22 @@ abstract class DownloadDao {
     )
     abstract suspend fun pause(videoId: String, now: Instant): Int
 
+    /**
+     * Deletes the video's row. Only [remove] calls it, which returns the row, so its caller can
+     * delete the folder; a row deleted any other way leaves its folder until the next run's sweep.
+     */
+    @Query("DELETE FROM downloads WHERE video_id = :videoId")
+    abstract suspend fun delete(videoId: String): Int
+
+    /**
+     * Removes the video's download, whatever its state, and returns its row as it was, or null when
+     * it had none. One transaction, so the job can't claim the row between the read and the delete.
+     * The caller deletes the files, or leaves them to the job when the row was DOWNLOADING.
+     */
+    @Transaction
+    open suspend fun remove(videoId: String): DownloadEntity? =
+        row(videoId)?.also { delete(it.videoId) }
+
     /** Pauses every download that waits or runs, after the user stopped the app. */
     @Query(
         "UPDATE downloads SET state = 'PAUSED', updated_at = :now " +
@@ -64,10 +84,11 @@ abstract class DownloadDao {
 }
 
 /**
- * The `downloads` table as the download job runs it. Every function is main-safe. Every write but
- * the reset names the state it expects: the claim `WHERE state = 'WAITING'`, and every later write
- * `WHERE state = 'DOWNLOADING'`, so a late write never undoes a pause or a stop. Each returns the
- * number of rows it changed. See docs/architecture.md#downloads-and-cleanup.
+ * The `downloads` table as the download job runs it. Every function is main-safe. Every write names
+ * the state it expects: the reset and every write after the claim `WHERE state = 'DOWNLOADING'`,
+ * and the claim `WHERE state = 'WAITING'`, so a late write never undoes a pause or a stop, and none
+ * changes a DOWNLOADED row, whose `updated_at` is when it finished. Each returns the number of rows
+ * it changed. See docs/architecture.md#downloads-and-cleanup.
  */
 @Dao
 abstract class DownloadQueueDao {

@@ -5,6 +5,7 @@ import io.github.dewfallapp.core.data.download.DownloadsRepository
 import io.github.dewfallapp.core.data.video.VideoDetailsRepository
 import io.github.dewfallapp.core.data.watch.WatchStateRepository
 import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.Download
 import io.github.dewfallapp.core.model.DownloadStatus
 import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoDetails
@@ -187,6 +188,12 @@ internal class FakeDownloads : DownloadsRepository {
         check(!failWrites) { "The disk is full" }
         downloaded += video
     }
+
+    override fun downloads(): Flow<List<Download>> =
+        error("The video screen doesn't list downloads")
+
+    override suspend fun remove(videoId: VideoId) =
+        error("The video screen doesn't remove downloads")
 
     override suspend fun pause(videoId: VideoId) {
         writes += "pause ${videoId.value}"
