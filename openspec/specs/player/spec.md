@@ -540,7 +540,7 @@ Tapping the mini player's title SHALL open the video screen for its video, which
 - **THEN** the video screen shows it paused at the same position
 
 ### Requirement: Opening the video that already plays goes on with it
-Opening, from the inbox, search results or a channel page, the video that the mini player plays SHALL open its video screen and go on with that playback, as tapping the mini player does. Opening another video SHALL replace it, and start the new one from its saved position, or from the start when none is saved.
+Opening, from the inbox, search results, a channel page or the Downloads screen, the video that the mini player plays SHALL open its video screen and go on with that playback, as tapping the mini player does. Opening another video SHALL replace it, and start the new one from its saved position, or from the start when none is saved.
 
 #### Scenario: The same video from search
 - **WHEN** a video plays in the mini player and the user opens the same video from search results
@@ -556,6 +556,10 @@ Opening, from the inbox, search results or a channel page, the video that the mi
 
 #### Scenario: The same video from the inbox
 - **WHEN** a video from the inbox plays in the mini player and the user taps it in the inbox again
+- **THEN** the video screen shows it playing on from where it was
+
+#### Scenario: The same video from the Downloads screen
+- **WHEN** a video plays in the mini player and the user taps its row on the Downloads screen
 - **THEN** the video screen shows it playing on from where it was
 
 ### Requirement: The mini player fits any window

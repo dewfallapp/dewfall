@@ -2,7 +2,7 @@
 
 ## Context
 
-#54 built the download engine, in `:core:download`, and the download controls on the video screen and in the inbox ([archived change](../archive/2026-11-26-download-videos/design.md), [ADR 0010](../../../docs/adr/0010-download-engine.md)). Its design left #55 "`downloads()` and `remove(videoId)` on DownloadsRepository, reading the rows' summaries, and pause and cancel for every row, a waiting one included" ([architecture](../../../docs/architecture.md#downloads-and-cleanup)).
+#54 built the download engine, in `:core:download`, and the download controls on the video screen and in the inbox ([archived change](../2026-11-26-download-videos/design.md), [ADR 0010](../../../../docs/adr/0010-download-engine.md)). Its design left #55 "`downloads()` and `remove(videoId)` on DownloadsRepository, reading the rows' summaries, and pause and cancel for every row, a waiting one included" ([architecture](../../../../docs/architecture.md#downloads-and-cleanup)).
 
 What exists today, read from main at a41d3059:
 
@@ -75,7 +75,7 @@ Cancel and Remove are the same call: the screen names them differently because o
 - **The sweep.** At the start of every run, after `resetDownloading` and before the first claim, while the run holds `runLock`, the runner deletes every folder under the downloads root that no row names. No writer runs then: writers run only inside a run, and the run lock allows one. A row inserted meanwhile has no folder yet, because only its writer makes it. This deletes what a process that ended between a row's delete and its folder's delete left, and what the pause case above left. It logs only how many folders it deleted. `DownloadQueue` gets `folders(): Set<String>` from `SELECT folder FROM downloads`, and DownloadFiles gets `folders(): List<String>`, the names of the directories under its root.
 - A folder that the sweep can't delete fully is logged as a count and left for the next run.
 - When #56 plays a downloaded file and the user removes it, the file is unlinked while the player holds it open. An unlinked file stays readable until the last descriptor that refers to it is closed ([unlink(2)](https://man7.org/linux/man-pages/man2/unlink.2.html)). #56's spec decides what the player does then.
-- **The root holds only download folders.** The sweep deletes everything under `noBackupFilesDir/downloads` that no row names, so nothing else may live there, such as Phase 8's saved subtitles ([ADR 0005](../../../docs/adr/0005-download-deletion-rules.md)). docs/architecture.md says so beside DownloadFiles. A folder whose delete fails, after a cancel or a remove, keeps its bytes until the next run, which may be long when the user downloads nothing more; the run logs the count it couldn't delete.
+- **The root holds only download folders.** The sweep deletes everything under `noBackupFilesDir/downloads` that no row names, so nothing else may live there, such as Phase 8's saved subtitles ([ADR 0005](../../../../docs/adr/0005-download-deletion-rules.md)). docs/architecture.md says so beside DownloadFiles. A folder whose delete fails, after a cancel or a remove, keeps its bytes until the next run, which may be long when the user downloads nothing more; the run logs the count it couldn't delete.
 
 ### 3. The screen's MVI contract
 
@@ -157,3 +157,7 @@ sealed interface DownloadsEffect : MviEffect {
 - **A removed download's last part.** Between a pause and a remove, a writer's last buffer can leave a part file until the next run's sweep. The bytes are few, inside the app's own storage, and the next download deletes them. Sweeping on every start of the app would catch it sooner, but `start()` runs without the run lock, while a writer may run.
 - **Removing what plays** is #56's question, as Decision 2 says.
 - **The kind** of a download from the video screen stays VIDEO or LIVE, as the Non-Goals say.
+
+## Note, November 28, 2026
+
+The pre-push gate's detekt run found DownloadQueue, RoomDownloadQueue and DownloadQueueDao past its limit of 11 functions with the three folder lookups. So `folderOf(videoId)`, `isFolderOwned(folder)` and `folders()` live in their own interface, DownloadFolders, with RoomDownloadFolders over a DownloadFolderDao, and the runner takes it beside DownloadQueue. Where this design, proposal.md and tasks.md give them to DownloadQueue, DownloadQueueDao or DownloadDao, read DownloadFolders and DownloadFolderDao. Nothing else changes.

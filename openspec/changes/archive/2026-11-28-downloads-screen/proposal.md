@@ -2,7 +2,7 @@
 
 ## Why
 
-Phase 6's second task, [#55](https://github.com/dewfallapp/dewfall/issues/55), is a Downloads screen with progress, pause and cancel ([roadmap](../../../docs/roadmap.md#phase-6-manual-downloads)). #54 built the download engine and the buttons on the video screen and in the inbox, but the user can't see every download in one place, can't pause a download that waits, can't cancel one, and can't remove a finished one to free space. The design brief puts all of that on one screen: "The storage meter at the top, then downloads with progress, pause, cancel and remove" ([brief](../../../docs/design/brief.md)), and the design's "Downloads" frame shows it ([screens](../../../docs/design/screens.md#downloads-and-storage)).
+Phase 6's second task, [#55](https://github.com/dewfallapp/dewfall/issues/55), is a Downloads screen with progress, pause and cancel ([roadmap](../../../../docs/roadmap.md#phase-6-manual-downloads)). #54 built the download engine and the buttons on the video screen and in the inbox, but the user can't see every download in one place, can't pause a download that waits, can't cancel one, and can't remove a finished one to free space. The design brief puts all of that on one screen: "The storage meter at the top, then downloads with progress, pause, cancel and remove" ([brief](../../../../docs/design/brief.md)), and the design's "Downloads" frame shows it ([screens](../../../../docs/design/screens.md#downloads-and-storage)).
 
 ## What Changes
 
