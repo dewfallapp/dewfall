@@ -33,7 +33,29 @@ None.
 ## The maintainer's answers
 
 1. Given on November 28, 2026, in #269's Claude Code session's chat. Question, sent through the coordinating session: "#269: after the process ends mid-download on Android 14+, should the download go on by itself in a background job that shows no notification or Task Manager entry until the app shows again?" with the options "(1) Yes, go on without the notification (Recommended); (2) No, keep waiting for the app or screen, and change the spec." Answer: "go with your recommendation"
-2. Given on November 28, 2026, in the coordinating session's Claude Code chat, correcting answer 1. The coordinating session had put the question to the maintainer with a third option, its own recommendation: the backup job shows the usual progress notification on the "Downloads" channel, when Dewfall's notifications are allowed. The maintainer's words: "I meant your recommendation. Go with yours. Tell it to stop for option 1."
+2. Given on November 28, 2026, in the coordinating session's Claude Code chat, correcting answer 1. The coordinating session first asked, word for word:
+
+   > #269 checked the third option, and it works with some catches. Here are your three choices, for when the app is killed during a download on Android 14 or later:
+   >
+   > 1. **Go on in the background with no notification.** It stays hidden until the app opens or Android restarts the main download job.
+   > 2. **Go on and show the usual progress notification, when you've allowed notifications.** This is my recommendation: the download is never hidden. The catches:
+   >    - After the app is killed, the old notification can stay up for about 30 seconds until the backup job replaces or clears it. That bends the spec's rule that the notification goes when no download runs.
+   >    - You can swipe it away, since it's an ordinary notification.
+   >    - It doesn't show if notifications aren't allowed, which is the default on a new install.
+   >    - It never appears in Task Manager.
+   > 3. **Don't go on.** Wait until the app opens or the screen turns on, and change the spec to say so.
+   >
+   > Options 1 and 2 share one limit: on battery, Android may stop the backup job after about 10 minutes. It then goes on from the bytes it has, after a short wait. When the app opens, the main download job takes over again with its full notification. That matches how Android 10 to 13 already behave, as ADR 0010 says.
+   >
+   > Which one do you want: 1, 2 or 3?
+
+   The maintainer gave no reply there before answer 1. After answer 1, the coordinating session asked, word for word:
+
+   > You answered #269 in its own session with "go with your recommendation". #269's own recommendation was **option 1**: the download goes on in a backup job, with no notification and no Task Manager entry until the app shows again. #269 has gone ahead with that.
+   >
+   > My recommendation here was **option 2**, the same with the usual progress notification when notifications are allowed. If you meant option 2, tell me and I'll pass it on before #269 builds much. Otherwise option 1 stands.
+
+   Answer: "I meant your recommendation. Go with yours. Tell it to stop for option 1."
 3. Given on November 28, 2026, in the question dialog of #269's Claude Code session. Question: "#269: approve the revised OpenSpec change resume-after-process-end? On Android 14+, a download whose process ended goes on by itself in a backup job within about a minute. While it runs, the app posts the usual "Downloading a video" notification itself when notifications are allowed; it won't come back that run once swiped away; it goes when the run ends or the UIDT job takes over; a kill mid-backup-run can leave it up about 30 s; the Task Manager doesn't list the backup job." Answer: "Approve (Recommended)", the option that said: "Approve openspec/changes/resume-after-process-end as now written, replacing the earlier approval of the no-notification version. Building starts after the maintainer subagent's Verdict: Build."
 
 An earlier approval in the same dialog, of the version with no notification, is replaced by answer 3.
