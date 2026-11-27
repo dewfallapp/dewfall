@@ -12,7 +12,7 @@ The Downloads screen SHALL show a card at its top, under the top app bar and abo
 - **THEN** it reads "Offline storage" and the space as one item
 
 ### Requirement: The space counts every byte downloads keep
-The space on the storage card SHALL count every byte that downloads keep: finished downloads' files, and the partial files that waiting, downloading, paused and failed downloads keep. It SHALL change by itself while the screen shows, as downloads grow or go. With nothing downloaded it SHALL say zero. When the phone can't read the space, the card SHALL show its heading with no amount.
+The space on the storage card SHALL count every byte that downloads keep, as the download job last recorded them: finished downloads' files, and the partial files that waiting, downloading, paused and failed downloads keep. It SHALL change by itself while the screen shows, as downloads grow or go. With nothing downloaded it SHALL say zero. When the phone can't read the space, the card SHALL show its heading with no amount.
 
 #### Scenario: Finished and partial downloads
 - **WHEN** one video is downloaded with 2.5 GB of files, and another is paused with 1.1 GB of its files on the phone
@@ -21,6 +21,10 @@ The space on the storage card SHALL count every byte that downloads keep: finish
 #### Scenario: While a download runs
 - **WHEN** the Downloads screen is open and a download runs
 - **THEN** the space on the card grows as the download's files grow, without leaving the screen
+
+#### Scenario: A download stops between two records of its bytes
+- **WHEN** a download stops between two of the download job's records of its bytes, such as when the app ends, the download pauses or the connection drops
+- **THEN** the card counts that download's last recorded bytes, which can be up to about a second of downloading less than its files hold, until the download runs again
 
 #### Scenario: A failed download that keeps nothing
 - **WHEN** a download fails because the video became private, and its partial files are deleted
