@@ -1,0 +1,20 @@
+# Tasks
+
+One pull request, on a fix/ branch from main. It closes #269 and archives this change as its last commit.
+
+## 1. The backup jobs
+
+- [ ] 1.1 Add the backup job IDs 55 and 56, a BackupJob interface with `arm(id)` and `disarm(id)`, and JobScheduler's version of it: a plain job for DownloadJobService with NETWORK_TYPE_ANY, a 30-second minimum latency, the same backoff, not persisted. Bind it on Android 14 and later.
+- [ ] 1.2 Add a keeper that, while a run runs, arms its backup at once and every 10 seconds, disarms it when the run returns, and leaves it armed when the run is cancelled or throws. JVM tests with virtual time for each case.
+- [ ] 1.3 In DownloadJobService, keep one run per job ID. The UIDT job keeps backup 55 armed and cancels 56 at its start. A backup job does nothing when a UIDT job runs in the service; otherwise it runs the runner with the backup notification of 1.5, keeps the other backup armed, and asks to run again on RETRY. The UIDT job takes the backup notification away at its start. JVM tests of which backup a job keeps armed.
+- [ ] 1.4 Add a backup-run flag to DownloadRunState, which the service sets and clears and a UIDT start clears. QueueScheduler's start launches the UIDT job once while a backup run downloads, without resetting rows. QueueSchedulerTest cases: a backup run gets one launch and no reset; a UIDT run gets none.
+- [ ] 1.5 In DownloadNotifications, the backup run's notification: ID 2002, the same content as the UIDT job's, posted with NotificationManager only while the app's notifications are allowed, on each percent change, not again once it is gone from the active notifications, and taken away when the run ends. JVM tests through a fake of those calls: not allowed, each percent, swiped away, and taken away after DONE, RETRY, a throw and a cancel.
+- [ ] 1.6 In `:app`'s DownloadTest, on Android 14 and later, check that no backup job is pending after a download finishes.
+
+## 2. Checks and docs
+
+- [ ] 2.1 By hand on Android 14: #269's steps on main's build, then on this build, where the download goes on within about a minute after the kill without touching the emulator; with notifications allowed, the shade shows "Downloading a video" during the backup run, a swipe keeps it away, and it goes when the run ends; then opening the app during a backup run hands it to the UIDT job, with one notification; then a kill during a backup run goes on too.
+- [ ] 2.2 By hand on Android 10 and 17: the kill check goes on as before, and on 17 no backup job runs while the UIDT job lives. Logs hold no video ID, title or file name.
+- [ ] 2.3 ADR 0010's dated note, docs/architecture.md's download engine section and module table, docs/testing.md's "Checking downloads by hand", and the manifest's comment.
+- [ ] 2.4 Run the reviewer until it says Ready, then the pre-push gate, and open the pull request.
+- [ ] 2.5 Archive this change as the pull request's last commit.
