@@ -34,7 +34,7 @@ One pull request, "closes #55". The archive commit goes last, before merge.
 
 ## 6. Checks
 
-- [ ] 6.1 Run the Downloads screen's hand checks from docs/testing.md on one emulator: a real download paused, resumed and cancelled mid-way, with `ls` of the downloads folder before and after, a waiting download paused, a finished one removed, the row of the video that plays in the mini player opening it playing on, which the player decides by video ID whatever screen opens it, the largest font size, a wide window, and the logs holding no ID, title or file name; if YouTube blocks this network, ask the maintainer whether the real-video steps can wait in #258; record what they found in the pull request
+- [x] 6.1 Run the Downloads screen's hand checks from docs/testing.md on one emulator: a real download paused, resumed and cancelled mid-way, with `ls` of the downloads folder before and after, a waiting download paused, a finished one removed, the row of the video that plays in the mini player opening it playing on, which the player decides by video ID whatever screen opens it, the largest font size, a wide window, and the logs holding no ID, title or file name; if YouTube blocks this network, ask the maintainer whether the real-video steps can wait in #258; record what they found in the pull request
 
 ## Workflow follow-up
 
