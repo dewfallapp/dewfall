@@ -25,7 +25,6 @@ import io.github.dewfallapp.core.data.subscriptions.SubscriptionsRepository
 import io.github.dewfallapp.core.data.subscriptions.UploadsChecker
 import io.github.dewfallapp.core.playback.PlaybackConnection
 import io.github.dewfallapp.core.ui.R as CoreUiR
-import io.github.dewfallapp.fake.FakeNetwork
 import io.github.dewfallapp.fake.TestVideo
 import io.github.dewfallapp.feature.player.ui.R as PlayerR
 import javax.inject.Inject
@@ -48,7 +47,8 @@ private const val DOWNLOAD_TIMEOUT_MS = 60_000L
  * The download buttons end to end, through the real job, the real runner and an in-memory database,
  * with the fake YouTube layer and its asset media: a tap on an inbox row's download button, which
  * leaves the video closed and ends with the row's check mark, and a tap on the video screen's chip,
- * which ends with "Downloaded". See docs/testing.md#emulator-tests.
+ * which ends with "Downloaded". WaitingChipTest checks the waiting chip, with a scheduler that
+ * starts no run. See docs/testing.md#emulator-tests.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -68,8 +68,6 @@ class DownloadButtonsTest {
     @Inject lateinit var files: DownloadFiles
 
     @Inject lateinit var playback: PlaybackConnection
-
-    @Inject lateinit var network: FakeNetwork
 
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -129,24 +127,6 @@ class DownloadButtonsTest {
         waitForNode(hasText(downloaded), DOWNLOAD_TIMEOUT_MS)
         // Selected, and no action for a screen reader to announce.
         compose.onNodeWithText(downloaded).assert(hasNoClickAction()).assertIsSelected()
-    }
-
-    @Test
-    fun theWaitingChipHasNoAction() {
-        openTestVideo()
-        val download = context.getString(CoreUiR.string.core_ui_download)
-        val waiting = context.getString(CoreUiR.string.core_ui_download_waiting)
-        waitForNode(hasText(download))
-        // With the media unreachable, the download waits for a connection.
-        network.mediaReachable = false
-        try {
-            compose.onNodeWithText(download).performClick()
-
-            waitForNode(hasText(waiting), DOWNLOAD_TIMEOUT_MS)
-            compose.onNodeWithText(waiting).assert(hasNoClickAction())
-        } finally {
-            network.mediaReachable = true
-        }
     }
 
     /** Opens the test video's screen from Search YouTube. */
