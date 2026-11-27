@@ -848,22 +848,11 @@ Android's [UI events guidance](https://developer.android.com/topic/architecture/
 - An effect stays pending until then. If the UI stops before it handles the effect, or its handler is cancelled halfway, such as a message that was showing during a rotation, the UI gets the effect again.
 - Pending effects survive configuration changes and the UI stopping, because they live in the ViewModel. They don't survive process death. Anything that must survive process death belongs in the screen's state, saved with [SavedStateHandle](https://developer.android.com/topic/libraries/architecture/viewmodel/viewmodel-savedstate).
 
-The Downloads screen is the first screen with an effect, "Download removed", and HandleEffects in `:feature:downloads-ui` handles it. It moves to a shared module when a second screen has effects. It waits until the screen is started, handles the effect, then reports it. It is keyed by the effect's id, so a recomposition doesn't handle the same effect twice:
+The Downloads screen is the first screen with an effect, "Download removed", and HandleEffects in `:feature:downloads-ui` handles it. It moves to a shared module when a second screen has effects. It runs the handler on the first effect only while the screen is started, through `repeatOnLifecycle(STARTED)`, then reports it. A stop, such as the app going to the background while the message shows, cancels the handler before it reports anything, and the next start runs it again, so an effect is never reported handled while the screen didn't show it. It is keyed by the effect's id, so a recomposition doesn't handle the same effect twice. HandleWhileStartedTest checks the stop and the second start:
 
 ```kotlin
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.lifecycle.Lifecycle
-// Not androidx.compose.ui.platform.LocalLifecycleOwner, which is deprecated.
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import io.github.dewfallapp.core.mvi.MviEffect
-import io.github.dewfallapp.core.mvi.PendingEffect
-import kotlinx.coroutines.flow.first
-
 @Composable
-fun <E : MviEffect> HandleEffects(
+internal fun <E : MviEffect> HandleEffects(
     pendingEffects: List<PendingEffect<E>>,
     onEffectFinish: (id: Long) -> Unit,
     handle: suspend (E) -> Unit,
@@ -874,9 +863,26 @@ fun <E : MviEffect> HandleEffects(
     val currentOnEffectFinish by rememberUpdatedState(onEffectFinish)
     if (first != null) {
         LaunchedEffect(first.id, lifecycle) {
-            lifecycle.currentStateFlow.first { it.isAtLeast(Lifecycle.State.STARTED) }
-            currentHandle(first.effect)
-            currentOnEffectFinish(first.id)
+            handleWhileStarted(
+                lifecycle = lifecycle,
+                handle = { currentHandle(first.effect) },
+                finish = { currentOnEffectFinish(first.id) },
+            )
+        }
+    }
+}
+
+internal suspend fun handleWhileStarted(
+    lifecycle: Lifecycle,
+    handle: suspend () -> Unit,
+    finish: () -> Unit,
+) {
+    var finished = false
+    lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+        if (!finished) {
+            handle()
+            finished = true
+            finish()
         }
     }
 }
