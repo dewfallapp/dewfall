@@ -14,8 +14,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 /**
- * The dispatcher that the repository deletes a removed download's files on, because a delete
- * blocks. Tests replace it.
+ * The dispatcher that the repository deletes a removed download's files on, and that
+ * PlayableDownloads checks a finished download's files on, because both block. Tests replace it.
  */
 @Qualifier @Retention(AnnotationRetention.BINARY) internal annotation class DownloadFilesDispatcher
 
@@ -23,8 +23,9 @@ import kotlinx.coroutines.Dispatchers
 private const val DOWNLOADS_FOLDER = "downloads"
 
 /**
- * Binds the downloads' repository and queue, and provides where their files live. DownloadScheduler
- * is bound in `:core:download`, which runs the queue.
+ * Binds the downloads' repository, queue, folders and playable files' lookup, and provides where
+ * their files live and the dispatcher that deletes and checks them. DownloadScheduler is bound in
+ * `:core:download`, which runs the queue.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -36,6 +37,8 @@ internal interface DownloadModule {
     @Binds fun bindFolders(folders: RoomDownloadFolders): DownloadFolders
 
     @Binds fun bindFolderNames(names: RandomFolderNames): FolderNames
+
+    @Binds fun bindPlayable(playable: RoomPlayableDownloads): PlayableDownloads
 
     companion object {
         @Provides
