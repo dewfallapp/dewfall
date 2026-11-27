@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -57,7 +58,8 @@ private const val DURATION_SCRIM_ALPHA = 0.8f
  * The meta line ends with the video's download status, when a list gives one: [statusWords], such
  * as DownloadStatusWords, which wrap with the rest of the meta line and read with the row's text,
  * and [statusControl], such as DownloadStatusControl, right-aligned at the line's end, which is a
- * focus target of its own.
+ * focus target of its own. [supporting], such as the Downloads screen's progress bar and status
+ * line, goes under the meta line and reads with the row's text.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -73,6 +75,7 @@ fun VideoRowItem(
     modifier: Modifier = Modifier,
     statusWords: (@Composable () -> Unit)? = null,
     statusControl: (@Composable () -> Unit)? = null,
+    supporting: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     Row(
         modifier =
@@ -96,6 +99,7 @@ fun VideoRowItem(
                 }
                 statusControl?.invoke()
             }
+            supporting?.invoke(this)
         }
     }
 }

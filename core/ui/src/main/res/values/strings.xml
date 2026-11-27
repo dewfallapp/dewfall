@@ -61,6 +61,14 @@
     <string name="core_ui_download_failed">Download failed</string>
     <string name="core_ui_download_no_space">Not enough space on this phone</string>
     <string name="core_ui_downloaded">Downloaded</string>
+    <!-- A size on the phone, with 1,000 bytes to a kilobyte: "940 MB". The number comes formatted for the phone's language. -->
+    <string name="core_ui_size_kb">%1$s kB</string>
+    <string name="core_ui_size_mb">%1$s MB</string>
+    <string name="core_ui_size_gb">%1$s GB</string>
+    <!-- How much of a size is done, both in the size's unit: "344 of 820 MB". -->
+    <string name="core_ui_size_of_kb">%1$s of %2$s kB</string>
+    <string name="core_ui_size_of_mb">%1$s of %2$s MB</string>
+    <string name="core_ui_size_of_gb">%1$s of %2$s GB</string>
     <!-- What a screen reader says for a row's download buttons. -->
     <string name="core_ui_download_pause">Pause download</string>
     <string name="core_ui_download_go_on">Go on downloading</string>
