@@ -77,7 +77,7 @@ On a metered network the player SHALL stream a picture whose shorter side is at 
 - **THEN** the player plays the 720p file from the phone
 
 ### Requirement: A playback failure says why
-When a video can't play, the video area SHALL say why in words, and SHALL offer "Try again" when trying again can help: when YouTube can't be reached, refuses to answer, can't be read, the network failed while playing, or playback stopped for another reason. When the phone can decode none of the video's formats, or its decoder fails while decoding, it SHALL say so with no "Try again". The details below SHALL stay. When the player can no longer read the downloaded files that a video plays from, such as after the user removed its download, the video area SHALL say that the video stopped playing, with "Try again", which streams it.
+When a video can't play, the video area SHALL say why in words, and SHALL offer "Try again" when trying again can help: when YouTube can't be reached, refuses to answer, can't be read, the network failed while playing, or playback stopped for another reason. When the phone can decode none of the video's formats, or its decoder fails while decoding, it SHALL say so with no "Try again". The details below SHALL stay. When the player can no longer read the downloaded files that a video plays from, such as after the user removed its download, the video area SHALL say that the video stopped playing, with "Try again", which streams it once a file is gone or has the wrong size.
 
 #### Scenario: No connection while playing
 - **WHEN** the network goes away and the player runs out of data
@@ -85,7 +85,7 @@ When a video can't play, the video area SHALL say why in words, and SHALL offer 
 
 #### Scenario: Trying again
 - **WHEN** the user taps "Try again" after a playback failure
-- **THEN** the player fetches the links again and plays from where it stopped
+- **THEN** the player fetches the links again, or plays the downloaded files when they can play, and plays from where it stopped
 
 #### Scenario: No format the phone can decode
 - **WHEN** the phone can decode none of the video's formats
@@ -100,7 +100,7 @@ When a video can't play, the video area SHALL say why in words, and SHALL offer 
 - **THEN** the screen says once that YouTube can't be reached, with one "Try again" that retries both the details and the video
 
 #### Scenario: Downloaded files that go away while playing
-- **WHEN** a video plays from its downloaded files and the player can no longer read them
+- **WHEN** a video plays from its downloaded files and one of them is removed from the phone
 - **THEN** the video area says that the video stopped playing, with "Try again", and "Try again" streams the video from where it stopped
 
 ### Requirement: Playback stays private
