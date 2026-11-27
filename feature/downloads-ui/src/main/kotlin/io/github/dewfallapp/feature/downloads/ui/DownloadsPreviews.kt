@@ -35,6 +35,9 @@ private val previewAskedAt = Instant.parse("2027-03-15T07:30:00Z")
 /** A video ID is 11 characters. */
 private const val VIDEO_ID_LENGTH = 11
 
+/** A channel ID is "UC" and 22 more characters. */
+private const val CHANNEL_ID_TAIL = 22
+
 private fun download(
     n: Int,
     title: String,
@@ -47,7 +50,7 @@ private fun download(
             VideoSummary(
                 id = VideoId("v" + n.toString().padStart(VIDEO_ID_LENGTH - 1, '0')),
                 title = title,
-                channelId = ChannelId("UC" + n.toString().padStart(22, '0')),
+                channelId = ChannelId("UC" + n.toString().padStart(CHANNEL_ID_TAIL, '0')),
                 channelName = channelName,
                 duration = duration,
                 published = null,

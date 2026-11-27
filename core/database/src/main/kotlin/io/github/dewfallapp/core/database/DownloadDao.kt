@@ -102,17 +102,6 @@ abstract class DownloadQueueDao {
     )
     abstract suspend fun resetDownloading(now: Instant): Int
 
-    /** The folder of every download. */
-    @Query("SELECT folder FROM downloads") abstract suspend fun folders(): List<String>
-
-    /** The folder of the video's download, or null when it has none. */
-    @Query("SELECT folder FROM downloads WHERE video_id = :videoId")
-    abstract fun folderOf(videoId: String): Flow<String?>
-
-    /** Whether a download's row names [folder]. */
-    @Query("SELECT EXISTS(SELECT 1 FROM downloads WHERE folder = :folder)")
-    abstract suspend fun isFolderOwned(folder: String): Boolean
-
     @Query(
         "SELECT * FROM downloads WHERE state = 'WAITING' ORDER BY requested_at, rowid LIMIT 1",
     )

@@ -1,6 +1,7 @@
 package io.github.dewfallapp.core.download
 
 import io.github.dewfallapp.core.data.download.DownloadFiles
+import io.github.dewfallapp.core.data.download.DownloadFolders
 import io.github.dewfallapp.core.data.download.DownloadQueue
 import io.github.dewfallapp.core.data.download.QueueState
 import io.github.dewfallapp.core.data.download.QueuedDownload
@@ -60,6 +61,7 @@ internal constructor(
     private val queue: DownloadQueue,
     private val downloader: VideoDownloader,
     private val files: DownloadFiles,
+    private val folders: DownloadFolders,
     private val runState: DownloadRunState,
     private val stopCheck: StopCheck,
     logger: Logger,
@@ -175,7 +177,7 @@ internal constructor(
      * only counts.
      */
     private suspend fun deleteUnownedFolders() {
-        val owned = queue.folders()
+        val owned = folders.folders()
         var deleted = 0
         var left = 0
         for (folder in files.folders()) {
@@ -232,7 +234,7 @@ internal constructor(
         val watch = launch {
             merge(
                     queue.state(item.videoId).filter { it == QueueState.PAUSED || it == null },
-                    queue.folderOf(item.videoId).filter { it != null && it != item.folder },
+                    folders.folderOf(item.videoId).filter { it != null && it != item.folder },
                 )
                 .map {}
                 .first()
@@ -267,7 +269,7 @@ internal constructor(
             } finally {
                 watch.cancel()
             }
-        if (!queue.isFolderOwned(item.folder)) files.delete(item.folder)
+        if (!folders.isFolderOwned(item.folder)) files.delete(item.folder)
         step
     }
 }

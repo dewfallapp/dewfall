@@ -65,15 +65,6 @@ interface DownloadQueue {
     /** The state of the video's download, or null when it has none. */
     fun state(videoId: VideoId): Flow<QueueState?>
 
-    /** The folder of the video's download, or null when it has none. */
-    fun folderOf(videoId: VideoId): Flow<String?>
-
-    /** The folder of every download. */
-    suspend fun folders(): Set<String>
-
-    /** Whether a download names [folder]. */
-    suspend fun isFolderOwned(folder: String): Boolean
-
     suspend fun setFormats(videoId: VideoId, chosen: ChosenFormats): Boolean
 
     /** Forgets the chosen formats and bytes, before the files start again. */

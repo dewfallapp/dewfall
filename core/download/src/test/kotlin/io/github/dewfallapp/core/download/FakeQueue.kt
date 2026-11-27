@@ -1,6 +1,7 @@
 package io.github.dewfallapp.core.download
 
 import io.github.dewfallapp.core.data.download.ChosenFormats
+import io.github.dewfallapp.core.data.download.DownloadFolders
 import io.github.dewfallapp.core.data.download.DownloadQueue
 import io.github.dewfallapp.core.data.download.QueueState
 import io.github.dewfallapp.core.data.download.QueuedDownload
@@ -28,7 +29,7 @@ internal data class FakeRow(
  * and every write but the reset and the pause changes only a DOWNLOADING row. It counts the
  * progress writes.
  */
-internal class FakeQueue : DownloadQueue {
+internal class FakeQueue : DownloadQueue, DownloadFolders {
     private val rows = MutableStateFlow<List<FakeRow>>(emptyList())
     var progressWrites = 0
 

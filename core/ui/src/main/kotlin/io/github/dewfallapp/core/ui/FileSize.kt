@@ -14,6 +14,11 @@ private const val ONE_DECIMAL_BELOW = 10
 /** From this many of a unit, a size moves up to the next unit. */
 private const val NEXT_UNIT_FROM = 1_000
 
+/** Bytes in a kilobyte, a megabyte and a gigabyte. */
+private const val KILOBYTE = 1_000L
+private const val MEGABYTE = KILOBYTE * KILOBYTE
+private const val GIGABYTE = MEGABYTE * KILOBYTE
+
 /** Tenths in one. */
 private const val TENTHS = 10.0
 
@@ -22,9 +27,9 @@ private const val TENTHS = 10.0
  * count them since Android 8.0.
  */
 enum class SizeUnit(internal val bytes: Long) {
-    KB(1_000),
-    MB(1_000_000),
-    GB(1_000_000_000),
+    KB(KILOBYTE),
+    MB(MEGABYTE),
+    GB(GIGABYTE),
 }
 
 /** A size as it shows: [tenths] of [unit], with one decimal when [showsDecimal]. */

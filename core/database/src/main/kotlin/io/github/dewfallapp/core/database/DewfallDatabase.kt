@@ -36,6 +36,8 @@ abstract class DewfallDatabase : RoomDatabase() {
     abstract fun downloadDao(): DownloadDao
 
     abstract fun downloadQueueDao(): DownloadQueueDao
+
+    abstract fun downloadFolderDao(): DownloadFolderDao
 }
 
 /**

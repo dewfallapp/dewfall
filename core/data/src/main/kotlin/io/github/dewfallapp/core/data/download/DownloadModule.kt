@@ -33,6 +33,8 @@ internal interface DownloadModule {
 
     @Binds fun bindQueue(queue: RoomDownloadQueue): DownloadQueue
 
+    @Binds fun bindFolders(folders: RoomDownloadFolders): DownloadFolders
+
     @Binds fun bindFolderNames(names: RandomFolderNames): FolderNames
 
     companion object {

@@ -48,6 +48,7 @@ class DownloadDaoTest {
     private val database = inMemoryDatabase()
     private val downloads = database.downloadDao()
     private val queue = database.downloadQueueDao()
+    private val folders = database.downloadFolderDao()
 
     @AfterTest fun closeDatabase() = database.close()
 
@@ -251,16 +252,16 @@ class DownloadDaoTest {
         downloads.request(waiting(videoId(1)))
         downloads.request(waiting(videoId(2)))
 
-        assertEquals(setOf("f-${videoId(1)}", "f-${videoId(2)}"), queue.folders().toSet())
-        assertTrue(queue.isFolderOwned("f-${videoId(1)}"))
-        assertFalse(queue.isFolderOwned("f-${videoId(3)}"))
-        assertEquals("f-${videoId(2)}", queue.folderOf(videoId(2)).first())
-        assertNull(queue.folderOf(videoId(3)).first())
+        assertEquals(setOf("f-${videoId(1)}", "f-${videoId(2)}"), folders.folders().toSet())
+        assertTrue(folders.isFolderOwned("f-${videoId(1)}"))
+        assertFalse(folders.isFolderOwned("f-${videoId(3)}"))
+        assertEquals("f-${videoId(2)}", folders.folderOf(videoId(2)).first())
+        assertNull(folders.folderOf(videoId(3)).first())
 
         downloads.remove(videoId(1))
 
-        assertEquals(listOf("f-${videoId(2)}"), queue.folders())
-        assertFalse(queue.isFolderOwned("f-${videoId(1)}"))
+        assertEquals(listOf("f-${videoId(2)}"), folders.folders())
+        assertFalse(folders.isFolderOwned("f-${videoId(1)}"))
     }
 
     @Test
