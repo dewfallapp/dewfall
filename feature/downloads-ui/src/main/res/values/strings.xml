@@ -1,0 +1,35 @@
+<resources>
+    <!-- The Downloads screen: every download, with its progress and buttons. See the downloads spec in openspec/. -->
+    <string name="downloads_app_name">Dewfall</string>
+    <string name="downloads_title">Downloads</string>
+    <!-- The top bar's search button, for screen readers. Until subtitle search, it opens Search YouTube. -->
+    <string name="downloads_search">Search YouTube</string>
+
+    <!-- The section of every download that isn't finished. -->
+    <string name="downloads_section_downloading">Downloading</string>
+    <!-- The section of every finished download. -->
+    <string name="downloads_section_on_phone">On this phone</string>
+    <!-- What a screen reader says that tapping a row does. -->
+    <string name="downloads_open_video">Open video</string>
+
+    <!-- A running download's line under its progress bar: the percentage, then "344 of 820 MB". -->
+    <string name="downloads_progress">%1$d%%, %2$s</string>
+
+    <string name="downloads_pause">Pause</string>
+    <string name="downloads_resume">Resume</string>
+    <string name="downloads_try_again">Try again</string>
+    <string name="downloads_cancel">Cancel</string>
+    <string name="downloads_remove">Remove download</string>
+    <!-- The message once "Remove download" deleted a download's files. -->
+    <string name="downloads_removed">Download removed</string>
+
+    <string name="downloads_empty_title">No downloads yet</string>
+    <string name="downloads_empty_body">Download a video from its screen or your inbox to keep it on this phone.</string>
+    <!-- The content description of the glyph above "No downloads yet". -->
+    <string name="downloads_empty_icon">Downloads</string>
+
+    <string name="downloads_unreadable_title">Your downloads can\'t be shown</string>
+    <string name="downloads_unreadable_body">Dewfall couldn\'t read what it keeps on this phone. Restarting the app may help.</string>
+    <!-- The content description of the error glyph above "Your downloads can't be shown". -->
+    <string name="downloads_unreadable_icon">Couldn\'t read the downloads</string>
+</resources>
