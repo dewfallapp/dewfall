@@ -25,7 +25,7 @@ None.
 
 ## Impact
 
-- `:core:download`: DownloadNotifications posts and takes away the backup job's notification. DownloadJobService handles two more job IDs, 55 and 56, for the backup jobs, and keeps one armed during each run. QueueScheduler hands a backup run back to the UIDT job when the app shows or the user taps a download control. DownloadRunState gets a flag for a backup run. New JVM tests, and a check in `:app`'s DownloadTest that no backup job stays after a download.
+- `:core:download`: DownloadNotifications posts and takes away the backup job's notification. DownloadJobService handles two more job IDs, 55 and 56, for the backup jobs, and keeps one armed during each run. QueueScheduler hands a backup run back to the UIDT job when the app shows or the user taps a download control. DownloadRunState gets a flag for a backup run. DownloadsAfterStop tells a swipe from the recent apps during a backup run, which Android 14 answers by ending the process, from Force stop, with a marker file that a backup run writes and a check for a scheduled backup job, so the swipe doesn't pause the download, as the spec already asks. New JVM tests, and a check in `:app`'s DownloadTest that no backup job stays after a download.
 - No new dependency, permission, network call or schema change. No new log line holds user data.
 - ADR 0010 gets a dated note. docs/architecture.md and docs/testing.md describe the backup jobs and the hand check.
 - One pull request that closes #269 and archives this change as its last commit.
