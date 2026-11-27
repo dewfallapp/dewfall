@@ -25,10 +25,12 @@ import io.github.dewfallapp.core.database.DownloadEntity
 import io.github.dewfallapp.core.database.DownloadState
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.playback.PlaybackConnection
+import io.github.dewfallapp.core.ui.R as CoreUiR
 import io.github.dewfallapp.fake.TestVideo
 import io.github.dewfallapp.feature.downloads.ui.R as DownloadsR
 import io.github.dewfallapp.feature.youtubesearch.ui.R as SearchR
 import java.io.File
+import java.text.NumberFormat
 import javax.inject.Inject
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -80,6 +82,7 @@ class DownloadsScreenTest {
     private val emptyTitle = context.getString(DownloadsR.string.downloads_empty_title)
     private val searchButton = context.getString(DownloadsR.string.downloads_search)
     private val searchBack = context.getString(SearchR.string.youtube_search_back)
+    private val storage = context.getString(DownloadsR.string.downloads_storage)
 
     /** Starts with no download folders, which a debug build used by hand may have left. */
     @BeforeTest
@@ -155,6 +158,22 @@ class DownloadsScreenTest {
         Espresso.pressBack()
         waitFor(hasText(remove))
         bar(downloadsLabel).assertIsSelected()
+    }
+
+    @Test
+    fun theStorageCardSaysTheSpaceOfEveryDownloadAsOneItem() {
+        keep(TestVideo.summary, DownloadState.DOWNLOADED)
+        keep(TestVideo.otherSummary, DownloadState.PAUSED)
+        // The finished download keeps 1,000 bytes and the paused one 400, as keep writes them.
+        val digits =
+            NumberFormat.getNumberInstance(context.resources.configuration.locales[0])
+                .apply { minimumFractionDigits = 1 }
+                .format(1.4)
+        val amount = context.getString(CoreUiR.string.core_ui_size_kb, digits)
+        openDownloads()
+
+        // What a screen reader reads: the heading and the amount in one node.
+        waitFor(hasText(storage) and hasText(amount))
     }
 
     @Test

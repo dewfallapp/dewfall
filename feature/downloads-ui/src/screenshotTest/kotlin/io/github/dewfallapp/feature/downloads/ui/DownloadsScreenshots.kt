@@ -58,3 +58,19 @@ private fun UnreadableScreenshot() = UnreadablePreview()
 @Preview(name = "DynamicLight", wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE)
 @Composable
 private fun UnreadableDynamicScreenshot() = UnreadableDynamicPreview()
+
+@PreviewTest
+@Preview(name = "Light", widthDp = 320)
+@Preview(
+    name = "Dark",
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL,
+    widthDp = 320,
+)
+@Preview(name = "LargeFont", fontScale = 2f, widthDp = 320)
+@Composable
+private fun StorageCardScreenshot() = StorageCardPreview()
+
+@PreviewTest
+@Preview(name = "DynamicLight", wallpaper = Wallpapers.BLUE_DOMINATED_EXAMPLE, widthDp = 320)
+@Composable
+private fun StorageCardDynamicScreenshot() = StorageCardDynamicPreview()

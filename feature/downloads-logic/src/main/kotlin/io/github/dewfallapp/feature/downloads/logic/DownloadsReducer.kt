@@ -8,8 +8,9 @@ import io.github.dewfallapp.core.mvi.Reducer
 /**
  * The Downloads screen's reducer. Each read replaces the list: an empty one says there are no
  * downloads, and any other is split into its two sections. A failed read says the downloads can't
- * be shown. A tap changes nothing here: the screen shows what the phone holds, which the next read
- * brings. A finished download's removal shows "Download removed".
+ * be shown. The space downloads take is read apart from the list, and each answer replaces only it,
+ * so neither read hides the other. A tap changes nothing here: the screen shows what the phone
+ * holds, which the next read brings. A finished download's removal shows "Download removed".
  */
 object DownloadsReducer : Reducer<DownloadsState, DownloadsIntent, DownloadsEffect> {
     override fun reduce(
@@ -17,8 +18,14 @@ object DownloadsReducer : Reducer<DownloadsState, DownloadsIntent, DownloadsEffe
         intent: DownloadsIntent,
     ): Next<DownloadsState, DownloadsEffect> =
         when (intent) {
-            is DownloadsIntent.DownloadsRead -> Next(DownloadsState(listOf(intent.downloads)))
-            DownloadsIntent.ReadFailed -> Next(DownloadsState(DownloadsList.Unreadable))
+            is DownloadsIntent.DownloadsRead -> Next(state.copy(list = listOf(intent.downloads)))
+            DownloadsIntent.ReadFailed -> Next(state.copy(list = DownloadsList.Unreadable))
+            is DownloadsIntent.BytesInUseRead -> {
+                Next(state.copy(bytesInUse = BytesInUse.Read(intent.bytes)))
+            }
+            DownloadsIntent.BytesInUseUnreadable -> {
+                Next(state.copy(bytesInUse = BytesInUse.Unreadable))
+            }
             is DownloadsIntent.Pause,
             is DownloadsIntent.Resume,
             is DownloadsIntent.Remove -> Next(state)

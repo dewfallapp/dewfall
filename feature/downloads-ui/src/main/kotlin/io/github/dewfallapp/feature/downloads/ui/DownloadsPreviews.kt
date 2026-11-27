@@ -14,6 +14,7 @@ import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.ui.PreviewImages
 import io.github.dewfallapp.core.ui.previewImageLinks
+import io.github.dewfallapp.feature.downloads.logic.BytesInUse
 import io.github.dewfallapp.feature.downloads.logic.DownloadsIntent
 import io.github.dewfallapp.feature.downloads.logic.DownloadsList
 import io.github.dewfallapp.feature.downloads.logic.DownloadsReducer
@@ -122,8 +123,17 @@ private val previewDownloads =
         ),
     )
 
-private fun read(downloads: List<Download>): DownloadsState =
-    DownloadsReducer.reduce(DownloadsState(), DownloadsIntent.DownloadsRead(downloads)).state
+/** The space the preview's downloads keep: the running, paused and finished ones' bytes. */
+private const val PREVIEW_BYTES_IN_USE = (345 + 160 + 940 + 1_234) * MB
+
+private fun read(downloads: List<Download>, bytesInUse: Long): DownloadsState {
+    val listed =
+        DownloadsReducer.reduce(DownloadsState(), DownloadsIntent.DownloadsRead(downloads)).state
+    return DownloadsReducer.reduce(listed, DownloadsIntent.BytesInUseRead(bytesInUse)).state
+}
+
+/** The list can't be read, and neither can the space, as with a damaged database. */
+private val unreadable = DownloadsState(DownloadsList.Unreadable, BytesInUse.Unreadable)
 
 @Composable
 private fun Preview(state: DownloadsState, dynamicColor: Boolean = false) {
@@ -140,30 +150,30 @@ private fun Preview(state: DownloadsState, dynamicColor: Boolean = false) {
 
 @Composable
 internal fun DownloadsPreview() {
-    Preview(read(previewDownloads))
+    Preview(read(previewDownloads, PREVIEW_BYTES_IN_USE))
 }
 
 @Composable
 internal fun DownloadsDynamicPreview() {
-    Preview(read(previewDownloads), dynamicColor = true)
+    Preview(read(previewDownloads, PREVIEW_BYTES_IN_USE), dynamicColor = true)
 }
 
 @Composable
 internal fun NoDownloadsPreview() {
-    Preview(DownloadsState(DownloadsList.NoDownloads))
+    Preview(read(emptyList(), bytesInUse = 0))
 }
 
 @Composable
 internal fun NoDownloadsDynamicPreview() {
-    Preview(DownloadsState(DownloadsList.NoDownloads), dynamicColor = true)
+    Preview(read(emptyList(), bytesInUse = 0), dynamicColor = true)
 }
 
 @Composable
 internal fun UnreadablePreview() {
-    Preview(DownloadsState(DownloadsList.Unreadable))
+    Preview(unreadable)
 }
 
 @Composable
 internal fun UnreadableDynamicPreview() {
-    Preview(DownloadsState(DownloadsList.Unreadable), dynamicColor = true)
+    Preview(unreadable, dynamicColor = true)
 }

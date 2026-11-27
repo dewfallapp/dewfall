@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.dewfallapp.core.data.download.DownloadsRepository
 import io.github.dewfallapp.core.mvi.MviViewModel
+import io.github.dewfallapp.feature.downloads.logic.BytesInUse
 import io.github.dewfallapp.feature.downloads.logic.DownloadsEffect
 import io.github.dewfallapp.feature.downloads.logic.DownloadsIntent
 import io.github.dewfallapp.feature.downloads.logic.DownloadsList
@@ -32,10 +33,11 @@ private const val STOP_TIMEOUT_MS = 5_000L
 
 /**
  * Reads every download from the phone, and dispatches each answer as
- * [DownloadsIntent.DownloadsRead]. It reads only while the screen collects its state, and for
- * [STOP_TIMEOUT_MS] after, so the query doesn't run for every progress write while another screen
- * covers a hidden Downloads screen. A read that fails shows that the downloads can't be shown, and
- * the next time the screen shows, it reads again.
+ * [DownloadsIntent.DownloadsRead], and the space they take, as [DownloadsIntent.BytesInUseRead]. It
+ * reads only while the screen collects its state, and for [STOP_TIMEOUT_MS] after, so the queries
+ * don't run for every progress write while another screen covers a hidden Downloads screen. A read
+ * that fails shows that the downloads or the space can't be shown, and the next time the screen
+ * shows, it reads again.
  *
  * It pauses, resumes, cancels and removes downloads through the repository. A write that throws
  * leaves the row as it was, so it shows what the phone holds, and a finished download's removal
@@ -79,7 +81,7 @@ internal class DownloadsViewModel @Inject constructor(private val downloads: Dow
     /**
      * Reads while the screen shows, and for [STOP_TIMEOUT_MS] after. A read that failed has ended,
      * and a collector that comes back within [STOP_TIMEOUT_MS] doesn't change the sharing command,
-     * so each return of a collector while the list is Unreadable starts a new read too.
+     * so each return of a collector while the list or the space is Unreadable starts new reads too.
      */
     // flatMapLatest is still marked experimental.
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -94,9 +96,11 @@ internal class DownloadsViewModel @Inject constructor(private val downloads: Dow
                 stateSubscriptionCount
                     .map { it > 0 }
                     .distinctUntilChanged()
-                    .filter { shown -> shown && state.value.list == DownloadsList.Unreadable }
+                    .filter { shown -> shown && aReadFailed() }
             merge(command, returnAfterFailure)
-                .flatMapLatest { read -> if (read) downloadsRead() else emptyFlow() }
+                .flatMapLatest { read ->
+                    if (read) merge(downloadsRead(), bytesInUseRead()) else emptyFlow()
+                }
                 .collect(::dispatch)
         }
     }
@@ -108,4 +112,15 @@ internal class DownloadsViewModel @Inject constructor(private val downloads: Dow
             // A read that throws, as from a damaged database, must not crash the app, so the
             // screen says it can't show the downloads.
             .catch { emit(DownloadsIntent.ReadFailed) }
+
+    private fun bytesInUseRead(): Flow<DownloadsIntent> =
+        downloads
+            .bytesInUse()
+            .map<_, DownloadsIntent> { DownloadsIntent.BytesInUseRead(it) }
+            // A read that throws must not crash the app, so the card shows no amount.
+            .catch { emit(DownloadsIntent.BytesInUseUnreadable) }
+
+    private fun aReadFailed(): Boolean =
+        state.value.list == DownloadsList.Unreadable ||
+            state.value.bytesInUse == BytesInUse.Unreadable
 }

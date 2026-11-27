@@ -8,6 +8,7 @@ import io.github.dewfallapp.core.model.DownloadStatus
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoKind
 import io.github.dewfallapp.core.model.VideoSummary
+import io.github.dewfallapp.feature.downloads.logic.BytesInUse
 import io.github.dewfallapp.feature.downloads.logic.DownloadsEffect
 import io.github.dewfallapp.feature.downloads.logic.DownloadsIntent
 import io.github.dewfallapp.feature.downloads.logic.DownloadsList
@@ -49,16 +50,23 @@ private val WAITING =
 /** The downloads the test sets, and a record of the writes. */
 private class FakeDownloads : DownloadsRepository {
     val downloads = MutableStateFlow<List<Download>>(emptyList())
+    val bytesInUse = MutableStateFlow(0L)
     val writes = mutableListOf<String>()
 
     /** When true, the read throws, as a damaged database would. */
     var failReads = false
+
+    /** When true, the read of the space throws, as a damaged database would. */
+    var failBytesInUse = false
 
     /** When true, every write throws, as a full disk would. */
     var failWrites = false
 
     override fun downloads(): Flow<List<Download>> =
         if (failReads) flow { throw IllegalStateException("Damaged database") } else downloads
+
+    override fun bytesInUse(): Flow<Long> =
+        if (failBytesInUse) flow { throw IllegalStateException("Damaged database") } else bytesInUse
 
     override suspend fun pause(videoId: VideoId) {
         writes += "pause ${videoId.value}"
@@ -101,6 +109,8 @@ class DownloadsViewModelTest {
     }
 
     private fun readers() = repository.downloads.subscriptionCount.value
+
+    private fun spaceReaders() = repository.bytesInUse.subscriptionCount.value
 
     private fun effects(viewModel: DownloadsViewModel) =
         viewModel.pendingEffects.value.map { it.effect }
@@ -212,5 +222,70 @@ class DownloadsViewModelTest {
         assertEquals(before, viewModel.state.value)
         assertEquals(emptyList(), effects(viewModel))
         assertEquals(3, repository.writes.size)
+    }
+
+    @Test
+    fun `a shown screen follows the space downloads take`() = runTest {
+        val viewModel = DownloadsViewModel(repository)
+        assertEquals(BytesInUse.Reading, viewModel.state.value.bytesInUse)
+        backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+        assertEquals(BytesInUse.Read(0), viewModel.state.value.bytesInUse)
+
+        repository.bytesInUse.value = 3_600
+        runCurrent()
+        assertEquals(BytesInUse.Read(3_600), viewModel.state.value.bytesInUse)
+    }
+
+    @Test
+    fun `the space is read only while the state has a collector`() = runTest {
+        val viewModel = DownloadsViewModel(repository)
+        runCurrent()
+        assertEquals(0, spaceReaders())
+
+        val shown = backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+        assertEquals(1, spaceReaders())
+
+        shown.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+        assertEquals(0, spaceReaders())
+
+        backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+        assertEquals(1, spaceReaders())
+    }
+
+    @Test
+    fun `a read of the space that throws shows no amount and leaves the list`() = runTest {
+        repository.failBytesInUse = true
+        repository.downloads.value = listOf(WAITING)
+        val viewModel = DownloadsViewModel(repository)
+        backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+
+        assertEquals(BytesInUse.Unreadable, viewModel.state.value.bytesInUse)
+        assertEquals(DownloadsList.Shown(listOf(WAITING), emptyList()), viewModel.state.value.list)
+        assertEquals(1, readers())
+    }
+
+    @Test
+    fun `after a failed read of the space, a screen that shows again reads it again`() = runTest {
+        repository.failBytesInUse = true
+        val viewModel = DownloadsViewModel(repository)
+        val shown = backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+        assertEquals(BytesInUse.Unreadable, viewModel.state.value.bytesInUse)
+        shown.cancel()
+        advanceTimeBy(1_000)
+        runCurrent()
+
+        repository.failBytesInUse = false
+        repository.bytesInUse.value = 420
+        backgroundScope.launch { viewModel.state.collect {} }
+        runCurrent()
+
+        assertEquals(BytesInUse.Read(420), viewModel.state.value.bytesInUse)
     }
 }

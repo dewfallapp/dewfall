@@ -47,6 +47,7 @@ import io.github.dewfallapp.core.designsystem.theme.ReadableWidth
 import io.github.dewfallapp.core.model.Download
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.ui.rowGroupShape
+import io.github.dewfallapp.feature.downloads.logic.BytesInUse
 import io.github.dewfallapp.feature.downloads.logic.DownloadsIntent
 import io.github.dewfallapp.feature.downloads.logic.DownloadsList
 import io.github.dewfallapp.feature.downloads.logic.DownloadsState
@@ -62,10 +63,10 @@ internal class DownloadsActions(
 )
 
 /**
- * The Downloads screen: its top bar, then the "Downloading" and "On this phone" sections, or the
- * empty state, or the message that the downloads can't be read. It is stateless: it shows [state],
- * shows its messages in [snackbarHostState], and reports taps through [actions]. Before the phone's
- * first answer it shows only the top bar.
+ * The Downloads screen: its top bar, the "Offline storage" card, then the "Downloading" and "On
+ * this phone" sections, or the empty state, or the message that the downloads can't be read. It is
+ * stateless: it shows [state], shows its messages in [snackbarHostState], and reports taps through
+ * [actions]. Before the phone's first answer of the list it shows only the top bar.
  *
  * Its background fills the window behind the system bars. Its content sits in one centered column
  * at most ReadableWidth wide, inside the safe drawing area, so nothing is under the system bars,
@@ -88,10 +89,21 @@ internal fun DownloadsScreen(
                 when (val list = state.list) {
                     DownloadsList.Loading -> Unit
                     is DownloadsList.Shown -> {
-                        DownloadList(list = list, actions = actions, modifier = Modifier.weight(1f))
+                        DownloadList(
+                            list = list,
+                            bytesInUse = state.bytesInUse,
+                            actions = actions,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
-                    DownloadsList.NoDownloads -> NoDownloads(modifier = Modifier.weight(1f))
-                    DownloadsList.Unreadable -> Unreadable(modifier = Modifier.weight(1f))
+                    DownloadsList.NoDownloads -> {
+                        TopStorageCard(bytesInUse = state.bytesInUse)
+                        NoDownloads(modifier = Modifier.weight(1f))
+                    }
+                    DownloadsList.Unreadable -> {
+                        TopStorageCard(bytesInUse = state.bytesInUse)
+                        Unreadable(modifier = Modifier.weight(1f))
+                    }
                 }
             }
             SnackbarHost(
@@ -135,14 +147,28 @@ private fun TopBar(onOpenSearch: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 /**
- * The two sections, each a header and one card of rows. The list and its scroll state live only
- * here, so after process death the list is first laid out with its rows, and the saved scroll
- * position holds. The items hold no saveable state, so the state Android saves holds no video ID or
- * title. #57's storage meter goes above the first section.
+ * The storage card above a message that replaces the list, where the list would put it, so "No
+ * downloads yet" still shows a space of zero.
+ */
+@Composable
+private fun TopStorageCard(bytesInUse: BytesInUse, modifier: Modifier = Modifier) {
+    StorageCard(
+        bytesInUse = bytesInUse,
+        modifier =
+            modifier.padding(horizontal = DewfallSpacing.margin).padding(top = DewfallSpacing.sm),
+    )
+}
+
+/**
+ * The storage card, then the two sections, each a header and one card of rows. The card scrolls
+ * with the list. The list and its scroll state live only here, so after process death the list is
+ * first laid out with its rows, and the saved scroll position holds. The items hold no saveable
+ * state, so the state Android saves holds no video ID or title.
  */
 @Composable
 private fun DownloadList(
     list: DownloadsList.Shown,
+    bytesInUse: BytesInUse,
     actions: DownloadsActions,
     modifier: Modifier = Modifier,
 ) {
@@ -152,6 +178,7 @@ private fun DownloadList(
         contentPadding =
             PaddingValues(horizontal = DewfallSpacing.margin, vertical = DewfallSpacing.sm),
     ) {
+        item(key = "storage") { StorageCard(bytesInUse = bytesInUse) }
         section(
             key = "downloading",
             title = R.string.downloads_section_downloading,

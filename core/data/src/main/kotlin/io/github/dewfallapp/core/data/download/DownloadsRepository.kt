@@ -23,6 +23,13 @@ interface DownloadsRepository {
     fun status(videoId: VideoId): Flow<DownloadStatus>
 
     /**
+     * The bytes that downloads keep on the phone: the files of finished downloads, and the parts
+     * that waiting, running, paused and failed downloads keep. While a download runs, it follows
+     * the download's progress, which the download job writes about once a second.
+     */
+    fun bytesInUse(): Flow<Long>
+
+    /**
      * Queues [video] for download, keeping its summary with the download, and starts a run. A
      * paused or failed download of it goes on from the bytes it has, at the end of the queue. A
      * waiting, running or finished one stays as it is.
