@@ -56,6 +56,7 @@ internal class FakeDownloadDao(
     private val rows: List<DownloadEntity> = emptyList(),
     private val requested: Boolean = true,
     private val gate: CompletableDeferred<Unit>? = null,
+    private val bytesInUse: Flow<Long> = flowOf(rows.sumOf { it.downloadedBytes }),
 ) : DownloadDao() {
     val calls = mutableListOf<String>()
     var requestedRow: DownloadEntity? = null
@@ -64,6 +65,8 @@ internal class FakeDownloadDao(
         flowOf(rows.firstOrNull { it.videoId == videoId })
 
     override fun downloads(): Flow<List<DownloadEntity>> = flowOf(rows)
+
+    override fun bytesInUse(): Flow<Long> = bytesInUse
 
     override suspend fun request(download: DownloadEntity): Boolean {
         gate?.await()

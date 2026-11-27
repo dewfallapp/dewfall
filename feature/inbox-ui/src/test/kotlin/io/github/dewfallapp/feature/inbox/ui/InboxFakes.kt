@@ -106,6 +106,8 @@ internal class FakeDownloads : DownloadsRepository {
     override fun status(videoId: VideoId): Flow<DownloadStatus> =
         error("The inbox reads every status at once")
 
+    override fun bytesInUse(): Flow<Long> = error("The inbox shows no storage")
+
     override suspend fun download(video: VideoSummary) {
         writes += "download ${video.id.value}"
         check(!failWrites) { "The disk is full" }

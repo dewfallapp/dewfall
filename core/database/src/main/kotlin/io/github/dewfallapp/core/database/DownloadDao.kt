@@ -28,6 +28,13 @@ abstract class DownloadDao {
     @Query("SELECT * FROM downloads ORDER BY requested_at, rowid")
     abstract fun downloads(): Flow<List<DownloadEntity>>
 
+    /**
+     * The bytes that every download keeps on the phone, 0 with none: the complete files of finished
+     * downloads, and the parts that the others keep, as `downloaded_bytes` records them.
+     */
+    @Query("SELECT COALESCE(SUM(downloaded_bytes), 0) FROM downloads")
+    abstract fun bytesInUse(): Flow<Long>
+
     @Query("SELECT * FROM downloads WHERE video_id = :videoId")
     abstract suspend fun row(videoId: String): DownloadEntity?
 

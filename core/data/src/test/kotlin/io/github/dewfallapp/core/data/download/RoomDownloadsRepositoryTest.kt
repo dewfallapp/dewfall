@@ -24,6 +24,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -315,5 +317,29 @@ class RoomDownloadsRepositoryTest {
 
         assertEquals(listOf("remove aaaaaaaaaaa"), dao.calls)
         assertFalse(folder.exists())
+    }
+
+    @Test
+    fun `the bytes in use are the database's sum`() = runTest {
+        val rows =
+            listOf(
+                row("aaaaaaaaaaa", DownloadState.DOWNLOADED, downloadedBytes = 2_500),
+                row("bbbbbbbbbbb", DownloadState.PAUSED, downloadedBytes = 1_100),
+            )
+
+        assertEquals(
+            3_600L,
+            repository(FakeDownloadDao(rows), backgroundScope).bytesInUse().first(),
+        )
+    }
+
+    @Test
+    fun `the bytes in use skip a sum that didn't change`() = runTest {
+        val dao = FakeDownloadDao(bytesInUse = flowOf(0L, 420L, 420L, 1_000L, 1_000L, 0L))
+
+        assertEquals(
+            listOf(0L, 420L, 1_000L, 0L),
+            repository(dao, backgroundScope).bytesInUse().toList(),
+        )
     }
 }

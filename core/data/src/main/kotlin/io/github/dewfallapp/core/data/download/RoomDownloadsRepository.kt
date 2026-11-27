@@ -57,6 +57,9 @@ constructor(
             .map { it?.toStatus() ?: DownloadStatus.NotDownloaded }
             .distinctUntilChanged()
 
+    // Writes that leave the sum as it was, such as a pause, would wake the screen for nothing.
+    override fun bytesInUse(): Flow<Long> = downloadDao.bytesInUse().distinctUntilChanged()
+
     override suspend fun download(video: VideoSummary) {
         val row = waitingRow(video, folderNames.next(), clock.now())
         externalScope

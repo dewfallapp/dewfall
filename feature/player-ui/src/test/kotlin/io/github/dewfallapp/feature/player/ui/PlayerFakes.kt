@@ -183,6 +183,8 @@ internal class FakeDownloads : DownloadsRepository {
             status
         }
 
+    override fun bytesInUse(): Flow<Long> = error("The video screen shows no storage")
+
     override suspend fun download(video: VideoSummary) {
         writes += "download ${video.id.value}"
         check(!failWrites) { "The disk is full" }

@@ -278,4 +278,51 @@ class DownloadDaoTest {
         assertEquals(DownloadState.DOWNLOADED, row.state)
         assertEquals(TUESDAY, row.updatedAt)
     }
+
+    @Test fun noDownloadsUseNoBytes() = runTest { assertEquals(0L, downloads.bytesInUse().first()) }
+
+    @Test
+    fun theBytesInUseAddUpEveryState() = runTest {
+        val states =
+            listOf(
+                DownloadState.DOWNLOADED to 2_500L,
+                DownloadState.DOWNLOADING to 300L,
+                DownloadState.PAUSED to 1_100L,
+                DownloadState.WAITING to 40L,
+                DownloadState.FAILED to 7L,
+            )
+        states.forEachIndexed { i, (state, bytes) ->
+            downloads.insertIfAbsent(
+                waiting(videoId(i + 1)).copy(state = state, downloadedBytes = bytes),
+            )
+        }
+
+        assertEquals(3_947L, downloads.bytesInUse().first())
+    }
+
+    @Test
+    fun aFailureThatDeletesTheFilesStopsCountingThem() = runTest {
+        downloads.request(waiting(videoId(1)))
+        queue.claimNext(MONDAY)
+        queue.setProgress(videoId(1), bytes = 800, TUESDAY)
+        assertEquals(800L, downloads.bytesInUse().first())
+
+        queue.fail(videoId(1), DownloadFailure.UNAVAILABLE, keepBytes = false, TUESDAY)
+
+        assertEquals(0L, downloads.bytesInUse().first())
+    }
+
+    @Test
+    fun aRemovedDownloadStopsCountingItsBytes() = runTest {
+        downloads.insertIfAbsent(
+            waiting(videoId(1)).copy(state = DownloadState.DOWNLOADED, downloadedBytes = 2_500),
+        )
+        downloads.insertIfAbsent(
+            waiting(videoId(2)).copy(state = DownloadState.PAUSED, downloadedBytes = 1_100),
+        )
+
+        downloads.remove(videoId(1))
+
+        assertEquals(1_100L, downloads.bytesInUse().first())
+    }
 }
