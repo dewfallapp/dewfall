@@ -39,10 +39,11 @@ None.
 
 ## Impact
 
-- New modules `:feature:downloads-logic` (Kotlin/JVM: DownloadsState, DownloadsIntent, DownloadsEffect, the reducer and its tests, and the pure byte formatting) and `:feature:downloads-ui` (Android: the public `Downloads` composable, the screen, its previews and screenshot tests, DownloadsViewModel and its tests, string resources). settings.gradle.kts includes them.
+- New modules `:feature:downloads-logic` (Kotlin/JVM: DownloadsState, DownloadsIntent, DownloadsEffect, the reducer and its tests) and `:feature:downloads-ui` (Android: the public `Downloads` composable, the screen, its previews and screenshot tests, DownloadsViewModel and its tests, string resources). settings.gradle.kts includes them.
 - `:core:model`: Download, a video's summary with its download status and the times that order the sections.
-- `:core:database`: DownloadDao gets `remove(videoId)`, which deletes a row and returns it as it was, and the list of folders the rows own, with DAO tests. The schema doesn't change.
-- `:core:data`: DownloadsRepository gets `downloads()` and `remove(videoId)`; DownloadQueue gets the folders, with tests.
+- `:core:database`: DownloadDao gets `remove(videoId)`, which deletes a row and returns it as it was, and DownloadQueueDao gets `folders()`, `folderOf(videoId)` and `isFolderOwned(folder)`, with DAO tests. The schema doesn't change.
+- `:core:data`: DownloadsRepository gets `downloads()` and `remove(videoId)`; DownloadQueue gets `folders()`, `folderOf(videoId)` and `isFolderOwned(folder)`, with tests.
+- `:core:ui`: the pure byte formatting `fileSize` with `fileSizeText` and `fileSizeOfText`, which #57 reuses, and a `supporting` slot in VideoRowItem.
 - `:core:download`: DownloadRunner deletes a removed download's folder after its writer stops, and deletes folders that no row owns at the start of a run, with tests.
 - `:core:designsystem`: the `download_for_offline` glyph, outlined and filled, from Material Symbols Rounded under the Apache License 2.0 like the others.
 - `:app`: the Downloads destination, its back stack and DownloadsKey, with unit tests, and emulator tests for the bar, cancel and remove.

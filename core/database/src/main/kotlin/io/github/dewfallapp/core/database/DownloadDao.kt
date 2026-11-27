@@ -59,6 +59,10 @@ abstract class DownloadDao {
     )
     abstract suspend fun pause(videoId: String, now: Instant): Int
 
+    /**
+     * Deletes the video's row. Only [remove] calls it, which returns the row, so its caller can
+     * delete the folder; a row deleted any other way leaves its folder until the next run's sweep.
+     */
     @Query("DELETE FROM downloads WHERE video_id = :videoId")
     abstract suspend fun delete(videoId: String): Int
 
