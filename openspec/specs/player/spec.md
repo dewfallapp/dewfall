@@ -271,7 +271,7 @@ A live stream SHALL play from its live edge. Its controls SHALL show "Live" in p
 - **THEN** it plays from the live edge, and the controls say "Live"
 
 ### Requirement: Expired links are fetched again
-When YouTube refuses a stream link, the player SHALL fetch new links once and go on from the same position. If the new links fail too, it SHALL stop and say that playback failed. When the video's downloaded files can play by then, as the requirement on downloaded videos says, the player SHALL play them instead, from the same position, and fetch no links.
+When YouTube refuses a stream link, the player SHALL fetch new links once and go on from the same position. If the new links fail too, it SHALL stop and say that playback failed. When the player is about to fetch new links that once, and the video's downloaded files can play by then, as the requirement on downloaded videos says, it SHALL play them instead, from the same position, and fetch no links.
 
 #### Scenario: An expired link
 - **WHEN** a video that doesn't play from its files paused long enough for its links to expire, it still has no downloaded files that can play, and the user presses play
@@ -306,7 +306,7 @@ When a video can't play, the video area SHALL say why in words, and SHALL offer 
 
 #### Scenario: Downloaded files that go away while playing
 - **WHEN** a video plays from its downloaded files, one of them is removed from the phone, and the user seeks back to a point the player no longer holds, so it opens the file again
-- **THEN** the video area says that the video stopped playing, with "Try again", and "Try again" streams the video from where it stopped
+- **THEN** the video area says that the video stopped playing, with "Try again", and "Try again" streams the video from where it stopped, unless its files match its download again by then
 
 ### Requirement: Playback makes way for other sound
 The player SHALL follow Android's audio focus: it SHALL pause or lower its sound when another app takes audio focus, such as for a call or music, and SHALL pause when headphones are unplugged or a Bluetooth headset disconnects.
@@ -932,14 +932,14 @@ A screen reader SHALL read the chip's words, and the glyph or ring SHALL add not
 - **THEN** the chip's words show in full, wrapping if they need to, and the chips wrap onto a new line
 
 ### Requirement: A downloaded video plays from the phone
-A video's files match its download when the download recorded their formats, and each is a regular file in the app's download storage, not empty, at the size recorded for it if any, and all together at the recorded total. When playback of a video starts, its download is done and its files match it, the player SHALL play those files instead of streaming. It SHALL ask for no stream links and fetch no bytes, so it plays without a connection. The rest of playback SHALL work as it does for a stream.
+A video's files match its download when the download recorded the MIME type of each of them, and each is a regular file in the app's download storage, not empty, at the size recorded for it if any, and all together at the recorded total. When playback of a video starts, its download is done and its files match it, the player SHALL play those files instead of streaming. It SHALL ask for no stream links and fetch no bytes, so it plays without a connection. The rest of playback SHALL work as it does for a stream.
 
 #### Scenario: Opening a downloaded video
-- **WHEN** the user opens a video that the player doesn't hold, whose download says "Downloaded" and whose files match it
+- **WHEN** the user opens a video that the player doesn't hold, whose download says "Downloaded", whose files match it, and whose files can all be opened
 - **THEN** the video plays from the files on the phone, and the app asks YouTube for neither its stream links nor its bytes
 
 #### Scenario: Opening a downloaded video offline
-- **WHEN** the phone has no connection, and the user opens from the inbox a downloaded video that the player doesn't hold, whose files match its download
+- **WHEN** the phone has no connection, and the user opens from the inbox a downloaded video that the player doesn't hold, whose files match its download and can all be opened
 - **THEN** the video plays from its files, and the details area says that YouTube can't be reached, with "Try again"
 
 #### Scenario: Paused for hours

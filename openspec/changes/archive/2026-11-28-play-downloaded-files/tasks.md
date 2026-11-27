@@ -5,6 +5,7 @@ One pull request covers every section, closes #56, and archives this change as i
 ## 1. The lookup
 
 - [x] 1.1 Add PlayableDownloads and PlayableDownload (Files, NotDownloaded, Incomplete with MISSING or SIZE, Unreadable) to `:core:data`'s download package, with its Room implementation over `DownloadDao.row` and DownloadFiles, an IO dispatcher qualifier provided as Dispatchers.IO, and the Hilt binding; verify `./gradlew :core:data:assembleDebug` builds
+  - Note, November 28, 2026: after the rebase onto #264, the lookup reused #264's `@DownloadFilesDispatcher` qualifier, provided as Dispatchers.IO, instead of adding a qualifier of its own.
 - [x] 1.2 Add JVM tests with FakeDownloadDao and a temporary folder: separate files, a combined file, a row in each state that isn't DOWNLOADED, no row, a missing file, a folder in a file's place, a folder name that leads outside the downloads root, an empty file, a length that differs from the row's recorded size, lengths that don't add up to `downloadedBytes`, recorded sizes that are null, missing MIME types, a DAO that throws, and a cancellation that propagates; verify `./gradlew :core:data:testDebugUnitTest` passes, and that each check's test fails when that check is taken out
 
 ## 2. The player
