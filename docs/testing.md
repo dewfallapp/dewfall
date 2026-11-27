@@ -680,6 +680,7 @@ DownloadsScreenTest writes each download to the in-memory database through Downl
 - **Cancel.** On a paused download, "Cancel" deletes its row and its folder, and no message shows.
 - **A row.** The row's text is one node with a click action that holds the title and the channel name but not the button's word, and "Remove download" is a node of its own. A tap on the row opens the video screen, and the back gesture returns to the Downloads screen, "Downloads" selected.
 - **Search YouTube from Downloads** hides the bar, and its back arrow returns to the Downloads screen with "Downloads" selected.
+- **The storage card.** With a finished download of 1,000 bytes and a paused one of 400, "Offline storage" and "1.4 kB" are one node, as a screen reader reads them.
 - **Saved state.** With a download listed, it saves the activity's state to a Bundle as ChannelsNavigationTest does, checks that it holds the back stacks, by DownloadsKey's name, and that no value holds the video's ID or title.
 
 The deletion of a running download's folder, the sweep and a remove that races a new download of the same video run in DownloadRunner's JVM tests, RunnerRemovesTest, because on an emulator where a running download stands when the tap lands would depend on timing.
@@ -925,6 +926,7 @@ The Downloads screen's reducer, ViewModel and screenshot tests cover its rules a
 - **Cancel while it runs.** Tap "Cancel" on a running download: its row goes within a few seconds, the next waiting download starts, its folder is gone, and the video's download control, on its screen or its inbox row, shows "Download" again.
 - **Remove download.** On a finished download, "Remove download": "Download removed" shows, the row goes and so does its folder.
 - **Try again.** With the network off long enough, or a full phone, a failed download shows the error glyph, its words, "Try again" and "Cancel"; "Try again" goes on from its bytes.
+- **The storage card.** "Offline storage" at the top says the space downloads take. While a download runs, the amount grows without leaving the screen; after "Pause" it stays; after "Cancel" or "Remove download" it drops by that download's size. TalkBack reads the heading and the amount as one item. At the largest font size nothing is cut off: the amount stays on the heading's line where they fit side by side, as on a Pixel 4 or Pixel 6 sized phone, and goes under the heading where they don't.
 - **The playing video.** Play a downloaded video, minimize it, and tap its row on the Downloads screen: the video screen shows it playing on from where it was.
 - **Layout.** Check light, dark, dynamic color, the largest font size, a tablet-sized window and the mini player over the list's end: nothing is cut off, and the last button sits above the mini player and the bar.
 - **The log.** `adb logcat` holds no video ID, title or file name, and the sweep's line only counts.

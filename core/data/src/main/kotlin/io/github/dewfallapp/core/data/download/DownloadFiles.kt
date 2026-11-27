@@ -20,7 +20,7 @@ enum class DownloadFileKind(internal val fileName: String) {
  * Auto Backup never copies. [root] holds only download folders: each run of the queue deletes every
  * folder there that no download names, so nothing else may live in it. Each folder's name is a
  * random UUID, so no path holds a video ID. A file being written ends in `.part`, and a complete
- * one has its format's extension. #56 plays the complete files, and #57 adds up their sizes. See
+ * one has its format's extension. #56 plays the complete files. See
  * docs/architecture.md#downloads-and-cleanup.
  *
  * Paths are user data, as file names are, so never log them.
