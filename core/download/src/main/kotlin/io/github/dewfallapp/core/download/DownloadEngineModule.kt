@@ -6,22 +6,19 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import io.github.dewfallapp.core.data.download.DownloadScheduler
 import javax.inject.Provider
 import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 /**
- * Binds the download engine: the scheduler, which `:core:data`'s DownloadsRepository calls, and its
- * parts. The run launcher is the user-initiated data transfer job on Android 14 and later, and the
+ * Binds the download engine's parts, which the scheduler that DownloadSchedulerModule binds uses.
+ * The run launcher is the user-initiated data transfer job on Android 14 and later, and the
  * WorkManager worker below. See ADR 0010.
  */
 @Module
 @InstallIn(SingletonComponent::class)
 internal interface DownloadEngineModule {
-    @Binds fun bindScheduler(scheduler: QueueScheduler): DownloadScheduler
-
     @Binds fun bindStopCheck(afterStop: DownloadsAfterStop): StopCheck
 
     @Binds fun bindHistory(history: AndroidAppHistory): AppHistory
