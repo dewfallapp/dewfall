@@ -4,27 +4,36 @@ import io.github.dewfallapp.core.data.database.ApplicationScope
 import io.github.dewfallapp.core.database.DownloadDao
 import io.github.dewfallapp.core.database.DownloadEntity
 import io.github.dewfallapp.core.database.DownloadState
+import io.github.dewfallapp.core.model.ChannelId
+import io.github.dewfallapp.core.model.Download
 import io.github.dewfallapp.core.model.DownloadFailure
 import io.github.dewfallapp.core.model.DownloadProgress
 import io.github.dewfallapp.core.model.DownloadStatus
+import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.VideoId
 import io.github.dewfallapp.core.model.VideoSummary
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Instant
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /** A new download folder's name: a random UUID, so no path holds the video's ID. */
 internal fun interface FolderNames {
     fun next(): String
 }
 
-/** Keeps downloads in the database's `downloads` table, and starts runs of the queue. */
+/**
+ * Keeps downloads in the database's `downloads` table, starts runs of the queue, and deletes the
+ * files of a removed download that no writer uses.
+ */
 internal class RoomDownloadsRepository
 @Inject
 constructor(
@@ -32,7 +41,9 @@ constructor(
     private val scheduler: DownloadScheduler,
     private val clock: Clock,
     private val folderNames: FolderNames,
+    private val files: DownloadFiles,
     @ApplicationScope private val externalScope: CoroutineScope,
+    @DownloadFilesDispatcher private val filesDispatcher: CoroutineDispatcher,
 ) : DownloadsRepository {
     override fun statuses(): Flow<Map<VideoId, DownloadStatus>> =
         downloadDao
@@ -61,6 +72,22 @@ constructor(
     override suspend fun pause(videoId: VideoId) {
         val now = clock.now()
         externalScope.async { downloadDao.pause(videoId.value, now) }.await()
+    }
+
+    override fun downloads(): Flow<List<Download>> =
+        downloadDao.downloads().map { rows -> rows.map { it.toDownload() } }.distinctUntilChanged()
+
+    override suspend fun remove(videoId: VideoId) {
+        externalScope
+            .async {
+                val removed = downloadDao.remove(videoId.value) ?: return@async
+                // A running download's writer may still write a buffer, and would make the folder
+                // again, so the job deletes it once the writer stopped. Any other has no writer.
+                if (removed.state != DownloadState.DOWNLOADING) {
+                    withContext(filesDispatcher) { files.delete(removed.folder) }
+                }
+            }
+            .await()
     }
 }
 
@@ -103,6 +130,30 @@ internal fun DownloadEntity.toStatus(): DownloadStatus {
         DownloadState.FAILED -> DownloadStatus.Failed(failure ?: DownloadFailure.YOUTUBE)
         DownloadState.DOWNLOADED -> DownloadStatus.Downloaded(downloadedBytes)
     }
+}
+
+/** The download as the Downloads screen lists it. */
+internal fun DownloadEntity.toDownload(): Download {
+    val status = toStatus()
+    return Download(
+        video =
+            VideoSummary(
+                id = VideoId(videoId),
+                title = title,
+                channelId = ChannelId(channelId),
+                channelName = channelName,
+                duration = durationMs?.milliseconds,
+                published =
+                    publishedAt?.let { PublishedTime(it, isApproximate = publishedApproximate) },
+                thumbnails = thumbnails,
+                kind = kind,
+            ),
+        status = status,
+        requestedAt = requestedAt,
+        // No write changes a DOWNLOADED row after finish, so its updated_at is when it finished.
+        // See DownloadDao's KDoc.
+        finishedAt = if (status is DownloadStatus.Downloaded) updatedAt else null,
+    )
 }
 
 /**

@@ -20,10 +20,11 @@ internal fun row(
     audioItag: Int? = null,
     audioBytes: Long? = null,
     downloadedBytes: Long = 0,
+    folder: String = "folder-1",
 ) =
     DownloadEntity(
         videoId = videoId,
-        folder = "folder-1",
+        folder = folder,
         title = "A video",
         channelId = "UCaaaaaaaaaaaaaaaaaaaaaa",
         channelName = "Kettle and Crumb",
@@ -76,6 +77,14 @@ internal class FakeDownloadDao(
         calls += "pause $videoId $now"
         return 1
     }
+
+    override suspend fun remove(videoId: String): DownloadEntity? {
+        gate?.await()
+        calls += "remove $videoId"
+        return rows.firstOrNull { it.videoId == videoId }
+    }
+
+    override suspend fun delete(videoId: String) = error("Not used")
 
     override suspend fun row(videoId: String) = error("Not used")
 

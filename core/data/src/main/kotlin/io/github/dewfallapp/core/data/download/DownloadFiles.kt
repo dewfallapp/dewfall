@@ -17,9 +17,11 @@ enum class DownloadFileKind(internal val fileName: String) {
 /**
  * Where downloads keep their files: one folder per download under [root], which Hilt sets to
  * `noBackupFilesDir/downloads`, app-specific internal storage that no other app can read and that
- * Auto Backup never copies. Each folder's name is a random UUID, so no path holds a video ID. A
- * file being written ends in `.part`, and a complete one has its format's extension. #56 plays the
- * complete files, and #57 adds up their sizes. See docs/architecture.md#downloads-and-cleanup.
+ * Auto Backup never copies. [root] holds only download folders: each run of the queue deletes every
+ * folder there that no download names, so nothing else may live in it. Each folder's name is a
+ * random UUID, so no path holds a video ID. A file being written ends in `.part`, and a complete
+ * one has its format's extension. #56 plays the complete files, and #57 adds up their sizes. See
+ * docs/architecture.md#downloads-and-cleanup.
  *
  * Paths are user data, as file names are, so never log them.
  */
@@ -37,6 +39,10 @@ class DownloadFiles(val root: File) {
 
     /** Deletes the download named [folder] with its files. Returns whether nothing is left. */
     fun delete(folder: String): Boolean = folder(folder).deleteRecursively()
+
+    /** The names of the folders under [root], or none when it doesn't exist yet. */
+    fun folders(): List<String> =
+        root.listFiles()?.filter { it.isDirectory }?.map { it.name }.orEmpty()
 
     private companion object {
         const val PART_SUFFIX = ".part"

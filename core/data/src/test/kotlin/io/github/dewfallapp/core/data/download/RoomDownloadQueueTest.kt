@@ -11,6 +11,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 
 private val NOW = Instant.parse("2026-11-26T12:00:00Z")
@@ -67,6 +69,12 @@ private class FakeDownloadQueueDao(
         error("Not used")
 
     override suspend fun finish(videoId: String, bytes: Long, now: Instant) = error("Not used")
+
+    override suspend fun folders() = listOf("folder-1", "folder-2", "folder-1")
+
+    override fun folderOf(videoId: String) = flowOf("folder-$videoId")
+
+    override suspend fun isFolderOwned(folder: String) = folder == "folder-1"
 }
 
 class RoomDownloadQueueTest {
@@ -172,5 +180,15 @@ class RoomDownloadQueueTest {
         val idle = queue(FakeDownloadQueueDao(states = emptyList()), backgroundScope)
         assertEquals(false, idle.hasQueued())
         assertEquals(false, idle.hasDownloading())
+    }
+
+    @Test
+    fun `the folders come from the rows`() = runTest {
+        val queue = queue(FakeDownloadQueueDao(), backgroundScope)
+
+        assertEquals(setOf("folder-1", "folder-2"), queue.folders())
+        assertEquals("folder-aaaaaaaaaaa", queue.folderOf(VideoId("aaaaaaaaaaa")).first())
+        assertEquals(true, queue.isFolderOwned("folder-1"))
+        assertEquals(false, queue.isFolderOwned("folder-3"))
     }
 }

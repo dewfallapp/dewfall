@@ -45,6 +45,13 @@ constructor(
     override fun state(videoId: VideoId): Flow<QueueState?> =
         downloadDao.download(videoId.value).map { it?.state?.toQueueState() }.distinctUntilChanged()
 
+    override fun folderOf(videoId: VideoId): Flow<String?> =
+        queueDao.folderOf(videoId.value).distinctUntilChanged()
+
+    override suspend fun folders(): Set<String> = queueDao.folders().toSet()
+
+    override suspend fun isFolderOwned(folder: String): Boolean = queueDao.isFolderOwned(folder)
+
     override suspend fun setFormats(videoId: VideoId, chosen: ChosenFormats): Boolean =
         externalScope.write(clock) {
             queueDao.setFormats(

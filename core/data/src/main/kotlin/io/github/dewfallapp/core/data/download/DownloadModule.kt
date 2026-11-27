@@ -8,7 +8,16 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.io.File
+import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+
+/**
+ * The dispatcher that the repository deletes a removed download's files on, because a delete
+ * blocks. Tests replace it.
+ */
+@Qualifier @Retention(AnnotationRetention.BINARY) internal annotation class DownloadFilesDispatcher
 
 /** The name of the folder under noBackupFilesDir that holds every download's folder. */
 private const val DOWNLOADS_FOLDER = "downloads"
@@ -27,6 +36,10 @@ internal interface DownloadModule {
     @Binds fun bindFolderNames(names: RandomFolderNames): FolderNames
 
     companion object {
+        @Provides
+        @DownloadFilesDispatcher
+        fun provideFilesDispatcher(): CoroutineDispatcher = Dispatchers.IO
+
         @Provides
         @Singleton
         fun provideDownloadFiles(@ApplicationContext context: Context): DownloadFiles =

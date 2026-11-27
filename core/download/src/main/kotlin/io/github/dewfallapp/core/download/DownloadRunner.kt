@@ -1,5 +1,6 @@
 package io.github.dewfallapp.core.download
 
+import io.github.dewfallapp.core.data.download.DownloadFiles
 import io.github.dewfallapp.core.data.download.DownloadQueue
 import io.github.dewfallapp.core.data.download.QueueState
 import io.github.dewfallapp.core.data.download.QueuedDownload
@@ -13,7 +14,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
@@ -55,6 +59,7 @@ class DownloadRunner
 internal constructor(
     private val queue: DownloadQueue,
     private val downloader: VideoDownloader,
+    private val files: DownloadFiles,
     private val runState: DownloadRunState,
     private val stopCheck: StopCheck,
     logger: Logger,
@@ -142,6 +147,7 @@ internal constructor(
         var outcome: RunOutcome? = null
         try {
             queue.resetDownloading()
+            deleteUnownedFolders()
             log.info("Downloads run started")
             outcome = runQueue(report, stoppedByUser, marks)
         } finally {
@@ -158,6 +164,31 @@ internal constructor(
             log.info("Downloads run ended", LogField.flag("done", outcome == RunOutcome.DONE))
         }
         return outcome
+    }
+
+    /**
+     * Deletes every folder under the downloads root that no download names, such as one that a
+     * process which ended between a remove's delete of the row and of its folder left, or a part
+     * that a writer made just after its download was paused and removed. It runs while the run
+     * holds the run lock, before the first claim, so no writer runs: writers run only inside a run,
+     * and a row asked for meanwhile has no folder yet, because only its writer makes it. It logs
+     * only counts.
+     */
+    private suspend fun deleteUnownedFolders() {
+        val owned = queue.folders()
+        var deleted = 0
+        var left = 0
+        for (folder in files.folders()) {
+            if (folder in owned) continue
+            if (files.delete(folder)) deleted++ else left++
+        }
+        if (deleted > 0 || left > 0) {
+            log.info(
+                "Unowned download folders deleted",
+                LogField.count("deleted", deleted),
+                LogField.count("left", left),
+            )
+        }
     }
 
     private suspend fun runQueue(
@@ -182,8 +213,13 @@ internal constructor(
     }
 
     /**
-     * Downloads [item] while its row says it runs. When the user pauses it, or a later task removes
-     * it, the download stops within one buffer and the run goes on with the next.
+     * Downloads [item] while its row says it runs. When the user pauses it or removes it, the
+     * download stops within one buffer and the run goes on with the next. It also stops when the
+     * video's row names another folder: Room may report a remove and a new download of the same
+     * video as one change, which shows a waiting row, never a missing one. It doesn't stop on any
+     * other state, because the attempt's own writes set them, and stopping then would lose the
+     * attempt's outcome. Once the attempt ended, so no writer can make the folder again, it deletes
+     * the folder when no row names it any more, as after a remove.
      */
     private suspend fun downloadOne(
         item: QueuedDownload,
@@ -194,37 +230,45 @@ internal constructor(
         val bytes = NewBytes()
         val work = async { downloader.attempt(item, report, bytes) }
         val watch = launch {
-            queue.state(item.videoId).first { it == QueueState.PAUSED || it == null }
+            merge(
+                    queue.state(item.videoId).filter { it == QueueState.PAUSED || it == null },
+                    queue.folderOf(item.videoId).filter { it != null && it != item.folder },
+                )
+                .map {}
+                .first()
             work.cancel()
         }
-        try {
-            work.await()
-        } catch (e: CancellationException) {
-            if (!isActive) {
-                // The run itself was cancelled, as a job's stop does. A stop by the user
-                // pauses the queue. Any other stop leaves the download waiting for the next
-                // run, so no row stays marked as running in an idle process, which a swipe
-                // from Recents could then end and the next start would take for a stop by
-                // the user. New bytes in this attempt start its tries from 0, as they do in
-                // the downloader, so the attempt ends first: a buffer it was writing may still
-                // land. One write either way, so a process that ends right after can't leave
-                // half of it.
-                withContext(NonCancellable) {
-                    work.join()
-                    if (stoppedByUser()) {
-                        queue.pauseQueued()
-                        marks.paused = true
-                    } else {
-                        queue.backToWaiting(item.videoId, bytes.of(item).youtubeTries)
+        val step =
+            try {
+                work.await()
+            } catch (e: CancellationException) {
+                if (!isActive) {
+                    // The run itself was cancelled, as a job's stop does. A stop by the user
+                    // pauses the queue. Any other stop leaves the download waiting for the next
+                    // run, so no row stays marked as running in an idle process, which a swipe
+                    // from Recents could then end and the next start would take for a stop by
+                    // the user. New bytes in this attempt start its tries from 0, as they do in
+                    // the downloader, so the attempt ends first: a buffer it was writing may still
+                    // land. One write either way, so a process that ends right after can't leave
+                    // half of it.
+                    withContext(NonCancellable) {
+                        work.join()
+                        if (stoppedByUser()) {
+                            queue.pauseQueued()
+                            marks.paused = true
+                        } else {
+                            queue.backToWaiting(item.videoId, bytes.of(item).youtubeTries)
+                        }
                     }
+                    throw e
                 }
-                throw e
+                // Otherwise the user paused or removed it.
+                Step.NEXT
+            } finally {
+                watch.cancel()
             }
-            // Otherwise the user paused it.
-            Step.NEXT
-        } finally {
-            watch.cancel()
-        }
+        if (!queue.isFolderOwned(item.folder)) files.delete(item.folder)
+        step
     }
 }
 
