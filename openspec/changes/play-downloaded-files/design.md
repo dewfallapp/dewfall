@@ -26,7 +26,7 @@ See proposal.md for why. What exists on main at a41d305:
 
 ### 1. The lookup lives in `:core:data`
 
-PlayableDownloads, an interface in `:core:data`'s download package, with one main-safe function, `playable(videoId): PlayableDownload`. Its Room implementation reads `DownloadDao.row`, then checks the files through DownloadFiles on an injected IO dispatcher (a qualifier, as Takeout's read dispatcher). It returns:
+PlayableDownloads, an interface in `:core:data`'s download package, with one main-safe function, `playable(videoId): PlayableDownload`. Its Room implementation reads `DownloadDao.row`, then checks the files through DownloadFiles on an injected IO dispatcher (a qualifier, as Takeout's read dispatcher). It returns one of these, all plain classes whose text shows no path, because DownloadFiles counts paths as user data:
 
 - `Files(media)`: the video and audio files, or the one combined file.
 - `NotDownloaded`: no row, or a row that isn't DOWNLOADED.
@@ -53,7 +53,7 @@ In `currentItemChanged`, which runs on every timeline change and item transition
 
 ### 5. Failures
 
-ProgressiveMediaPeriod opens a file once and keeps it open while it loads, and reopens it only for a new load, such as after a seek outside what it holds ([ProgressiveMediaPeriod.java at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/ProgressiveMediaPeriod.java)); FileDataSource keeps a RandomAccessFile from `open` to `close`, and a deleted file stays readable through an open handle. So a removed download can play on until a reopen. A reopen of a file that is gone gives FileDataSource's IO error codes, such as ERROR_CODE_IO_FILE_NOT_FOUND, which `failureOf` already maps to OTHER: "the video stopped playing", with "Try again". That runs a new start, whose lookup finds the files missing and streams. PlaybackErrorsTest gets a case for the file codes. FileDataSource's FileNotFoundException carries the path in its message; the Logger never writes messages, and `report()` logs no throwable, and a PlaybackLog test with such an exception keeps it so. A file that is there at the right length but can't be opened or is corrupt plays from the files again on "Try again", and fails again, until the user removes the download.
+ProgressiveMediaPeriod opens a file once and keeps it open while it loads, and reopens it for a new load, such as after a seek outside what it holds, or when the extractor asks for a seek inside the file ([ProgressiveMediaPeriod.java at 1.11.1](https://github.com/androidx/media/blob/1.11.1/libraries/exoplayer/src/main/java/androidx/media3/exoplayer/source/ProgressiveMediaPeriod.java)); FileDataSource keeps a RandomAccessFile from `open` to `close`, and a deleted file stays readable through an open handle. So a removed download can play on until a reopen. A reopen of a file that is gone gives FileDataSource's IO error codes, such as ERROR_CODE_IO_FILE_NOT_FOUND, which `failureOf` already maps to OTHER: "the video stopped playing", with "Try again". That runs a new start, whose lookup finds the files missing and streams. PlaybackErrorsTest gets a case for the file codes. FileDataSource's FileNotFoundException carries the path in its message; the Logger never writes messages, and `report()` logs no throwable, and a PlaybackLog test with such an exception keeps it so. A file that is there at the right length but can't be opened or is corrupt plays from the files again on "Try again", and fails again, until the user removes the download.
 
 ### 6. Tests
 

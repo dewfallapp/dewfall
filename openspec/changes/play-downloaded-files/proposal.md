@@ -29,7 +29,7 @@ None.
 
 - `:core:data`: a lookup of a downloaded video's complete files, PlayableDownloads, over the existing DownloadDao query and DownloadFiles, with JVM tests. No database change.
 - `:core:playback`: PlaybackResolver asks the lookup before the stream links. The item's tag and PlaybackSources gain a plan for local files, played with Media3's FileDataSource, which comes with media3-exoplayer, so no new dependency. The service uses a local wake lock, without the Wi-Fi lock, while a file plays. JVM tests for the resolver, the source plan and the wake mode.
-- `:app`'s androidTest: an emulator test that downloads the test video through the fakes and plays it with no media request, and one that streams when a downloaded file is missing.
+- `:app`'s androidTest: emulator tests that download the test video through the fakes and play it offline with no media request, that stream it when a downloaded file is missing, and that fail on a seek after a file was deleted while playing, then stream on "Try again".
 - docs/architecture.md: the player's sequence and sections, and "What later tasks add"; docs/testing.md: the new emulator tests and the hand checks.
 - One pull request, which closes #56 and archives this change as its last commit.
 
