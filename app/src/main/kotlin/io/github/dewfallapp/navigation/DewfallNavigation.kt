@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -30,6 +31,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -218,7 +222,20 @@ private fun DestinationsBar(
                         contentDescription = null,
                     )
                 },
-                label = { Text(text = stringResource(destination.label)) },
+                label = {
+                    // At the largest font sizes, "Downloads" is wider than its item, so a label
+                    // breaks with a hyphen, "Down-" and "loads", and the bar grows, never mid-word
+                    // without one. The maintainer chose this on November 28, 2026.
+                    Text(
+                        text = stringResource(destination.label),
+                        style =
+                            LocalTextStyle.current.copy(
+                                hyphens = Hyphens.Auto,
+                                lineBreak = LineBreak.Paragraph,
+                            ),
+                        textAlign = TextAlign.Center,
+                    )
+                },
                 alwaysShowLabel = true,
                 colors =
                     NavigationBarItemDefaults.colors(

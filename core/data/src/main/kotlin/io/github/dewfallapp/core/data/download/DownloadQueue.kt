@@ -46,8 +46,8 @@ data class QueuedDownload(
  * The download queue as the download job sees it, over the `downloads` table. Only `:core:download`
  * uses it. Every write names the states it may change, so a write that comes late changes nothing
  * after a pause or a stop, and the one-row writes return whether they changed the row. The reset
- * and the pause change every row in their states.
- * Writes finish even when the caller is cancelled. See docs/architecture.md#downloads-and-cleanup.
+ * and the pause change every row in their states. Writes finish even when the caller is cancelled.
+ * See docs/architecture.md#downloads-and-cleanup.
  */
 interface DownloadQueue {
     /** The states of the downloads that wait or run, WAITING and DOWNLOADING. */
