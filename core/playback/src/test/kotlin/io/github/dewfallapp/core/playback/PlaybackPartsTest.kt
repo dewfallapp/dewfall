@@ -1,5 +1,8 @@
 package io.github.dewfallapp.core.playback
 
+import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
+import io.github.dewfallapp.core.data.download.PlayableDownload
 import io.github.dewfallapp.core.logging.LogLevel
 import io.github.dewfallapp.core.logging.Logger
 import io.github.dewfallapp.core.model.AudioFormat
@@ -7,6 +10,8 @@ import io.github.dewfallapp.core.model.FormatChoice
 import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoFormat
 import io.github.dewfallapp.core.model.VideoId
+import java.io.File
+import java.io.FileNotFoundException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -26,7 +31,7 @@ private val audio = AudioFormat(AUDIO_LINK, 251, "audio/webm", "opus", null, nul
 class PlaybackPartsTest {
     @Test
     fun `the source plan follows the tag, and an item without it is refused`() {
-        fun plan(choice: FormatChoice) = sourcePlan(PlaybackTag(choice, metered = false))
+        fun plan(choice: FormatChoice) = sourcePlan(PlaybackTag.Streamed(choice, metered = false))
 
         assertEquals(
             SourcePlan.Merged(VIDEO_LINK, AUDIO_LINK),
@@ -40,8 +45,36 @@ class PlaybackPartsTest {
     }
 
     @Test
+    fun `a downloaded tag plans its files, merged or alone, and is never live`() {
+        val videoFile = File("/data/downloads/folder-1/video.mp4")
+        val audioFile = File("/data/downloads/folder-1/audio.webm")
+        val separate = PlaybackTag.Downloaded(PlayableDownload.Separate(videoFile, audioFile))
+        val combined = PlaybackTag.Downloaded(PlayableDownload.Combined(videoFile))
+
+        assertEquals(SourcePlan.Files(videoFile, audioFile), sourcePlan(separate))
+        assertEquals(SourcePlan.Files(videoFile, audio = null), sourcePlan(combined))
+        assertFalse(separate.live)
+        assertFalse(combined.live)
+        assertTrue(PlaybackTag.Streamed(FormatChoice.Live(MANIFEST), metered = false).live)
+        assertFalse(separate.toString().contains("folder-1"))
+    }
+
+    @Test
+    fun `a downloaded item keeps only the CPU awake, and anything else Wi-Fi too`() {
+        val downloaded =
+            PlaybackTag.Downloaded(PlayableDownload.Combined(File("/data/downloads/f/media.mp4")))
+
+        assertEquals(C.WAKE_MODE_LOCAL, wakeModeFor(downloaded))
+        assertEquals(
+            C.WAKE_MODE_NETWORK,
+            wakeModeFor(PlaybackTag.Streamed(FormatChoice.Combined(video), metered = false)),
+        )
+        assertEquals(C.WAKE_MODE_NETWORK, wakeModeFor(null))
+    }
+
+    @Test
     fun `the tag's text never shows the links`() {
-        val tag = PlaybackTag(FormatChoice.Separate(video, audio), metered = true)
+        val tag = PlaybackTag.Streamed(FormatChoice.Separate(video, audio), metered = true)
 
         assertFalse(tag.toString().contains("googlevideo"))
     }
@@ -186,14 +219,24 @@ class PlaybackPartsTest {
 
         log.failed(PlaybackFailure.NETWORK, errorCode = 2001)
         log.failed(PlaybackFailure.PRIVATE, errorCode = null)
+        // FileDataSource's error carries the file's path in its message.
+        log.failed(
+            PlaybackFailure.OTHER,
+            errorCode = PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
+            error = FileNotFoundException("/data/downloads/folder-1/audio.webm (No such file)"),
+        )
 
         assertEquals(
             listOf(
                 "WARN Dewfall.Playback Playback failed category=NETWORK errorCode=2001",
                 "WARN Dewfall.Playback Playback failed category=PRIVATE",
             ),
-            lines,
+            lines.take(2),
         )
+        assertEquals(3, lines.size)
+        assertTrue(lines[2].startsWith("WARN Dewfall.Playback Playback failed category=OTHER"))
+        assertFalse(lines[2].contains("folder-1"), lines[2])
+        assertFalse(lines[2].contains("audio.webm"), lines[2])
     }
 }
 

@@ -78,6 +78,9 @@ class PlaybackService : MediaSessionService() {
     private val refreshLimit = RefreshLimit()
     private var currentPlaybackId: String? = null
 
+    /** The player's wake mode, which follows the current item, as [wakeModeFor] decides. */
+    private var wakeMode = C.WAKE_MODE_NETWORK
+
     /** Saves the position every [SAVE_INTERVAL] while the video plays. */
     private var ticking: Job? = null
 
@@ -99,8 +102,8 @@ class PlaybackService : MediaSessionService() {
                 .setAudioAttributes(audio, /* handleAudioFocus= */ true)
                 .setHandleAudioBecomingNoisy(true)
                 // Locks the CPU and Wi-Fi awake while it plays, so streaming goes on with the
-                // screen off.
-                .setWakeMode(C.WAKE_MODE_NETWORK)
+                // screen off. A downloaded item needs only the CPU, as currentItemChanged sets.
+                .setWakeMode(wakeMode)
                 .build()
         player.addListener(PlayerEvents())
         sessionPlayer = SessionPlayer(player, items, getString(R.string.playback_session_error))
@@ -180,10 +183,14 @@ class PlaybackService : MediaSessionService() {
         sessions.fail(failure)
     }
 
-    /** Fetches new links for the current item after YouTube refused one, and goes on with them. */
+    /**
+     * Fetches new links for the current item after YouTube refused one, and goes on with them, or
+     * with its downloaded files if they can play by now. A downloaded item gets no HTTP status, so
+     * it never comes here.
+     */
     private fun refreshLinks(errorCode: Int) {
         val item = player.currentMediaItem
-        val tag = item?.localConfiguration?.tag as? PlaybackTag
+        val tag = item?.localConfiguration?.tag as? PlaybackTag.Streamed
         val playbackId = item?.mediaId
         val videoId = playbackId?.let(items::videoId)
         if (tag == null || playbackId == null || videoId == null) {
@@ -209,7 +216,7 @@ class PlaybackService : MediaSessionService() {
      * ExoPlayer adapts.
      */
     private fun limitLiveVariants(tracks: Tracks) {
-        val tag = player.currentMediaItem?.localConfiguration?.tag as? PlaybackTag
+        val tag = player.currentMediaItem?.localConfiguration?.tag as? PlaybackTag.Streamed
         val group = tracks.groups.firstOrNull { it.type == C.TRACK_TYPE_VIDEO }
         if (tag?.live != true || group == null) return
         val sizes =
@@ -245,7 +252,14 @@ class PlaybackService : MediaSessionService() {
         val playbackId = item?.mediaId
         if (playbackId != currentPlaybackId) refreshLimit.reset()
         currentPlaybackId = playbackId
-        val live = (item?.localConfiguration?.tag as? PlaybackTag)?.live == true
+        val tag = item?.localConfiguration?.tag
+        val live = (tag as? PlaybackTag)?.live == true
+        // Also when a refresh's replaceMediaItem puts a downloaded item in a streamed one's place.
+        val mode = wakeModeFor(tag)
+        if (mode != wakeMode) {
+            wakeMode = mode
+            player.setWakeMode(mode)
+        }
         progress.itemChanged(playbackId, playbackId?.let(items::videoId), live)
         items.currentChanged(playbackId)
     }
