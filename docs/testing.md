@@ -552,7 +552,7 @@ Record the sets again:
 
 ## Emulator tests
 
-Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are fifteen: SearchThenPlayTest (#46), TryAgainOfflineTest (#212), VideoScreenBackgroundTest (#211), FullscreenClearOfBarsTest (#218), ChannelSubscribeTest (#47), ResumeTest (#50), ChannelInitialTest (#213), SearchChannelTest (#222), ListEndAfterVideoTest (#241), InboxFromChannelTest (#49), ChannelsNavigationTest (#115), NavigationBarLargeFontTest (#115), TakeoutImportTest (#51), InboxCheckTest (#52) and DownloadTest (#54). The app opens on the inbox, so every test that searches first taps the inbox's search button through `openSearchFromInbox` in OpenSearch.kt, which finds it by its content description, "Search YouTube". ChannelInitialTest is the one that starts no screen: it calls a function of the app in the app's process, on the device's own Android. The database's DAO tests run on an emulator too, from core/database/src/androidTest/, as [Database tests](#database-tests) explains.
+Emulator tests are the [slow tests](#slow-tests). They run the app on an emulator or a phone, and live in app/src/androidTest/. Today there are eighteen: SearchThenPlayTest (#46), TryAgainOfflineTest (#212), VideoScreenBackgroundTest (#211), FullscreenClearOfBarsTest (#218), ChannelSubscribeTest (#47), ResumeTest (#50), ChannelInitialTest (#213), SearchChannelTest (#222), ListEndAfterVideoTest (#241), InboxFromChannelTest (#49), ChannelsNavigationTest (#115), NavigationBarLargeFontTest (#115), TakeoutImportTest (#51), InboxCheckTest (#52), ImageLoaderTest (#176), DownloadTest (#54), DownloadButtonsTest (#54) and DownloadsScreenTest (#55). The app opens on the inbox, so every test that searches first taps the inbox's search button through `openSearchFromInbox` in OpenSearch.kt, which finds it by its content description, "Search YouTube". ChannelInitialTest is the one that starts no screen: it calls a function of the app in the app's process, on the device's own Android. The database's DAO tests run on an emulator too, from core/database/src/androidTest/, as [Database tests](#database-tests) explains.
 
 ### What search then play checks
 
@@ -670,6 +670,19 @@ DownloadTest runs the download engine end to end: the real job, on Android 14 an
 - **The whole download.** It downloads the test video and checks that the folder holds `video.mp4` and `audio.m4a`, byte for byte the test APK's assets, and that the status's size is theirs.
 - **Pause and go on.** It turns FakeNetwork off, asks for the download, which waits, pauses it, turns the network on and asks again. The second ask schedules a run at once, replacing any backoff that a run which already asked to run again left, so the download goes on at once; the wait allows 3 minutes for a slow emulator.
 - **What it leaves out.** A pause part way through a file: the test files are under 1 MiB, one range each, so where a pause lands would depend on timing. FormatWriterTest and DownloadRunnerTest cover going on from a partial file. The Task Manager's Stop, a reboot and a real video are in [Checking downloads by hand](#checking-downloads-by-hand).
+
+### What the Downloads screen test checks
+
+DownloadsScreenTest writes each download to the in-memory database through DownloadDao as the engine leaves one, with a folder of its own that holds a file, so no test waits for a real download. It runs the real repository and the real job. Its tests follow the downloads spec's Downloads screen requirements and the inbox spec's navigation bar requirements:
+
+- **The bar.** "Downloads" opens the Downloads screen, selected, with "No downloads yet", and the back gesture returns to the inbox, with "Inbox" selected.
+- **Remove download.** On a finished download, "Remove download" deletes its row and its folder, and "Download removed" shows.
+- **Cancel.** On a paused download, "Cancel" deletes its row and its folder, and no message shows.
+- **A row.** The row's text is one node with a click action that holds the title and the channel name but not the button's word, and "Remove download" is a node of its own. A tap on the row opens the video screen, and the back gesture returns to the Downloads screen, "Downloads" selected.
+- **Search YouTube from Downloads** hides the bar, and its back arrow returns to the Downloads screen with "Downloads" selected.
+- **Saved state.** With a download listed, it saves the activity's state to a Bundle as ChannelsNavigationTest does, checks that it holds the back stacks, by DownloadsKey's name, and that no value holds the video's ID or title.
+
+The deletion of a running download's folder, the sweep and a remove that races a new download of the same video run in DownloadRunner's JVM tests, RunnerRemovesTest, because on an emulator where a running download stands when the tap lands would depend on timing.
 
 ### The fakes
 
@@ -902,6 +915,18 @@ The download engine's own tests run on the JVM and in DownloadTest with fakes. T
 - **The buttons.** In the inbox, tap a row's download button: the video doesn't open, and the row says "Waiting to download" or "Downloading", then shows the check mark. Tap the ring of a row that downloads: it says "Paused" with its percentage. On the video screen, the chip goes from "Download" through "Downloading" to "Downloaded", even after leaving the screen and coming back. A live stream has no chip.
 - **TalkBack and the largest font.** With TalkBack on, a downloaded row reads its title, length and time ago as one item, then "Downloaded" as the next, and the download button reads "Download". "Waiting to download" and "Downloaded" on the video screen announce no action. At the largest font size, the row's words wrap, the button stays at the end of the meta line, and the chips wrap onto new lines.
 - **Logs.** `adb logcat` during all of this holds no video ID, title, link or file name, WorkManager's lines included.
+
+## Checking the Downloads screen by hand
+
+The Downloads screen's reducer, ViewModel and screenshot tests cover its rules and its look, RunnerRemovesTest and the repository's tests its deletes, and DownloadsScreenTest its buttons on an emulator. A change to the Downloads screen, its read or its deletes gets these checks too, on emulators with Android 10 (API 29) and the newest Android. They download real videos, so run them when YouTube answers this network; if it blocks it, ask the maintainer whether the real-video steps can wait in an issue. List the folders with `adb shell run-as io.github.dewfallapp ls -l no_backup/downloads/` before and after each delete.
+
+- **Pause and Resume.** Start a download from the inbox, open "Downloads": its row shows the bar and "42%, 344 of 820 MB" as it goes. "Pause" stops it within a few seconds and the row says "Paused, 42%"; "Resume" goes on from there.
+- **A waiting download.** Download two videos: the second says "Waiting to download". Tap its "Pause": it says "Paused" and stays paused when the first finishes.
+- **Cancel while it runs.** Tap "Cancel" on a running download: its row goes within a few seconds, the next waiting download starts, its folder is gone, and the inbox row shows the download button again.
+- **Remove download.** On a finished download, "Remove download": "Download removed" shows, the row goes and so does its folder.
+- **Try again.** With the network off long enough, or a full phone, a failed download shows the error glyph, its words, "Try again" and "Cancel"; "Try again" goes on from its bytes.
+- **Layout.** Check light, dark, dynamic color, the largest font size, a tablet-sized window and the mini player over the list's end: nothing is cut off, and the last button sits above the mini player and the bar.
+- **The log.** `adb logcat` holds no video ID, title or file name, and the sweep's line only counts.
 
 ## The pre-push gate
 

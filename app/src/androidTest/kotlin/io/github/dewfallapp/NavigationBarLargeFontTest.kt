@@ -70,7 +70,13 @@ class NavigationBarLargeFontTest {
     @Test
     fun noLabelIsCutOffAtTheLargestFont() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            for (label in listOf(R.string.navigation_inbox, R.string.navigation_channels)) {
+            val labels =
+                listOf(
+                    R.string.navigation_inbox,
+                    R.string.navigation_channels,
+                    R.string.navigation_downloads,
+                )
+            for (label in labels) {
                 val text = context.getString(label)
                 val item = hasText(text) and isSelectable()
                 compose.waitUntil(SCREEN_TIMEOUT_MS) {
