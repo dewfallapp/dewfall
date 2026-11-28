@@ -64,6 +64,40 @@ class QueueSchedulerTest {
     }
 
     @Test
+    fun `a backup run is handed back to the user-initiated job once, with its rows as they are`() =
+        runTest {
+            queue.add(FakeRow(VIDEO, "f", state = QueueState.DOWNLOADING))
+            runState.phase = RunPhase.RUNNING
+            runState.backupRun = true
+            val scheduler = scheduler(backgroundScope)
+
+            scheduler.startNow()
+            scheduler.startNow()
+
+            assertEquals(1, launcher.launches)
+            assertFalse(runState.backupRun)
+            assertEquals(QueueState.DOWNLOADING, queue.row(VIDEO).state)
+            assertEquals(RunPhase.RUNNING, runState.phase)
+        }
+
+    @Test
+    fun `a refused hand-back is tried again at the next start`() = runTest {
+        queue.add(FakeRow(VIDEO, "f", state = QueueState.DOWNLOADING))
+        runState.phase = RunPhase.RUNNING
+        runState.backupRun = true
+        launcher.accepts = false
+        val scheduler = scheduler(backgroundScope)
+
+        scheduler.startNow()
+        assertTrue(runState.backupRun)
+        launcher.accepts = true
+        scheduler.startNow()
+
+        assertEquals(2, launcher.launches)
+        assertFalse(runState.backupRun)
+    }
+
+    @Test
     fun `a running row left by an ended process waits again and is scheduled`() = runTest {
         queue.add(FakeRow(VIDEO, "f", state = QueueState.DOWNLOADING))
 
@@ -105,6 +139,59 @@ class PausesAfterExitTest {
     fun `an update at or after the exit doesn't pause`() {
         assertFalse(pausesAfterExit(LatestExit(stopped = true, atMillis = 2_000), true, 2_000))
         assertFalse(pausesAfterExit(LatestExit(stopped = true, atMillis = 2_000), true, 3_000))
+    }
+
+    @Test
+    fun `a swipe during a backup run with a backup scheduled doesn't pause`() {
+        assertFalse(
+            pausesAfterExit(
+                LatestExit(stopped = true, atMillis = 2_000, foreground = false),
+                true,
+                1_000,
+                backupRanLast = true,
+                backupScheduled = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `Force stop during a backup run pauses, because it cancelled every backup`() {
+        assertTrue(
+            pausesAfterExit(
+                LatestExit(stopped = true, atMillis = 2_000),
+                true,
+                1_000,
+                backupRanLast = true,
+                backupScheduled = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `a Stop beside a backup run, while the player's service ran, pauses`() {
+        // The player's foreground service made the Task Manager list the app.
+        assertTrue(
+            pausesAfterExit(
+                LatestExit(stopped = true, atMillis = 2_000, foreground = true),
+                true,
+                1_000,
+                backupRanLast = true,
+                backupScheduled = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `a Stop during a user-initiated run pauses, with its backup scheduled`() {
+        assertTrue(
+            pausesAfterExit(
+                LatestExit(stopped = true, atMillis = 2_000),
+                true,
+                1_000,
+                backupRanLast = false,
+                backupScheduled = true,
+            ),
+        )
     }
 
     @Test

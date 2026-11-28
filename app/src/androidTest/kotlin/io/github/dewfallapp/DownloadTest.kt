@@ -1,6 +1,7 @@
 package io.github.dewfallapp
 
 import android.app.job.JobScheduler
+import android.os.Build
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -13,6 +14,7 @@ import io.github.dewfallapp.core.model.DownloadStatus
 import io.github.dewfallapp.fake.FakeNetwork
 import io.github.dewfallapp.fake.TestVideo
 import java.io.File
+import java.util.concurrent.CountDownLatch
 import javax.inject.Inject
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -20,11 +22,22 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.runner.RunWith
+
+/**
+ * The backup jobs that DownloadJobService keeps armed on Android 14 and later: `:core:download`'s
+ * FIRST_BACKUP_JOB_ID and SECOND_BACKUP_JOB_ID, which are internal there.
+ */
+private val BACKUP_JOB_IDS = listOf(55, 56)
+
+/** How often a wait for JobScheduler's state looks again. */
+private const val POLL_MS = 200L
 
 /** How long a download of the test video may take on a cold emulator. */
 private const val DOWNLOAD_TIMEOUT_MS = 60_000L
@@ -72,6 +85,16 @@ class DownloadTest {
         WorkManager.getInstance(context).cancelAllWork().result.get()
         files.root.deleteRecursively()
     }
+
+    private val jobs = context.getSystemService(JobScheduler::class.java)
+
+    /** Waits until [done] says true of JobScheduler's state, polling, for a download's time. */
+    private suspend fun awaitJobs(done: () -> Boolean) =
+        withTimeout(DOWNLOAD_TIMEOUT_MS) {
+            while (!done()) {
+                delay(POLL_MS)
+            }
+        }
 
     private suspend fun awaitStatus(timeoutMs: Long, matches: (DownloadStatus) -> Boolean) =
         withTimeout(timeoutMs) { downloads.status(TestVideo.id).first(matches) }
@@ -123,5 +146,24 @@ class DownloadTest {
             asset(TestVideo.VIDEO_ASSET),
             downloadedFiles().getValue("video.mp4").readBytes(),
         )
+    }
+
+    @Test
+    fun aRunningDownloadKeepsABackupJobArmed() = runBlocking {
+        assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        val hold = CountDownLatch(1)
+        network.mediaHold = hold
+        try {
+            downloads.download(TestVideo.summary)
+            awaitStatus(DOWNLOAD_TIMEOUT_MS) { it is DownloadStatus.Downloading }
+
+            awaitJobs { jobs.getPendingJob(BACKUP_JOB_IDS[0]) != null }
+        } finally {
+            hold.countDown()
+        }
+
+        awaitStatus(DOWNLOAD_TIMEOUT_MS) { it is DownloadStatus.Downloaded }
+        // The row says Downloaded before the run's end cancels the backup.
+        awaitJobs { BACKUP_JOB_IDS.all { jobs.getPendingJob(it) == null } }
     }
 }

@@ -1,6 +1,7 @@
 package io.github.dewfallapp.core.download
 
 import android.app.ActivityManager
+import android.app.ActivityManager.RunningAppProcessInfo
 import android.app.ApplicationExitInfo
 import android.content.Context
 import android.content.pm.PackageManager
@@ -10,6 +11,7 @@ import io.github.dewfallapp.core.data.database.ApplicationScope
 import io.github.dewfallapp.core.data.download.DownloadQueue
 import io.github.dewfallapp.core.data.download.hasDownloading
 import io.github.dewfallapp.core.logging.Logger
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -17,18 +19,44 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 
-/** The latest end of the app's process: whether the user [stopped] it, and when, in [atMillis]. */
-internal data class LatestExit(val stopped: Boolean, val atMillis: Long)
+/**
+ * The latest end of the app's process: whether the user [stopped] it, and when, in [atMillis].
+ * [foreground] says whether the process was more important than a perceptible one at its end, as a
+ * process with a user-initiated job or a foreground service, such as the player's, is. The Task
+ * Manager lists the app only while it runs one of those.
+ */
+internal data class LatestExit(
+    val stopped: Boolean,
+    val atMillis: Long,
+    val foreground: Boolean = true,
+)
 
 /**
  * Whether a process that ended with [exit] paused its downloads: only when the user stopped the
- * app, a download was running then, as [downloading] says from the rows a run left, and the app
- * wasn't updated at or after that time, [updatedAtMillis]. Android gives the same reason for a
- * swipe away from the recent apps and, before Android 14, for an update. A swipe of an app that
- * only waits leaves no running row, and an update has its time.
+ * app, a download was running then, as [downloading] says from the rows a run left or from the
+ * [RunRecord] of a run that hadn't claimed one yet, and the app wasn't updated at or after that
+ * time, [updatedAtMillis]. Android gives the same reason for a swipe away from the recent apps and,
+ * before Android 14, for an update. A swipe of an app that only waits leaves no running row and no
+ * active run, and an update has its time. On Android 14 and later a swipe ends a backup job's
+ * process at once, because it runs in the background, so it doesn't pause when [backupRanLast] and
+ * [backupScheduled] say a backup run ran last and a backup job is still scheduled, and the process
+ * wasn't in the foreground at its end: the Task Manager lists the app only while it runs a
+ * user-initiated job or a foreground service, and Force stop cancels every job of the app, so then
+ * the exit can only be a swipe. A Stop while the player's foreground service runs beside a backup
+ * run still pauses. See ADR 0010's note of November 28, 2026.
  */
-internal fun pausesAfterExit(exit: LatestExit?, downloading: Boolean, updatedAtMillis: Long) =
-    exit != null && exit.stopped && downloading && updatedAtMillis < exit.atMillis
+internal fun pausesAfterExit(
+    exit: LatestExit?,
+    downloading: Boolean,
+    updatedAtMillis: Long,
+    backupRanLast: Boolean = false,
+    backupScheduled: Boolean = false,
+) =
+    exit != null &&
+        exit.stopped &&
+        downloading &&
+        updatedAtMillis < exit.atMillis &&
+        !(backupRanLast && backupScheduled && !exit.foreground)
 
 /** The app's own exit records and update time, which Android keeps. */
 internal interface AppHistory {
@@ -37,11 +65,61 @@ internal interface AppHistory {
 
     /** When the app was last installed or updated, in milliseconds since the epoch. */
     fun updatedAtMillis(): Long
+
+    /** Whether the last run of the queue was a backup job's, from the marker it writes. */
+    fun backupRanLast(): Boolean = false
+
+    /** Whether a backup job is scheduled or runs. */
+    fun backupScheduled(): Boolean = false
+
+    /** Whether a run of the queue had begun and not ended when the process ended. */
+    fun runWasActive(): Boolean = false
+
+    /** Forgets [runWasActive], once the decision has read it. */
+    fun forgetRun() = Unit
 }
 
-/** Reads [AppHistory] from ActivityManager and PackageManager. */
-internal class AndroidAppHistory @Inject constructor(@ApplicationContext context: Context) :
-    AppHistory {
+/**
+ * Says whether a run of the queue has begun and not ended, in an empty file in the app's no-backup
+ * folder, which outlives the process. A Stop from the Task Manager ends the process before the
+ * run's end can delete it, so the next start can tell that a run was active even before it claimed
+ * its first download. It holds nothing about a video.
+ */
+internal interface RunRecord {
+    /** Records that a run has begun. */
+    fun begin()
+
+    /** Records that no run is active. */
+    fun end()
+
+    /** Whether a run had begun and not ended. */
+    fun wasActive(): Boolean
+}
+
+/** [RunRecord] as the file `download-run` in noBackupFilesDir. */
+internal class FileRunRecord @Inject constructor(@ApplicationContext context: Context) : RunRecord {
+    private val file = File(context.noBackupFilesDir, "download-run")
+
+    override fun begin() {
+        file.createNewFile()
+    }
+
+    override fun end() {
+        file.delete()
+    }
+
+    override fun wasActive() = file.exists()
+}
+
+/** Reads [AppHistory] from ActivityManager, PackageManager, the backup marker and JobScheduler. */
+internal class AndroidAppHistory
+@Inject
+constructor(
+    @ApplicationContext context: Context,
+    private val marker: BackupMarker,
+    private val backups: BackupJobs,
+    private val record: RunRecord,
+) : AppHistory {
     private val packageName = context.packageName
     private val activities = context.getSystemService(ActivityManager::class.java)
     private val packages = context.packageManager
@@ -49,8 +127,14 @@ internal class AndroidAppHistory @Inject constructor(@ApplicationContext context
     override fun latestExit(): LatestExit? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
         val exit = activities.getHistoricalProcessExitReasons(packageName, 0, 1).firstOrNull()
+        // Android 14 recorded 125 for a Stop with the player's foreground service, 200 for one
+        // during a user-initiated job, and 230 for a swipe during a backup run.
         return exit?.let {
-            LatestExit(it.reason == ApplicationExitInfo.REASON_USER_REQUESTED, it.timestamp)
+            LatestExit(
+                stopped = it.reason == ApplicationExitInfo.REASON_USER_REQUESTED,
+                atMillis = it.timestamp,
+                foreground = it.importance < RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
+            )
         }
     }
 
@@ -61,6 +145,14 @@ internal class AndroidAppHistory @Inject constructor(@ApplicationContext context
                 @Suppress("DEPRECATION") packages.getPackageInfo(packageName, 0)
             }
             .lastUpdateTime
+
+    override fun backupRanLast() = marker.exists()
+
+    override fun backupScheduled() = backups.anyScheduled()
+
+    override fun runWasActive() = record.wasActive()
+
+    override fun forgetRun() = record.end()
 }
 
 /** Something to wait for before a run or a start reads the queue. */
@@ -102,7 +194,18 @@ internal constructor(
     private suspend fun decide() {
         try {
             val exit = history.latestExit()
-            if (pausesAfterExit(exit, queue.hasDownloading(), history.updatedAtMillis())) {
+            // A run that hadn't claimed its first download yet left no running row.
+            val downloading = queue.hasDownloading() || history.runWasActive()
+            history.forgetRun()
+            val pauses =
+                pausesAfterExit(
+                    exit,
+                    downloading,
+                    history.updatedAtMillis(),
+                    history.backupRanLast(),
+                    history.backupScheduled(),
+                )
+            if (pauses) {
                 queue.pauseQueued()
                 log.info("Downloads paused after the app was stopped")
             }

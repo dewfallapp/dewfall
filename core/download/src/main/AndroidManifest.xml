@@ -25,7 +25,9 @@
     <application>
         <!--
             Only JobScheduler may bind to it. Only Android 14 and later schedule it, because
-            user-initiated data transfer jobs came with Android 14, so it targets API 34.
+            user-initiated data transfer jobs came with Android 14, so it targets API 34. It runs
+            the user-initiated job, 54, and the backup jobs, 55 and 56, that go on with a download
+            when its process ends. See ADR 0010's note of November 28, 2026.
         -->
         <service
             android:name=".DownloadJobService"

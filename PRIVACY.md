@@ -16,7 +16,7 @@ While a video plays or is paused, until its notification goes away, Android show
 
 ## The download notification
 
-While a video downloads, Android shows a notification that says "Downloading a video" with its progress. It never names the video. On Android 13 and later, Dewfall doesn't ask for permission to show notifications, so until you allow them in the system settings, Android shows the download only in its list of active apps.
+While a video downloads, Android shows a notification that says "Downloading a video" with its progress. It never names the video. On Android 13 and later, Dewfall doesn't ask for permission to show notifications, so until you allow them in the system settings, Android shows the download only in its list of active apps. On Android 14 and later, a download that goes on by itself after the app's process ended may run where Android shows it nowhere, neither in the notifications nor in the list of active apps, until you open the app or, if you allow notifications by then, until the download's next run. Like any download you started, it may use any connection, mobile data included.
 
 ## Network connections
 
