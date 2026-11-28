@@ -14,8 +14,9 @@ import kotlinx.coroutines.withContext
 
 /**
  * Reads the video's row in `downloads`, then checks its files through [files] on [dispatcher]. A
- * read or a check that throws, such as on a damaged database, gives Unreadable, so the video
- * streams instead of failing.
+ * read or a check that throws an exception, such as on a damaged database, gives Unreadable, so the
+ * video streams instead of failing. An Error, such as OutOfMemoryError, is a fault of the app or
+ * the VM, not an unreadable download, so it is thrown on.
  */
 internal class RoomPlayableDownloads
 @Inject
@@ -24,6 +25,7 @@ constructor(
     private val files: DownloadFiles,
     @DownloadFilesDispatcher private val dispatcher: CoroutineDispatcher,
 ) : PlayableDownloads {
+    // Flow's catch, unlike a catch-all, lets through the exceptions thrown to cancel the flow.
     override suspend fun playable(videoId: VideoId): PlayableDownload = flow {
         val row = downloadDao.row(videoId.value)
         emit(
@@ -34,7 +36,10 @@ constructor(
             },
         )
     }
-        .catch { emit(PlayableDownload.Unreadable) }
+        .catch { error ->
+            if (error is Error) throw error
+            emit(PlayableDownload.Unreadable)
+        }
         .single()
 }
 

@@ -61,7 +61,10 @@ internal sealed interface PlaybackTag {
 internal fun wakeModeFor(tag: Any?): Int =
     if (tag is PlaybackTag.Downloaded) C.WAKE_MODE_LOCAL else C.WAKE_MODE_NETWORK
 
-/** The media sources that an item becomes, by its tag. */
+/**
+ * The media sources that an item becomes, by its tag. Files is a plain class, so its text never
+ * shows the paths.
+ */
 internal sealed interface SourcePlan {
     /** A video format and an audio format, merged. */
     data class Merged(val videoUrl: String, val audioUrl: String) : SourcePlan
@@ -76,7 +79,14 @@ internal sealed interface SourcePlan {
      * A downloaded [video] file and its [audio] file, merged, or one file with both when [audio] is
      * null. Paths are user data, so never log a plan.
      */
-    data class Files(val video: File, val audio: File?) : SourcePlan
+    class Files(val video: File, val audio: File?) : SourcePlan {
+        override fun equals(other: Any?): Boolean =
+            other is Files && video == other.video && audio == other.audio
+
+        override fun hashCode(): Int = 31 * video.hashCode() + audio.hashCode()
+
+        override fun toString(): String = "Files"
+    }
 
     /** An item without the tag, which fails without a request. */
     data object Refused : SourcePlan

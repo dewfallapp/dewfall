@@ -6,10 +6,13 @@ import io.github.dewfallapp.core.model.VideoId
 import java.io.File
 import java.io.IOException
 import java.nio.file.Files
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -23,6 +26,13 @@ class RoomPlayableDownloadsTest {
     private val base = Files.createTempDirectory("playable").toFile()
     private val root = File(base, "downloads")
     private val files = DownloadFiles(root)
+
+    /** Removes the test's temporary folder, and fails the test if something in it stays. */
+    @AfterTest
+    fun removeTemporaryFolder() {
+        assertTrue(base.deleteRecursively())
+        assertFalse(base.exists())
+    }
 
     /** A finished download of a video file and an audio file, with the sizes it recorded. */
     private fun separate(
@@ -201,6 +211,20 @@ class RoomPlayableDownloadsTest {
     }
 
     @Test
+    fun `an Error from the database is thrown on, not turned into Unreadable`() = runTest {
+        val error = TestError()
+        val lookup =
+            RoomPlayableDownloads(
+                FakeDownloadDao(rowError = error),
+                files,
+                StandardTestDispatcher(testScheduler),
+            )
+
+        val thrown = assertFailsWith<TestError> { lookup.playable(VideoId(ID)) }
+        assertSame(error, thrown)
+    }
+
+    @Test
     fun `a cancelled lookup ends without an answer`() = runTest {
         val gate = CompletableDeferred<Unit>()
         val lookup =
@@ -229,3 +253,6 @@ class RoomPlayableDownloadsTest {
         assertFalse(combined.toString().contains("folder-1"))
     }
 }
+
+/** An Error that only this test throws. */
+private class TestError : Error("test")
