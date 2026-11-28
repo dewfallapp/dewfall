@@ -155,8 +155,9 @@ jobs:
             booted="$("$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
             if [ "$booted" = "1" ]; then
               echo "Booted after about $((attempt * 5)) seconds."
-              # Unlocks the screen, so the test's activity doesn't start behind the keyguard.
-              "$adb" shell input keyevent 82
+              # Unlocks the screen, so the test's activity doesn't start behind the keyguard. It
+              # sends no key: a key that reaches the launcher before its first window makes the
+              # launcher ANR, and the ANR dialog takes window focus from the tests (#266).
               "$adb" shell wm dismiss-keyguard
               exit 0
             fi
@@ -165,6 +166,62 @@ jobs:
           echo "::error::The emulator didn't finish booting in 10 minutes."
           tail -n 50 emulator.log
           exit 1
+
+      # An ANR or crash dialog is a focusable system window over the test's activity, so while one
+      # is on screen every Espresso call fails waiting for window focus (#266). This step waits for
+      # the launcher to take focus, fails while such a dialog is on screen, and prints the ANRs that
+      # logcat holds. docs/testing.md#the-emulator-tests-workflow explains it.
+      - name: Wait for the launcher
+        run: |
+          adb="$ANDROID_HOME/platform-tools/adb"
+          windows() {
+            timeout 30 "$adb" shell dumpsys window windows | tr -d '\r' || true
+          }
+          # Window titles such as "Application Not Responding: com.android.launcher3".
+          fail_on_dialog() {
+            dialogs="$(echo "$1" \
+              | grep -E "Window\{[0-9a-f]+ u[0-9]+ (Application Not Responding|Application Error)" \
+              || true)"
+            if [ -n "$dialogs" ]; then
+              echo "$dialogs"
+              echo "::error::A system dialog is on screen and takes window focus from the tests."
+              exit 1
+            fi
+          }
+          # A deadline in seconds, since one pass can take up to a minute when adb hangs.
+          launcher="mCurrentFocus=Window\{[0-9a-f]+ u[0-9]+ com\.android\.launcher3/"
+          focused=""
+          deadline=$((SECONDS + 180))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            state="$(windows)"
+            fail_on_dialog "$state"
+            focus="$(echo "$state" | grep -E "mCurrentFocus=" | head -n 1 || true)"
+            if echo "$focus" | grep -qE "$launcher"; then
+              focused="yes"
+              break
+            fi
+            # Dismissing the keyguard again covers a keyguard that wasn't up yet at boot.
+            timeout 30 "$adb" shell wm dismiss-keyguard || true
+            sleep 2
+          done
+          echo "Focus: $focus"
+          if [ -z "$focused" ]; then
+            echo "::error::The launcher didn't take window focus in about 3 minutes."
+            exit 1
+          fi
+          # An ANR dialog shows about 2 seconds after its ANR, and an ANR fires 5 seconds after
+          # the input it waited for, so this looks again after 15 seconds.
+          sleep 15
+          fail_on_dialog "$(windows)"
+          anrs="$(timeout 60 "$adb" logcat -d \
+            | grep -E "ANR in |Input event injection from pid [0-9]+ failed" || true)"
+          if [ -n "$anrs" ]; then
+            echo "$anrs"
+            # Its dialog has closed, or the check above would have failed, so the tests can run.
+            echo "::warning::An app didn't respond before the tests. See the lines above."
+          else
+            echo "ANRs before the tests: none"
+          fi
 
       # Before Android 11, FullscreenClearOfBarsTest needs the navigation bar on a side in
       # landscape, which three-button navigation gives a phone. The image's own default sets the
@@ -209,6 +266,15 @@ jobs:
               print("::error::FullscreenClearOfBarsTest must run once on Android 10, unskipped.")
               sys.exit(1)
           PY
+
+      # Prints the ANRs that logcat still holds after the run, also when the tests pass, when no
+      # artifact keeps the logcat. It never fails the job.
+      - name: Report ANRs
+        if: ${{ always() }}
+        run: |
+          anrs="$(timeout 60 "$ANDROID_HOME/platform-tools/adb" logcat -d \
+            | grep -E "ANR in |Input event injection from pid [0-9]+ failed" || true)"
+          echo "${anrs:-ANRs that logcat holds after the run: none}"
 
       # Also after a cancel or a timeout, which leave no other trace of the emulator. adb waits
       # for a device that isn't there, so the timeout ends it when the emulator is gone.
