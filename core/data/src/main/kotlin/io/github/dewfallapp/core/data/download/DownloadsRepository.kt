@@ -39,6 +39,13 @@ interface DownloadsRepository {
     /** Pauses the video's download if it waits or runs, keeping its bytes. */
     suspend fun pause(videoId: VideoId)
 
+    /**
+     * The summary saved with the video's download when it was asked for, whatever the download's
+     * state, or null while the video has no download. It emits again when the download is asked for
+     * or removed.
+     */
+    fun savedVideo(videoId: VideoId): Flow<VideoSummary?>
+
     /** Every download, in the queue's order, with the summary saved when it was asked for. */
     fun downloads(): Flow<List<Download>>
 

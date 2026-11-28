@@ -50,7 +50,8 @@ internal fun row(
 
 /**
  * Records the repository's calls as text, answers its reads with [rows], or throws [rowError] from
- * `row`, and can hold a write until the test lets it go. The engine's calls aren't used here.
+ * `row`, and can hold a write until the test lets it go. [downloadFlow], when given, replaces the
+ * one video's Flow of its row. The engine's calls aren't used here.
  */
 internal class FakeDownloadDao(
     private val rows: List<DownloadEntity> = emptyList(),
@@ -58,12 +59,13 @@ internal class FakeDownloadDao(
     private val gate: CompletableDeferred<Unit>? = null,
     private val bytesInUse: Flow<Long> = flowOf(rows.sumOf { it.downloadedBytes }),
     private val rowError: Throwable? = null,
+    private val downloadFlow: Flow<DownloadEntity?>? = null,
 ) : DownloadDao() {
     val calls = mutableListOf<String>()
     var requestedRow: DownloadEntity? = null
 
     override fun download(videoId: String): Flow<DownloadEntity?> =
-        flowOf(rows.firstOrNull { it.videoId == videoId })
+        downloadFlow ?: flowOf(rows.firstOrNull { it.videoId == videoId })
 
     override fun downloads(): Flow<List<DownloadEntity>> = flowOf(rows)
 
