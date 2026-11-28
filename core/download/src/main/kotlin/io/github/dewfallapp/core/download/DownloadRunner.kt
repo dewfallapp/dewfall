@@ -218,16 +218,39 @@ internal constructor(
             // Not cancellable: a stop that came during the claim would leave the claimed row
             // DOWNLOADING in an idle process. So the claim always finishes, and downloadOne,
             // already cancelled, puts the row back, or pauses the queue on a stop by the user.
+            // Each claim takes every ask before it into account, so it clears the mark.
             val next =
                 withContext(NonCancellable) {
                     runState.mutex.withLock {
+                        runState.askedDuringRun = false
                         queue.claimNext().also { if (it == null) runState.phase = RunPhase.IDLE }
                     }
                 } ?: break
             step = downloadOne(next, report, stoppedByUser, marks)
+            if (step == Step.RETRY) step = retryOrClaimAgain()
         }
         return if (step == Step.RETRY) RunOutcome.RETRY else RunOutcome.DONE
     }
+
+    /**
+     * After a download that waits for the network or for YouTube: claims again when a start came
+     * since the last claim, as a run that the start had scheduled would, and otherwise ends the run
+     * in the same step under the lock, so a start after it finds IDLE and schedules the next run.
+     * Without it, a tap during the run would wait for the job's backoff, which doubles with each
+     * run that asks to run again. The next claim goes in the order asked, so the download that just
+     * waited may try once more first, as it does in a run that a tap starts.
+     */
+    private suspend fun retryOrClaimAgain(): Step =
+        withContext(NonCancellable) {
+            runState.mutex.withLock {
+                if (runState.askedDuringRun) {
+                    Step.NEXT
+                } else {
+                    runState.phase = RunPhase.IDLE
+                    Step.RETRY
+                }
+            }
+        }
 
     /**
      * Downloads [item] while its row says it runs. When the user pauses it or removes it, the

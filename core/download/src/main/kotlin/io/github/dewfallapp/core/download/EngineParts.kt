@@ -91,8 +91,11 @@ internal enum class RunPhase {
 
 /**
  * The run's phase, which the scheduler and the runner change only while they hold [mutex]. The
- * runner checks the queue under the same lock before it ends, so a download added in that moment is
- * never left behind, and a running job is never scheduled again.
+ * runner decides under the same lock to end, when no download waits or its download waits for the
+ * network or for YouTube, and sets IDLE in that step, so a download asked for in that moment is
+ * never left behind. A start schedules a job only when no run is active or one is ending, or to
+ * hand a backup run back to the user-initiated job, as [backupRun] says. When a run is ending,
+ * Android stops its job, and the new job's run waits for [runLock].
  */
 @Singleton
 internal class DownloadRunState @Inject constructor() {
@@ -101,6 +104,14 @@ internal class DownloadRunState @Inject constructor() {
     /** Held for a whole run, its cleanup included, so a second run waits for the first to end. */
     val runLock = Mutex()
     var phase = RunPhase.IDLE
+
+    /**
+     * Whether a start came while the phase was RUNNING, after the run's last claim, so the run
+     * claims again instead of ending with a download that waits. The scheduler sets it and the
+     * runner clears it at each claim, both under [mutex]. A mark that a cancelled run leaves is
+     * harmless, because the next run's first claim clears it.
+     */
+    var askedDuringRun = false
 
     /**
      * Whether a backup job's run, which Android shows in no Task Manager, is registered, so the
