@@ -61,8 +61,8 @@ private const val PLAYED_MS = 3_000L
  * request for its bytes; a finished download with a file gone streams, and still says Downloaded;
  * and a file deleted while it plays fails on the seek that opens it again, and "Try again" streams
  * it. Each test downloads [TestVideo] through the real job, the real runner and the fakes, as
- * DownloadTest does, then opens it from Search YouTube. #58's test adds the download from the video
- * screen. See docs/testing.md#emulator-tests.
+ * DownloadTest does, then opens it from Search YouTube. DownloadThenPlayOfflineTest, #58's test,
+ * adds the download from the video screen. See docs/testing.md#emulator-tests.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
