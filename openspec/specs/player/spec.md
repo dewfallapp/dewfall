@@ -271,10 +271,10 @@ A live stream SHALL play from its live edge. Its controls SHALL show "Live" in p
 - **THEN** it plays from the live edge, and the controls say "Live"
 
 ### Requirement: Expired links are fetched again
-When YouTube refuses a stream link, the player SHALL fetch new links once and go on from the same position. If the new links fail too, it SHALL stop and say that playback failed. When the player is about to fetch new links that once, and the video's downloaded files can play by then, as the requirement on downloaded videos says, it SHALL play them instead, from the same position, and fetch no links.
+When YouTube refuses a stream link, the player SHALL fetch new links once and go on from the same position. If the new links fail too, it SHALL stop and say that playback failed. When the player is about to fetch new links that once, and the video's download is done and its files match it by then, as the requirement on downloaded videos says, it SHALL play those files instead, from the same position, and fetch no links. If one of those files can't be opened, playback SHALL fail, as the failure requirement says.
 
 #### Scenario: An expired link
-- **WHEN** a video that doesn't play from its files paused long enough for its links to expire, it still has no downloaded files that can play, and the user presses play
+- **WHEN** a video that doesn't play from its files paused long enough for its links to expire, it still has no finished download whose files match it, and the user presses play
 - **THEN** the player fetches new links and plays on from where it paused
 
 #### Scenario: A download that finished before the links expired
@@ -290,7 +290,7 @@ When a video can't play, the video area SHALL say why in words, and SHALL offer 
 
 #### Scenario: Trying again
 - **WHEN** the user taps "Try again" after a playback failure
-- **THEN** the player fetches the links again, or plays the downloaded files when they can play, and plays from where it stopped, unless the cause is still there, such as a downloaded file that can't be opened, which fails again
+- **THEN** the player fetches the links again, or plays the downloaded files when the video's download is done and its files match it, and plays from where it stopped, unless the cause is still there, such as a downloaded file that can't be opened, which fails again
 
 #### Scenario: No format the phone can decode
 - **WHEN** the phone can decode none of the video's formats
