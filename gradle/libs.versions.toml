@@ -54,7 +54,7 @@ androidxTestExtJunit = "1.3.0"
 # that Android 17 no longer has, so every test fails there. 3.7.0 is the latest stable release.
 # The maintainer approved declaring it on November 21, 2026, for #46.
 androidxTestEspresso = "3.7.0"
-kotlinxSerialization = "1.11.0"
+kotlinxSerialization = "1.13.0"
 # Compose Preview Screenshot Testing, which AGP's screenshot test suites run. The engine and
 # screenshot-validation-api share this version, so Renovate moves them together. Test only, never
 # ships. The maintainer approved it on November 21, 2026, for #45. See
