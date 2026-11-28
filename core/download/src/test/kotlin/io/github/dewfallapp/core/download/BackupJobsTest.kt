@@ -22,12 +22,21 @@ internal class FakeBackups : BackupJobs {
     val calls = mutableListOf<String>()
     var scheduled = false
 
+    /** What [queueJobScheduled] says, such as after a boot that restored the queue's job. */
+    var queueJob = false
+
+    override var available = true
+
+    /** What [arm] says, as JobScheduler's answer. */
+    var armAccepts = true
+
     /** Called before each arm, disarm and cancel is recorded. */
     var onCall: () -> Unit = {}
 
-    override fun arm(id: Int) {
+    override fun arm(id: Int): Boolean {
         onCall()
         calls += "arm $id"
+        return armAccepts
     }
 
     override fun disarm(id: Int) {
@@ -41,6 +50,8 @@ internal class FakeBackups : BackupJobs {
     }
 
     override fun anyScheduled() = scheduled
+
+    override fun queueJobScheduled() = queueJob
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

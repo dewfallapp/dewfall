@@ -14,12 +14,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * Starts the download queue after the phone boots, on Android 10 to 13 only, which the manifest's
- * `download_boot_receiver` sets. There the worker depends on WorkManager to schedule its work again
- * after a reboot, and a reboot within seconds of a tap can lose that, as a hand check on Android
- * 12L showed. Starting the queue here schedules a waiting download in any case. With none waiting
- * it reads and tidies the database and sends nothing. Android 14 and later persist the download's
- * job themselves. The maintainer chose this on November 26, 2026.
+ * Starts the download queue after the phone boots, on every Android version. On Android 10 to 13
+ * the worker depends on WorkManager to schedule its work again after a reboot, and a reboot within
+ * seconds of a tap can lose that, as a hand check on Android 12L showed; the maintainer chose this
+ * receiver for those versions on November 26, 2026. On Android 14 and later, Android restores the
+ * persisted user-initiated job, but drops it at boot when a backoff gave it a delay, so a backup
+ * job goes on with the download instead, as QueueScheduler.resumeAfterBoot says. The maintainer
+ * chose to run the receiver on every version on November 28, 2026, in the coordinating session's
+ * question dialog, answering "Yes, every version (Recommended)", as ADR 0010's note on #280
+ * records. With no download waiting it reads and tidies the database and sends nothing.
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -28,7 +31,9 @@ class BootReceiver : BroadcastReceiver() {
         val pending = goAsync()
         parts.scope().launch {
             try {
-                startAfterBoot(intent.action, parts.logger()) { parts.scheduler().startNow() }
+                startAfterBoot(intent.action, parts.logger()) {
+                    parts.scheduler().resumeAfterBoot()
+                }
             } finally {
                 pending.finish()
             }

@@ -18,7 +18,7 @@ class QueueSchedulerTest {
     private val launcher = CountingLauncher()
 
     private fun scheduler(scope: CoroutineScope) =
-        QueueScheduler(queue, runState, launcher, StopCheck {}, scope, Logger.Silent)
+        QueueScheduler(queue, runState, launcher, FakeBackups(), StopCheck {}, scope, Logger.Silent)
 
     @Test
     fun `a waiting download schedules a run`() = runTest {

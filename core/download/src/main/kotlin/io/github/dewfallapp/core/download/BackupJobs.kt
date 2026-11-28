@@ -45,8 +45,14 @@ internal fun backupFor(jobId: Int): Int =
 
 /** The backup jobs, and the queue's own job when a backup run finished its work. */
 internal interface BackupJobs {
-    /** Schedules backup [id] to start [BACKUP_DELAY] from now, replacing one that waits. */
-    fun arm(id: Int)
+    /** Whether backup jobs exist here, on Android 14 and later. */
+    val available: Boolean
+
+    /**
+     * Schedules backup [id] to start [BACKUP_DELAY] from now, replacing one that waits, and says
+     * whether JobScheduler accepted it.
+     */
+    fun arm(id: Int): Boolean
 
     /** Cancels backup [id], and stops it if it runs. */
     fun disarm(id: Int)
@@ -56,12 +62,19 @@ internal interface BackupJobs {
 
     /** Whether either backup job is scheduled or runs. */
     fun anyScheduled(): Boolean
+
+    /**
+     * Whether Android has the queue's user-initiated job, scheduled or running, such as after a
+     * boot that restored it.
+     */
+    fun queueJobScheduled(): Boolean
 }
 
 /**
- * JobScheduler's backup jobs: plain jobs for DownloadJobService, on any network, not persisted,
- * because the persisted user-initiated job covers a reboot, with the queue's backoff and
- * PRIORITY_HIGH.
+ * JobScheduler's backup jobs: plain jobs for DownloadJobService, on any network, with the queue's
+ * backoff and PRIORITY_HIGH. They aren't persisted: after a reboot, Android restores the persisted
+ * user-initiated job, and when it dropped that job because a backoff gave it a delay, BootReceiver
+ * arms a backup instead, as ADR 0010's note on #280 explains.
  */
 @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 internal class JobSchedulerBackups
@@ -69,7 +82,9 @@ internal class JobSchedulerBackups
 constructor(@ApplicationContext private val context: Context) : BackupJobs {
     private val scheduler = context.getSystemService(JobScheduler::class.java)
 
-    override fun arm(id: Int) {
+    override val available = true
+
+    override fun arm(id: Int): Boolean {
         val job =
             JobInfo.Builder(id, ComponentName(context, DownloadJobService::class.java))
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
@@ -80,7 +95,7 @@ constructor(@ApplicationContext private val context: Context) : BackupJobs {
                 )
                 .setPriority(JobInfo.PRIORITY_HIGH)
                 .build()
-        scheduler.schedule(job)
+        return scheduler.schedule(job) == JobScheduler.RESULT_SUCCESS
     }
 
     override fun disarm(id: Int) {
@@ -94,17 +109,23 @@ constructor(@ApplicationContext private val context: Context) : BackupJobs {
     override fun anyScheduled(): Boolean =
         scheduler.getPendingJob(FIRST_BACKUP_JOB_ID) != null ||
             scheduler.getPendingJob(SECOND_BACKUP_JOB_ID) != null
+
+    override fun queueJobScheduled(): Boolean = scheduler.getPendingJob(QUEUE_JOB_ID) != null
 }
 
 /** Below Android 14 no backup job exists. */
 internal object NoBackups : BackupJobs {
-    override fun arm(id: Int) = Unit
+    override val available = false
+
+    override fun arm(id: Int) = false
 
     override fun disarm(id: Int) = Unit
 
     override fun cancelQueueJob() = Unit
 
     override fun anyScheduled() = false
+
+    override fun queueJobScheduled() = false
 }
 
 /**

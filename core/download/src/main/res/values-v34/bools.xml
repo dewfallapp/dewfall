@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Android 14 and later persist the download's job, so BootReceiver stays off. -->
-    <bool name="download_boot_receiver">false</bool>
-</resources>

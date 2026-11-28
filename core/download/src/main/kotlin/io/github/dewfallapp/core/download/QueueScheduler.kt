@@ -116,7 +116,8 @@ internal suspend fun Operation.enqueued(): Boolean =
  * DownloadScheduler says, or hands a backup job's run back to the user-initiated job. A tap's write
  * calls it, and so does MainActivity's `onStart`, which starts again a queue that Android refused
  * to schedule while the app was hidden. A start while a run is running marks the ask, so that run
- * claims again before it ends instead of leaving the download to the job's backoff.
+ * claims again before it ends instead of leaving the download to the job's backoff. BootReceiver
+ * calls [resumeAfterBoot].
  */
 @Singleton
 internal class QueueScheduler
@@ -125,6 +126,7 @@ constructor(
     private val queue: DownloadQueue,
     private val runState: DownloadRunState,
     private val launcher: RunLauncher,
+    private val backups: BackupJobs,
     private val stopCheck: StopCheck,
     @ApplicationScope private val scope: CoroutineScope,
     logger: Logger,
@@ -156,14 +158,62 @@ constructor(
                 if (runState.backupRun && launcher.launch()) runState.backupRun = false
                 return
             }
-            // With no run in the process, a running row can only be left over.
-            queue.resetDownloading()
-            if (!queue.hasQueued()) return
-            if (launcher.launch()) {
-                runState.phase = RunPhase.SCHEDULED
-            } else {
+            scheduleWaiting(launch = { launcher.launch() }) {
                 log.warn("Download run not scheduled")
             }
         }
+    }
+
+    /**
+     * What BootReceiver does after a boot. When Android restored the queue's user-initiated job, it
+     * leaves it to run. Android restores persisted jobs before it sends the boot broadcast, but it
+     * drops a user-initiated job that a backoff gave a delay, so otherwise a waiting download asks
+     * for that job again. Android refuses it while the app isn't visible, so then it arms the first
+     * backup job, which goes on with the download 30 seconds or more later, and the app's return
+     * hands it back to the user-initiated job, as after a kill. Below Android 14 no backup exists,
+     * and it does what [startNow] does. See ADR 0010's note on #280.
+     */
+    internal suspend fun resumeAfterBoot() {
+        stopCheck.await()
+        runState.mutex.withLock {
+            if (runState.phase != RunPhase.IDLE || backups.queueJobScheduled()) return
+            scheduleWaiting(launch = { launchAfterBoot() }) {
+                when {
+                    !backups.available -> log.warn("Download run not scheduled")
+                    backups.arm(FIRST_BACKUP_JOB_ID) -> log.info("Download backup armed after boot")
+                    // The download waits, and the app's next start schedules it.
+                    else -> log.warn("Download backup not armed after boot")
+                }
+            }
+        }
+    }
+
+    /**
+     * Asks for the run after a boot, and says false when Android refuses or the launch throws, such
+     * as when the user denied RUN_USER_INITIATED_JOBS, so a backup still goes on with the download.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun launchAfterBoot(): Boolean =
+        try {
+            launcher.launch()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            log.warn("Download run after boot failed", error = e)
+            false
+        }
+
+    /**
+     * Schedules a run with [launch] when a download waits, or calls [refused]. Call it under the
+     * run lock while no run is active in the process.
+     */
+    private suspend inline fun scheduleWaiting(
+        launch: suspend () -> Boolean,
+        refused: () -> Unit,
+    ) {
+        // With no run in the process, a running row can only be left over.
+        queue.resetDownloading()
+        if (!queue.hasQueued()) return
+        if (launch()) runState.phase = RunPhase.SCHEDULED else refused()
     }
 }

@@ -5,8 +5,9 @@
     <!--
         A download the user starts runs in a user-initiated data transfer job on Android 14 and
         later, which needs RUN_USER_INITIATED_JOBS, and is persisted so it survives a reboot, which
-        needs RECEIVE_BOOT_COMPLETED. On Android 10 to 13 it runs in a WorkManager worker with a
-        dataSync foreground service, which needs FOREGROUND_SERVICE_DATA_SYNC from Android 14 on.
+        needs RECEIVE_BOOT_COMPLETED, as BootReceiver does on every version. On Android 10 to 13 it
+        runs in a WorkManager worker with a dataSync foreground service, which needs
+        FOREGROUND_SERVICE_DATA_SYNC from Android 14 on.
         All four are normal permissions, so Android doesn't ask the user. See ADR 0010.
     -->
     <uses-permission android:name="android.permission.RUN_USER_INITIATED_JOBS" />
@@ -36,13 +37,13 @@
             tools:targetApi="34" />
 
         <!--
-            Starts the queue after a boot on Android 10 to 13, where WorkManager's own reschedule
-            can be lost after a quick reboot. Android delivers its boot broadcast to a receiver
-            that isn't exported. See BootReceiver.
+            Starts the queue after a boot on every version: on Android 10 to 13, where WorkManager's
+            own reschedule can be lost after a quick reboot, and on Android 14 and later, where
+            Android drops a user-initiated job that a backoff gave a delay. Android delivers its
+            boot broadcast to a receiver that isn't exported. See BootReceiver.
         -->
         <receiver
             android:name=".BootReceiver"
-            android:enabled="@bool/download_boot_receiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
