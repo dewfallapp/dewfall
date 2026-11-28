@@ -2,7 +2,7 @@
 
 ## Why
 
-Phase 6's goal is "Download a video and watch it without internet" ([roadmap](../../../docs/roadmap.md#phase-6-manual-downloads)). Since #56, a downloaded video plays from its files offline, but the video screen's details still come only from YouTube. So offline, under a video that plays, the details area says that YouTube can't be reached, with "Try again", and the media notification and the mini player show no title or channel name. [#262](https://github.com/dewfallapp/dewfall/issues/262) asks the screen to show the details saved with the download instead: the title, the channel and the publish time.
+Phase 6's goal is "Download a video and watch it without internet" ([roadmap](../../../../docs/roadmap.md#phase-6-manual-downloads)). Since #56, a downloaded video plays from its files offline, but the video screen's details still come only from YouTube. So offline, under a video that plays, the details area says that YouTube can't be reached, with "Try again", and the media notification and the mini player show no title or channel name. [#262](https://github.com/dewfallapp/dewfall/issues/262) asks the screen to show the details saved with the download instead: the title, the channel and the publish time.
 
 ## What Changes
 
