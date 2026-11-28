@@ -23,7 +23,7 @@ internal class AskDuringRunTest : RunnerFixture() {
     private val calls = mutableMapOf<VideoId, Int>()
 
     private fun scheduler(scope: CoroutineScope) =
-        QueueScheduler(queue, runState, launcher, StopCheck {}, scope, Logger.Silent)
+        QueueScheduler(queue, runState, launcher, FakeBackups(), StopCheck {}, scope, Logger.Silent)
 
     /** Fetches each video's links as the fixture does, and runs [before] with its call count. */
     private fun counting(before: suspend (VideoId, Int) -> Unit) = StreamLinksRepository { id ->
