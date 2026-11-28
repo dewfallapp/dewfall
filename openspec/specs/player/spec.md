@@ -260,7 +260,7 @@ On a metered network the player SHALL stream a picture whose shorter side is at 
 - **THEN** the player streams the best format at or below the limit that it can decode
 
 #### Scenario: A downloaded video on mobile data
-- **WHEN** a video downloaded at 720p, whose files match its download, starts playing on mobile data
+- **WHEN** a video downloaded at 720p, whose files match its download and can all be opened, starts playing on mobile data
 - **THEN** the player plays the 720p file from the phone
 
 ### Requirement: A live stream plays live
@@ -278,7 +278,7 @@ When YouTube refuses a stream link, the player SHALL fetch new links once and go
 - **THEN** the player fetches new links and plays on from where it paused
 
 #### Scenario: A download that finished before the links expired
-- **WHEN** a video streams, its download finishes and its files match it, and later YouTube refuses one of its links
+- **WHEN** a video streams, its download finishes, its files match it and can all be opened, and later YouTube refuses one of its links
 - **THEN** the player plays on from the downloaded files, from the same position, and fetches no new links
 
 ### Requirement: A playback failure says why
@@ -965,5 +965,5 @@ Every video that can't play from finished downloaded files SHALL stream when its
 The player SHALL choose between the downloaded files and the stream only when playback starts: when the user opens a video that the player doesn't hold, taps "Try again" or plays after the session was gone, and when expired links are fetched again. A video that the player already holds, playing, paused or failed, SHALL go on as it is until one of those starts it again, a refresh of expired links included, as "Opening the video that already plays goes on with it" says.
 
 #### Scenario: A download that finishes while the video streams
-- **WHEN** a video streams while its download finishes, its files match it, its playback doesn't start again, then the user closes the mini player, and later opens the video again
+- **WHEN** a video streams while its download finishes, its files match it and can all be opened, its playback doesn't start again, then the user closes the mini player, and later opens the video again
 - **THEN** it streams until the mini player closes, and the next opening plays it from its files
