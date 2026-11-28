@@ -12,16 +12,6 @@ import kotlinx.coroutines.test.runTest
 
 private val VIDEO = VideoId("aaaaaaaaaaa")
 
-/** Counts its launches, and answers each with [accepts]. */
-private class CountingLauncher(var accepts: Boolean = true) : RunLauncher {
-    var launches = 0
-
-    override suspend fun launch(): Boolean {
-        launches++
-        return accepts
-    }
-}
-
 class QueueSchedulerTest {
     private val queue = FakeQueue()
     private val runState = DownloadRunState()
@@ -60,6 +50,8 @@ class QueueSchedulerTest {
 
             assertEquals(0, launcher.launches)
             assertEquals(phase, runState.phase)
+            // Only a running run marks the ask: a scheduled one claims everything anyway.
+            assertEquals(phase == RunPhase.RUNNING, runState.askedDuringRun)
         }
     }
 

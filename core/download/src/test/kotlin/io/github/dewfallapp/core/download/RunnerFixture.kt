@@ -163,13 +163,16 @@ internal abstract class RunnerFixture {
     protected fun part(id: VideoId, kind: DownloadFileKind) = files.part(id.value + "-folder", kind)
 }
 
-/** A run record in memory. */
+/** A run record in memory. [onEnd] runs as the run's end deletes the record. */
 internal class FakeRunRecord(var active: Boolean = false) : RunRecord {
+    var onEnd: () -> Unit = {}
+
     override fun begin() {
         active = true
     }
 
     override fun end() {
+        onEnd()
         active = false
     }
 

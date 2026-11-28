@@ -44,7 +44,8 @@ private const val DOWNLOAD_TIMEOUT_MS = 60_000L
 
 /**
  * How long a paused download may take to finish after the second ask, which schedules a run at
- * once, replacing any pending backoff, with room for a slow emulator.
+ * once, replacing any pending backoff, or makes the run that is still running claim again, with
+ * room for a slow emulator.
  */
 private const val RETRY_TIMEOUT_MS = 180_000L
 

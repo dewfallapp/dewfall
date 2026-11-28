@@ -115,7 +115,8 @@ internal suspend fun Operation.enqueued(): Boolean =
  * Starts a run of the queue when none is active in the process and a download waits, as
  * DownloadScheduler says, or hands a backup job's run back to the user-initiated job. A tap's write
  * calls it, and so does MainActivity's `onStart`, which starts again a queue that Android refused
- * to schedule while the app was hidden.
+ * to schedule while the app was hidden. A start while a run is running marks the ask, so that run
+ * claims again before it ends instead of leaving the download to the job's backoff.
  */
 @Singleton
 internal class QueueScheduler
@@ -142,6 +143,8 @@ constructor(
         stopCheck.await()
         runState.mutex.withLock {
             if (runState.phase != RunPhase.IDLE) {
+                // A scheduled run that hasn't begun claims every download that waits anyway.
+                if (runState.phase == RunPhase.RUNNING) runState.askedDuringRun = true
                 // A backup job's run shows in no Task Manager and may stop after minutes, so the
                 // app's return or a tap hands its download back to the user-initiated job, which
                 // replaces the one that waits idle and stops the backup when it starts. The rows
