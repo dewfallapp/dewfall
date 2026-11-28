@@ -71,9 +71,10 @@ private val ChipBorderWidth: Dp = 1.dp
 
 /**
  * The video screen: a minimize button, then [videoArea], then the video's details, or loading, or a
- * failure. It is stateless: it shows [state], with the time ago counted from [now] in [zone], and
- * reports what the user does through [onIntent], [onMinimize] and [onOpenChannel]. The video area
- * reads the player itself, so playback state never enters [state].
+ * failure, or the details saved with the video's download with the failure below them. It is
+ * stateless: it shows [state], with the time ago counted from [now] in [zone], and reports what the
+ * user does through [onIntent], [onMinimize] and [onOpenChannel]. The video area reads the player
+ * itself, so playback state never enters [state].
  *
  * Its background fills the window behind the system bars. Its content sits inside the safe drawing
  * area, in one column at most [ReadableWidth] wide, so nothing is under the system bars or the
@@ -122,6 +123,19 @@ internal fun PlayerScreen(
                             modifier = areaModifier,
                         )
                     }
+                    is DetailsArea.Saved -> {
+                        Details(
+                            page = details.page,
+                            saved = state.saved,
+                            download = state.shownDownload,
+                            now = now,
+                            zone = zone,
+                            onOpenChannel = { onOpenChannel(details.page.channelId) },
+                            onIntent = onIntent,
+                            modifier = areaModifier,
+                            failure = details.error,
+                        )
+                    }
                     is DetailsArea.Failed -> {
                         Failure(
                             error = details.error,
@@ -151,8 +165,10 @@ private fun Loading(modifier: Modifier = Modifier) {
 /**
  * The video's details, after the "Player" frames: the title, the publish line, the download chip
  * for [download], if it shows, and the watched chip once the database has answered with what it
- * holds, [saved], the channel and the description, which the user can select and copy. They scroll,
- * so a long description or a large font never cuts anything off.
+ * holds, [saved], the channel and the description, which the user can select and copy. For the
+ * details saved with a download, [failure] is the request's failure, whose Banner goes in the
+ * description's place. They scroll, so a long description, a large font or the Banner never cuts
+ * anything off.
  */
 @Composable
 private fun Details(
@@ -164,6 +180,7 @@ private fun Details(
     onOpenChannel: () -> Unit,
     onIntent: (PlayerIntent) -> Unit,
     modifier: Modifier = Modifier,
+    failure: YouTubeError? = null,
 ) {
     Column(
         modifier =
@@ -213,7 +230,9 @@ private fun Details(
             }
         }
         Channel(name = page.channelName, avatars = page.channelAvatars, onOpen = onOpenChannel)
-        if (page.description.isNotEmpty()) {
+        if (failure != null) {
+            FailureBanner(error = failure, onTryAgain = { onIntent(PlayerIntent.TryAgain) })
+        } else if (page.description.isNotEmpty()) {
             SelectionContainer {
                 Text(text = page.description, style = MaterialTheme.typography.bodyLarge)
             }
@@ -328,16 +347,30 @@ private fun Channel(
 @Composable
 private fun Failure(error: YouTubeError, onTryAgain: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        val offers = error.offersTryAgain
-        Banner(
-            message = stringResource(failureText(error)),
-            glyph = painterResource(DesignR.drawable.ic_error),
-            glyphDescription = stringResource(R.string.player_failed_icon),
-            glyphTint = MaterialTheme.colorScheme.error,
-            actionLabel = if (offers) stringResource(R.string.player_try_again) else null,
-            onAction = if (offers) onTryAgain else null,
+        FailureBanner(
+            error = error,
+            onTryAgain = onTryAgain,
             modifier =
                 Modifier.padding(horizontal = DewfallSpacing.margin, vertical = DewfallSpacing.sm),
         )
     }
+}
+
+/** The design system's neutral Banner for [error], with "Try again" only when it can help. */
+@Composable
+private fun FailureBanner(
+    error: YouTubeError,
+    onTryAgain: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val offers = error.offersTryAgain
+    Banner(
+        message = stringResource(failureText(error)),
+        glyph = painterResource(DesignR.drawable.ic_error),
+        glyphDescription = stringResource(R.string.player_failed_icon),
+        glyphTint = MaterialTheme.colorScheme.error,
+        actionLabel = if (offers) stringResource(R.string.player_try_again) else null,
+        onAction = if (offers) onTryAgain else null,
+        modifier = modifier,
+    )
 }

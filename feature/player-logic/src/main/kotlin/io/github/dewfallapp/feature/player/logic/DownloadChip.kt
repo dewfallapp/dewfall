@@ -40,11 +40,12 @@ fun chipOf(status: DownloadStatus): DownloadChip =
     }
 
 /**
- * The download chip that the screen shows: none until the details show, for a live stream, which
- * can't be downloaded, or while the video's download can't be read or hasn't answered yet.
+ * The download chip that the screen shows: none until the details show, YouTube's or the ones saved
+ * with the download, for a live stream, which can't be downloaded, or while the video's download
+ * can't be read or hasn't answered yet.
  */
 val PlayerState.shownDownload: DownloadChip?
     get() {
-        val page = (details as? DetailsArea.Shown)?.page ?: return null
+        val page = details.page ?: return null
         return if (page.isLive) null else download
     }

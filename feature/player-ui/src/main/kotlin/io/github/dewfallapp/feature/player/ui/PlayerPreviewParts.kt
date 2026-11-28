@@ -30,7 +30,7 @@ import kotlin.time.Instant
 // channel's picture link is on a made-up host, and PreviewImages draws it as a plain fill, so
 // screenshots never load or show a real image.
 
-private val previewNow = Instant.parse("2027-03-15T10:30:00Z")
+internal val previewNow = Instant.parse("2027-03-15T10:30:00Z")
 private val previewZone = ZoneId.of("UTC")
 
 internal val previewPage =
