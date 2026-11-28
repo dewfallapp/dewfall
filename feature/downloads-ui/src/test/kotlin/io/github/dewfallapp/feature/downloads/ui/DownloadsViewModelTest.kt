@@ -68,6 +68,9 @@ private class FakeDownloads : DownloadsRepository {
     override fun bytesInUse(): Flow<Long> =
         if (failBytesInUse) flow { throw IllegalStateException("Damaged database") } else bytesInUse
 
+    override fun savedVideo(videoId: VideoId): Flow<VideoSummary?> =
+        error("The Downloads screen lists every download")
+
     override suspend fun pause(videoId: VideoId) {
         writes += "pause ${videoId.value}"
         check(!failWrites) { "The disk is full" }

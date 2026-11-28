@@ -26,12 +26,12 @@ import dagger.hilt.android.lifecycle.withCreationCallback
 import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PlaybackFailure
 import io.github.dewfallapp.core.model.VideoId
-import io.github.dewfallapp.feature.player.logic.DetailsArea
 import io.github.dewfallapp.feature.player.logic.PlayerIntent
 import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.StartAction
 import io.github.dewfallapp.feature.player.logic.StoredPosition
 import io.github.dewfallapp.feature.player.logic.WaitingPosition
+import io.github.dewfallapp.feature.player.logic.page
 import io.github.dewfallapp.feature.player.logic.startAction
 import io.github.dewfallapp.feature.player.logic.videoAreaFailure
 import io.github.dewfallapp.feature.player.logic.waitingPosition
@@ -126,7 +126,7 @@ internal fun PlayerContent(
         FullscreenPlayer(
             // Fullscreen has no details' message to share a failure with, so it shows the player's.
             content = videoAreaContent(failure, waiting, waitingAt.shownMs, player),
-            page = (state.details as? DetailsArea.Shown)?.page,
+            page = state.details.page,
             onPlay = { last(::start) },
             onTryAgain = { last(::start) },
             onExit = { viewModel.dispatch(PlayerIntent.ExitFullscreen) },

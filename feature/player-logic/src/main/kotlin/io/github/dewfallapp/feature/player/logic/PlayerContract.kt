@@ -4,6 +4,7 @@ import io.github.dewfallapp.core.model.ChannelId
 import io.github.dewfallapp.core.model.PublishedTime
 import io.github.dewfallapp.core.model.Thumbnail
 import io.github.dewfallapp.core.model.VideoDetails
+import io.github.dewfallapp.core.model.VideoSummary
 import io.github.dewfallapp.core.model.YouTubeError
 import io.github.dewfallapp.core.model.YouTubeResult
 import io.github.dewfallapp.core.mvi.MviIntent
@@ -44,7 +45,28 @@ sealed interface DetailsArea {
 
     /** Request [number] failed with [error]. */
     data class Failed(val number: Long, val error: YouTubeError) : DetailsArea
+
+    /**
+     * Request [number] failed with [error], and the screen shows [page], made from the summary
+     * saved with the video's download, with the failure in the description's place. The reducer
+     * makes it, as the player spec's "A downloaded video shows its saved details when YouTube can't
+     * be reached" says.
+     */
+    data class Saved(val number: Long, val error: YouTubeError, val page: VideoPage) : DetailsArea
 }
+
+/**
+ * The page that the screen shows: YouTube's, or the one saved with the video's download, or null
+ * while it loads or after a failure with no saved details.
+ */
+val DetailsArea.page: VideoPage?
+    get() =
+        when (this) {
+            is DetailsArea.Shown -> page
+            is DetailsArea.Saved -> page
+            is DetailsArea.Loading,
+            is DetailsArea.Failed -> null
+        }
 
 /**
  * Whether the app's database marks the video watched, which the watched chip shows. It is the
@@ -67,13 +89,16 @@ sealed interface SavedWatch {
  * the screen shows the fullscreen player. The ViewModel keeps it in its saved state too. [saved] is
  * whether the database marks the video watched, which isn't playback state. [download] is the
  * video's download as its chip shows it, or null while the database hasn't answered or can't be
- * read; [shownDownload] says whether the chip shows.
+ * read; [shownDownload] says whether the chip shows. [savedVideo] is the summary saved with the
+ * video's download, or null while the video has none or the database hasn't answered or can't be
+ * read. It is user data, so never log it.
  */
 data class PlayerState(
     val details: DetailsArea = DetailsArea.Loading(number = 0),
     val fullscreen: Boolean = false,
     val saved: SavedWatch = SavedWatch.Unknown,
     val download: DownloadChip? = null,
+    val savedVideo: VideoSummary? = null,
 ) : MviState
 
 /** What happens on the video screen. */
@@ -122,4 +147,10 @@ sealed interface PlayerIntent : MviIntent {
 
     /** The user tapped "Downloading" to pause it. The answer comes back as DownloadChanged. */
     data object PauseDownload : PlayerIntent
+
+    /**
+     * The database answered that the video's download keeps the summary [video], or null when the
+     * video has no download or the database couldn't be read.
+     */
+    data class SavedVideoChanged(val video: VideoSummary?) : PlayerIntent
 }

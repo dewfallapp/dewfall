@@ -107,10 +107,10 @@ The screen SHALL show the video's whole description as plain text, with its line
 - **THEN** the screen ends after the channel
 
 ### Requirement: A failure says why
-When YouTube can't give the details, the screen SHALL say why in words for each of YouTube's error categories, and SHALL offer "Try again" only when YouTube can't be reached, refuses to answer, or can't be read. "Try again" SHALL show that it is loading and ask once more.
+When YouTube can't give the details, the screen SHALL say why in words for each of YouTube's error categories, and SHALL offer "Try again" only when YouTube can't be reached, refuses to answer, or can't be read. "Try again" SHALL show that it is loading and ask once more. When YouTube can't be reached and the video has a download, the screen SHALL also show the details saved with it, as "A downloaded video shows its saved details when YouTube can't be reached" says.
 
 #### Scenario: No connection
-- **WHEN** opening a video fails because YouTube can't be reached
+- **WHEN** opening a video that has no download fails because YouTube can't be reached
 - **THEN** the screen says that YouTube can't be reached and to check the connection, with "Try again"
 
 #### Scenario: Trying again
@@ -392,7 +392,7 @@ When the user leaves the app after opening a video and before it has started pla
 - **THEN** no sound plays, and when the user comes back, the mini player offers to play it
 
 ### Requirement: A media notification shows while a video plays
-While a video plays, and while it is paused until Android stops the player, the app SHALL show a media notification with a play and pause button, and the video's title and channel name once its details have loaded. It SHALL show no picture. Tapping it SHALL open the app as it was, on the video screen or on the screen under the mini player. While the video plays, the user SHALL NOT be able to dismiss it.
+While a video plays, and while it is paused until Android stops the player, the app SHALL show a media notification with a play and pause button, and the video's title and channel name once its details have loaded, or once the details saved with its download show. It SHALL show no picture. Tapping it SHALL open the app as it was, on the video screen or on the screen under the mini player. While the video plays, the user SHALL NOT be able to dismiss it.
 
 #### Scenario: Playing in the background
 - **WHEN** a video plays and the user goes to the home screen
@@ -407,7 +407,7 @@ While a video plays, and while it is paused until Android stops the player, the 
 - **THEN** Dewfall opens as it was, on the video screen, or on the screen under the video screen with the mini player, such as the inbox, Search YouTube or a channel page, and the video plays on
 
 #### Scenario: Details that failed
-- **WHEN** a video plays but its details failed to load
+- **WHEN** a video plays but its details failed to load, and no saved details showed in their place during its playback
 - **THEN** the notification shows no title or channel name, and its button still plays and pauses
 
 #### Scenario: Paused for a long time
@@ -507,14 +507,14 @@ While the player has a video and no video screen shows, the app SHALL show a min
 - **THEN** no mini player shows, and opening the video again starts it from where it was paused
 
 ### Requirement: The mini player shows the video and how far it played
-The mini player SHALL show the video's title and channel name once the video's details have loaded, and "Now playing" in the title's place until then or when they failed. The title SHALL wrap and never be cut off. A line along its top edge SHALL show how much of the video has played, hidden from screen readers. A live stream SHALL have no line.
+The mini player SHALL show the video's title and channel name once the video's details have loaded, or once the details saved with its download show, and "Now playing" in the title's place until then or when they failed with no saved details. The title SHALL wrap and never be cut off. A line along its top edge SHALL show how much of the video has played, hidden from screen readers. A live stream SHALL have no line.
 
 #### Scenario: A video with its details
 - **WHEN** "How reading rooms were lit before electric lamps" by Larkspur Lectures plays in the mini player
 - **THEN** the mini player shows that title and the channel name, and its line shows how much has played
 
 #### Scenario: Details that failed
-- **WHEN** a video plays in the mini player, but its details failed to load
+- **WHEN** a video plays in the mini player, but its details failed to load, and no saved details showed in their place during its playback
 - **THEN** the mini player shows "Now playing", with no channel name
 
 #### Scenario: A long title at the largest font size
@@ -646,7 +646,7 @@ On a phone, entering fullscreen SHALL turn the screen to landscape, either way r
 - **THEN** the video screen stays in portrait, and doesn't enter fullscreen
 
 ### Requirement: Fullscreen has its own controls
-Fullscreen SHALL show the title and channel name at the top, once the details have loaded, and at the bottom the play and pause button, the position and the length, the seek bar and an exit button, each named for screen readers. A live stream SHALL say "Live" in place of the seek bar and the times. Loading and failures SHALL show as on the video screen. The title SHALL wrap and never be cut off.
+Fullscreen SHALL show the title and channel name at the top, once the details have loaded or the details saved with the video's download show, and at the bottom the play and pause button, the position and the length, the seek bar and an exit button, each named for screen readers. A live stream SHALL say "Live" in place of the seek bar and the times. Loading and failures SHALL show as on the video screen. The title SHALL wrap and never be cut off.
 
 #### Scenario: Controls in fullscreen
 - **WHEN** a video plays in fullscreen
@@ -869,7 +869,7 @@ Reaching a video's end SHALL save its position as zero, as SHALL every save afte
 - **THEN** its saved position is 2 minutes
 
 ### Requirement: The video screen marks a video watched or unwatched
-Once the details show and the video's watch state has been read, the video screen SHALL show a toggle chip under the publish line: "Mark as watched", unselected, while the video isn't watched, and "Watched", selected, with a check, while it is. It SHALL show no chip when the watch state can't be read. Tapping it SHALL mark the video watched or unwatched and keep its saved position. It SHALL follow the video's watch state, so it changes when playback marks the video too.
+Once the details show, YouTube's or the ones saved with the video's download, and the video's watch state has been read, the video screen SHALL show a toggle chip under the publish line: "Mark as watched", unselected, while the video isn't watched, and "Watched", selected, with a check, while it is. It SHALL show no chip when the watch state can't be read. Tapping it SHALL mark the video watched or unwatched and keep its saved position. It SHALL follow the video's watch state, so it changes when playback marks the video too.
 
 #### Scenario: Fullscreen and the mini player
 - **WHEN** the video shows in fullscreen or in the mini player
@@ -900,7 +900,7 @@ Once the details show and the video's watch state has been read, the video scree
 - **THEN** no chip shows, and the rest of the screen works as before
 
 ### Requirement: The video screen downloads the video
-Once the details show, unless the video is live or waiting to start, the video screen SHALL show a download chip in the chip row under the publish line, before the watched chip, following the video's download as the downloads spec describes:
+Once the details show, YouTube's or the ones saved with the video's download, unless the video is live or waiting to start, the video screen SHALL show a download chip in the chip row under the publish line, before the watched chip, following the video's download as the downloads spec describes:
 
 - Not downloaded: "Download", with the `download` glyph. A tap starts the download.
 - Waiting: "Waiting to download", with the `schedule` glyph. The chip isn't clickable, and a screen reader announces no action, as the inbox's waiting row has no control, after the design system's Queued state.
@@ -939,8 +939,8 @@ A video's files match its download when the download recorded the MIME type of e
 - **THEN** the video plays from the files on the phone, and the app asks YouTube for neither its stream links nor its bytes
 
 #### Scenario: Opening a downloaded video offline
-- **WHEN** the phone has no connection, and the user opens from the inbox a downloaded video that the player doesn't hold, whose files match its download and can all be opened
-- **THEN** the video plays from its files, and the details area says that YouTube can't be reached, with "Try again"
+- **WHEN** the phone has no connection, and the user opens from the inbox a downloaded video that the player doesn't hold, whose files match its download and can all be opened, and whose saved details can be read
+- **THEN** the video plays from its files, and the screen shows the details saved with its download, with the message that YouTube can't be reached and "Try again" below them
 
 #### Scenario: Paused for hours
 - **WHEN** a downloaded video playing from its files is paused for a day, its files still match its download, and the user presses play
@@ -967,3 +967,51 @@ The player SHALL choose between the downloaded files and the stream only when pl
 #### Scenario: A download that finishes while the video streams
 - **WHEN** a video streams while its download finishes, its files match it and can all be opened, its playback doesn't start again, then the user closes the mini player, and later opens the video again
 - **THEN** it streams until the mini player closes, and the next opening plays it from its files
+
+### Requirement: A downloaded video shows its saved details when YouTube can't be reached
+When the video screen's request for the details fails because YouTube can't be reached, and the video has a download in any state, the screen SHALL show the details saved with that download in the failure's place: the title, the publish line counted from the saved publish time, the chip row, and the channel with its emblem and no picture, with no "Live now".
+
+#### Scenario: A downloaded video offline
+- **WHEN** the phone has no connection, and the user opens a downloaded video, "How reading rooms were lit before electric lamps" by Larkspur Lectures, published 3 weeks ago, whose files match its download and can all be opened, and whose download state, watch state and saved details can be read
+- **THEN** the video plays from its files, the screen shows that title, "Published 3 weeks ago", the "Downloaded" chip, the watched chip and the channel "Larkspur Lectures" with its emblem, and below them that YouTube can't be reached, with "Try again"
+
+#### Scenario: A download that isn't finished
+- **WHEN** the phone has no connection, and the user opens a video whose download is paused at 40 percent, and whose download state and saved details can be read
+- **THEN** the screen shows the saved details with the "Paused, 40%" chip, and says once, below them, that YouTube can't be reached, with one "Try again" that retries both the details and the video
+
+### Requirement: The saved details show the failure in the description's place
+In the description's place, the saved details SHALL show the failure's message, that YouTube can't be reached and to check the connection, with "Try again", which asks YouTube again as after any failure. When YouTube answers, its details SHALL replace the saved ones.
+
+#### Scenario: The connection comes back
+- **WHEN** the saved details show, the connection comes back, and the user taps "Try again"
+- **THEN** the screen says that the video is loading, then shows YouTube's details with the description
+
+#### Scenario: Still offline
+- **WHEN** the saved details show and the user taps "Try again" while the phone still has no connection
+- **THEN** the screen says that the video is loading, then shows the saved details again
+
+### Requirement: The saved details count as the details showing
+The saved details SHALL count as the details showing for the download chip, the watched chip, and the title and channel name in the media notification, the mini player and fullscreen, as their requirements say. Once a playback has the saved title and channel name, the media notification and the mini player SHALL keep them for the rest of that playback, as they keep YouTube's, until another playback replaces it. That holds even after the download is removed or the saved details stop showing.
+
+#### Scenario: The notification and the mini player offline
+- **WHEN** a downloaded video plays offline with its saved details, and the user minimizes it and goes to the home screen
+- **THEN** the mini player shows the saved title and channel name, and so does the media notification
+
+#### Scenario: Fullscreen offline
+- **WHEN** a downloaded video plays offline with its saved details, and the user enters fullscreen
+- **THEN** fullscreen shows the saved title and channel name at the top
+
+### Requirement: Saved details show only for a download when YouTube can't be reached
+A failure for any other reason, a video with no download, or a download whose saved details can't be read SHALL show the failure as before. When the download is removed while its saved details show, the screen SHALL show the failure as before.
+
+#### Scenario: A private video
+- **WHEN** a downloaded video's details fail because YouTube says the video is private
+- **THEN** the screen says that the video is private, as before, and shows no saved details
+
+#### Scenario: A video with no download
+- **WHEN** the phone has no connection, and the user opens a video that has no download
+- **THEN** the screen says that YouTube can't be reached, with "Try again", as before
+
+#### Scenario: Removing the download
+- **WHEN** a video's saved details show, and its download is removed
+- **THEN** the screen says that YouTube can't be reached, with "Try again", in the details' place, and the mini player and the notification keep the saved title and channel name while the video plays on

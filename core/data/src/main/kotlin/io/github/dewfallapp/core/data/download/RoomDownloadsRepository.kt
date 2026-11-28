@@ -77,6 +77,11 @@ constructor(
         externalScope.async { downloadDao.pause(videoId.value, now) }.await()
     }
 
+    // Progress writes change the row but not its summary, so they would wake the screen for
+    // nothing.
+    override fun savedVideo(videoId: VideoId): Flow<VideoSummary?> =
+        downloadDao.download(videoId.value).map { it?.toDownload()?.video }.distinctUntilChanged()
+
     override fun downloads(): Flow<List<Download>> =
         downloadDao.downloads().map { rows -> rows.map { it.toDownload() } }.distinctUntilChanged()
 

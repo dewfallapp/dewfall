@@ -27,6 +27,7 @@ import io.github.dewfallapp.feature.player.logic.PlayerState
 import io.github.dewfallapp.feature.player.logic.StoredPosition
 import io.github.dewfallapp.feature.player.logic.WaitingPosition
 import io.github.dewfallapp.feature.player.logic.chipOf
+import io.github.dewfallapp.feature.player.logic.page
 import io.github.dewfallapp.feature.player.logic.sharesFailure
 import io.github.dewfallapp.feature.player.logic.waitingPosition
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -80,10 +81,15 @@ internal fun playbackOfVideo(
  * leaves the chip as it was, with no log line.
  *
  * It follows the video's download the same way, and starts or pauses it from the download chip. A
- * download needs the video's summary, which it builds from the details it shows, so the chip's taps
- * do nothing before the details arrive. A download state that can't be read leaves the download
- * chip hidden, and one that can't be written leaves it as it was, with no log line, as the
- * downloads repository's writes run in the app's scope.
+ * download needs the video's summary, which it builds from the details it shows, or takes from the
+ * download while the saved details show, so the chip's taps do nothing before the details arrive. A
+ * download state that can't be read leaves the download chip hidden, and one that can't be written
+ * leaves it as it was, with no log line, as the downloads repository's writes run in the app's
+ * scope.
+ *
+ * It also follows the summary saved with the video's download, which the reducer shows when YouTube
+ * can't be reached. A summary that can't be read counts as none, so the failure shows as before,
+ * with no log line.
  */
 @HiltViewModel(assistedFactory = PlayerViewModel.Factory::class)
 internal class PlayerViewModel
@@ -117,6 +123,15 @@ constructor(
     /** The details that the screen shows, which a download keeps as its summary, or null. */
     private var shownDetails: VideoDetails? = null
 
+    /**
+     * The summary that a download keeps: the one of the details that the screen shows, or, while
+     * the saved details show, the one saved with the download. Null before the details arrive.
+     */
+    private val downloadSummary: VideoSummary?
+        get() =
+            shownDetails?.let(::summaryOf)
+                ?: state.value.savedVideo?.takeIf { state.value.details is DetailsArea.Saved }
+
     /** A mark or a download that the database can't write leaves its chip as it was. */
     private val writeFailed = CoroutineExceptionHandler { _, _ ->
         // Nothing to undo: the chip shows what the database holds, which didn't change.
@@ -139,6 +154,12 @@ constructor(
                 .distinctUntilChanged()
                 .catch { dispatch(PlayerIntent.DownloadUnreadable) }
                 .collect { dispatch(PlayerIntent.DownloadChanged(it)) }
+        }
+        viewModelScope.launch {
+            downloads
+                .savedVideo(args.videoId)
+                .catch { emit(null) }
+                .collect { dispatch(PlayerIntent.SavedVideoChanged(it)) }
         }
     }
 
@@ -226,8 +247,12 @@ constructor(
                 viewModelScope.launch(writeFailed) { watchStates.markUnwatched(args.videoId) }
             }
             PlayerIntent.Download -> {
-                val summary = shownDetails?.let(::summaryOf) ?: return
+                val summary = downloadSummary ?: return
                 viewModelScope.launch(writeFailed) { downloads.download(summary) }
+            }
+            // Only a saved page that the summary made or changed has new names for the playback.
+            is PlayerIntent.SavedVideoChanged -> {
+                if (state.value.details is DetailsArea.Saved) describePlayback()
             }
             PlayerIntent.PauseDownload -> {
                 viewModelScope.launch(writeFailed) { downloads.pause(args.videoId) }
@@ -286,10 +311,11 @@ constructor(
 
     /**
      * Gives the latest playback the title and channel name that the media notification shows, once
-     * the details show. The reducer has already run, so the state holds this intent's answer.
+     * the details show, YouTube's or the ones saved with the download. The reducer has already run,
+     * so the state holds this intent's answer. Nothing clears them, so the playback keeps them.
      */
     private fun describePlayback() {
-        val page = (state.value.details as? DetailsArea.Shown)?.page ?: return
+        val page = state.value.details.page ?: return
         val id = playbackId ?: return
         playback.describe(id, page.title, page.channelName)
     }

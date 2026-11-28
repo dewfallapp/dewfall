@@ -164,14 +164,16 @@ internal class FakeConnection : PlaybackConnection {
 }
 
 /**
- * A downloads repository that answers from [status] and records its writes. A test can make reads
- * or writes throw.
+ * A downloads repository that answers from [status] and [savedVideo] and records its writes. A test
+ * can make reads or writes throw.
  */
 internal class FakeDownloads : DownloadsRepository {
     val status = MutableStateFlow<DownloadStatus>(DownloadStatus.NotDownloaded)
     val writes = mutableListOf<String>()
     val downloaded = mutableListOf<VideoSummary>()
+    val savedVideo = MutableStateFlow<VideoSummary?>(null)
     var failReads = false
+    var failSavedVideo = false
     var failWrites = false
 
     override fun statuses() = error("The video screen reads one video's status")
@@ -184,6 +186,13 @@ internal class FakeDownloads : DownloadsRepository {
         }
 
     override fun bytesInUse(): Flow<Long> = error("The video screen shows no storage")
+
+    override fun savedVideo(videoId: VideoId): Flow<VideoSummary?> =
+        if (failSavedVideo) {
+            flow { throw IllegalStateException("The database can't be read") }
+        } else {
+            savedVideo
+        }
 
     override suspend fun download(video: VideoSummary) {
         writes += "download ${video.id.value}"

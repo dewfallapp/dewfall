@@ -251,6 +251,55 @@ class RoomDownloadsRepositoryTest {
     }
 
     @Test
+    fun `the saved video is the row's summary in every state`() = runTest {
+        val summary =
+            VideoSummary(
+                id = VideoId("aaaaaaaaaaa"),
+                title = "A video",
+                channelId = ChannelId("UCaaaaaaaaaaaaaaaaaaaaaa"),
+                channelName = "Kettle and Crumb",
+                duration = 10.minutes,
+                published = PublishedTime(PUBLISHED, isApproximate = true),
+                thumbnails = emptyList(),
+                kind = VideoKind.VIDEO,
+            )
+        for (state in DownloadState.entries) {
+            val failure = if (state == DownloadState.FAILED) DownloadFailure.NO_SPACE else null
+            val download =
+                row(state = state, failure = failure)
+                    .copy(publishedAt = PUBLISHED, publishedApproximate = true)
+            val saved =
+                repository(FakeDownloadDao(listOf(download)), backgroundScope)
+                    .savedVideo(VIDEO.id)
+                    .first()
+            assertEquals(summary, saved, "$state")
+        }
+    }
+
+    @Test
+    fun `a video with no row has no saved video`() = runTest {
+        val rows = listOf(row("bbbbbbbbbbb"))
+
+        assertNull(repository(FakeDownloadDao(rows), backgroundScope).savedVideo(VIDEO.id).first())
+    }
+
+    @Test
+    fun `the saved video follows the row and skips writes that leave the summary as it was`() =
+        runTest {
+            val waiting = row()
+            val running = row(state = DownloadState.DOWNLOADING, downloadedBytes = 420)
+            val renamed = running.copy(title = "A video, renamed")
+            val dao = FakeDownloadDao(downloadFlow = flowOf(null, waiting, running, renamed, null))
+
+            val saved = repository(dao, backgroundScope).savedVideo(VIDEO.id).toList()
+
+            assertEquals(
+                listOf(null, "A video", "A video, renamed", null),
+                saved.map { it?.title },
+            )
+        }
+
+    @Test
     fun `only a finished download has a finish time`() = runTest {
         for (state in DownloadState.entries) {
             val failure = if (state == DownloadState.FAILED) DownloadFailure.YOUTUBE else null
