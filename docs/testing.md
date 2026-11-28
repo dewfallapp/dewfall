@@ -736,7 +736,7 @@ ANDROID_SERIAL=emulator-5556 ./gradlew :app:connectedDebugAndroidTest
 - The report goes to app/build/reports/androidTests/connected/debug/index.html.
 - Run them on Android 10 (API 29) and the newest Android before merging a change to the inbox, Search YouTube, the video screen, the player, the channel page or `:app`'s navigation, because the workflow runs them before merging only for the changes that its path filter names. On the Apple silicon Mac, boot the Android 17 emulator with `-feature -HardwareDecoder`, as [Checking the player by hand](#checking-the-player-by-hand) says.
 - On Android 10, use a phone-sized emulator with three-button navigation, its usual default, so FullscreenClearOfBarsTest finds the navigation bar on a side in landscape. With gesture navigation it skips.
-- When Espresso calls fail with RootViewWithoutFocusException, another window holds focus, often an ANR dialog. `adb -s <serial> shell dumpsys window windows | grep mCurrentFocus` shows which one.
+- When Espresso calls fail with RootViewWithoutFocusException, another window holds focus, often an ANR dialog. `adb -s <serial> shell dumpsys window displays | grep mCurrentFocus` shows which one.
 - Name test methods without spaces, as [Writing tests](#writing-tests) says.
 
 ### The emulator tests workflow

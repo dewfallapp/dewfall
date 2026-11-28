@@ -174,8 +174,10 @@ jobs:
       - name: Wait for the launcher
         run: |
           adb="$ANDROID_HOME/platform-tools/adb"
-          windows() {
-            timeout 30 "$adb" shell dumpsys window windows | tr -d '\r' || true
+          # Only the live sections: the whole dump starts with a snapshot from the last ANR. The
+          # windows section lists the windows, and the displays section has mCurrentFocus.
+          dump() {
+            timeout 30 "$adb" shell dumpsys window "$1" | tr -d '\r' || true
           }
           # Window titles such as "Application Not Responding: com.android.launcher3".
           fail_on_dialog() {
@@ -193,8 +195,8 @@ jobs:
           focused=""
           deadline=$((SECONDS + 180))
           while [ "$SECONDS" -lt "$deadline" ]; do
-            state="$(windows)"
-            fail_on_dialog "$state"
+            fail_on_dialog "$(dump windows)"
+            state="$(dump displays)"
             focus="$(echo "$state" | grep -E "mCurrentFocus=" | head -n 1 || true)"
             if echo "$focus" | grep -qE "$launcher"; then
               focused="yes"
@@ -206,13 +208,15 @@ jobs:
           done
           echo "Focus: $focus"
           if [ -z "$focused" ]; then
+            echo "The displays section had $(echo "$state" | grep -c .) lines. Its focus lines:"
+            echo "$state" | grep -iE "focus" | head -n 20 || true
             echo "::error::The launcher didn't take window focus in about 3 minutes."
             exit 1
           fi
           # An ANR dialog shows about 2 seconds after its ANR, and an ANR fires 5 seconds after
           # the input it waited for, so this looks again after 15 seconds.
           sleep 15
-          fail_on_dialog "$(windows)"
+          fail_on_dialog "$(dump windows)"
           anrs="$(timeout 60 "$adb" logcat -d \
             | grep -E "ANR in |Input event injection from pid [0-9]+ failed" || true)"
           if [ -n "$anrs" ]; then
