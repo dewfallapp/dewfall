@@ -1,9 +1,12 @@
 package io.github.dewfallapp
 
 import android.app.job.JobScheduler
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -58,7 +61,8 @@ private const val PLAYED_MS = 3_000L
 
 /**
  * A downloaded video plays from its files, as openspec/specs/player/spec.md says: offline, with no
- * request for its bytes; a finished download with a file gone streams, and still says Downloaded;
+ * request for its bytes, and with the details saved with its download, whose title and channel name
+ * the playback gets too; a finished download with a file gone streams, and still says Downloaded;
  * and a file deleted while it plays fails on the seek that opens it again, and "Try again" streams
  * it. Each test downloads [TestVideo] through the real job, the real runner and the fakes, as
  * DownloadTest does, then opens it from Search YouTube. DownloadThenPlayOfflineTest, #58's test,
@@ -112,10 +116,16 @@ class PlayFromFilesTest {
         network.setReachable(false)
         compose.onNodeWithText(TestVideo.TITLE).performClick()
 
-        // The details fail, as answer 1 of the change chose, while the video plays.
+        // The details fail while the video plays, so the details saved with the download show,
+        // with the failure below them, and the playback gets the saved title and channel name.
         waitForNode(hasText(compose.activity.getString(PlayerR.string.player_failed_network)))
+        waitForNode(hasText(TestVideo.TITLE) and isHeading())
+        waitForNode(opensChannel(TestVideo.CHANNEL_NAME))
         compose.waitUntil(PLAYER_TIMEOUT_MS) { playsPast(PLAYED_MS) }
         assertEquals(before, attempts(), "The player asked for the video's bytes")
+        compose.waitUntil(SCREEN_TIMEOUT_MS) {
+            described() == (TestVideo.TITLE to TestVideo.CHANNEL_NAME)
+        }
     }
 
     @Test
@@ -198,6 +208,20 @@ class PlayFromFilesTest {
         compose.waitUntil(SCREEN_TIMEOUT_MS) {
             compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty()
         }
+    }
+
+    /** The video screen's channel row for the channel [name], which opens its page. */
+    private fun opensChannel(name: String): SemanticsMatcher {
+        val label = compose.activity.getString(PlayerR.string.player_open_channel, name)
+        return SemanticsMatcher("opens the channel page of $name") {
+            it.config.getOrNull(SemanticsActions.OnClick)?.label == label
+        }
+    }
+
+    /** The title and channel name that the player's item has for the media notification. */
+    private fun described(): Pair<String?, String?> = compose.runOnUiThread {
+        val metadata = playback.player.value?.mediaMetadata
+        metadata?.title?.toString() to metadata?.artist?.toString()
     }
 
     /**
