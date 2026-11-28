@@ -3,6 +3,7 @@ package io.github.dewfallapp.fake
 import android.content.res.AssetManager
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.Call
 import okhttp3.Interceptor
@@ -11,6 +12,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+
+/** The longest a held media request waits, so a test that never opens the hold still ends. */
+private const val HOLD_TIMEOUT_SECONDS = 120L
 
 /** HTTP's status for the part of a file that a Range header asked for. */
 private const val PARTIAL_CONTENT = 206
@@ -76,6 +80,7 @@ class AssetMedia(private val assets: AssetManager, private val network: FakeNetw
         val request = chain.request()
         val url = request.url.toString()
         attempts.getOrPut(url) { AtomicInteger() }.incrementAndGet()
+        network.mediaHold?.await(HOLD_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         if (!network.mediaReachable) throw IOException("The fake network is off")
         val bytes = bytes(url)
         requests.getOrPut(url) { AtomicInteger() }.incrementAndGet()

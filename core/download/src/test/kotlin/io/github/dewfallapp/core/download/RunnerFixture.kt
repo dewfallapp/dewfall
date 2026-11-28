@@ -115,6 +115,9 @@ internal abstract class RunnerFixture {
 
     protected var routed = media(1)
 
+    /** The run record that every runner from [runner] writes. */
+    protected val record = FakeRunRecord()
+
     protected fun runner(
         stopCheck: StopCheck = StopCheck {},
         links: StreamLinksRepository = streamLinks,
@@ -140,6 +143,7 @@ internal abstract class RunnerFixture {
             queue,
             runState,
             stopCheck,
+            record,
             logger,
             Dispatchers.IO,
         )
@@ -157,4 +161,17 @@ internal abstract class RunnerFixture {
         files.complete(id.value + "-folder", kind, mime)
 
     protected fun part(id: VideoId, kind: DownloadFileKind) = files.part(id.value + "-folder", kind)
+}
+
+/** A run record in memory. */
+internal class FakeRunRecord(var active: Boolean = false) : RunRecord {
+    override fun begin() {
+        active = true
+    }
+
+    override fun end() {
+        active = false
+    }
+
+    override fun wasActive() = active
 }

@@ -101,4 +101,12 @@ internal class DownloadRunState @Inject constructor() {
     /** Held for a whole run, its cleanup included, so a second run waits for the first to end. */
     val runLock = Mutex()
     var phase = RunPhase.IDLE
+
+    /**
+     * Whether a backup job's run, which Android shows in no Task Manager, is registered, so the
+     * scheduler hands the download back to the user-initiated job when the app shows or the user
+     * taps a download control. DownloadJobService sets it and clears it, and so does a successful
+     * hand-back. See ADR 0010's note of November 28, 2026.
+     */
+    @Volatile var backupRun = false
 }

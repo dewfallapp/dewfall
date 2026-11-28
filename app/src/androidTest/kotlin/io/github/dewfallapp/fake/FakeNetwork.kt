@@ -1,5 +1,7 @@
 package io.github.dewfallapp.fake
 
+import java.util.concurrent.CountDownLatch
+
 /**
  * Stands in for the network in the emulator tests. While [youTubeReachable] is off, the fake
  * YouTube layer answers the details and the stream links with NETWORK, as the real layer does with
@@ -11,6 +13,12 @@ class FakeNetwork {
     @Volatile var youTubeReachable: Boolean = true
 
     @Volatile var mediaReachable: Boolean = true
+
+    /**
+     * While it is closed, AssetMedia holds every media request until it opens, so a download stays
+     * in DOWNLOADING while a test looks at it. Null, the default, holds nothing.
+     */
+    @Volatile var mediaHold: CountDownLatch? = null
 
     /** Turns both off, or both on. */
     fun setReachable(reachable: Boolean) {

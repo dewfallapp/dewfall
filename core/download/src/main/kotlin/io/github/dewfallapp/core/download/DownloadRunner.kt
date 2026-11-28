@@ -64,6 +64,7 @@ internal constructor(
     private val folders: DownloadFolders,
     private val runState: DownloadRunState,
     private val stopCheck: StopCheck,
+    private val record: RunRecord,
     logger: Logger,
     @DownloadDispatcher private val dispatcher: CoroutineDispatcher,
 ) {
@@ -77,9 +78,15 @@ internal constructor(
      * user's, such as the Task Manager's Stop, it pauses every waiting and running download
      * instead, in one write, as the maintainer chose. It runs on the injected IO dispatcher,
      * because its file checks, StorageManager's free space and the writes block, and the UIDT job's
-     * service calls it from the main thread. [report] is called on that dispatcher too.
+     * service calls it from the main thread. [report] is called on that dispatcher too. [begin]
+     * runs once the stop check has decided, under the run lock, before the first claim, so the stop
+     * check reads only what an earlier process left, such as a backup run's marker.
      */
-    suspend fun run(stoppedByUser: () -> Boolean = { false }, report: RunReport): RunOutcome =
+    suspend fun run(
+        stoppedByUser: () -> Boolean = { false },
+        begin: suspend () -> Unit = {},
+        report: RunReport,
+    ): RunOutcome =
         withContext(dispatcher) {
             val marks = RunMarks()
             try {
@@ -89,7 +96,7 @@ internal constructor(
                 runState.runLock.withLock {
                     marks.locked = true
                     try {
-                        runOnDispatcher(report, stoppedByUser, marks)
+                        runOnDispatcher(report, stoppedByUser, begin, marks)
                     } catch (e: CancellationException) {
                         pauseAfterUserStop(stoppedByUser, marks)
                         throw e
@@ -139,15 +146,22 @@ internal constructor(
     private suspend fun runOnDispatcher(
         report: RunReport,
         stoppedByUser: () -> Boolean,
+        begin: suspend () -> Unit,
         marks: RunMarks,
     ): RunOutcome {
         stopCheck.await()
+        // After the stop check, which reads what the previous process left, and under the run
+        // lock, before any claim: a backup run's marker, for one.
+        begin()
         runState.mutex.withLock {
             runState.phase = RunPhase.RUNNING
             marks.began = true
         }
         var outcome: RunOutcome? = null
         try {
+            // Inside the try, so the end below always deletes it, and before the reset and the
+            // first claim, so from here on a Stop that ends the process pauses at the next start.
+            record.begin()
             queue.resetDownloading()
             deleteUnownedFolders()
             log.info("Downloads run started")
@@ -159,6 +173,7 @@ internal constructor(
             // Even when the run was cancelled while another holds the lock, so every run ends
             // IDLE. A start that scheduled the next run in the meantime keeps it SCHEDULED.
             withContext(NonCancellable) {
+                record.end()
                 runState.mutex.withLock {
                     if (runState.phase == RunPhase.RUNNING) runState.phase = RunPhase.IDLE
                 }

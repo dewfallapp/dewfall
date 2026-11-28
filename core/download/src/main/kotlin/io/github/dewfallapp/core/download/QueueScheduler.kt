@@ -37,7 +37,7 @@ internal const val QUEUE_JOB_ID = 54
 internal const val QUEUE_WORK_NAME = "downloads"
 
 /** The first wait before a run that asked to run again does, which then doubles. */
-private const val BACKOFF_SECONDS = 30L
+internal const val BACKOFF_SECONDS = 30L
 
 /** Asks Android to run the queue's job. */
 internal fun interface RunLauncher {
@@ -113,8 +113,9 @@ internal suspend fun Operation.enqueued(): Boolean =
 
 /**
  * Starts a run of the queue when none is active in the process and a download waits, as
- * DownloadScheduler says. A tap's write calls it, and so does MainActivity's `onStart`, which
- * starts again a queue that Android refused to schedule while the app was hidden.
+ * DownloadScheduler says, or hands a backup job's run back to the user-initiated job. A tap's write
+ * calls it, and so does MainActivity's `onStart`, which starts again a queue that Android refused
+ * to schedule while the app was hidden.
  */
 @Singleton
 internal class QueueScheduler
@@ -140,7 +141,18 @@ constructor(
     internal suspend fun startNow() {
         stopCheck.await()
         runState.mutex.withLock {
-            if (runState.phase != RunPhase.IDLE) return
+            if (runState.phase != RunPhase.IDLE) {
+                // A backup job's run shows in no Task Manager and may stop after minutes, so the
+                // app's return or a tap hands its download back to the user-initiated job, which
+                // replaces the one that waits idle and stops the backup when it starts. The rows
+                // stay as they are, because a run is active. Once per backup run, unless Android
+                // refused it. A tap that comes once the stopped backup run went IDLE schedules the
+                // job again, which may replace one that waits for the run lock: harmless, as when
+                // Android starts the job again by itself. See ADR 0010's note of November 28,
+                // 2026.
+                if (runState.backupRun && launcher.launch()) runState.backupRun = false
+                return
+            }
             // With no run in the process, a running row can only be left over.
             queue.resetDownloading()
             if (!queue.hasQueued()) return
