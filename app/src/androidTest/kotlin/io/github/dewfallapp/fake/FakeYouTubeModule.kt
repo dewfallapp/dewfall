@@ -28,7 +28,8 @@ import okhttp3.Call
  * can open, and the player's media clients with [AssetMedia]. Nothing builds NewPipeYouTube, so no
  * request reaches YouTube or googlevideo.com. The repositories in `:core:data` are the real ones.
  * While [FakeNetwork] has YouTube off, the details, the stream links and the channel answer
- * NETWORK. See docs/testing.md#emulator-tests.
+ * NETWORK. StreamLinkCalls counts every call for the stream links. See
+ * docs/testing.md#emulator-tests.
  */
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [YouTubeModule::class])
@@ -64,22 +65,26 @@ object FakeYouTubeModule {
         }
 
     @Provides
-    fun provideStreamLinks(network: FakeNetwork, media: AssetMedia): StreamLinksRemoteDataSource =
-        StreamLinksRemoteDataSource { id ->
-            when {
-                !network.youTubeReachable -> unreachable
-                id == TestVideo.id || id == TestVideo.otherId -> {
-                    YouTubeResult.Success(
-                        TestVideo.streamLinks(
-                            videoId = id,
-                            videoLength = media.length(TestVideo.VIDEO_URL),
-                            audioLength = media.length(TestVideo.AUDIO_URL),
-                        ),
-                    )
-                }
-                else -> unavailable
+    fun provideStreamLinks(
+        network: FakeNetwork,
+        media: AssetMedia,
+        calls: StreamLinkCalls,
+    ): StreamLinksRemoteDataSource = StreamLinksRemoteDataSource { id ->
+        calls.record(id)
+        when {
+            !network.youTubeReachable -> unreachable
+            id == TestVideo.id || id == TestVideo.otherId -> {
+                YouTubeResult.Success(
+                    TestVideo.streamLinks(
+                        videoId = id,
+                        videoLength = media.length(TestVideo.VIDEO_URL),
+                        audioLength = media.length(TestVideo.AUDIO_URL),
+                    ),
+                )
             }
+            else -> unavailable
         }
+    }
 
     /** The test channel, with its two videos. Every other channel is unavailable. */
     @Provides
@@ -107,6 +112,9 @@ object FakeYouTubeModule {
 
     /** One for the whole test, so the test can turn it off and on. */
     @Provides @Singleton fun provideFakeNetwork(): FakeNetwork = FakeNetwork()
+
+    /** One for the whole test, so the test can read how often the links were asked for. */
+    @Provides @Singleton fun provideStreamLinkCalls(): StreamLinkCalls = StreamLinkCalls()
 
     /** One for the whole test, so the test can read its request counts. */
     @Provides

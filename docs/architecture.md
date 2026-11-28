@@ -1274,7 +1274,7 @@ The engine logs through the Logger with the tag Dewfall.Downloads: a run's start
 ### What later tasks add
 
 - **#56, play from the file:** done. PlayableDownloads, in `:core:data`, finds a DOWNLOADED row's complete files through DownloadFiles, which PlaybackSources plays with FileDataSource, as [Playing downloaded files](#playing-downloaded-files) says.
-- **#58, the offline emulator test:** the whole flow, a download from the video screen through the fakes, then the video played with the network off. PlayFromFilesTest already plays a download offline, opened from Search YouTube.
+- **#58, the offline emulator test:** done. DownloadThenPlayOfflineTest runs the whole flow, a download from the video screen through the fakes, then the video played from the Downloads screen with the network off, as [What download then play offline checks](testing.md#what-download-then-play-offline-checks) says.
 - **Phase 7:** a WorkManager worker with charging and unmetered constraints that queues the night's videos and runs DownloadRunner, the storage limit, and cleanup through DownloadFiles.
 
 ## Subtitle search
