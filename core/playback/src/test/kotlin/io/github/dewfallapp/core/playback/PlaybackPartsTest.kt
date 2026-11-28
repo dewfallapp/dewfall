@@ -60,6 +60,22 @@ class PlaybackPartsTest {
     }
 
     @Test
+    fun `a files plan shows no path, and its equality compares both files`() {
+        val videoFile = File("/data/downloads/folder-1/video.mp4")
+        val audioFile = File("/data/downloads/folder-1/audio.webm")
+        val separate = SourcePlan.Files(videoFile, audioFile)
+        val combined = SourcePlan.Files(videoFile, audio = null)
+
+        assertFalse(separate.toString().contains("folder-1"))
+        assertFalse(combined.toString().contains("folder-1"))
+        assertEquals(SourcePlan.Files(videoFile, audioFile).hashCode(), separate.hashCode())
+        assertNotEquals(SourcePlan.Files(videoFile, File("/data/other/audio.webm")), separate)
+        assertNotEquals(SourcePlan.Files(audioFile, audioFile), separate)
+        assertNotEquals(combined, separate)
+        assertNotEquals(separate, combined)
+    }
+
+    @Test
     fun `a downloaded item keeps only the CPU awake, and anything else Wi-Fi too`() {
         val downloaded =
             PlaybackTag.Downloaded(PlayableDownload.Combined(File("/data/downloads/f/media.mp4")))
