@@ -236,7 +236,7 @@ The Downloads screen SHALL never log a video's ID, title or file name, or a chan
 - **THEN** it lists the downloads as the phone keeps them, with the thumbnails that are in the app's cache, and no request goes to YouTube
 
 ### Requirement: The Downloads screen shows the space downloads take
-The Downloads screen SHALL show a card at its top, under the top app bar and above the list of downloads, that says "Offline storage" and the space that downloads take on the phone, such as "3.6 GB", in the phone's own units and number format. Until the app has a storage limit, the card SHALL show no bar and no limit. A screen reader SHALL read the card as one item, with its heading and the space. The inbox SHALL NOT show the space.
+The Downloads screen SHALL show a card at its top, under the top app bar and above the list of downloads, that says "Offline storage" and the space that downloads take on the phone, such as "3.6 GB", in kB, MB or GB, with 1,000 bytes to a kilobyte, and with the number in the phone's own number format. Until the app has a storage limit, the card SHALL show no bar and no limit. A screen reader SHALL read the card as one item, with its heading and the space. The inbox SHALL NOT show the space.
 
 #### Scenario: Opening the Downloads screen
 - **WHEN** the user opens the Downloads screen with 3.6 GB of downloads on the phone
