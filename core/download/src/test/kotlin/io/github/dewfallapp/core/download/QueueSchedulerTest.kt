@@ -187,6 +187,72 @@ class PausesAfterExitTest {
     }
 
     @Test
+    fun `a swipe that ended a background process doesn't pause`() {
+        assertFalse(
+            pausesAfterExit(
+                LatestExit(stopped = true, atMillis = 2_000, foreground = false, swiped = true),
+                true,
+                1_000,
+            ),
+        )
+    }
+
+    @Test
+    fun `a swipe that ended a foreground process pauses, as on a maker's phone`() {
+        assertTrue(
+            pausesAfterExit(
+                LatestExit(stopped = true, atMillis = 2_000, foreground = true, swiped = true),
+                true,
+                1_000,
+            ),
+        )
+    }
+
+    @Test
+    fun `Force stop and the Task Manager's Stop, which aren't swipes, still pause`() {
+        for (foreground in listOf(true, false)) {
+            val exit =
+                LatestExit(
+                    stopped = true,
+                    atMillis = 2_000,
+                    foreground = foreground,
+                    swiped = false,
+                )
+            assertTrue(pausesAfterExit(exit, true, 1_000))
+            assertTrue(pausesAfterExit(exit, true, 1_000, backupRanLast = true))
+            assertTrue(pausesAfterExit(exit, true, 1_000, backupScheduled = true))
+        }
+    }
+
+    @Test
+    fun `a swipe while downloads only waited, or after an update, doesn't pause either`() {
+        val swipe = LatestExit(stopped = true, atMillis = 2_000, foreground = false, swiped = true)
+        assertFalse(pausesAfterExit(swipe, false, 1_000))
+        assertFalse(pausesAfterExit(swipe, true, 2_000))
+    }
+
+    @Test
+    fun `only the exact description on Android 11 to 13 is a swipe`() {
+        for (sdk in 30..33) {
+            assertTrue(isSwipe(sdk, "remove task"), "SDK $sdk")
+        }
+        assertFalse(isSwipe(29, "remove task"))
+        assertFalse(isSwipe(34, "remove task"))
+        assertFalse(isSwipe(37, "remove task"))
+        for (description in
+            listOf(
+                "stop io.github.dewfallapp due to from pid 4705",
+                "fully stop io.github.dewfallapp/0 by user request",
+                "Remove task",
+                "remove task ",
+                "",
+                null,
+            )) {
+            assertFalse(isSwipe(32, description), "$description")
+        }
+    }
+
+    @Test
     fun `another reason or no record doesn't pause`() {
         assertFalse(pausesAfterExit(LatestExit(stopped = false, atMillis = 2_000), true, 1_000))
         assertFalse(pausesAfterExit(null, true, 1_000))
